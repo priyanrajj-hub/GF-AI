@@ -31,7 +31,9 @@ export const MissionBriefing: React.FC = () => {
   } = useAppStore()
 
   const [newTodoText, setNewTodoText] = useState('')
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 1100
+  )
 
   if (fullScreenHoloMode) return null
 

@@ -173,7 +173,7 @@ export const ChatDrawer: React.FC = () => {
   }
 
   return (
-    <aside className="fixed right-4 top-20 bottom-6 w-96 z-30 flex flex-col glass-panel rounded-2xl border border-cyan-500/25 overflow-hidden shadow-2xl">
+    <aside className="fixed inset-x-2 bottom-18 h-[44vh] md:h-auto md:top-20 md:bottom-6 md:right-4 md:left-auto md:w-96 z-30 flex flex-col glass-panel rounded-2xl border border-cyan-500/25 overflow-hidden shadow-2xl backdrop-blur-xl">
       {/* Drawer Header */}
       <div className="px-4 py-3 border-b border-cyan-500/20 flex items-center justify-between bg-slate-950/40">
         <div className="flex items-center gap-2">
