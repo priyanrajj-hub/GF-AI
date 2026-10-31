@@ -1,0 +1,21 @@
+{
+  "name": "ai-assistant-ada-monorepo",
+  "version": "1.0.0",
+  "description": "Ada AI Assistant - 3D Holographic AI Companion (Monorepo)",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,WEB,WORKER\" -c \"cyan,magenta,yellow\" \"npm run dev -w apps/server\" \"npm run dev -w apps/web\" \"npm run dev -w apps/worker\"",
+    "dev:minimal": "concurrently -n \"SERVER,WEB\" -c \"cyan,magenta\" \"npm run dev -w apps/server\" \"npm run dev -w apps/web\"",
+    "build": "npm run build -w packages/shared && npm run build -w apps/server && npm run build -w apps/worker && npm run build -w apps/web",
+    "start": "node apps/server/dist/index.js",
+    "test:evals": "npm run test:evals -w apps/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  }
+}

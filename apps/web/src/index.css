@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --holo-cyan: #00f3ff;
+    --holo-magenta: #ff007f;
+    --holo-gold: #ffb703;
+    --holo-emerald: #00ff88;
+    --holo-violet: #8a2be2;
+    --holo-bg: #07090e;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--holo-bg);
+    color: #e2e8f0;
+    font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Glassmorphism styling */
+.glass-panel {
+  background: rgba(10, 15, 28, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 243, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 16px rgba(0, 243, 255, 0.05);
+}
+
+.glass-panel-subtle {
+  background: rgba(14, 20, 36, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-active {
+  background: rgba(16, 24, 44, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 243, 255, 0.4);
+  box-shadow: 0 0 24px rgba(0, 243, 255, 0.2);
+}
+
+/* Holographic glowing borders & text */
+.text-holo-cyan {
+  color: #00f3ff;
+  text-shadow: 0 0 10px rgba(0, 243, 255, 0.6);
+}
+
+.text-holo-magenta {
+  color: #ff007f;
+  text-shadow: 0 0 10px rgba(255, 0, 127, 0.6);
+}
+
+.border-holo-cyan {
+  border-color: rgba(0, 243, 255, 0.4);
+}
+
+/* Sci-fi animations */
+@keyframes holoScanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1000%); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.05); }
+}
+
+@keyframes arcRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+.animate-arc-rotate {
+  animation: arcRotate 18s linear infinite;
+}
+
+.animate-arc-rotate-reverse {
+  animation: arcRotate 24s linear infinite reverse;
+}
+
+/* Custom modern scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(5, 8, 16, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 243, 255, 0.25);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 243, 255, 0.5);
+}
