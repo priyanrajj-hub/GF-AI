@@ -14,14 +14,14 @@ function CameraRig({ closeUp = false }: { closeUp?: boolean }) {
   useFrame((state, delta) => {
     const t = state.clock.elapsedTime
     // Subtle idle camera drift
-    const targetY = closeUp ? 0.58 : 0.28 + Math.sin(t * 0.4) * 0.015
-    const targetZ = closeUp ? 1.15 : 2.25
+    const targetY = closeUp ? 0.55 : 0.05 + Math.sin(t * 0.4) * 0.015
+    const targetZ = closeUp ? 1.25 : 3.10
 
     state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetY, delta * 2.5)
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, delta * 2.5)
 
     if (controlsRef.current) {
-      controlsRef.current.target.set(0, closeUp ? 0.55 : 0.20, 0)
+      controlsRef.current.target.set(0, closeUp ? 0.55 : -0.10, 0)
     }
   })
 
@@ -31,11 +31,11 @@ function CameraRig({ closeUp = false }: { closeUp?: boolean }) {
       enablePan={false}
       enableZoom={true}
       minDistance={0.8}
-      maxDistance={3.5}
-      minAzimuthAngle={-Math.PI / 7.2} // ~25 degrees limit
-      maxAzimuthAngle={Math.PI / 7.2}
-      minPolarAngle={Math.PI / 3.0}
-      maxPolarAngle={Math.PI / 1.75}
+      maxDistance={4.5}
+      minAzimuthAngle={-Math.PI / 6.0} // ~30 degrees limit
+      maxAzimuthAngle={Math.PI / 6.0}
+      minPolarAngle={Math.PI / 3.2}
+      maxPolarAngle={Math.PI / 1.72}
       dampingFactor={0.06}
     />
   )
@@ -60,7 +60,7 @@ export const HoloScene: React.FC = () => {
   return (
     <div className="w-full h-full absolute inset-0 z-0 bg-[#060814]">
       <Canvas
-        camera={{ position: [0, 0.28, 2.25], fov: 30 }}
+        camera={{ position: [0, 0.05, 3.10], fov: 30 }}
         dpr={settings.lowPerformanceMode ? 1 : [1, 2]}
         gl={{
           antialias: true,
