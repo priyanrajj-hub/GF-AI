@@ -62,6 +62,10 @@ export class ProviderRegistry {
     return this.llmProvider
   }
 
+  static getMockLLM(): LLMProvider {
+    return new MockLLMProvider()
+  }
+
   static getSTT(): STTProvider {
     if (!this.sttProvider) this.init()
     return this.sttProvider
