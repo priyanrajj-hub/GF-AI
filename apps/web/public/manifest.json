@@ -1,0 +1,16 @@
+{
+  "short_name": "Ada",
+  "name": "Ada AI: 3D Holographic Companion",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#060810",
+  "theme_color": "#00f3ff",
+  "display": "standalone",
+  "orientation": "portrait"
+}
