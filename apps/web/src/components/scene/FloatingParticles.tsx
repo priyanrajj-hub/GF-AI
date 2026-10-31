@@ -7,7 +7,7 @@ interface FloatingParticlesProps {
   count?: number
 }
 
-export const FloatingParticles: React.FC<FloatingParticlesProps> = ({ color = '#00f3ff', count = 250 }) => {
+export const FloatingParticles: React.FC<FloatingParticlesProps> = ({ color = '#00f3ff', count = 120 }) => {
   const pointsRef = useRef<THREE.Points>(null)
 
   const [positions, speeds] = useMemo(() => {
@@ -52,10 +52,10 @@ export const FloatingParticles: React.FC<FloatingParticlesProps> = ({ color = '#
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.035}
+        size={0.018}
         color={color}
         transparent
-        opacity={0.65}
+        opacity={0.45}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />

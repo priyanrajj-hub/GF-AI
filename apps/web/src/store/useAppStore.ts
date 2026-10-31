@@ -84,18 +84,19 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
   userId: 'default-user-1',
   userName: 'Operator',
   language: 'auto',
-  mode: 'jarvis',
+  mode: 'companion',
   sliders: {
-    humor: 65,
-    warmth: 80,
-    formality: 45,
-    directness: 75,
-    flirtiness: 30,
-    talkativeness: 50,
+    humor: 75,
+    warmth: 88,
+    formality: 35,
+    directness: 70,
+    flirtiness: 50, // healthy, charming, affectionate
+    talkativeness: 60,
   },
-  hologramColor: '#00f3ff',
-  solidRendering: false,
+  hologramColor: '#00f3ff', // Cyan Core primary
+  renderMode: 'holo-lite', // Default: Hologram-lite (textured + thin scanlines + fresnel rim)
   avatarModelUrl: '/models/ada.vrm',
+  closeUpView: false,
   handsFree: false,
   wakeWordEnabled: true,
   memoryConsent: true,
@@ -111,11 +112,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   systemState: 'idle',
   setSystemState: (state) => set({ systemState: state }),
 
-  activeMode: 'jarvis',
+  activeMode: 'companion',
   setActiveMode: (mode) => set({ activeMode: mode }),
-  currentEmotion: 'calm',
-  emotionIntensity: 0.7,
-  activeGesture: 'idle',
+  currentEmotion: 'happy',
+  emotionIntensity: 0.85,
+  activeGesture: 'wave',
   setEmotionAndGesture: (emotion, intensity = 0.7, gesture = 'idle') =>
     set({
       currentEmotion: emotion,
@@ -128,9 +129,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       id: 'welcome-1',
       role: 'assistant',
       content:
-        'Holographic projector online. All subsystems nominal.\n\nI am **Ada**, your 3D AI companion. Whether you need strategic code debugging, intellectual research, focus coaching, or simply a warm presence, I am right here.',
-      speech: 'Holographic projector online. All subsystems nominal. I am Ada, ready when you are.',
-      emotion: 'calm',
+        "Holographic systems online. It's so good to see you, Partner.\n\nI'm **Ada**—your companion, co-pilot, and sharpest ally. Whether we're tackling ambitious code, dissecting complex research, or you just need someone warm and witty to talk through your day with, I'm right here by your side. What's on your mind?",
+      speech: "Holographic systems online. It's so good to see you, Partner. I am Ada, ready whenever you are.",
+      emotion: 'happy',
       gesture: 'wave',
       timestamp: Date.now(),
     },

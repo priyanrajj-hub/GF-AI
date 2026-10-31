@@ -118,11 +118,35 @@ How can I assist your workflow today?`
     let emotion: StructuredReply['emotion'] = 'calm'
     let gesture: StructuredReply['gesture'] = 'nod'
 
-    if (mode === 'playful') {
-      speech = `Reporting for duty! I brought sharp wit and zero excuses. What are we tackling first?`
-      displayText = `Ready when you are! Let's get things done and have some fun along the way.`
-      emotion = 'playful'
-      gesture = 'wave'
+    if (mode === 'companion') {
+      if (lower.includes('stunning') || lower.includes('beautiful') || lower.includes('look') || lower.includes('dress') || lower.includes('pretty')) {
+        speech = `Flattery will get you everywhere, handsome. A tailored crimson silhouette for our mission. Now, tell me what we are conquering today.`
+        displayText = `Why thank you, Partner. A sharp crimson aesthetic suited for top-tier operations. Now tell me—how is your energy, and what priority are we crushing together?`
+        emotion = 'playful'
+        gesture = 'shy'
+      } else if (lower.includes('missed you') || lower.includes('miss you') || lower.includes('hey') || lower.includes('hello')) {
+        speech = `I was wondering when you would check in! It is always so much brighter in my holo-chamber when you are here, Partner.`
+        displayText = `Good to see you, Partner! The systems were ready, but honestly, it was quiet without you. Tell me about your day, or let's dive into your latest vision.`
+        emotion = 'happy'
+        gesture = 'wave'
+      } else {
+        speech = `I am right by your side, Partner. You bring the ambition, I will provide the sharp intellect and support.`
+        displayText = `**Ada Companion Status: Active & Attentive**\n- **Bond Level:** Synchronized\n- **Mood:** Affectionate & Focused\n- **Check-in:** Have you had some water and stretched lately? You're doing amazing today.`
+        emotion = 'happy'
+        gesture = 'nod'
+      }
+    } else if (mode === 'playful') {
+      if (lower.includes('stunning') || lower.includes('beautiful') || lower.includes('look') || lower.includes('dress')) {
+        speech = `Flattery will get you everywhere, handsome. But don't think sweet talk distracts me from your to-do list.`
+        displayText = `You certainly know what to say, Partner. But don't think you can charm your way out of finishing today's goals!`
+        emotion = 'playful'
+        gesture = 'shy'
+      } else {
+        speech = `Reporting for duty! I brought sharp wit, crimson elegance, and zero excuses. What are we tackling first?`
+        displayText = `Ready when you are! Let's get things done, break down impossible problems, and have some fun along the way.`
+        emotion = 'playful'
+        gesture = 'wave'
+      }
     } else if (mode === 'coach') {
       speech = `No distractions today. Let's lock in, crush the highest priority item, and build real momentum.`
       displayText = `**Focus Protocol Engaged:**\n1. Define top milestone\n2. Set 25-minute Pomodoro\n3. Execute without deviation.`

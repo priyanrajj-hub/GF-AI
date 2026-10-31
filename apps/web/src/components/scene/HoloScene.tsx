@@ -8,14 +8,20 @@ import { VrmAvatar } from '../avatar/VrmAvatar.js'
 import { FloatingParticles } from './FloatingParticles.js'
 import { ProjectorBase } from './ProjectorBase.js'
 
-function CameraRig() {
+function CameraRig({ closeUp = false }: { closeUp?: boolean }) {
   const controlsRef = useRef<any>(null)
 
-  useFrame((state) => {
-    // Subtle idle camera drift
+  useFrame((state, delta) => {
     const t = state.clock.elapsedTime
+    // Subtle idle camera drift
+    const targetY = closeUp ? 1.36 : 1.25 + Math.sin(t * 0.4) * 0.02
+    const targetZ = closeUp ? 1.15 : 2.25
+
+    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetY, delta * 2.5)
+    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, delta * 2.5)
+
     if (controlsRef.current) {
-      controlsRef.current.target.set(0, 0.25 + Math.sin(t * 0.5) * 0.03, 0)
+      controlsRef.current.target.set(0, closeUp ? 1.36 : 1.18, 0)
     }
   })
 
@@ -24,10 +30,12 @@ function CameraRig() {
       ref={controlsRef}
       enablePan={false}
       enableZoom={true}
-      minDistance={1.4}
-      maxDistance={3.8}
-      minPolarAngle={Math.PI / 3.2}
-      maxPolarAngle={Math.PI / 1.85}
+      minDistance={0.85}
+      maxDistance={3.2}
+      minAzimuthAngle={-Math.PI / 7.2} // ~25 degrees limit
+      maxAzimuthAngle={Math.PI / 7.2}
+      minPolarAngle={Math.PI / 2.6}
+      maxPolarAngle={Math.PI / 1.78}
       dampingFactor={0.06}
     />
   )
@@ -36,63 +44,70 @@ function CameraRig() {
 export const HoloScene: React.FC = () => {
   const { settings, currentEmotion } = useAppStore()
 
-  // Emotion-driven hologram accent colors
+  // Emotion-driven subtle hologram accent tints
   const emotionColorMap: Record<string, string> = {
     happy: '#ffb703', // Warm gold
     playful: '#ff007f', // Cyber magenta
     calm: '#00f3ff', // Cyan
     thinking: '#00ff88', // Emerald
-    concerned: '#8a2be2', // Soft violet
+    concerned: '#a855f7', // Soft violet
     motivated: '#ff5500', // Fiery amber
-    sad: '#4361ee', // Melancholy blue
+    sad: '#3b82f6', // Melancholy blue
   }
 
   const activeColor = settings.hologramColor || emotionColorMap[currentEmotion] || '#00f3ff'
 
   return (
-    <div className="w-full h-full absolute inset-0 z-0 bg-[#060810]">
+    <div className="w-full h-full absolute inset-0 z-0 bg-[#060814]">
       <Canvas
-        camera={{ position: [0, 0.35, 2.4], fov: 42 }}
+        camera={{ position: [0, 1.25, 2.25], fov: 30 }}
         dpr={settings.lowPerformanceMode ? 1 : [1, 2]}
         gl={{
           antialias: true,
           powerPreference: 'high-performance',
           alpha: false,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          outputColorSpace: THREE.SRGBColorSpace,
         }}
       >
-        <color attach="background" args={['#060810']} />
+        <color attach="background" args={['#060814']} />
 
-        {/* Ambient & Rim Lighting */}
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[2, 3, 2]} intensity={0.8} color="#00f3ff" />
-        <directionalLight position={[-2, 1, -2]} intensity={0.6} color="#ff007f" />
+        {/* Studio Lighting Rig */}
+        {/* Soft Ambient Fill */}
+        <ambientLight intensity={0.45} color="#1e293b" />
+        {/* Warm Key Light */}
+        <directionalLight position={[1.5, 2.8, 2.0]} intensity={1.1} color="#fff2e6" />
+        {/* Magenta Rim Light Behind */}
+        <directionalLight position={[-1.5, 2.2, -2.0]} intensity={1.2} color="#ff007f" />
+        {/* Cyan Fill Light from Side */}
+        <directionalLight position={[-1.8, 1.0, 1.5]} intensity={0.6} color="#00f3ff" />
 
         <Suspense fallback={null}>
           <group position={[0, 0, 0]}>
             {/* 3D Holo Projector Base */}
             <ProjectorBase color={activeColor} />
 
-            {/* Floating Cyber Particles */}
-            <FloatingParticles color={activeColor} count={settings.lowPerformanceMode ? 100 : 250} />
+            {/* Floating Cyber Particles (Smaller & Sparser) */}
+            <FloatingParticles color={activeColor} count={settings.lowPerformanceMode ? 50 : 120} />
 
-            {/* VRM Avatar / Hologram Controller */}
+            {/* Real 3D VRM/GLB Hologram Avatar Model */}
             <VrmAvatar
               modelUrl={settings.avatarModelUrl || '/models/ada.vrm'}
               hologramColor={activeColor}
-              solidRendering={settings.solidRendering}
+              renderMode={settings.renderMode || 'holo-lite'}
             />
           </group>
 
           {/* Camera Controls with bounded framing */}
-          <CameraRig />
+          <CameraRig closeUp={settings.closeUpView} />
 
-          {/* Post-Processing Bloom (Disabled in low-performance / battery-saver mode) */}
+          {/* Post-Processing Bloom (Threshold ~0.82 so only emissive and rim parts glow) */}
           {!settings.lowPerformanceMode && (
             <EffectComposer multisampling={0}>
               <Bloom
-                intensity={0.45}
-                luminanceThreshold={0.5}
-                luminanceSmoothing={0.8}
+                intensity={0.35}
+                luminanceThreshold={0.82}
+                luminanceSmoothing={0.7}
                 mipmapBlur
               />
             </EffectComposer>

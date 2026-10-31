@@ -10,6 +10,8 @@ import {
   Sparkles,
   Bot,
 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { ChatMessage, StructuredReply } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
 import { VoiceEngine } from '../voice/VoiceEngine.js'
@@ -213,17 +215,11 @@ export const ChatDrawer: React.FC = () => {
                   : 'bg-slate-900/70 border border-cyan-500/20 text-slate-200 rounded-bl-none shadow-lg'
               }`}
             >
-              {/* Spoken subtitle for Ada replies */}
-              {msg.role === 'assistant' && msg.speech && (
-                <div className="flex items-center gap-1.5 text-[10px] text-pink-300/80 mb-1 font-mono italic">
-                  <Volume2 className="w-3 h-3 text-pink-400 flex-shrink-0" />
-                  <span>"{msg.speech}"</span>
-                </div>
-              )}
-
               {/* Display text / Markdown */}
-              <div className="whitespace-pre-wrap font-sans">
-                {msg.content}
+              <div className="prose prose-invert prose-xs max-w-none font-sans text-xs leading-relaxed break-words space-y-1.5 [&_p]:mb-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_code]:bg-slate-950 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-cyan-300 [&_pre]:bg-slate-950 [&_pre]:p-2 [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-cyan-500/20 [&_strong]:text-cyan-200">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.content}
+                </ReactMarkdown>
               </div>
 
               {/* Emotion / Gesture Tag */}

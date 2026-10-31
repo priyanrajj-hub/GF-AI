@@ -10,6 +10,10 @@ import {
   Trash2,
   Calendar,
   Sparkles,
+  CloudSun,
+  ChevronLeft,
+  ChevronRight,
+  Zap,
 } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore.js'
 
@@ -27,6 +31,7 @@ export const MissionBriefing: React.FC = () => {
   } = useAppStore()
 
   const [newTodoText, setNewTodoText] = useState('')
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   if (fullScreenHoloMode) return null
 
@@ -52,31 +57,67 @@ export const MissionBriefing: React.FC = () => {
   }
 
   const toggleTodo = (id: string) => {
-    setNotes(
-      notes.map((n) => (n.id === id ? { ...n, completed: !n.completed } : n))
-    )
+    setNotes(notes.map((n) => (n.id === id ? { ...n, completed: !n.completed } : n)))
   }
 
   const deleteTodo = (id: string) => {
     setNotes(notes.filter((n) => n.id !== id))
   }
 
+  if (isCollapsed) {
+    return (
+      <div className="fixed left-4 top-20 z-30 pointer-events-auto">
+        <button
+          onClick={() => setIsCollapsed(false)}
+          className="p-2.5 rounded-2xl glass-panel border border-cyan-500/30 text-cyan-300 hover:text-white shadow-xl flex items-center gap-1.5 font-mono text-xs cursor-pointer"
+          title="Expand Mission Briefing Panel"
+        >
+          <ChevronRight className="w-4 h-4 text-cyan-400" />
+          <span className="hidden sm:inline">PANEL</span>
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <aside className="fixed left-4 top-20 bottom-6 w-80 z-30 pointer-events-none flex flex-col gap-3">
-      {/* 1. Focus / Pomodoro Module */}
-      <div className="glass-panel p-4 rounded-2xl pointer-events-auto border border-cyan-500/25">
-        <div className="flex items-center justify-between mb-2">
+    <aside className="fixed left-4 top-16 bottom-20 w-80 z-30 pointer-events-none flex flex-col gap-2.5 max-h-[calc(100dvh-150px)]">
+      {/* 1. Today's Briefing & Weather Card */}
+      <div className="glass-panel p-3.5 rounded-2xl pointer-events-auto border border-cyan-500/25 space-y-2">
+        <div className="flex items-center justify-between text-xs font-mono">
+          <div className="flex items-center gap-1.5 text-cyan-300 font-semibold">
+            <CloudSun className="w-3.5 h-3.5 text-cyan-400" />
+            <span>DAILY BRIEFING</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-cyan-400/80">24°C • OPTIMAL</span>
+            <button
+              onClick={() => setIsCollapsed(true)}
+              className="p-1 rounded text-slate-400 hover:text-white cursor-pointer"
+              title="Collapse Panel"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+        <div className="text-[11px] text-slate-300 leading-snug">
+          "Focus on high-leverage milestones today. Maintain clean posture and hydration."
+        </div>
+      </div>
+
+      {/* 2. Focus / Pomodoro Module */}
+      <div className="glass-panel p-3.5 rounded-2xl pointer-events-auto border border-cyan-500/25">
+        <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs tracking-wider uppercase">
             <Clock className="w-3.5 h-3.5" />
             <span>Focus Protocol</span>
           </div>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30">
-            25 MIN CYCLES
+          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30">
+            25 MIN
           </span>
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="text-3xl font-mono font-bold tracking-wider text-cyan-100 text-shadow">
+          <div className="text-2xl font-mono font-bold tracking-wider text-cyan-100">
             {timeFormatted}
           </div>
 
@@ -84,66 +125,66 @@ export const MissionBriefing: React.FC = () => {
             {isPomodoroActive ? (
               <button
                 onClick={pausePomodoro}
-                className="p-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/40 hover:bg-amber-500/30 transition-colors"
+                className="p-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/40 hover:bg-amber-500/30 transition-colors cursor-pointer"
                 title="Pause"
               >
-                <Pause className="w-4 h-4" />
+                <Pause className="w-3.5 h-3.5" />
               </button>
             ) : (
               <button
                 onClick={() => startPomodoro()}
-                className="p-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 hover:bg-cyan-500/30 transition-colors shadow-[0_0_12px_rgba(0,243,255,0.2)]"
+                className="p-1.5 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 hover:bg-cyan-500/30 transition-colors shadow-[0_0_12px_rgba(0,243,255,0.2)] cursor-pointer"
                 title="Start Focus"
               >
-                <Play className="w-4 h-4 fill-cyan-300" />
+                <Play className="w-3.5 h-3.5 fill-cyan-300" />
               </button>
             )}
 
             <button
               onClick={resetPomodoro}
-              className="p-2 rounded-xl glass-panel-subtle text-slate-400 hover:text-white transition-colors"
+              className="p-1.5 rounded-xl glass-panel-subtle text-slate-400 hover:text-white transition-colors cursor-pointer"
               title="Reset Timer"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* 2. Tasks & Action List */}
-      <div className="glass-panel p-4 rounded-2xl pointer-events-auto border border-cyan-500/25 flex-1 flex flex-col min-h-0">
+      {/* 3. Priority Targets & Action Items */}
+      <div className="glass-panel p-3.5 rounded-2xl pointer-events-auto border border-cyan-500/25 flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs tracking-wider uppercase">
             <Calendar className="w-3.5 h-3.5" />
             <span>Priority Targets</span>
           </div>
-          <span className="text-[10px] font-mono text-slate-400">
+          <span className="text-[9px] font-mono text-slate-400">
             {notes.filter((n) => !n.completed).length} ACTIVE
           </span>
         </div>
 
         {/* New Item Input */}
-        <form onSubmit={handleAddTodo} className="flex items-center gap-1.5 mb-3">
+        <form onSubmit={handleAddTodo} className="flex items-center gap-1.5 mb-2.5">
           <input
             type="text"
             value={newTodoText}
             onChange={(e) => setNewTodoText(e.target.value)}
-            placeholder="Add priority task or note..."
-            className="flex-1 bg-slate-900/60 border border-cyan-500/20 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
+            placeholder="Add priority task..."
+            className="flex-1 bg-slate-900/60 border border-cyan-500/20 rounded-xl px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors font-mono"
           />
           <button
             type="submit"
-            className="p-1.5 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition-colors"
+            className="p-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
           </button>
         </form>
 
         {/* Task List Scroll */}
         <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
           {notes.length === 0 ? (
-            <div className="text-center py-6 text-xs text-slate-500 font-mono">
-              No pending targets. Ask Ada to plan your day.
+            <div className="text-center py-4 text-xs text-slate-500 font-mono">
+              All milestones clear.
             </div>
           ) : (
             notes.map((note) => (
@@ -160,18 +201,18 @@ export const MissionBriefing: React.FC = () => {
                   className="flex items-center gap-2 text-left text-xs flex-1 truncate cursor-pointer"
                 >
                   {note.completed ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                   ) : (
-                    <Circle className="w-4 h-4 text-cyan-400/60 group-hover:text-cyan-300 flex-shrink-0" />
+                    <Circle className="w-3.5 h-3.5 text-cyan-400/60 group-hover:text-cyan-300 flex-shrink-0" />
                   )}
                   <span className="truncate">{note.title}</span>
                 </button>
 
                 <button
                   onClick={() => deleteTodo(note.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 transition-opacity cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3 h-3" />
                 </button>
               </div>
             ))

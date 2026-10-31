@@ -1,6 +1,6 @@
-import React from 'react'
-import { X, Sliders, Palette, Cpu, Shield, Globe, Zap, Box } from 'lucide-react'
-import type { PersonalityMode } from '@ada/shared'
+import React, { useRef } from 'react'
+import { X, Sliders, Palette, Cpu, Shield, Globe, Zap, Box, Sparkles, Upload, Eye } from 'lucide-react'
+import type { AvatarRenderMode } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
 
 export const SettingsModal: React.FC = () => {
@@ -9,11 +9,21 @@ export const SettingsModal: React.FC = () => {
     setShowSettingsModal,
     settings,
     updateSettings,
-    activeMode,
-    setActiveMode,
   } = useAppStore()
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   if (!showSettingsModal) return null
+
+  const handleModelFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      updateSettings({
+        avatarModelUrl: url,
+      })
+    }
+  }
 
   const handleSliderChange = (key: keyof typeof settings.sliders, val: number) => {
     updateSettings({
@@ -24,26 +34,33 @@ export const SettingsModal: React.FC = () => {
     })
   }
 
-  const colors = [
+  // Task C: Theme Picker (Cyan, Magenta, Gold, Emerald)
+  const themeColors = [
     { label: 'Cyan Core', hex: '#00f3ff' },
     { label: 'Cyber Magenta', hex: '#ff007f' },
-    { label: 'Emerald Matrix', hex: '#00ff88' },
     { label: 'Amber Gold', hex: '#ffb703' },
-    { label: 'Soft Violet', hex: '#8a2be2' },
+    { label: 'Emerald Matrix', hex: '#00ff88' },
+    { label: 'Crimson Accent', hex: '#d90429' },
+  ]
+
+  const renderModes: Array<{ id: AvatarRenderMode; title: string; desc: string }> = [
+    { id: 'solid', title: 'Solid Studio', desc: 'Full PBR textures with realistic stage lighting' },
+    { id: 'holo-lite', title: 'Hologram-Lite (Default)', desc: 'Crisp textures with subtle scanlines & rim radiance' },
+    { id: 'holo-full', title: 'Full Hologram', desc: 'Translucent cyber laser projection with neon aura' },
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
-      <div className="w-full max-w-xl max-h-[90vh] glass-panel rounded-3xl border border-cyan-500/30 overflow-hidden flex flex-col shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div className="w-full max-w-xl max-h-[90vh] glass-panel rounded-3xl border border-cyan-500/30 overflow-hidden flex flex-col shadow-2xl bg-slate-950/90">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-cyan-500/20 flex items-center justify-between bg-slate-950/60">
+        <div className="px-6 py-4 border-b border-cyan-500/20 flex items-center justify-between bg-slate-950/70">
           <div className="flex items-center gap-2.5 text-cyan-400 font-mono text-sm tracking-wider uppercase font-semibold">
             <Sliders className="w-4 h-4" />
-            <span>Ada Hologram Configuration & Persona Sliders</span>
+            <span>Ada Hologram Configuration & Persona</span>
           </div>
           <button
             onClick={() => setShowSettingsModal(false)}
-            className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors"
+            className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -51,7 +68,125 @@ export const SettingsModal: React.FC = () => {
 
         {/* Modal Scroll Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* 1. Personality Sliders */}
+          {/* 1. 3D Avatar Model & Render Modes */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-mono uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+              <Box className="w-3.5 h-3.5 text-cyan-400" />
+              <span>3D Avatar & Hologram Shading</span>
+            </h4>
+
+            {/* Render Mode Selector (Task C: Solid, Hologram-lite, Full hologram) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {renderModes.map((rm) => (
+                <button
+                  key={rm.id}
+                  type="button"
+                  onClick={() => updateSettings({ renderMode: rm.id })}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    (settings.renderMode || 'holo-lite') === rm.id
+                      ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 shadow-[0_0_12px_rgba(0,243,255,0.25)]'
+                      : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="text-xs font-mono font-semibold">{rm.title}</div>
+                  <div className="text-[10px] text-slate-400 mt-1 leading-snug">{rm.desc}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* Model Presets & File Upload */}
+            <div className="space-y-2 pt-1">
+              <div className="text-xs font-mono text-slate-300 flex items-center justify-between">
+                <span>ACTIVE 3D AVATAR MODEL</span>
+                <span className="text-cyan-400 font-mono">VRM 0.x / 1.0 & GLB</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ avatarModelUrl: '/models/ada.vrm' })}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    (settings.avatarModelUrl || '/models/ada.vrm') === '/models/ada.vrm'
+                      ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200'
+                      : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="text-xs font-mono font-semibold flex items-center gap-1.5">
+                    <Box className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Ada VRM Avatar</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Animated with Lip-Sync, Blinking & Gestures
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ avatarModelUrl: '/models/michelle.glb' })}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    settings.avatarModelUrl === '/models/michelle.glb'
+                      ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200'
+                      : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="text-xs font-mono font-semibold flex items-center gap-1.5">
+                    <Box className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Agent Michelle 3D</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Mixamo Rigged Humanoid Operative (.glb)
+                  </div>
+                </button>
+              </div>
+
+              {/* Upload Custom Model */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".glb,.gltf,.vrm"
+                onChange={handleModelFileUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full py-2 px-3 rounded-xl border border-dashed border-cyan-500/40 hover:border-cyan-400 bg-slate-900/40 text-xs font-mono text-cyan-300 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Upload Custom 3D Model (.glb / .vrm)</span>
+              </button>
+            </div>
+
+            {/* Theme / Hologram Accent Colors */}
+            <div className="space-y-2 pt-1">
+              <div className="text-xs font-mono text-slate-300 flex items-center gap-2">
+                <Palette className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Theme & Hologram Laser Color</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {themeColors.map((c) => (
+                  <button
+                    key={c.hex}
+                    type="button"
+                    onClick={() => updateSettings({ hologramColor: c.hex })}
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs font-mono transition-all cursor-pointer ${
+                      settings.hologramColor === c.hex
+                        ? 'border-white text-white shadow-[0_0_12px_rgba(255,255,255,0.3)]'
+                        : 'border-slate-800 text-slate-400 hover:border-slate-600'
+                    }`}
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full shadow-inner"
+                      style={{ backgroundColor: c.hex }}
+                    />
+                    <span>{c.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Personality Calibration Sliders */}
           <div className="space-y-4">
             <h4 className="text-xs font-mono uppercase tracking-wider text-cyan-300 flex items-center gap-2">
               <Cpu className="w-3.5 h-3.5" />
@@ -122,99 +257,20 @@ export const SettingsModal: React.FC = () => {
                   className="w-full accent-cyan-400 cursor-pointer"
                 />
               </div>
-
-              {/* Flirtiness (Mild default, capped at mild) */}
-              <div className="glass-panel-subtle p-3 rounded-xl">
-                <div className="flex justify-between text-xs font-mono mb-1">
-                  <span className="text-slate-300">Affection (Wholesome)</span>
-                  <span className="text-pink-400">{settings.sliders.flirtiness}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="70"
-                  value={settings.sliders.flirtiness}
-                  onChange={(e) => handleSliderChange('flirtiness', parseInt(e.target.value))}
-                  className="w-full accent-pink-400 cursor-pointer"
-                />
-              </div>
-
-              {/* Talkativeness */}
-              <div className="glass-panel-subtle p-3 rounded-xl">
-                <div className="flex justify-between text-xs font-mono mb-1">
-                  <span className="text-slate-300">Talkativeness</span>
-                  <span className="text-cyan-400">{settings.sliders.talkativeness}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={settings.sliders.talkativeness}
-                  onChange={(e) => handleSliderChange('talkativeness', parseInt(e.target.value))}
-                  className="w-full accent-cyan-400 cursor-pointer"
-                />
-              </div>
             </div>
           </div>
 
-          {/* 2. Hologram Shader & Rendering Style */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-mono uppercase tracking-wider text-cyan-300 flex items-center gap-2">
-              <Palette className="w-3.5 h-3.5" />
-              <span>Holographic Aesthetics & Shading</span>
-            </h4>
-
-            {/* Color Swatches */}
-            <div className="flex flex-wrap items-center gap-3">
-              {colors.map((c) => (
-                <button
-                  key={c.hex}
-                  onClick={() => updateSettings({ hologramColor: c.hex })}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-mono transition-all ${
-                    settings.hologramColor === c.hex
-                      ? 'border-white text-white shadow-[0_0_15px_rgba(255,255,255,0.4)]'
-                      : 'border-slate-700 text-slate-400 hover:border-slate-500'
-                  }`}
-                >
-                  <span
-                    className="w-3.5 h-3.5 rounded-full shadow-inner"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                  <span>{c.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Solid vs Hologram Toggle */}
-            <div className="flex items-center justify-between p-3 rounded-xl glass-panel-subtle">
-              <div className="flex items-center gap-2.5">
-                <Box className="w-4 h-4 text-cyan-400" />
-                <div>
-                  <div className="text-xs font-medium text-slate-200">Solid 3D Rendering</div>
-                  <div className="text-[10px] text-slate-400">Toggle between Cyber Hologram and Solid Avatar</div>
-                </div>
-              </div>
-              <input
-                type="checkbox"
-                checked={settings.solidRendering}
-                onChange={(e) => updateSettings({ solidRendering: e.target.checked })}
-                className="w-4 h-4 accent-cyan-400 cursor-pointer"
-              />
-            </div>
-          </div>
-
-          {/* 3. Performance & Language */}
+          {/* 3. System & Language */}
           <div className="space-y-4">
             <h4 className="text-xs font-mono uppercase tracking-wider text-cyan-300 flex items-center gap-2">
               <Globe className="w-3.5 h-3.5" />
-              <span>System & Performance</span>
+              <span>Language & Performance</span>
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Language */}
               <div className="glass-panel-subtle p-3 rounded-xl">
                 <label className="block text-xs font-mono text-slate-300 mb-1.5">
-                  Spoken & Chat Language
+                  Language Preference
                 </label>
                 <select
                   value={settings.language}
@@ -222,13 +278,12 @@ export const SettingsModal: React.FC = () => {
                   className="w-full bg-slate-900 border border-cyan-500/30 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
                 >
                   <option value="auto">Auto-Detect</option>
-                  <option value="en">English (US/UK)</option>
+                  <option value="en">English (US/UK/IN)</option>
                   <option value="hi">Hindi (हिंदी)</option>
                   <option value="hinglish">Hinglish (Natural)</option>
                 </select>
               </div>
 
-              {/* Low Performance Mode */}
               <div className="glass-panel-subtle p-3 rounded-xl flex items-center justify-between">
                 <div>
                   <div className="text-xs font-mono text-slate-300">Low Performance Mode</div>
@@ -243,30 +298,13 @@ export const SettingsModal: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* 4. Model Path */}
-          <div className="glass-panel-subtle p-3 rounded-xl space-y-1.5">
-            <label className="block text-xs font-mono text-slate-300">
-              Avatar VRM Model Path
-            </label>
-            <input
-              type="text"
-              value={settings.avatarModelUrl}
-              onChange={(e) => updateSettings({ avatarModelUrl: e.target.value })}
-              placeholder="/models/ada.vrm"
-              className="w-full bg-slate-900 border border-cyan-500/20 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none font-mono"
-            />
-            <div className="text-[10px] text-slate-400">
-              Drop any VRoid or CC-licensed `.vrm` into <code>public/models/</code> and reference it here.
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-cyan-500/20 bg-slate-950/60 flex justify-end">
+        <div className="px-6 py-3 border-t border-cyan-500/20 bg-slate-950/70 flex justify-end">
           <button
             onClick={() => setShowSettingsModal(false)}
-            className="px-5 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 hover:bg-cyan-500/30 font-mono text-xs font-semibold tracking-wider transition-all"
+            className="px-5 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 hover:bg-cyan-500/30 font-mono text-xs font-semibold tracking-wider transition-all cursor-pointer"
           >
             CONFIRM SETTINGS
           </button>
