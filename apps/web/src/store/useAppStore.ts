@@ -11,6 +11,7 @@ import type {
   StructuredReply,
   UserSettings,
 } from '@ada/shared'
+import { getTimeAwareGreeting } from '@ada/shared'
 
 export type AppSystemState = 'idle' | 'listening' | 'thinking' | 'speaking'
 
@@ -40,6 +41,8 @@ interface AppState {
   // UI Panels
   showChatDrawer: boolean
   toggleChatDrawer: () => void
+  showStageDrawer: boolean
+  setShowStageDrawer: (show: boolean) => void
   showSettingsModal: boolean
   setShowSettingsModal: (show: boolean) => void
   showMemoryModal: boolean
@@ -48,6 +51,25 @@ interface AppState {
   setShowMoodModal: (show: boolean) => void
   fullScreenHoloMode: boolean
   toggleFullScreenHolo: () => void
+
+  // Action, Roaming, & Cuteness (Rounds 4 & 5)
+  activeAction: string
+  setActiveAction: (action: string) => void
+  cutenessLevel: number
+  setCutenessLevel: (level: number) => void
+  skinId: string
+  setSkinId: (id: string) => void
+  roamConfig: {
+    enabled: boolean
+    range: 'home' | 'half' | 'full'
+    energy: 'calm' | 'balanced' | 'playful'
+    followCursor: boolean
+  }
+  setRoamConfig: (partial: Partial<AppState['roamConfig']>) => void
+  activeSong: any
+  setActiveSong: (song: any) => void
+  activeFX: string[]
+  setActiveFX: (fx: string[]) => void
 
   // Audio & Voice
   isHandsFree: boolean
@@ -94,7 +116,7 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
     talkativeness: 60,
   },
   hologramColor: '#00f3ff', // Cyan Core primary
-  renderMode: 'holo-lite', // Default: Hologram-lite (textured + thin scanlines + fresnel rim)
+  renderMode: 'holo-lite', // Default: Hologram-lite
   avatarModelUrl: '/models/ada.vrm',
   closeUpView: false,
   handsFree: false,
@@ -106,6 +128,10 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
   dailyProactiveCap: 3,
   lowPerformanceMode: false,
   soundVolume: 0.85,
+  cutenessLevel: 60,
+  skinId: 'ada-red',
+  roamEnabled: true,
+  liveliness: 70,
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -116,7 +142,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setActiveMode: (mode) => set({ activeMode: mode }),
   currentEmotion: 'happy',
   emotionIntensity: 0.85,
-  activeGesture: 'wave',
+  activeGesture: 'idle',
   setEmotionAndGesture: (emotion, intensity = 0.7, gesture = 'idle') =>
     set({
       currentEmotion: emotion,
@@ -124,13 +150,33 @@ export const useAppStore = create<AppState>((set, get) => ({
       activeGesture: gesture,
     }),
 
+  activeAction: 'idle',
+  setActiveAction: (action) => set({ activeAction: action }),
+  cutenessLevel: 60,
+  setCutenessLevel: (cutenessLevel) => set({ cutenessLevel }),
+  skinId: 'ada-red',
+  setSkinId: (skinId) => set({ skinId }),
+  roamConfig: {
+    enabled: true,
+    range: 'half',
+    energy: 'balanced',
+    followCursor: false,
+  },
+  setRoamConfig: (partial) =>
+    set((s) => ({ roamConfig: { ...s.roamConfig, ...partial } })),
+  showStageDrawer: false,
+  setShowStageDrawer: (showStageDrawer) => set({ showStageDrawer }),
+  activeSong: null,
+  setActiveSong: (activeSong) => set({ activeSong }),
+  activeFX: [],
+  setActiveFX: (activeFX) => set({ activeFX }),
+
   messages: [
     {
       id: 'welcome-1',
       role: 'assistant',
-      content:
-        "Holographic systems online. It's so good to see you, Partner.\n\nI'm **Ada**—your companion, co-pilot, and sharpest ally. Whether we're tackling ambitious code, dissecting complex research, or you just need someone warm and witty to talk through your day with, I'm right here by your side. What's on your mind?",
-      speech: "Holographic systems online. It's so good to see you, Partner. I am Ada, ready whenever you are.",
+      content: getTimeAwareGreeting(DEFAULT_USER_SETTINGS.userName).content,
+      speech: getTimeAwareGreeting(DEFAULT_USER_SETTINGS.userName).speech,
       emotion: 'happy',
       gesture: 'wave',
       timestamp: Date.now(),
