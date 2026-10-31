@@ -26,6 +26,26 @@ export const ProjectorBase: React.FC<ProjectorBaseProps> = ({ color = '#00f3ff' 
 
   const baseColor = new THREE.Color(color)
 
+  const beamTexture = React.useMemo(() => {
+    if (typeof document === 'undefined') return null
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 256
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      const gradient = ctx.createLinearGradient(0, 256, 0, 0)
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.35)')
+      gradient.addColorStop(0.35, 'rgba(255, 255, 255, 0.15)')
+      gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.04)')
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)')
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, 64, 256)
+    }
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.needsUpdate = true
+    return tex
+  }, [])
+
   return (
     <group position={[0, -1.0, 0]}>
       {/* 1. Heavy Metallic Base Cylinder */}
@@ -62,13 +82,14 @@ export const ProjectorBase: React.FC<ProjectorBaseProps> = ({ color = '#00f3ff' 
         <meshBasicMaterial color={baseColor} toneMapped={false} />
       </mesh>
 
-      {/* 6. Volumetric Light Cone Rising Upward (Waist-height, never covers face) */}
-      <mesh ref={beamRef} position={[0, 0.65, 0]}>
-        <cylinderGeometry args={[0.85, 0.35, 1.3, 32, 1, true]} />
+      {/* 6. Volumetric Light Cone Rising Upward with Smooth Gradient Dissolve (Waist-height, never covers chest or face) */}
+      <mesh ref={beamRef} position={[0, 0.40, 0]}>
+        <cylinderGeometry args={[0.65, 0.32, 0.72, 32, 1, true]} />
         <meshBasicMaterial
           color={baseColor}
+          alphaMap={beamTexture || undefined}
           transparent
-          opacity={0.08}
+          opacity={0.14}
           side={THREE.DoubleSide}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
