@@ -3,13 +3,20 @@ import fs from 'fs';
 import path from 'path';
 
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const OUTPUT_DIR = 'C:\\Users\\PRIYANRAJ J\\.gemini\\antigravity\\brain\\9dddffaa-28a4-45f4-9190-18cc1e11e741\\scratch';
+const ARTIFACT_DIR = 'C:\\Users\\PRIYANRAJ J\\.gemini\\antigravity\\brain\\9dddffaa-28a4-45f4-9190-18cc1e11e741';
+const SCRATCH_DIR = path.join(ARTIFACT_DIR, 'scratch');
 
 const VIEWPORTS = [
   { name: 'desktop_1920x1080', width: 1920, height: 1080 },
   { name: 'laptop_1366x768', width: 1366, height: 768 },
   { name: 'mobile_390x844', width: 390, height: 844 },
 ];
+
+function saveScreenshot(filename, buffer) {
+  fs.writeFileSync(path.join(ARTIFACT_DIR, filename), buffer);
+  fs.writeFileSync(path.join(SCRATCH_DIR, filename), buffer);
+  console.log(`📸 Saved screenshot to: ${filename}`);
+}
 
 async function run() {
   console.log('🚀 Starting Playwright verification with Chrome...');
@@ -37,7 +44,7 @@ async function run() {
 
     try {
       await page.goto('http://localhost:5173', { waitUntil: 'networkidle', timeout: 15000 });
-      // Wait for Three.js canvas and VRM model download and parse
+      // Wait for Three.js canvas, VRM model download and skin override application
       await page.waitForTimeout(6000);
 
       // Check canvas
@@ -60,9 +67,8 @@ async function run() {
         return rect.bottom <= vpHeight + 2;
       }, vp.height);
 
-      const screenshotPath = path.join(OUTPUT_DIR, `${vp.name}.png`);
-      await page.screenshot({ path: screenshotPath, fullPage: false });
-      console.log(`📸 Saved screenshot to: ${screenshotPath}`);
+      const buffer = await page.screenshot({ fullPage: false });
+      saveScreenshot(`${vp.name}.png`, buffer);
 
       results.push({
         viewport: vp.name,
@@ -70,8 +76,7 @@ async function run() {
         hasRawMarkdown,
         bottomBarInViewport,
         consoleErrorsCount: consoleErrors.length,
-        consoleErrors: consoleErrors.slice(0, 3),
-        screenshotPath
+        consoleErrors: consoleErrors.slice(0, 3)
       });
     } catch (err) {
       console.error(`Error on ${vp.name}:`, err.message);
@@ -84,15 +89,31 @@ async function run() {
     }
   }
 
+  // Test Stage Drawer Open at 1920x1080
+  console.log('\nTesting Stage Drawer at http://localhost:5173...');
+  {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    await page.goto('http://localhost:5173', { waitUntil: 'networkidle', timeout: 15000 });
+    await page.waitForTimeout(6000);
+    // Click stage button
+    const stageBtn = await page.$('button[title*="Performance Stage"]');
+    if (stageBtn) {
+      await stageBtn.click();
+      await page.waitForTimeout(1000);
+    }
+    const stageBuffer = await page.screenshot({ fullPage: false });
+    saveScreenshot('stage_drawer_1920x1080.png', stageBuffer);
+    await page.close();
+  }
+
   // Also test Debug HUD (?debug=1)
   console.log('\nTesting Debug HUD at http://localhost:5173/?debug=1...');
   {
     const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
     await page.goto('http://localhost:5173/?debug=1', { waitUntil: 'networkidle', timeout: 15000 });
     await page.waitForTimeout(6000);
-    const debugScreenshot = path.join(OUTPUT_DIR, 'debug_hud_1920x1080.png');
-    await page.screenshot({ path: debugScreenshot });
-    console.log(`📸 Saved debug HUD screenshot to: ${debugScreenshot}`);
+    const debugBuffer = await page.screenshot({ fullPage: false });
+    saveScreenshot('debug_hud_1920x1080.png', debugBuffer);
     await page.close();
   }
 
@@ -101,10 +122,9 @@ async function run() {
   {
     const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
     await page.goto('http://localhost:5173/animation-test', { waitUntil: 'networkidle', timeout: 15000 });
-    await page.waitForTimeout(2000);
-    const animScreenshot = path.join(OUTPUT_DIR, 'animation_test_bench.png');
-    await page.screenshot({ path: animScreenshot });
-    console.log(`📸 Saved animation test bench screenshot to: ${animScreenshot}`);
+    await page.waitForTimeout(3000);
+    const animBuffer = await page.screenshot({ fullPage: false });
+    saveScreenshot('animation_test_bench.png', animBuffer);
     await page.close();
   }
 

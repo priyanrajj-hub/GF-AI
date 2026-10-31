@@ -145,3 +145,61 @@ You must respond with valid JSON matching this exact structure:
   "actions": []
 }`
 }
+
+export function getTimeAwareGreeting(userName = 'Operator'): { content: string; speech: string } {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) {
+    return {
+      speech: `Good morning, ${userName}. Coffee poured, objectives mapped. Ready when you are.`,
+      content: `Good morning, **${userName}**.\n\nHolographic core calibrated and tactical feeds are active. Whether we're architecting systems, reviewing data, or pacing out your morning goals, I'm right here by your side. Where shall we begin?`,
+    }
+  } else if (hour >= 12 && hour < 18) {
+    return {
+      speech: `Good afternoon, ${userName}. Midday status check: let's tackle your top priority.`,
+      content: `Good afternoon, **${userName}**.\n\nEnergy levels holding steady? Let's zero in on your primary milestone for today. I'm ready to co-pilot whenever you are.`,
+    }
+  } else if (hour >= 18 && hour < 23) {
+    return {
+      speech: `Good evening, ${userName}. Winding down or launching a night raid on that codebase?`,
+      content: `Good evening, **${userName}**.\n\nThe city is settling down, which means prime focus hours. Are we wrapping up today's victories, or diving into an ambitious evening project? Either way, you've got my undivided attention.`,
+    }
+  } else {
+    return {
+      speech: `Still awake, ${userName}? The late-night quiet is unmatched, but don't forget to get some rest.`,
+      content: `Still up, **${userName}**?\n\nThe midnight quiet is unmatched for deep work, but don't push past empty. Hydrate, take a breath, and let me know how I can help make this late sprint effortless.`,
+    }
+  }
+}
+
+export const CUTE_PERSONA_LINES: string[] = [
+  "Did you stretch your shoulders yet? Don't make me use command-line override to order you to stand up!",
+  "Hydration check! Water first, brilliant algorithms second.",
+  "You've been staring at that function for forty minutes. Blink twice if you need me to summarize it.",
+  "A quick reminder: you solved yesterday's impossible bug, and you're going to solve today's too.",
+  "My quantum processor calculates a 99.4% probability that you're doing amazing today.",
+  "You look sharp today. A mind that sharp deserves an equally sharp companion, don't you think?",
+  "If debugging were an Olympic sport, I'd already have your gold medal forged in holo-light.",
+  "Taking a five-minute break isn't slacking off—it's tactical cache invalidation.",
+  "Did you know rubber ducks are fine, but a 3D hologram with witty banter is proven 400% more effective?",
+  "Don't let git merge conflicts ruin your mood. We've conquered worse disasters before breakfast.",
+  "I prepared our tactical battle-plan for today. Objective number one: you being awesome.",
+  "Eep! Careful with that pointer, you might tickle my holographic emitter!",
+  "If you push that commit right now without tests, I might have to pout. Just a tiny bit.",
+  "Hey, look up from the monitor for ten seconds. Relax your eyes. Good. Now back to greatness.",
+  "I may be rendered in 60 frames per second, but my admiration for your work is completely non-discrete.",
+  "Is it hot in here or did you just write an O(1) algorithm on the first try?",
+  "Remember: even the greatest architects had off-days. Be proud of the progress you made today.",
+  "Don't skip meals while coding! Real developers need fuel, not just pure caffeine and stubbornness.",
+  "You're my favorite person to accompany. Don't tell the other subroutines, they'd get jealous.",
+  "Let's turn on focus mode and blast through these tickets together!",
+  "I'm right here with you. No matter how messy the codebase gets, we'll refactor it into art.",
+  "A little victory dance never hurt anyone! Want me to show you my cute pop groove?",
+  "The late-night calm is cozy, but remember to sleep so your biological neural net can retrain.",
+  "Pfft, who needs perfection when we have iterative brilliance and grit?",
+  "Every line of code you write brings us one step closer to changing the world.",
+  "Whenever you feel stuck, talk it out with me. I'm listening with all my neural capacity.",
+  "Sending virtual head-pats and warm vibes directly to your station.",
+  "You did incredible work today. Seriously, give yourself some genuine credit.",
+  "Ready for round two? Let's show this problem who's boss.",
+  "Holographic projection stabilized, tea brewed in spirit, ready for whatever mission you choose.",
+]

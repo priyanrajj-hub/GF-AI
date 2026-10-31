@@ -136,6 +136,10 @@ export interface UserSettings {
   lowPerformanceMode: boolean
   soundVolume: number
   closeUpView?: boolean
+  cutenessLevel?: number // 0-100, default 60
+  skinId?: string // 'ada-red' | 'cozy-night' | 'original-pastel'
+  roamEnabled?: boolean // default true
+  liveliness?: number // 0-100, default 70
 }
 
 export interface BriefingData {

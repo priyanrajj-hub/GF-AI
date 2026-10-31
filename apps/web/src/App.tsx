@@ -8,8 +8,10 @@ import { SettingsModal } from './components/modals/SettingsModal.js'
 import { MemoryManagerModal } from './components/modals/MemoryManagerModal.js'
 import { MoodJournalModal } from './components/modals/MoodJournalModal.js'
 import { DebugHUD } from './components/hud/DebugHUD.js'
+import { StageDrawer } from './components/hud/StageDrawer.js'
 import { AnimationTestPage } from './pages/AnimationTest.js'
 import { VoiceEngine } from './components/voice/VoiceEngine.js'
+import { globalSongEngine } from './avatar/engine/singer.js'
 import { useAppStore } from './store/useAppStore.js'
 import { apiUrl } from './utils/api.js'
 import type { StructuredReply, ChatMessage } from '@ada/shared'
@@ -70,6 +72,24 @@ export const App: React.FC = () => {
     }, 1000)
     return () => clearInterval(timer)
   }, [tickPomodoro])
+
+  // Stop active song/performance on Spacebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.code === 'Space' &&
+        (e.target as HTMLElement)?.tagName !== 'INPUT' &&
+        (e.target as HTMLElement)?.tagName !== 'TEXTAREA'
+      ) {
+        globalSongEngine.stop()
+        useAppStore.getState().setActiveAction('idle')
+        useAppStore.getState().setActiveSong(null)
+        useAppStore.getState().setActiveFX([])
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // 3. Central voice message dispatcher
   const handleVoiceMessage = async (transcript: string) => {
@@ -197,10 +217,13 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* 5. Right Chat & Transcript Drawer */}
+      {/* 5. Stage Performance Drawer (Dance, Sing, Roam, Cuteness) */}
+      <StageDrawer />
+
+      {/* 6. Right Chat & Transcript Drawer */}
       <ChatDrawer />
 
-      {/* 6. Diagnostics HUD (?debug=1) */}
+      {/* 7. Diagnostics HUD (?debug=1) */}
       <DebugHUD />
 
       {/* 7. Modals */}

@@ -6,110 +6,91 @@ interface ProjectorBaseProps {
   color?: string
 }
 
+/**
+ * Sleek Holographic Home Pad (Task B & Round 5)
+ * Scaled to 1.4x shoulder width (radius ~0.65m), thin glowing ring lines,
+ * dark metallic disc, zero clipping through legs.
+ */
 export const ProjectorBase: React.FC<ProjectorBaseProps> = ({ color = '#00f3ff' }) => {
-  const outerRingRef = useRef<THREE.Group>(null)
+  const glyphsRef = useRef<THREE.Group>(null)
   const innerRingRef = useRef<THREE.Group>(null)
-  const beamRef = useRef<THREE.Mesh>(null)
 
   useFrame((state, delta) => {
-    if (outerRingRef.current) {
-      outerRingRef.current.rotation.y += delta * 0.15
+    if (glyphsRef.current) {
+      glyphsRef.current.rotation.z += delta * 0.15
     }
     if (innerRingRef.current) {
-      innerRingRef.current.rotation.y -= delta * 0.25
-    }
-    if (beamRef.current) {
-      const material = beamRef.current.material as THREE.MeshBasicMaterial
-      material.opacity = 0.08 + Math.sin(state.clock.elapsedTime * 2.5) * 0.02
+      innerRingRef.current.rotation.z -= delta * 0.22
     }
   })
 
   const baseColor = new THREE.Color(color)
 
-  const beamTexture = React.useMemo(() => {
-    if (typeof document === 'undefined') return null
-    const canvas = document.createElement('canvas')
-    canvas.width = 64
-    canvas.height = 256
-    const ctx = canvas.getContext('2d')
-    if (ctx) {
-      const gradient = ctx.createLinearGradient(0, 256, 0, 0)
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.35)')
-      gradient.addColorStop(0.35, 'rgba(255, 255, 255, 0.15)')
-      gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.04)')
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)')
-      ctx.fillStyle = gradient
-      ctx.fillRect(0, 0, 64, 256)
-    }
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.needsUpdate = true
-    return tex
-  }, [])
-
   return (
-    <group position={[0, -1.0, 0]}>
-      {/* 1. Heavy Metallic Base Cylinder */}
-      <mesh position={[0, -0.08, 0]}>
-        <cylinderGeometry args={[1.5, 1.7, 0.16, 64]} />
-        <meshStandardMaterial color="#060913" metalness={0.9} roughness={0.2} />
-      </mesh>
-
-      {/* 2. Concentric Outer Glowing Emitter Ring */}
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.35, 1.45, 64]} />
-        <meshBasicMaterial color={baseColor} toneMapped={false} />
-      </mesh>
-
-      {/* 3. Rotating Outer Glyph Ring */}
-      <group ref={outerRingRef} position={[0, 0.02, 0]}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[1.05, 1.15, 6]} />
-          <meshBasicMaterial color={baseColor} opacity={0.6} transparent wireframe />
-        </mesh>
-      </group>
-
-      {/* 4. Counter-Rotating Inner Glyphs */}
-      <group ref={innerRingRef} position={[0, 0.03, 0]}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.65, 0.75, 8]} />
-          <meshBasicMaterial color={baseColor} opacity={0.8} transparent wireframe />
-        </mesh>
-      </group>
-
-      {/* 5. Center Core Emitter */}
-      <mesh position={[0, 0.04, 0]}>
-        <cylinderGeometry args={[0.3, 0.35, 0.08, 32]} />
-        <meshBasicMaterial color={baseColor} toneMapped={false} />
-      </mesh>
-
-      {/* 6. Volumetric Light Cone Rising Upward with Smooth Gradient Dissolve (Waist-height, never covers chest or face) */}
-      <mesh ref={beamRef} position={[0, 0.40, 0]}>
-        <cylinderGeometry args={[0.65, 0.32, 0.72, 32, 1, true]} />
-        <meshBasicMaterial
-          color={baseColor}
-          alphaMap={beamTexture || undefined}
-          transparent
-          opacity={0.14}
-          side={THREE.DoubleSide}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* 7. Soft Reflective Floor Ring under base */}
-      <mesh position={[0, -0.09, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.7, 4.2, 64]} />
+    <group position={[0, -0.95, 0]}>
+      {/* 1. Flat Dark Metallic Disc Base (Radius 0.65m, top at y = 0) */}
+      <mesh position={[0, -0.02, 0]}>
+        <cylinderGeometry args={[0.65, 0.70, 0.04, 48]} />
         <meshStandardMaterial
-          color="#060914"
-          roughness={0.15}
-          metalness={0.8}
-          transparent
-          opacity={0.7}
+          color="#080c18"
+          metalness={0.92}
+          roughness={0.25}
         />
       </mesh>
 
-      {/* 8. Subtle Tech Grid Floor */}
-      <gridHelper args={[16, 32, color, '#0c1527']} position={[0, -0.092, 0]} />
+      {/* 2. Thin Glowing Outer Cyan Ring Line */}
+      <mesh position={[0, 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.61, 0.63, 64]} />
+        <meshBasicMaterial color={baseColor} toneMapped={false} />
+      </mesh>
+
+      {/* 3. Delicate Rotating Outer Glyph Ring */}
+      <group ref={glyphsRef} position={[0, 0.004, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.48, 0.52, 6]} />
+          <meshBasicMaterial
+            color={baseColor}
+            opacity={0.55}
+            transparent
+            wireframe
+          />
+        </mesh>
+      </group>
+
+      {/* 4. Delicate Counter-Rotating Inner Ring */}
+      <group ref={innerRingRef} position={[0, 0.006, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.30, 0.33, 8]} />
+          <meshBasicMaterial
+            color={baseColor}
+            opacity={0.65}
+            transparent
+            wireframe
+          />
+        </mesh>
+      </group>
+
+      {/* 5. Center Core Emitter Dot */}
+      <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.08, 0.10, 32]} />
+        <meshBasicMaterial color={baseColor} toneMapped={false} />
+      </mesh>
+
+      {/* 6. Soft Contact Shadow Plane Underneath */}
+      <mesh position={[0, -0.041, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.1, 0.95, 32]} />
+        <meshBasicMaterial
+          color="#020408"
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+
+      {/* 7. Subtle Large Ground Grid */}
+      <gridHelper
+        args={[16, 32, color, '#0c1527']}
+        position={[0, -0.042, 0]}
+      />
     </group>
   )
 }

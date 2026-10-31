@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Eye,
   Activity,
+  Sparkles,
 } from 'lucide-react'
 import type { PersonalityMode } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
@@ -21,6 +22,8 @@ export const TopBar: React.FC = () => {
     currentEmotion,
     showChatDrawer,
     toggleChatDrawer,
+    showStageDrawer,
+    setShowStageDrawer,
     fullScreenHoloMode,
     toggleFullScreenHolo,
     setShowSettingsModal,
@@ -135,6 +138,19 @@ export const TopBar: React.FC = () => {
           title={settings.closeUpView ? 'Switch to Full Body View' : 'Close-Up View (Head & Shoulders)'}
         >
           <Eye className="w-4 h-4" />
+        </button>
+
+        {/* Stage Performance Studio (Dance, Sing, Moves, Roam, Cuteness) */}
+        <button
+          onClick={() => setShowStageDrawer(!showStageDrawer)}
+          className={`p-2 rounded-xl glass-panel-subtle transition-all cursor-pointer ${
+            showStageDrawer
+              ? 'text-pink-300 border border-pink-400/50 bg-pink-500/20 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+              : 'text-slate-400 hover:text-pink-300'
+          }`}
+          title="Performance Stage (8 Dance Styles, Original Songs, 25+ Moves, Roam, Cuteness)"
+        >
+          <Sparkles className="w-4 h-4" />
         </button>
 
         <button
