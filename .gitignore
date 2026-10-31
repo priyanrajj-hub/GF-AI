@@ -1,0 +1,43 @@
+# Node & dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build artifacts
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# Environment and sensitive keys
+.env
+.env.local
+.env.*.local
+*.env
+
+# SQLite databases & temp storage
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+server/data/
+server/uploads/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
