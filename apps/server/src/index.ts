@@ -113,79 +113,76 @@ app.post('/api/chat', async (req, res) => {
   const llm = ProviderRegistry.getLLM()
 
   try {
-    if (stream) {
-      res.setHeader('Content-Type', 'text/event-stream')
-      res.setHeader('Cache-Control', 'no-cache')
-      res.setHeader('Connection', 'keep-alive')
+    let reply: StructuredReply
+    try {
+      if (stream) {
+        res.setHeader('Content-Type', 'text/event-stream')
+        res.setHeader('Cache-Control', 'no-cache')
+        res.setHeader('Connection', 'keep-alive')
 
-      const reply: StructuredReply = await (llm.stream
-        ? llm.stream(
-            history,
-            message,
-            { mode: activeMode, sliders: activeSliders, userName: settings.userName, language },
-            (chunk) => {
-              res.write(`data: ${JSON.stringify({ chunk })}\n\n`)
-            }
-          )
-        : llm.generate(history, message, {
-            mode: activeMode,
-            sliders: activeSliders,
-            userName: settings.userName,
-            language,
-          }))
-
-      // Save Assistant response
-      const assistantMsgObj: ChatMessage = {
-        id: `msg-${Date.now()}-assistant`,
-        role: 'assistant',
-        content: reply.display_text,
-        speech: reply.speech,
-        emotion: reply.emotion,
-        gesture: reply.gesture,
-        timestamp: Date.now(),
+        reply = await (llm.stream
+          ? llm.stream(
+              history,
+              message,
+              { mode: activeMode, sliders: activeSliders, userName: settings.userName, language },
+              (chunk) => {
+                res.write(`data: ${JSON.stringify({ chunk })}\n\n`)
+              }
+            )
+          : llm.generate(history, message, {
+              mode: activeMode,
+              sliders: activeSliders,
+              userName: settings.userName,
+              language,
+            }))
+      } else {
+        reply = await llm.generate(history, message, {
+          mode: activeMode,
+          sliders: activeSliders,
+          userName: settings.userName,
+          language,
+        })
       }
-      db.addMessage(userId, assistantMsgObj)
-
-      // Log Token Usage
-      const promptTokens = ContextBuilder.estimateTokens(message)
-      const completionTokens = ContextBuilder.estimateTokens(reply.display_text)
-      db.logTokens(userId, {
-        model: llm.name,
-        promptTokens,
-        completionTokens,
-        costUsd: (promptTokens + completionTokens) * 0.000001,
-      })
-
-      res.write(`data: ${JSON.stringify({ complete: true, reply })}\n\n`)
-      res.end()
-    } else {
-      const reply = await llm.generate(history, message, {
+    } catch (llmErr) {
+      console.warn('⚠️ [Primary LLM Failed, Falling back to MockLLMProvider]:', (llmErr as Error).message)
+      const mockLLM = ProviderRegistry.getMockLLM()
+      reply = await mockLLM.generate(history, message, {
         mode: activeMode,
         sliders: activeSliders,
         userName: settings.userName,
         language,
       })
-
-      const assistantMsgObj: ChatMessage = {
-        id: `msg-${Date.now()}-assistant`,
-        role: 'assistant',
-        content: reply.display_text,
-        speech: reply.speech,
-        emotion: reply.emotion,
-        gesture: reply.gesture,
-        timestamp: Date.now(),
+      if (stream) {
+        res.write(`data: ${JSON.stringify({ chunk: reply.display_text })}\n\n`)
       }
-      db.addMessage(userId, assistantMsgObj)
+    }
 
-      const promptTokens = ContextBuilder.estimateTokens(message)
-      const completionTokens = ContextBuilder.estimateTokens(reply.display_text)
-      db.logTokens(userId, {
-        model: llm.name,
-        promptTokens,
-        completionTokens,
-        costUsd: (promptTokens + completionTokens) * 0.000001,
-      })
+    // Save Assistant response
+    const assistantMsgObj: ChatMessage = {
+      id: `msg-${Date.now()}-assistant`,
+      role: 'assistant',
+      content: reply.display_text,
+      speech: reply.speech,
+      emotion: reply.emotion,
+      gesture: reply.gesture,
+      timestamp: Date.now(),
+    }
+    db.addMessage(userId, assistantMsgObj)
 
+    // Log Token Usage
+    const promptTokens = ContextBuilder.estimateTokens(message)
+    const completionTokens = ContextBuilder.estimateTokens(reply.display_text)
+    db.logTokens(userId, {
+      model: llm.name,
+      promptTokens,
+      completionTokens,
+      costUsd: (promptTokens + completionTokens) * 0.000001,
+    })
+
+    if (stream) {
+      res.write(`data: ${JSON.stringify({ complete: true, reply })}\n\n`)
+      res.end()
+    } else {
       res.json({ reply })
     }
   } catch (err: unknown) {

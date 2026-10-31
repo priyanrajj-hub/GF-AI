@@ -27,6 +27,26 @@ export class GeminiLLMProvider implements LLMProvider {
     return this.genAI !== null
   }
 
+  private getCandidateModels(tier: 'fast' | 'reasoning' = 'fast'): string[] {
+    if (tier === 'reasoning') {
+      const proCandidates = [
+        process.env.GEMINI_PRO_MODEL,
+        'gemini-1.5-pro',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+      ].filter((m): m is string => Boolean(m && m.trim()))
+      return Array.from(new Set(proCandidates))
+    }
+    const flashCandidates = [
+      process.env.GEMINI_MODEL,
+      'gemini-1.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-pro',
+      'gemini-1.5-flash-8b',
+    ].filter((m): m is string => Boolean(m && m.trim()))
+    return Array.from(new Set(flashCandidates))
+  }
+
   async generate(
     history: ChatMessage[],
     userMessage: string,
@@ -36,7 +56,6 @@ export class GeminiLLMProvider implements LLMProvider {
       throw new Error('Gemini API key is not configured.')
     }
 
-    const modelName = options.modelTier === 'reasoning' ? this.defaultProModel : this.defaultFlashModel
     const { systemPrompt, trimmedHistory } = ContextBuilder.buildPromptContext({
       userId: options.userName || 'default-user-1',
       history,
@@ -46,23 +65,35 @@ export class GeminiLLMProvider implements LLMProvider {
       language: options.language,
     })
 
-    const model = this.genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: systemPrompt,
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: options.temperature ?? 0.7,
-      },
-    })
+    const candidates = this.getCandidateModels(options.modelTier)
+    let lastError: any = null
 
-    const chat = model.startChat({
-      history: trimmedHistory,
-    })
+    for (const modelName of candidates) {
+      try {
+        const model = this.genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: systemPrompt,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: options.temperature ?? 0.7,
+          },
+        })
 
-    const result = await chat.sendMessage(userMessage)
-    const text = result.response.text()
+        const chat = model.startChat({
+          history: trimmedHistory,
+        })
 
-    return parseAndRepairStructuredReply(text)
+        const result = await chat.sendMessage(userMessage)
+        const text = result.response.text()
+
+        return parseAndRepairStructuredReply(text)
+      } catch (err: any) {
+        lastError = err
+        console.warn(`[GeminiLLMProvider] Model '${modelName}' failed (${err?.status || err?.message}). Trying next fallback...`)
+      }
+    }
+
+    throw lastError || new Error('All Gemini candidate models failed')
   }
 
   async stream(
@@ -75,7 +106,6 @@ export class GeminiLLMProvider implements LLMProvider {
       throw new Error('Gemini API key is not configured.')
     }
 
-    const modelName = options.modelTier === 'reasoning' ? this.defaultProModel : this.defaultFlashModel
     const { systemPrompt, trimmedHistory } = ContextBuilder.buildPromptContext({
       userId: options.userName || 'default-user-1',
       history,
@@ -85,28 +115,40 @@ export class GeminiLLMProvider implements LLMProvider {
       language: options.language,
     })
 
-    const model = this.genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: systemPrompt,
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: options.temperature ?? 0.7,
-      },
-    })
+    const candidates = this.getCandidateModels(options.modelTier)
+    let lastError: any = null
 
-    const chat = model.startChat({
-      history: trimmedHistory,
-    })
+    for (const modelName of candidates) {
+      try {
+        const model = this.genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: systemPrompt,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: options.temperature ?? 0.7,
+          },
+        })
 
-    const result = await chat.sendMessageStream(userMessage)
-    let accumulatedText = ''
+        const chat = model.startChat({
+          history: trimmedHistory,
+        })
 
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text()
-      accumulatedText += chunkText
-      onChunk(chunkText)
+        const result = await chat.sendMessageStream(userMessage)
+        let accumulatedText = ''
+
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text()
+          accumulatedText += chunkText
+          onChunk(chunkText)
+        }
+
+        return parseAndRepairStructuredReply(accumulatedText)
+      } catch (err: any) {
+        lastError = err
+        console.warn(`[GeminiLLMProvider stream] Model '${modelName}' failed (${err?.status || err?.message}). Trying next fallback...`)
+      }
     }
 
-    return parseAndRepairStructuredReply(accumulatedText)
+    throw lastError || new Error('All Gemini candidate models failed for streaming')
   }
 }
