@@ -13,6 +13,7 @@ import {
 import type { ChatMessage, StructuredReply } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
 import { VoiceEngine } from '../voice/VoiceEngine.js'
+import { apiUrl } from '../../utils/api.js'
 
 export const ChatDrawer: React.FC = () => {
   const {
@@ -61,7 +62,7 @@ export const ChatDrawer: React.FC = () => {
     addMessage(userMsg)
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -140,7 +141,7 @@ export const ChatDrawer: React.FC = () => {
     addMessage(uploadNotice)
 
     try {
-      const res = await fetch('/api/chat/vision', {
+      const res = await fetch(apiUrl('/api/chat/vision'), {
         method: 'POST',
         headers: {
           'x-user-id': settings.userId,

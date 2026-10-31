@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import type { MemoryItem } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
+import { apiUrl } from '../../utils/api.js'
 
 export const MemoryManagerModal: React.FC = () => {
   const {
@@ -31,7 +32,7 @@ export const MemoryManagerModal: React.FC = () => {
   // Fetch memories from backend
   useEffect(() => {
     if (showMemoryModal) {
-      fetch('/api/memory', {
+      fetch(apiUrl('/api/memory'), {
         headers: { 'x-user-id': settings.userId },
       })
         .then((res) => res.json())
@@ -49,7 +50,7 @@ export const MemoryManagerModal: React.FC = () => {
     if (!newContent.trim()) return
 
     try {
-      const res = await fetch('/api/memory', {
+      const res = await fetch(apiUrl('/api/memory'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +76,7 @@ export const MemoryManagerModal: React.FC = () => {
 
   const handleDeleteMemory = async (id: string) => {
     try {
-      await fetch(`/api/memory/${id}`, {
+      await fetch(apiUrl(`/api/memory/${id}`), {
         method: 'DELETE',
         headers: { 'x-user-id': settings.userId },
       })
@@ -87,7 +88,7 @@ export const MemoryManagerModal: React.FC = () => {
 
   const handleTogglePin = async (id: string, currentPinned: boolean) => {
     try {
-      const res = await fetch(`/api/memory/${id}`, {
+      const res = await fetch(apiUrl(`/api/memory/${id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +107,7 @@ export const MemoryManagerModal: React.FC = () => {
 
   const handleWipeAll = async () => {
     try {
-      await fetch('/api/memory', {
+      await fetch(apiUrl('/api/memory'), {
         method: 'DELETE',
         headers: { 'x-user-id': settings.userId },
       })

@@ -9,6 +9,7 @@ import { MemoryManagerModal } from './components/modals/MemoryManagerModal.js'
 import { MoodJournalModal } from './components/modals/MoodJournalModal.js'
 import { VoiceEngine } from './components/voice/VoiceEngine.js'
 import { useAppStore } from './store/useAppStore.js'
+import { apiUrl } from './utils/api.js'
 import type { StructuredReply, ChatMessage } from '@ada/shared'
 
 export const App: React.FC = () => {
@@ -72,7 +73,7 @@ export const App: React.FC = () => {
     addMessage(userMsg)
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
