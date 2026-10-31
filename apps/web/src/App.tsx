@@ -7,6 +7,8 @@ import { WaveformRing } from './components/voice/WaveformRing.js'
 import { SettingsModal } from './components/modals/SettingsModal.js'
 import { MemoryManagerModal } from './components/modals/MemoryManagerModal.js'
 import { MoodJournalModal } from './components/modals/MoodJournalModal.js'
+import { DebugHUD } from './components/hud/DebugHUD.js'
+import { AnimationTestPage } from './pages/AnimationTest.js'
 import { VoiceEngine } from './components/voice/VoiceEngine.js'
 import { useAppStore } from './store/useAppStore.js'
 import { apiUrl } from './utils/api.js'
@@ -26,8 +28,19 @@ export const App: React.FC = () => {
     fullScreenHoloMode,
   } = useAppStore()
 
+  // Task D: Check for hidden /animation-test route
+  const isAnimTest =
+    typeof window !== 'undefined' &&
+    (window.location.pathname === '/animation-test' ||
+      window.location.search.includes('anim-test=1'))
+
   // 1. Futuristic Boot-Up Animation Sequence
   useEffect(() => {
+    if (isAnimTest) {
+      setBooting(false)
+      return
+    }
+
     const steps = [
       'INITIALIZING QUANTUM HOLO-CORE...',
       'CALIBRATING EMOTION ENGINE & VRM RIG...',
@@ -41,14 +54,14 @@ export const App: React.FC = () => {
           return prev + 1
         } else {
           clearInterval(interval)
-          setTimeout(() => setBooting(false), 500)
+          setTimeout(() => setBooting(false), 400)
           return prev
         }
       })
-    }, 450)
+    }, 400)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [isAnimTest])
 
   // 2. Pomodoro 1-Second Timer Tick
   useEffect(() => {
@@ -120,6 +133,11 @@ export const App: React.FC = () => {
     }
   }
 
+  // If on /animation-test route
+  if (isAnimTest) {
+    return <AnimationTestPage />
+  }
+
   // Render Boot-Up Terminal
   if (booting) {
     const bootSteps = [
@@ -162,19 +180,19 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="w-screen h-screen relative bg-[#060810] overflow-hidden select-none">
+    <div className="w-screen h-[100dvh] relative bg-[#060814] overflow-hidden select-none pb-[env(safe-area-inset-bottom)]">
       {/* 1. 3D Holographic Canvas Scene */}
       <HoloScene />
 
       {/* 2. Top Header HUD */}
       <TopBar />
 
-      {/* 3. Left Mission & Focus Module */}
+      {/* 3. Left Mission & Focus Module (Collapsible) */}
       <MissionBriefing />
 
-      {/* 4. Center Bottom Arc-Reactor Waveform Core */}
+      {/* 4. Docked Bottom Control Bar (Below stage, out of base area) */}
       {!fullScreenHoloMode && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
           <WaveformRing onSendMessage={handleVoiceMessage} />
         </div>
       )}
@@ -182,7 +200,10 @@ export const App: React.FC = () => {
       {/* 5. Right Chat & Transcript Drawer */}
       <ChatDrawer />
 
-      {/* 6. Modals */}
+      {/* 6. Diagnostics HUD (?debug=1) */}
+      <DebugHUD />
+
+      {/* 7. Modals */}
       <SettingsModal />
       <MemoryManagerModal />
       <MoodJournalModal />

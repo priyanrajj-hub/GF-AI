@@ -62,9 +62,9 @@ export const ProjectorBase: React.FC<ProjectorBaseProps> = ({ color = '#00f3ff' 
         <meshBasicMaterial color={baseColor} toneMapped={false} />
       </mesh>
 
-      {/* 6. Volumetric Light Cone Rising Upward */}
-      <mesh ref={beamRef} position={[0, 1.3, 0]}>
-        <cylinderGeometry args={[1.2, 0.35, 2.6, 32, 1, true]} />
+      {/* 6. Volumetric Light Cone Rising Upward (Waist-height, never covers face) */}
+      <mesh ref={beamRef} position={[0, 0.65, 0]}>
+        <cylinderGeometry args={[0.85, 0.35, 1.3, 32, 1, true]} />
         <meshBasicMaterial
           color={baseColor}
           transparent
@@ -75,8 +75,20 @@ export const ProjectorBase: React.FC<ProjectorBaseProps> = ({ color = '#00f3ff' 
         />
       </mesh>
 
-      {/* 7. Subtle Tech Grid Floor */}
-      <gridHelper args={[16, 32, color, '#0c1527']} position={[0, -0.09, 0]} />
+      {/* 7. Soft Reflective Floor Ring under base */}
+      <mesh position={[0, -0.09, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.7, 4.2, 64]} />
+        <meshStandardMaterial
+          color="#060914"
+          roughness={0.15}
+          metalness={0.8}
+          transparent
+          opacity={0.7}
+        />
+      </mesh>
+
+      {/* 8. Subtle Tech Grid Floor */}
+      <gridHelper args={[16, 32, color, '#0c1527']} position={[0, -0.092, 0]} />
     </group>
   )
 }

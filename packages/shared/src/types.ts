@@ -32,6 +32,7 @@ export type PersonalityMode =
   | 'coach'
   | 'listener'
   | 'playful'
+  | 'companion'
 
 export interface PersonalitySliders {
   humor: number // 0-100
@@ -114,6 +115,8 @@ export interface MoodJournalEntry {
   createdAt: number
 }
 
+export type AvatarRenderMode = 'solid' | 'holo-lite' | 'holo-full'
+
 export interface UserSettings {
   userId: string
   userName: string
@@ -121,7 +124,7 @@ export interface UserSettings {
   mode: PersonalityMode
   sliders: PersonalitySliders
   hologramColor: string
-  solidRendering: boolean
+  renderMode: AvatarRenderMode
   avatarModelUrl: string
   handsFree: boolean
   wakeWordEnabled: boolean
@@ -132,6 +135,7 @@ export interface UserSettings {
   dailyProactiveCap: number // default 3
   lowPerformanceMode: boolean
   soundVolume: number
+  closeUpView?: boolean
 }
 
 export interface BriefingData {

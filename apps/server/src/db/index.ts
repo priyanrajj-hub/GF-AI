@@ -38,7 +38,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     talkativeness: 50,
   },
   hologramColor: '#00f3ff',
-  solidRendering: false,
+  renderMode: 'holo-lite',
   avatarModelUrl: '/models/ada.vrm',
   handsFree: false,
   wakeWordEnabled: true,

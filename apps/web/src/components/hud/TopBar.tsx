@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Brain,
   Sliders,
@@ -6,11 +6,12 @@ import {
   Minimize2,
   Heart,
   MessageSquare,
-  Shield,
-  Zap,
+  Eye,
+  Activity,
 } from 'lucide-react'
 import type { PersonalityMode } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
+import { apiUrl } from '../../utils/api.js'
 
 export const TopBar: React.FC = () => {
   const {
@@ -25,15 +26,34 @@ export const TopBar: React.FC = () => {
     setShowSettingsModal,
     setShowMemoryModal,
     setShowMoodModal,
+    settings,
+    updateSettings,
   } = useAppStore()
 
+  const [isMockMode, setIsMockMode] = useState<boolean>(false)
+
+  // Check health and provider status
+  useEffect(() => {
+    fetch(apiUrl('/api/health'))
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.llm === 'MockLLM' || data.mock === true) {
+          setIsMockMode(true)
+        }
+      })
+      .catch(() => {
+        setIsMockMode(true)
+      })
+  }, [])
+
   const modes: Array<{ id: PersonalityMode; label: string }> = [
+    { id: 'companion', label: 'Companion' },
+    { id: 'playful', label: 'Playful' },
     { id: 'jarvis', label: 'Jarvis' },
     { id: 'coder', label: 'Coder' },
     { id: 'mentor', label: 'Mentor' },
     { id: 'coach', label: 'Coach' },
     { id: 'listener', label: 'Listener' },
-    { id: 'playful', label: 'Playful' },
   ]
 
   return (
@@ -45,10 +65,17 @@ export const TopBar: React.FC = () => {
           <span className="font-bold tracking-widest text-sm text-cyan-300 font-mono">
             ADA
           </span>
-          <span className="text-[10px] text-cyan-400/60 font-mono px-1 border border-cyan-400/20 rounded">
-            v1.0 HOLO
+          <span className="text-[10px] text-cyan-400/80 font-mono px-1 border border-cyan-400/20 rounded">
+            v2.0 3D
           </span>
         </div>
+
+        {/* Task G: MOCK MODE BADGE */}
+        {isMockMode && (
+          <div className="px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-400/40 text-[10px] font-mono text-amber-300 uppercase tracking-wider font-semibold">
+            MOCK MODE
+          </div>
+        )}
 
         {/* State Badge */}
         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl glass-panel-subtle text-xs font-mono text-slate-300">
@@ -74,26 +101,45 @@ export const TopBar: React.FC = () => {
 
       {/* Mode Selector Pill */}
       <div className="hidden md:flex items-center gap-1 p-1 rounded-2xl glass-panel border border-cyan-500/20 pointer-events-auto">
-        {modes.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => setActiveMode(m.id)}
-            className={`px-2.5 py-1 rounded-xl text-xs font-mono transition-all duration-200 cursor-pointer ${
-              activeMode === m.id
-                ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/50 shadow-[0_0_12px_rgba(0,243,255,0.3)]'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            {m.label}
-          </button>
-        ))}
+        {modes.map((m) => {
+          const isActive = activeMode === m.id
+          const isCompanion = m.id === 'companion'
+          return (
+            <button
+              key={m.id}
+              onClick={() => setActiveMode(m.id)}
+              className={`px-2.5 py-1 rounded-xl text-xs font-mono transition-all duration-200 cursor-pointer ${
+                isActive
+                  ? isCompanion
+                    ? 'bg-rose-500/30 text-rose-200 border border-rose-400/60 shadow-[0_0_14px_rgba(244,63,94,0.4)]'
+                    : 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/50 shadow-[0_0_12px_rgba(0,243,255,0.3)]'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+              }`}
+            >
+              {m.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Action Icons */}
       <div className="flex items-center gap-2 pointer-events-auto">
+        {/* Close-Up Framing Toggle */}
+        <button
+          onClick={() => updateSettings({ closeUpView: !settings.closeUpView })}
+          className={`p-2 rounded-xl glass-panel-subtle transition-all cursor-pointer ${
+            settings.closeUpView
+              ? 'text-cyan-300 border border-cyan-400/50 bg-cyan-500/20 shadow-[0_0_10px_rgba(0,243,255,0.3)]'
+              : 'text-slate-400 hover:text-white'
+          }`}
+          title={settings.closeUpView ? 'Switch to Full Body View' : 'Close-Up View (Head & Shoulders)'}
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+
         <button
           onClick={() => setShowMoodModal(true)}
-          className="p-2 rounded-xl glass-panel-subtle hover:text-pink-300 text-slate-300 transition-colors"
+          className="p-2 rounded-xl glass-panel-subtle hover:text-pink-300 text-slate-300 transition-colors cursor-pointer"
           title="Daily Mood Check-in"
         >
           <Heart className="w-4 h-4 text-pink-400" />
@@ -101,7 +147,7 @@ export const TopBar: React.FC = () => {
 
         <button
           onClick={() => setShowMemoryModal(true)}
-          className="p-2 rounded-xl glass-panel-subtle hover:text-cyan-300 text-slate-300 transition-colors"
+          className="p-2 rounded-xl glass-panel-subtle hover:text-cyan-300 text-slate-300 transition-colors cursor-pointer"
           title="Memory Manager (Consented Memories)"
         >
           <Brain className="w-4 h-4 text-cyan-400" />
@@ -109,15 +155,15 @@ export const TopBar: React.FC = () => {
 
         <button
           onClick={() => setShowSettingsModal(true)}
-          className="p-2 rounded-xl glass-panel-subtle hover:text-cyan-300 text-slate-300 transition-colors"
-          title="System Settings & Persona Sliders"
+          className="p-2 rounded-xl glass-panel-subtle hover:text-cyan-300 text-slate-300 transition-colors cursor-pointer"
+          title="System Settings & 3D Model Configuration"
         >
           <Sliders className="w-4 h-4 text-cyan-400" />
         </button>
 
         <button
           onClick={toggleChatDrawer}
-          className={`p-2 rounded-xl glass-panel-subtle transition-colors ${
+          className={`p-2 rounded-xl glass-panel-subtle transition-colors cursor-pointer ${
             showChatDrawer ? 'text-cyan-400 border border-cyan-500/40' : 'text-slate-400'
           }`}
           title="Toggle Chat Drawer"
@@ -127,7 +173,7 @@ export const TopBar: React.FC = () => {
 
         <button
           onClick={toggleFullScreenHolo}
-          className="p-2 rounded-xl glass-panel-subtle hover:text-cyan-300 text-slate-300 transition-colors"
+          className="p-2 rounded-xl glass-panel-subtle hover:text-cyan-300 text-slate-300 transition-colors cursor-pointer"
           title={fullScreenHoloMode ? 'Exit Cinematic Mode' : 'Cinematic Hologram Mode'}
         >
           {fullScreenHoloMode ? <Minimize2 className="w-4 h-4 text-cyan-400" /> : <Maximize2 className="w-4 h-4" />}
