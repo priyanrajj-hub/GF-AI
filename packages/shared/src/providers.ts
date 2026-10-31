@@ -42,7 +42,7 @@ export interface STTOptions {
 
 export interface STTProvider {
   name: string
-  transcribe(audioBuffer: Buffer | ArrayBuffer, options?: STTOptions): Promise<string>
+  transcribe(audioBuffer: Uint8Array | ArrayBuffer | any, options?: STTOptions): Promise<string>
 }
 
 // ==========================================
