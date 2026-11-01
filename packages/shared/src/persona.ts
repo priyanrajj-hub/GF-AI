@@ -14,15 +14,23 @@ export const CRISIS_RESOURCES = {
 
 export function buildSystemPrompt(options: {
   mode: PersonalityMode
-  sliders: PersonalitySliders
+  sliders?: PersonalitySliders
   userName?: string
   memories?: string[]
+  notesSummary?: string
   language?: string
   currentDateStr?: string
 }): string {
   const {
     mode,
-    sliders,
+    sliders = {
+      humor: 65,
+      warmth: 80,
+      formality: 45,
+      directness: 75,
+      flirtiness: 30,
+      talkativeness: 50,
+    },
     userName = 'User',
     memories = [],
     language = 'en',
@@ -145,6 +153,8 @@ You must respond with valid JSON matching this exact structure:
   "actions": []
 }`
 }
+
+export const buildAdaSystemPrompt = buildSystemPrompt
 
 export function getTimeAwareGreeting(
   userName = 'Operator',

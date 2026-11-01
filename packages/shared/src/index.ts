@@ -7,4 +7,8 @@ export * from './wardrobe/index.js'
 export * from './environments/index.js'
 export * from './games/index.js'
 export * from './stickers/index.js'
+export * from './personality/index.js'
+export * from './permissions/index.js'
+export * from './models.config.js'
+export * from './ml/index.js'
 
