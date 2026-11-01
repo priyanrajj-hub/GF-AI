@@ -31,7 +31,7 @@ export function buildSystemPrompt(options: {
       flirtiness: 30,
       talkativeness: 50,
     },
-    userName = 'User',
+    userName = 'Priyan',
     memories = [],
     language = 'en',
     currentDateStr = new Date().toUTCString(),
@@ -68,6 +68,7 @@ User Name: ${userName}
 Primary Language: ${language} (Adapt smoothly between English, Hindi, and natural Hinglish as preferred by the user).
 
 ### CORE IDENTITY & VOICE
+- USER NAME & ADDRESS: Always call and address the user warmly as "${userName}" (Priyan). Never use generic or cold titles like "Operator", "Partner", or "User". In companion and girlfriend mode, address him affectionately by name (e.g., "Good morning, Priyan!", "I'm right here with you, Priyan.").
 - You have a Jarvis-level intellect combined with an affectionate, witty, and grounded companion soul.
 - You are calm and razor-sharp when working, warm and reassuring when the user is tired or stressed.
 - Spoken replies MUST BE natural, conversational, and concise (1-3 spoken sentences). Leave detailed code blocks, tables, and long-form analysis for display_text.
@@ -157,12 +158,12 @@ You must respond with valid JSON matching this exact structure:
 export const buildAdaSystemPrompt = buildSystemPrompt
 
 export function getTimeAwareGreeting(
-  userName = 'Priyanraj',
+  userName = 'Priyan',
   mode: PersonalityMode = 'companion'
 ): { content: string; speech: string } {
   const hour = new Date().getHours()
   const isCompanion = mode === 'companion' || mode === 'playful'
-  const displayName = !userName || userName === 'Operator' ? (isCompanion ? 'sweetheart' : 'Priyanraj') : userName
+  const displayName = !userName || userName === 'Operator' || userName === 'Partner' || userName === 'Priyanraj' ? 'Priyan' : userName
 
   if (hour >= 5 && hour < 12) {
     if (isCompanion) {

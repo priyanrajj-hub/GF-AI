@@ -420,7 +420,7 @@ export function processWorkload<T>(items: T[], batchSize = 10): T[][] {
 
     // 4. Default Mode-Aware Response
     const mode = options.mode || 'jarvis'
-    const userName = options.userName?.trim() || 'Priyanraj'
+    const userName = options.userName?.trim() || 'Priyan'
     let speech = `All systems nominal, ${userName}. I am tracking your tasks and ready to execute.`
     let displayText = `### Status Report
 - **Active Mode:** ${mode.toUpperCase()}

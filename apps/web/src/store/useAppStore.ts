@@ -140,7 +140,10 @@ interface AppState {
 
 const DEFAULT_USER_SETTINGS: UserSettings = {
   userId: 'default-user-1',
-  userName: 'Priyanraj',
+  userName:
+    typeof window !== 'undefined'
+      ? localStorage.getItem('ada_user_name') || 'Priyan'
+      : 'Priyan',
   language: 'auto',
   mode: 'companion',
   sliders: {
@@ -247,6 +250,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   settings: DEFAULT_USER_SETTINGS,
   updateSettings: (partial) => {
     if (typeof window !== 'undefined') {
+      if (partial.userName !== undefined) {
+        localStorage.setItem('ada_user_name', partial.userName)
+      }
       if (partial.elevenlabsApiKey !== undefined) {
         localStorage.setItem('ada_elevenlabs_api_key', partial.elevenlabsApiKey)
       }
