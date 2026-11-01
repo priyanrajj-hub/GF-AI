@@ -242,14 +242,15 @@ app.post('/api/tts', async (req, res) => {
     (voice &&
       (voice.startsWith('elevenlabs:') ||
         voice === 'NOpBlnGInO9m6vDvFkFC' ||
+        voice === 'cgSgspJ2msm6clMCkdW9' ||
         voice.toLowerCase().includes('eleven')))
 
   const elevenVoiceId =
     elevenlabsVoiceId ||
     (voice && voice.startsWith('elevenlabs:')
       ? voice.replace(/^elevenlabs:/, '')
-      : voice === 'NOpBlnGInO9m6vDvFkFC'
-      ? 'NOpBlnGInO9m6vDvFkFC'
+      : voice === 'NOpBlnGInO9m6vDvFkFC' || voice === 'cgSgspJ2msm6clMCkdW9'
+      ? voice
       : process.env.ELEVENLABS_VOICE_ID || 'NOpBlnGInO9m6vDvFkFC')
   const elevenModel = elevenlabsModelId || process.env.ELEVENLABS_MODEL_ID || 'eleven_v4'
 

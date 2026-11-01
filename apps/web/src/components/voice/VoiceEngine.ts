@@ -77,6 +77,7 @@ class VoiceEngineManager {
     const voiceSetting = store.settings.voice || 'NOpBlnGInO9m6vDvFkFC'
     const isElevenLabs =
       voiceSetting === 'NOpBlnGInO9m6vDvFkFC' ||
+      voiceSetting === 'cgSgspJ2msm6clMCkdW9' ||
       voiceSetting.startsWith('elevenlabs:') ||
       Boolean(store.settings.elevenlabsApiKey)
 

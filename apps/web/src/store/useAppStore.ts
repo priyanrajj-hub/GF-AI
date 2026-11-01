@@ -138,6 +138,13 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
   skinId: 'ada-red',
   roamEnabled: true,
   liveliness: 70,
+  voice: 'NOpBlnGInO9m6vDvFkFC',
+  elevenlabsApiKey:
+    typeof window !== 'undefined'
+      ? localStorage.getItem('ada_elevenlabs_api_key') || ''
+      : '',
+  elevenlabsVoiceId: 'NOpBlnGInO9m6vDvFkFC',
+  elevenlabsModelId: 'eleven_multilingual_v2',
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -204,11 +211,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   clearMessages: () => set({ messages: [] }),
 
   settings: DEFAULT_USER_SETTINGS,
-  updateSettings: (partial) =>
+  updateSettings: (partial) => {
+    if (typeof window !== 'undefined' && partial.elevenlabsApiKey !== undefined) {
+      localStorage.setItem('ada_elevenlabs_api_key', partial.elevenlabsApiKey)
+    }
     set((s) => ({
       settings: { ...s.settings, ...partial },
       activeMode: partial.mode || s.activeMode,
-    })),
+    }))
+  },
 
   showChatDrawer: true,
   toggleChatDrawer: () => set((s) => ({ showChatDrawer: !s.showChatDrawer })),

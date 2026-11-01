@@ -335,10 +335,10 @@ export const SettingsModal: React.FC = () => {
                 <label className="block text-xs font-mono text-slate-300 mb-1.5">
                   Select Neural Girl Voice Preset
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   <button
                     type="button"
-                    onClick={() => updateSettings({ voice: 'NOpBlnGInO9m6vDvFkFC' })}
+                    onClick={() => updateSettings({ voice: 'NOpBlnGInO9m6vDvFkFC', elevenlabsVoiceId: 'NOpBlnGInO9m6vDvFkFC' })}
                     className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
                       (settings.voice || 'NOpBlnGInO9m6vDvFkFC') === 'NOpBlnGInO9m6vDvFkFC'
                         ? 'border-pink-500 bg-pink-950/50 text-pink-200 shadow-[0_0_10px_rgba(236,72,153,0.3)]'
@@ -346,10 +346,26 @@ export const SettingsModal: React.FC = () => {
                     }`}
                   >
                     <div className="text-xs font-semibold font-mono flex items-center gap-1">
-                      <span>✨ ElevenLabs</span>
+                      <span>✨ Expressive</span>
                     </div>
-                    <div className="text-[10px] text-pink-300">Expressive AI Girl</div>
+                    <div className="text-[10px] text-pink-300">Creator Voice</div>
                     <div className="text-[9px] text-slate-500 font-mono truncate">NOpBlnGInO9...</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateSettings({ voice: 'cgSgspJ2msm6clMCkdW9', elevenlabsVoiceId: 'cgSgspJ2msm6clMCkdW9' })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      settings.voice === 'cgSgspJ2msm6clMCkdW9'
+                        ? 'border-pink-500 bg-pink-950/50 text-pink-200 shadow-[0_0_10px_rgba(236,72,153,0.3)]'
+                        : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold font-mono flex items-center gap-1">
+                      <span>✨ Jessica</span>
+                    </div>
+                    <div className="text-[10px] text-pink-300">Playful & Warm</div>
+                    <div className="text-[9px] text-slate-500 font-mono">Free Tier Ready</div>
                   </button>
 
                   <button
@@ -362,8 +378,8 @@ export const SettingsModal: React.FC = () => {
                     }`}
                   >
                     <div className="text-xs font-semibold font-mono">Aoede</div>
-                    <div className="text-[10px] text-slate-400">Sultry Spy (Gemini)</div>
-                    <div className="text-[9px] text-slate-500 font-mono">Dual-Key failover</div>
+                    <div className="text-[10px] text-slate-400">Sultry Spy</div>
+                    <div className="text-[9px] text-slate-500 font-mono">Gemini Neural</div>
                   </button>
 
                   <button
@@ -376,7 +392,7 @@ export const SettingsModal: React.FC = () => {
                     }`}
                   >
                     <div className="text-xs font-semibold font-mono">Kore</div>
-                    <div className="text-[10px] text-slate-400">Sweet Girlfriend</div>
+                    <div className="text-[10px] text-slate-400">Sweet Girl</div>
                     <div className="text-[9px] text-slate-500 font-mono">Gemini Neural</div>
                   </button>
 
@@ -433,7 +449,9 @@ export const SettingsModal: React.FC = () => {
               <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
                 <div>
                   <div className="text-xs font-mono font-semibold text-white">
-                    Active Voice: {(settings.voice || 'NOpBlnGInO9m6vDvFkFC') === 'NOpBlnGInO9m6vDvFkFC'
+                    Active Voice: {settings.voice === 'cgSgspJ2msm6clMCkdW9'
+                      ? 'ElevenLabs Jessica (Playful & Warm)'
+                      : (settings.voice || 'NOpBlnGInO9m6vDvFkFC') === 'NOpBlnGInO9m6vDvFkFC'
                       ? 'ElevenLabs Expressive Girl (NOpBlnGInO9m6vDvFkFC)'
                       : settings.voice === 'hf:hexgrad/Kokoro-82M'
                       ? 'Kokoro-82M (Hugging Face)'
@@ -450,7 +468,7 @@ export const SettingsModal: React.FC = () => {
                   onClick={() => {
                     import('../voice/VoiceEngine.js').then(({ VoiceEngine }) => {
                       const voiceName = settings.voice || 'NOpBlnGInO9m6vDvFkFC'
-                      const greeting = voiceName === 'NOpBlnGInO9m6vDvFkFC'
+                      const greeting = voiceName === 'NOpBlnGInO9m6vDvFkFC' || voiceName === 'cgSgspJ2msm6clMCkdW9'
                         ? 'Hey Operator... [giggles] I was waiting for you. [whispers] Ready to conquer today together?'
                         : voiceName.includes('Kore')
                         ? "Hi babe! I'm so glad we're together today! Anything you want me to do? 💕"
