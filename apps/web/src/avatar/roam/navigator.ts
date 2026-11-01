@@ -61,7 +61,7 @@ export class RoamNavigator {
     const clampedX = THREE.MathUtils.clamp(x, this.bounds.xMin, this.bounds.xMax)
     const clampedZ = THREE.MathUtils.clamp(z, this.bounds.zMin, this.bounds.zMax)
     this.targetPos.set(clampedX, 0, clampedZ)
-    this.moveSpeed = isRunning ? 1.45 : 0.90
+    this.moveSpeed = isRunning ? 0.70 : 0.40
     this.pendingArrivalAction = arrivalAction
   }
 
@@ -129,8 +129,8 @@ export class RoamNavigator {
     // 2. Active Stage Wandering (every 5-8s)
     if (!config.followCursor && time - this.lastWanderTime > this.wanderInterval) {
       this.lastWanderTime = time
-      const intervalFactor = config.energy === 'playful' ? 4.2 : config.energy === 'calm' ? 9.0 : 6.0
-      this.wanderInterval = intervalFactor + Math.random() * 3.0
+      const intervalFactor = config.energy === 'playful' ? 14.0 : config.energy === 'calm' ? 28.0 : 20.0
+      this.wanderInterval = intervalFactor + Math.random() * 8.0
 
       // Select next hotspot across the scene
       let nextIndex = Math.floor(Math.random() * this.hotspots.length)
@@ -140,7 +140,7 @@ export class RoamNavigator {
       this.lastHotspotIndex = nextIndex
 
       const spot = this.hotspots[nextIndex]
-      const isRunning = config.energy === 'playful' || Math.random() > 0.60
+      const isRunning = false // Always maintain poised, elegant catwalk pace
       this.moveTo(spot.x, spot.z, isRunning, spot.action)
     }
 
