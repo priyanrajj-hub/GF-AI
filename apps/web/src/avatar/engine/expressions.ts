@@ -65,6 +65,12 @@ export class ExpressionEngine {
   private isBlinking = false
   private blinkProgress = 0
 
+  private lastExpressionChangeTime = 0
+  private nextEyeDart = 2.0
+  private eyeDartOffset = { x: 0, y: 0 }
+  public availableExpressions: string[] = []
+  public missingExpressions: string[] = []
+
   constructor(vrm: VRM) {
     this.vrm = vrm
     this.currentValues = {
@@ -81,11 +87,23 @@ export class ExpressionEngine {
       oh: 0,
     }
     this.targetValues = { ...this.currentValues }
+
+    // Inspect available expressions on VRM
+    if (vrm.expressionManager) {
+      this.availableExpressions = vrm.expressionManager.expressions.map((e) => e.expressionName)
+      const standardPresets = ['happy', 'angry', 'sad', 'relaxed', 'blink', 'blinkLeft', 'blinkRight', 'aa', 'oh', 'lookUp', 'lookDown']
+      this.missingExpressions = standardPresets.filter((p) => !this.availableExpressions.includes(p))
+      if (typeof window !== 'undefined') {
+        ;(window as any).__ADA_VRM_EXPRESSIONS__ = this.availableExpressions
+        ;(window as any).__ADA_MISSING_EXPRESSIONS__ = this.missingExpressions
+      }
+    }
   }
 
   setExpression(name: string, intensity = 1.0): void {
     const preset = EXPRESSION_PRESETS[name] || EXPRESSION_PRESETS.neutral
     const clampedInt = Math.max(0, Math.min(1.0, intensity))
+    this.lastExpressionChangeTime = Date.now()
 
     this.targetValues = {
       joy: (preset.joy || 0) * clampedInt,
@@ -140,8 +158,28 @@ export class ExpressionEngine {
       }
     }
 
-    // 2. Smoothly Lerp values toward target
-    const rate = delta * 6.0
+    // 2. Layered Micro-Expressions (Eye Darts & Brow Micro-Motion)
+    if (time > this.nextEyeDart) {
+      this.nextEyeDart = time + 2.0 + Math.random() * 3.0
+      this.eyeDartOffset = {
+        x: (Math.random() - 0.5) * 0.08,
+        y: (Math.random() - 0.5) * 0.06,
+      }
+    }
+
+    // 3. Gentle Intensity Decay towards neutral after 4 seconds of stillness
+    const timeSinceChange = Date.now() - this.lastExpressionChangeTime
+    if (timeSinceChange > 4000) {
+      const decayFactor = Math.min(1.0, (timeSinceChange - 4000) / 3000)
+      const neutral = EXPRESSION_PRESETS.neutral
+      this.targetValues.joy = THREE.MathUtils.lerp(this.targetValues.joy, neutral.joy || 0.1, delta * 0.5)
+      this.targetValues.fun = THREE.MathUtils.lerp(this.targetValues.fun, neutral.fun || 0.35, delta * 0.5)
+      this.targetValues.angry = THREE.MathUtils.lerp(this.targetValues.angry, 0, delta * 0.8)
+      this.targetValues.sorrow = THREE.MathUtils.lerp(this.targetValues.sorrow, 0, delta * 0.8)
+    }
+
+    // 4. Smoothly Lerp values toward target with continuous easing
+    const rate = delta * 6.5
     for (const key of Object.keys(this.targetValues) as (keyof ExpressionValues)[]) {
       this.currentValues[key] = THREE.MathUtils.lerp(
         this.currentValues[key],
@@ -153,17 +191,18 @@ export class ExpressionEngine {
     // Combine natural blink with target blink
     const effectiveBlink = Math.max(naturalBlink, this.currentValues.blink)
 
-    // 3. Apply to VRM expression presets (VRM 0.x / 1.0 compatible)
-    mgr.setValue('happy', this.currentValues.joy)
-    mgr.setValue('angry', this.currentValues.angry)
-    mgr.setValue('sad', this.currentValues.sorrow)
-    mgr.setValue('relaxed', this.currentValues.fun)
+    // 5. Apply to VRM expression presets (VRM 0.x / 1.0 compatible)
+    mgr.setValue('happy', Math.min(1.0, this.currentValues.joy))
+    mgr.setValue('angry', Math.min(1.0, this.currentValues.angry))
+    mgr.setValue('sad', Math.min(1.0, this.currentValues.sorrow))
+    mgr.setValue('relaxed', Math.min(1.0, this.currentValues.fun))
     mgr.setValue('blink', effectiveBlink)
     mgr.setValue('blinkLeft', Math.max(effectiveBlink, this.currentValues.blinkL))
     mgr.setValue('blinkRight', Math.max(effectiveBlink, this.currentValues.blinkR))
-    mgr.setValue('lookUp', this.currentValues.lookUp)
-    mgr.setValue('lookDown', this.currentValues.lookDown)
+    mgr.setValue('lookUp', Math.max(0, this.currentValues.lookUp + this.eyeDartOffset.y))
+    mgr.setValue('lookDown', Math.max(0, this.currentValues.lookDown - this.eyeDartOffset.y))
     mgr.setValue('aa', this.currentValues.aa)
     mgr.setValue('oh', this.currentValues.oh)
   }
 }
+

@@ -25,7 +25,8 @@ import {
 } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
 import { VoiceEngine } from '../voice/VoiceEngine.js'
-import { globalReactionReconciler } from '../../avatar/reactions/index.js'
+import { globalReactionReconciler, globalBackchannel } from '../../avatar/reactions/index.js'
+import { globalCueScheduler } from '../../avatar/cues/CueScheduler.js'
 import { apiUrl } from '../../utils/api.js'
 
 export const ChatDrawer: React.FC = () => {
@@ -136,6 +137,9 @@ export const ChatDrawer: React.FC = () => {
 
       // 2. Reconcile with incoming LLM reply
       globalReactionReconciler.reconcileWithReply(parsedReply)
+
+      // 3. Schedule streaming inline cues along speech timeline
+      globalCueScheduler.scheduleFromText(parsedReply.display_text, parsedReply.voice_style?.rate || 1.0)
 
       // Add assistant message with strictly guarded display_text
       const assistantMsg: ChatMessage = {
@@ -440,7 +444,11 @@ export const ChatDrawer: React.FC = () => {
         <input
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value)
+            globalBackchannel.setUserTyping(true)
+          }}
+          onBlur={() => globalBackchannel.setUserTyping(false)}
           placeholder={`Talk or type to Ada (${activeMode} mode)...`}
           className="flex-1 bg-slate-900/80 border border-cyan-500/25 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
         />

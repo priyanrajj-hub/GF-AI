@@ -25,6 +25,8 @@ export const TopBar: React.FC = () => {
     setActiveMode,
     systemState,
     currentEmotion,
+    activeGesture,
+    activeAction,
     showChatDrawer,
     toggleChatDrawer,
     showStageDrawer,
@@ -131,7 +133,10 @@ export const TopBar: React.FC = () => {
           </span>
           <span className="text-slate-600">|</span>
           <span className="text-slate-400">MOOD:</span>
-          <span className="text-cyan-200 capitalize">{currentEmotion}</span>
+          <span className="text-cyan-200 uppercase">{currentEmotion}</span>
+          <span className="text-slate-600">|</span>
+          <span className="text-slate-400">ACTION:</span>
+          <span className="text-cyan-300 uppercase">{activeAction || activeGesture || 'idle'}</span>
         </div>
       </div>
 

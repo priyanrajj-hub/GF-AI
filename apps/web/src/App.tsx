@@ -20,6 +20,7 @@ import { ReactionLab } from './pages/ReactionLab.js'
 import { VoiceEngine } from './components/voice/VoiceEngine.js'
 import { globalSongEngine } from './avatar/engine/singer.js'
 import { globalReactionReconciler } from './avatar/reactions/index.js'
+import { globalCueScheduler } from './avatar/cues/CueScheduler.js'
 import { useAppStore } from './store/useAppStore.js'
 import { apiUrl } from './utils/api.js'
 import type { StructuredReply, ChatMessage } from '@ada/shared'
@@ -156,6 +157,9 @@ export const App: React.FC = () => {
 
       // 2. Reconcile with incoming LLM reply
       globalReactionReconciler.reconcileWithReply(parsedReply)
+
+      // 3. Schedule streaming inline cues along speech timeline
+      globalCueScheduler.scheduleFromText(parsedReply.display_text, parsedReply.voice_style?.rate || 1.0)
 
       const assistantMsg: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,
