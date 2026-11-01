@@ -73,6 +73,7 @@ export class HuggingFaceProvider implements LLMProvider {
       mode: options.mode,
       sliders: options.sliders,
       language: options.language,
+      liveInternetContext: options.liveInternetContext,
     })
 
     const messages = [
@@ -121,6 +122,7 @@ export class HuggingFaceProvider implements LLMProvider {
       mode: options.mode,
       sliders: options.sliders,
       language: options.language,
+      liveInternetContext: options.liveInternetContext,
     })
 
     const messages = [

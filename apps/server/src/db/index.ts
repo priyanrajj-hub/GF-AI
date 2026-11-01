@@ -88,7 +88,16 @@ export class AppDatabase {
     if (fs.existsSync(this.filePath)) {
       try {
         const raw = fs.readFileSync(this.filePath, 'utf-8')
-        return JSON.parse(raw)
+        const parsed = JSON.parse(raw)
+        // Normalize any legacy Operator/Partner usernames
+        if (parsed.users) {
+          for (const u of Object.values(parsed.users as Record<string, any>)) {
+            if (!u.userName || u.userName === 'Operator' || u.userName === 'Partner' || u.userName === 'Priyanraj') {
+              u.userName = 'Priyan'
+            }
+          }
+        }
+        return parsed
       } catch (err) {
         console.warn('[DB] Could not parse existing DB file, starting fresh', err)
       }
@@ -175,6 +184,11 @@ export class AppDatabase {
   getUserSettings(userId: string): UserSettings {
     if (!this.data.users[userId]) {
       this.data.users[userId] = { ...DEFAULT_SETTINGS, userId }
+      this.save()
+    }
+    const currentName = this.data.users[userId].userName
+    if (!currentName || currentName === 'Operator' || currentName === 'Partner' || currentName === 'Priyanraj') {
+      this.data.users[userId].userName = 'Priyan'
       this.save()
     }
     return this.data.users[userId]

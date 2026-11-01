@@ -136,6 +136,14 @@ export const DebugHUD: React.FC = () => {
           </span>
         </div>
 
+        {/* Live Internet Search Engine */}
+        <div className="flex justify-between items-center">
+          <span className="text-slate-400">LIVE INTERNET:</span>
+          <span className="text-emerald-300 text-[10px] font-semibold truncate max-w-[150px] text-right">
+            🟢 Online (DDG+Wiki)
+          </span>
+        </div>
+
         {/* User & Mode */}
         <div className="flex justify-between items-center">
           <span className="text-slate-400">USER / MODE:</span>

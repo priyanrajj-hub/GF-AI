@@ -50,12 +50,13 @@ export class ContextBuilder {
     mode: PersonalityMode
     sliders: PersonalitySliders
     language?: string
+    liveInternetContext?: string
   }): {
     systemPrompt: string
     trimmedHistory: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>
     estimatedPromptTokens: number
   } {
-    const { userId, history, userMessage, mode, sliders, language = 'en' } = options
+    const { userId, history, userMessage, mode, sliders, language = 'en', liveInternetContext } = options
 
     const settings = db.getUserSettings(userId)
     const memories = settings.memoryConsent ? db.getMemories(userId).map((m) => m.content) : []
@@ -68,6 +69,7 @@ export class ContextBuilder {
       memories,
       language,
       currentDateStr: new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
+      liveInternetContext,
     })
 
     // 2. Trim chat history to stay under ~2,000 tokens
