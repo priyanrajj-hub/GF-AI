@@ -145,12 +145,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentEmotion: 'happy',
   emotionIntensity: 0.85,
   activeGesture: 'idle',
-  setEmotionAndGesture: (emotion, intensity = 0.7, gesture = 'idle') =>
+  setEmotionAndGesture: (emotion, intensity = 0.7, gesture = 'idle') => {
     set({
       currentEmotion: emotion,
       emotionIntensity: intensity,
       activeGesture: gesture,
-    }),
+    })
+    // Auto-reset activeGesture to 'idle' after duration so avatar doesn't get stuck in gesture
+    if (gesture && gesture !== 'idle') {
+      setTimeout(() => {
+        if (get().activeGesture === gesture) {
+          set({ activeGesture: 'idle' })
+        }
+      }, 3200)
+    }
+  },
 
   activeAction: 'idle',
   setActiveAction: (action) => set({ activeAction: action }),
@@ -182,7 +191,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       content: getTimeAwareGreeting(DEFAULT_USER_SETTINGS.userName).content,
       speech: getTimeAwareGreeting(DEFAULT_USER_SETTINGS.userName).speech,
       emotion: 'happy',
-      gesture: 'wave',
+      gesture: 'idle',
       timestamp: Date.now(),
     },
   ],
