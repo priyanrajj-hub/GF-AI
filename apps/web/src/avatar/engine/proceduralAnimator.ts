@@ -217,31 +217,79 @@ export class ProceduralAnimator {
         ]
         const randomFlair = girlFlairs[Math.floor(Math.random() * girlFlairs.length)]
         this.setOverlayAction(randomFlair)
-        this.nextFlairTime = time + 6.0 + Math.random() * 5.0
+        this.nextFlairTime = time + 4.5 + Math.random() * 3.5
       }
     }
 
-    // 6. Locomotion & Legs Kinematics
+    // 6. Locomotion & High-Fashion Feminine Catwalk Kinematics
     if (this.state.isMoving) {
-      const walkFreq = effectiveAction === 'run' ? 9.5 : 5.8
-      const stepPhase = time * walkFreq
-      const legAmplitude = effectiveAction === 'run' ? 0.65 : 0.42
+      const isRunning = effectiveAction === 'run'
+      const walkFreq = isRunning ? 8.2 : 5.0
+      const phase = time * walkFreq
+      const phaseL = phase
+      const phaseR = phase + Math.PI
 
+      // Thigh forward/backward swing
+      const thighAmp = isRunning ? 0.52 : 0.36
+      const swingL = Math.sin(phaseL) * thighAmp
+      const swingR = Math.sin(phaseR) * thighAmp
+
+      // Runway Narrow Stance: thighs adduct slightly inward along a single center line
+      const adduct = 0.035 + cuteRatio * 0.015
       if (leftUpperLeg && rightUpperLeg) {
-        leftUpperLeg.rotation.x = Math.sin(stepPhase) * legAmplitude
-        rightUpperLeg.rotation.x = -Math.sin(stepPhase) * legAmplitude
-        leftUpperLeg.rotation.z = THREE.MathUtils.lerp(leftUpperLeg.rotation.z, 0, delta * 3.0)
-        rightUpperLeg.rotation.z = THREE.MathUtils.lerp(rightUpperLeg.rotation.z, 0, delta * 3.0)
+        leftUpperLeg.rotation.x = THREE.MathUtils.lerp(leftUpperLeg.rotation.x, swingL, delta * 12.0)
+        leftUpperLeg.rotation.z = THREE.MathUtils.lerp(leftUpperLeg.rotation.z, -adduct, delta * 6.0)
+        leftUpperLeg.rotation.y = THREE.MathUtils.lerp(leftUpperLeg.rotation.y, swingL * 0.10, delta * 6.0)
+
+        rightUpperLeg.rotation.x = THREE.MathUtils.lerp(rightUpperLeg.rotation.x, swingR, delta * 12.0)
+        rightUpperLeg.rotation.z = THREE.MathUtils.lerp(rightUpperLeg.rotation.z, adduct, delta * 6.0)
+        rightUpperLeg.rotation.y = THREE.MathUtils.lerp(rightUpperLeg.rotation.y, swingR * 0.10, delta * 6.0)
       }
+
+      // Knee Flexion: strictly bends BACKWARD (negative X in VRM humanoid) during swing phase
+      // Peak knee bend occurs when swinging forward through center (cos > 0)
+      const swingLiftL = Math.max(0, Math.cos(phaseL))
+      const swingLiftR = Math.max(0, Math.cos(phaseR))
+      const maxKneeBend = isRunning ? -1.05 : -0.72
+
       if (leftLowerLeg && rightLowerLeg) {
-        leftLowerLeg.rotation.x = Math.max(0, -Math.sin(stepPhase) * 0.65)
-        rightLowerLeg.rotation.x = Math.max(0, Math.sin(stepPhase) * 0.65)
+        leftLowerLeg.rotation.x = THREE.MathUtils.lerp(leftLowerLeg.rotation.x, swingLiftL * maxKneeBend, delta * 14.0)
+        leftLowerLeg.rotation.z = THREE.MathUtils.lerp(leftLowerLeg.rotation.z, 0, delta * 6.0)
+        leftLowerLeg.rotation.y = THREE.MathUtils.lerp(leftLowerLeg.rotation.y, 0, delta * 6.0)
+
+        rightLowerLeg.rotation.x = THREE.MathUtils.lerp(rightLowerLeg.rotation.x, swingLiftR * maxKneeBend, delta * 14.0)
+        rightLowerLeg.rotation.z = THREE.MathUtils.lerp(rightLowerLeg.rotation.z, 0, delta * 6.0)
+        rightLowerLeg.rotation.y = THREE.MathUtils.lerp(rightLowerLeg.rotation.y, 0, delta * 6.0)
       }
+
+      // High Heels Foot Articulation
+      if (leftFoot) {
+        leftFoot.rotation.x = THREE.MathUtils.lerp(leftFoot.rotation.x, 0.22 + Math.max(0, -swingL) * 0.08, delta * 8.0)
+        leftFoot.rotation.z = THREE.MathUtils.lerp(leftFoot.rotation.z, 0.02, delta * 6.0)
+      }
+      if (rightFoot) {
+        rightFoot.rotation.x = THREE.MathUtils.lerp(rightFoot.rotation.x, 0.22 + Math.max(0, -swingR) * 0.08, delta * 8.0)
+        rightFoot.rotation.z = THREE.MathUtils.lerp(rightFoot.rotation.z, -0.02, delta * 6.0)
+      }
+
+      // Pelvis / Hips: Feminine Runway Sway, Trendelenburg Roll & Bounce
       if (hips) {
-        hips.position.y = this.initialHipsY + Math.abs(Math.sin(stepPhase * 2)) * 0.035
-        hips.position.x = Math.sin(stepPhase) * 0.025
-        hips.rotation.y = Math.sin(stepPhase) * 0.10
-        hips.rotation.z = THREE.MathUtils.lerp(hips.rotation.z, 0, delta * 4.0)
+        hips.position.y = this.initialHipsY + Math.sin(phase * 2) * 0.018
+        hips.position.x = THREE.MathUtils.lerp(hips.position.x, Math.sin(phase) * (0.040 + cuteRatio * 0.015), delta * 10.0)
+        hips.rotation.z = THREE.MathUtils.lerp(hips.rotation.z, Math.sin(phase) * (0.055 + cuteRatio * 0.020), delta * 10.0)
+        hips.rotation.y = THREE.MathUtils.lerp(hips.rotation.y, Math.sin(phase) * 0.12, delta * 10.0)
+        hips.rotation.x = 0.02
+      }
+
+      // Torso / Spine Counter-Twist (Counter-yaw and counter-tilt for dynamic balance)
+      if (spine) {
+        spine.rotation.z = THREE.MathUtils.lerp(spine.rotation.z, -Math.sin(phase) * 0.038, delta * 8.0)
+        spine.rotation.y = THREE.MathUtils.lerp(spine.rotation.y, -Math.sin(phase) * 0.075, delta * 8.0)
+      }
+      if (chest) {
+        chest.rotation.z = THREE.MathUtils.lerp(chest.rotation.z, -Math.sin(phase) * 0.024, delta * 8.0)
+        chest.rotation.y = THREE.MathUtils.lerp(chest.rotation.y, -Math.sin(phase) * 0.050, delta * 8.0)
+        chest.rotation.x = THREE.MathUtils.lerp(chest.rotation.x, 0.025, delta * 6.0)
       }
     } else if (effectiveAction.startsWith('dance_')) {
       // 8 Interactive Dance Choreographies
@@ -319,19 +367,25 @@ export class ProceduralAnimator {
       const weightPhase = Math.sin(time * 0.45)
 
       if (leftUpperArm && rightUpperArm && leftLowerArm && rightLowerArm) {
-        const armSwing = this.state.isMoving ? Math.sin(time * 5.8) * 0.35 : 0
+        const walkFreq = effectiveAction === 'run' ? 8.2 : 5.0
+        const armSwing = this.state.isMoving ? Math.sin(time * walkFreq) * (effectiveAction === 'run' ? 0.28 : 0.16) : 0
 
         if (this.state.isMoving) {
-          leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, 1.15, delta * 3.5)
-          leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, -armSwing, delta * 4.5)
-          leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, 0, delta * 3.5)
+          leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, 1.20, delta * 4.5)
+          leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, -armSwing - 0.04, delta * 5.0)
+          leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, 0, delta * 4.0)
 
-          rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, -1.15, delta * 3.5)
-          rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, armSwing, delta * 4.5)
-          rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, 0, delta * 3.5)
+          rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, -1.20, delta * 4.5)
+          rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, armSwing - 0.04, delta * 5.0)
+          rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, 0, delta * 4.0)
 
-          leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, 0.20, delta * 3.5)
-          rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, -0.20, delta * 3.5)
+          leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, 0.24, delta * 4.0)
+          rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, -0.24, delta * 4.0)
+          leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, 0.12, delta * 4.0)
+          rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, -0.12, delta * 4.0)
+
+          if (leftHand) leftHand.rotation.x = THREE.MathUtils.lerp(leftHand.rotation.x, armSwing * 0.20, delta * 5.0)
+          if (rightHand) rightHand.rotation.x = THREE.MathUtils.lerp(rightHand.rotation.x, -armSwing * 0.20, delta * 5.0)
         } else {
           // Standing Idle: graceful feminine resting posture with gentle breathing sway
           const rRestZ = weightPhase > 0.1 ? -0.92 : -1.15

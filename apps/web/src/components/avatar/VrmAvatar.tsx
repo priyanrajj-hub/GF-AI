@@ -9,6 +9,7 @@ import { ProceduralAnimator } from '../../avatar/engine/proceduralAnimator.js'
 import { ExpressionEngine } from '../../avatar/engine/expressions.js'
 import { RoamNavigator } from '../../avatar/roam/navigator.js'
 import { AnimeFXLayer } from '../../avatar/engine/fx.js'
+import { VoiceEngine } from '../voice/VoiceEngine.js'
 
 interface VrmAvatarProps {
   modelUrl: string
@@ -200,8 +201,23 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       if (animatorRef.current) {
         animatorRef.current.setOverlayAction(poke.action)
       }
-      setActiveFX(['exclamation', 'hearts'])
-      setTimeout(() => setActiveFX([]), 2500)
+      useAppStore.getState().setEmotionAndGesture('happy', 1.0, poke.action as any)
+      useAppStore.getState().addMessage({
+        id: `msg-poke-${Date.now()}`,
+        role: 'assistant',
+        content: `*${poke.speech}*`,
+        speech: poke.speech,
+        emotion: 'happy',
+        gesture: poke.action as any,
+        timestamp: Date.now(),
+      })
+      VoiceEngine.speak(poke.speech, {
+        rate: 1.06,
+        pitch: 1.05,
+        language: settings.language,
+      })
+      setActiveFX(['exclamation', 'hearts', 'sparkles'])
+      setTimeout(() => setActiveFX([]), 2800)
     }
     window.addEventListener('ada:move_to', handleMoveEvent)
     window.addEventListener('ada:poke', handlePokeEvent)
@@ -282,15 +298,30 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       if (animatorRef.current) {
         animatorRef.current.setOverlayAction(poke.action)
       }
-      setActiveFX(['exclamation', 'hearts'])
-      setTimeout(() => setActiveFX([]), 2500)
+      useAppStore.getState().setEmotionAndGesture('happy', 1.0, poke.action as any)
+      useAppStore.getState().addMessage({
+        id: `msg-poke-${Date.now()}`,
+        role: 'assistant',
+        content: `*${poke.speech}*`,
+        speech: poke.speech,
+        emotion: 'happy',
+        gesture: poke.action as any,
+        timestamp: Date.now(),
+      })
+      VoiceEngine.speak(poke.speech, {
+        rate: 1.06,
+        pitch: 1.05,
+        language: settings.language,
+      })
+      setActiveFX(['exclamation', 'hearts', 'sparkles'])
+      setTimeout(() => setActiveFX([]), 2800)
       return
     }
 
-    // Otherwise clicked on floor -> Walk or Run to spot!
+    // Otherwise clicked on floor -> Walk or Run to spot with catwalk!
     if (e.point) {
       const isDouble = e.nativeEvent?.detail === 2
-      navigatorRef.moveTo(e.point.x, e.point.z, isDouble, 'wave')
+      navigatorRef.moveTo(e.point.x, e.point.z, isDouble, 'sassy_hip_pop')
       setClickMarker([e.point.x, -0.715, e.point.z])
       setTimeout(() => setClickMarker(null), 3000)
     }
