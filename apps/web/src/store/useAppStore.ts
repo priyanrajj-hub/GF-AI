@@ -70,6 +70,8 @@ interface AppState {
   setActiveSong: (song: any) => void
   activeFX: string[]
   setActiveFX: (fx: string[]) => void
+  avatarPosition: [number, number, number]
+  setAvatarPosition: (pos: [number, number, number]) => void
 
   // Audio & Voice
   isHandsFree: boolean
@@ -170,6 +172,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setActiveSong: (activeSong) => set({ activeSong }),
   activeFX: [],
   setActiveFX: (activeFX) => set({ activeFX }),
+  avatarPosition: [0, -0.72, 0],
+  setAvatarPosition: (pos) => set({ avatarPosition: pos }),
 
   messages: [
     {

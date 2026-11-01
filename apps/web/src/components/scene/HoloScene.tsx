@@ -9,20 +9,40 @@ import { FloatingParticles } from './FloatingParticles.js'
 import { ProjectorBase } from './ProjectorBase.js'
 
 function CameraRig() {
-  const { pointer } = useThree()
+  const { pointer, size } = useThree()
+  const { settings, avatarPosition } = useAppStore()
 
   useFrame((state, delta) => {
     const t = state.clock.elapsedTime
-    // Gentle parallax drift (plus or minus 1.5 degrees) per Round 5
-    const targetX = pointer.x * 0.14
-    const targetY = 0.04 + pointer.y * 0.08 + Math.sin(t * 0.3) * 0.01
-    const targetZ = 3.30
+    const isCloseUp = !!settings.closeUpView
+    const aspect = size.width / Math.max(1, size.height)
 
-    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetX, delta * 2.5)
-    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetY, delta * 2.5)
-    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, delta * 2.5)
+    // Current position of Ada in world space
+    const adaX = (avatarPosition && avatarPosition[0]) || 0
+    const adaY = (avatarPosition && avatarPosition[1] !== undefined) ? avatarPosition[1] : -0.72
+    const adaZ = (avatarPosition && avatarPosition[2]) || 0
 
-    state.camera.lookAt(0, -0.10, 0)
+    // Full-body responsive framing distance
+    let baseDist = 3.50
+    if (aspect < 1.0) {
+      baseDist = 4.15 // Mobile portrait
+    } else if (size.height < 650) {
+      baseDist = 3.65 // Short landscape (1024x579)
+    }
+
+    const targetZ = isCloseUp ? adaZ + 1.45 : baseDist
+    const targetY = isCloseUp ? adaY + 1.25 : (size.height < 650 ? 0.08 : 0.04)
+    const targetX = adaX * (isCloseUp ? 0.90 : 0.35) + pointer.x * (isCloseUp ? 0.04 : 0.12)
+
+    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetX, delta * 3.0)
+    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetY + Math.sin(t * 0.4) * 0.006, delta * 3.0)
+    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, delta * 3.0)
+
+    // Target chest/hips center in full body (0.02), or face in close-up
+    const lookAtX = adaX * (isCloseUp ? 0.90 : 0.35)
+    const lookAtY = isCloseUp ? adaY + 1.22 : 0.02
+    const lookAtZ = isCloseUp ? adaZ : 0
+    state.camera.lookAt(lookAtX, lookAtY, lookAtZ)
   })
 
   return null

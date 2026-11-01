@@ -27,7 +27,7 @@ export const ProjectorBase: React.FC<ProjectorBaseProps> = ({ color = '#00f3ff' 
   const baseColor = new THREE.Color(color)
 
   return (
-    <group position={[0, -0.95, 0]}>
+    <group position={[0, -0.72, 0]}>
       {/* 1. Flat Dark Metallic Disc Base (Radius 0.65m, top at y = 0) */}
       <mesh position={[0, -0.02, 0]}>
         <cylinderGeometry args={[0.65, 0.70, 0.04, 48]} />
