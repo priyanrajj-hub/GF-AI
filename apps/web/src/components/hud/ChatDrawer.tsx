@@ -379,6 +379,24 @@ export const ChatDrawer: React.FC = () => {
       {/* Quick Action Suggestion Chips */}
       <div className="px-3 py-1.5 border-t border-cyan-500/15 flex items-center gap-1.5 overflow-x-auto text-[10px] font-mono bg-slate-950/20 scrollbar-none">
         <button
+          onClick={() => handleSendMessage('Give me top stock recommendations to buy.')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-colors cursor-pointer"
+        >
+          📈 Stock Picks
+        </button>
+        <button
+          onClick={() => handleSendMessage('mcx gold rate today')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-amber-950/50 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer"
+        >
+          💰 MCX Gold
+        </button>
+        <button
+          onClick={() => handleSendMessage('nifty 50 analysis')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer"
+        >
+          📊 Nifty 50
+        </button>
+        <button
           onClick={() => handleSendMessage('Give me a morning briefing.')}
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-950/60 transition-colors cursor-pointer"
         >

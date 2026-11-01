@@ -17,6 +17,7 @@ import { authMiddleware, type AuthenticatedRequest } from './middleware/auth.js'
 import { ProviderRegistry } from './providers/index.js'
 import { ContextBuilder } from './services/contextBuilder.js'
 import { WebSearchService } from './services/webSearchService.js'
+import { TradingService } from './services/tradingService.js'
 
 dotenv.config()
 ProviderRegistry.init()
@@ -100,6 +101,22 @@ app.get('/api/search', async (req, res) => {
   }
   const results = await WebSearchService.search(q, 5)
   res.json({ query: q, results })
+})
+
+// Real-Time Trading & Stock Quote Endpoint
+app.get('/api/trading/quote', async (req, res) => {
+  const symbol = (req.query.symbol as string) || (req.query.q as string) || 'RELIANCE'
+  const quote = await TradingService.fetchQuote(symbol)
+  if (!quote) {
+    return res.status(404).json({ error: `Could not fetch quote for symbol: ${symbol}` })
+  }
+  res.json({ quote })
+})
+
+// Real-Time Daily Stock Recommendations & Setups
+app.get('/api/trading/recommendations', async (_req, res) => {
+  const recommendations = await TradingService.getTopRecommendations()
+  res.json({ recommendations, count: recommendations.length })
 })
 
 app.get('/api/providers/status', (_req, res) => {
@@ -239,34 +256,117 @@ app.post('/api/chat', async (req, res) => {
   }
   db.addMessage(userId, userMsgObj)
 
-  // 1b. Real-Time Live Web Search & Market Data Trigger
+  // 1b. Real-Time Live Web Search, Stock Trading & Market Data Trigger
   let liveInternetContext: string | undefined
-  const searchIntent = WebSearchService.detectSearchIntent(message)
-  if (searchIntent.shouldSearch) {
+  const cleanMsg = message.toLowerCase().trim()
+  const isStockRecQuery =
+    cleanMsg.includes('stock recomendation') ||
+    cleanMsg.includes('stock recommendation') ||
+    cleanMsg.includes('stocks to buy') ||
+    cleanMsg.includes('trading info') ||
+    cleanMsg.includes('best stocks') ||
+    cleanMsg.includes('trading ideas') ||
+    cleanMsg.includes('swing trading') ||
+    cleanMsg.includes('intraday stocks') ||
+    cleanMsg.includes('stock picks') ||
+    cleanMsg.includes('recommend stocks') ||
+    cleanMsg.includes('give me stocks') ||
+    cleanMsg.includes('recommendation')
+
+  if (isStockRecQuery) {
     try {
-      console.log(`🌐 [Live Web Search] Querying live data for: "${searchIntent.query}" (${searchIntent.category || 'general'})`)
-      let marketData: string | null = null
-      let weatherData: string | null = null
-
-      if (searchIntent.category === 'commodity') {
-        marketData = await WebSearchService.fetchLiveMarketQuote(searchIntent.query)
-      } else if (searchIntent.category === 'weather') {
-        weatherData = await WebSearchService.fetchLiveWeather(searchIntent.query)
+      console.log(`📈 [Trading Engine] Generating live stock recommendations...`)
+      const recs = await TradingService.getTopRecommendations()
+      if (recs.length > 0) {
+        liveInternetContext = TradingService.formatRecommendationsContext(recs)
+        console.log(`📈 [Trading Engine] Injected ${recs.length} live stock setups`)
       }
+    } catch (tradeErr: any) {
+      console.warn('⚠️ [Trading Recommendations Error]:', tradeErr?.message)
+    }
+  } else {
+    // Check specific stock or trading symbol lookup (e.g. "reliance", "tcs", "nifty", "nvda", "tesla")
+    const quoteKeywords = [
+      'reliance',
+      'tcs',
+      'hdfc',
+      'infosys',
+      'infy',
+      'tata steel',
+      'icici',
+      'sbi',
+      'sbin',
+      'itc',
+      'lt',
+      'airtel',
+      'adani',
+      'wipro',
+      'hcl',
+      'maruti',
+      'bajaj',
+      'zomato',
+      'hal',
+      'bel',
+      'nifty',
+      'banknifty',
+      'bank nifty',
+      'sensex',
+      'apple',
+      'tesla',
+      'nvidia',
+      'nvda',
+      'microsoft',
+      'google',
+      'amazon',
+      'btc',
+      'bitcoin',
+      'crude',
+    ]
+    const matchedStock = quoteKeywords.find((k) => cleanMsg.includes(k))
 
-      const searchResults = await WebSearchService.search(searchIntent.query, 3)
-
-      if (searchResults.length > 0 || marketData || weatherData) {
-        liveInternetContext = WebSearchService.formatForPrompt(
-          searchIntent.query,
-          searchResults,
-          marketData,
-          weatherData
-        )
-        console.log(`🌐 [Live Web Search] Successfully injected live data & web context`)
+    if (matchedStock) {
+      try {
+        console.log(`📈 [Trading Engine] Fetching live stock quote & technical levels for: "${matchedStock}"`)
+        const quote = await TradingService.fetchQuote(matchedStock)
+        if (quote) {
+          liveInternetContext = TradingService.formatQuoteContext(quote)
+          console.log(`📈 [Trading Engine] Injected live quote for ${quote.symbol} (₹${quote.price})`)
+        }
+      } catch (tradeErr: any) {
+        console.warn('⚠️ [Trading Quote Error]:', tradeErr?.message)
       }
-    } catch (searchErr: any) {
-      console.warn('⚠️ [Live Web Search Exception]:', searchErr?.message)
+    }
+  }
+
+  // If not handled by direct trading quote or recs, check standard WebSearchService
+  if (!liveInternetContext) {
+    const searchIntent = WebSearchService.detectSearchIntent(message)
+    if (searchIntent.shouldSearch) {
+      try {
+        console.log(`🌐 [Live Web Search] Querying live data for: "${searchIntent.query}" (${searchIntent.category || 'general'})`)
+        let marketData: string | null = null
+        let weatherData: string | null = null
+
+        if (searchIntent.category === 'commodity') {
+          marketData = await WebSearchService.fetchLiveMarketQuote(searchIntent.query)
+        } else if (searchIntent.category === 'weather') {
+          weatherData = await WebSearchService.fetchLiveWeather(searchIntent.query)
+        }
+
+        const searchResults = await WebSearchService.search(searchIntent.query, 3)
+
+        if (searchResults.length > 0 || marketData || weatherData) {
+          liveInternetContext = WebSearchService.formatForPrompt(
+            searchIntent.query,
+            searchResults,
+            marketData,
+            weatherData
+          )
+          console.log(`🌐 [Live Web Search] Successfully injected live data & web context`)
+        }
+      } catch (searchErr: any) {
+        console.warn('⚠️ [Live Web Search Exception]:', searchErr?.message)
+      }
     }
   }
 
@@ -282,7 +382,7 @@ app.post('/api/chat', async (req, res) => {
   }
 
   const effectiveMessage = liveInternetContext
-    ? `${message}\n\n[SYSTEM MANDATE: Real-time live internet data has been pulled and provided in your context. YOU MUST GIVE THE EXACT NUMBERS, PRICES, RATES, AND FACTS DIRECTLY TO ${settings.userName || 'Priyan'}. NEVER tell him to check a website, visit a link, or look at an external tracker.]`
+    ? `${message}\n\n[SYSTEM MANDATE: Real-time live trading, stock, or market data has been pulled and provided in your context. You MUST state the exact numbers, stock prices, entry zones, targets, stop-losses, and indicators directly to ${settings.userName || 'Priyan'}. Provide clear, confident, structured trading advice and technical setups! NEVER tell him to visit an external website or tracker.]`
     : message
 
   try {
