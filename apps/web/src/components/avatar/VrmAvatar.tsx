@@ -83,11 +83,19 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           // Initial placement: feet resting firmly on floor / home pad (y = -0.72)
           loadedVrm.scene.position.set(0, -0.72, 0)
 
+          // Proportions: Head scale 1.12, hips/legs scale 0.94 (Round 6 Task A)
+          const headBone = loadedVrm.humanoid?.getNormalizedBoneNode('head')
+          if (headBone) headBone.scale.set(1.12, 1.12, 1.12)
+          const lLeg = loadedVrm.humanoid?.getNormalizedBoneNode('leftUpperLeg')
+          const rLeg = loadedVrm.humanoid?.getNormalizedBoneNode('rightUpperLeg')
+          if (lLeg) lLeg.scale.set(0.95, 0.94, 0.95)
+          if (rLeg) rLeg.scale.set(0.95, 0.94, 0.95)
+
           // Set initial relaxed A-pose (Task A #5: arms down, not T-pose)
           const initLArm = loadedVrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
           const initRArm = loadedVrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
-          if (initLArm) initLArm.rotation.set(0, 0, 1.15)
-          if (initRArm) initRArm.rotation.set(0, 0, -1.15)
+          if (initLArm) initLArm.rotation.set(0, 0, 1.25)
+          if (initRArm) initRArm.rotation.set(0, 0, -1.25)
 
           // Enable shadows and disable frustum culling
           loadedVrm.scene.traverse((obj) => {
@@ -163,7 +171,14 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
         VRMUtils.deepDispose(vrm.scene)
       }
     }
-  }, [modelUrl, skinId, renderMode, hologramColor])
+  }, [modelUrl, renderMode, hologramColor])
+
+  // Instant real-time wardrobe skin updates without re-loading the model
+  useEffect(() => {
+    if (vrm) {
+      applyAvatarSkin(vrm, skinId || 'ada-red')
+    }
+  }, [skinId, vrm])
 
   // Sync action from global store to animator
   useEffect(() => {

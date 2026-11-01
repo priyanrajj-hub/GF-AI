@@ -19,13 +19,13 @@ export const ProjectorBase: React.FC<ProjectorBaseProps> = ({ color = '#00f3ff' 
 
   useFrame((state, delta) => {
     if (glyphsRef.current) {
-      glyphsRef.current.rotation.z += delta * 0.12
+      glyphsRef.current.rotation.y += delta * 0.12
     }
     if (innerRingRef.current) {
-      innerRingRef.current.rotation.z -= delta * 0.18
+      innerRingRef.current.rotation.y -= delta * 0.18
     }
     if (outerCircuitRef.current) {
-      outerCircuitRef.current.rotation.z += delta * 0.06
+      outerCircuitRef.current.rotation.y += delta * 0.06
     }
   })
 

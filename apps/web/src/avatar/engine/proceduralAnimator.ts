@@ -138,19 +138,19 @@ export class ProceduralAnimator {
         const inter = humanoid.getNormalizedBoneNode(`${side}${f}Intermediate` as any)
         const dist = humanoid.getNormalizedBoneNode(`${side}${f}Distal` as any)
 
-        const curlBase = 0.22 + i * 0.04
+        const curlBase = 0.42 + i * 0.05
         if (prox) {
           prox.rotation.z = THREE.MathUtils.lerp(prox.rotation.z, sign * curlBase, delta * 4.0)
-          prox.rotation.x = THREE.MathUtils.lerp(prox.rotation.x, 0, delta * 4.0)
+          prox.rotation.x = THREE.MathUtils.lerp(prox.rotation.x, -0.04 * (i - 1.5), delta * 4.0)
           prox.rotation.y = THREE.MathUtils.lerp(prox.rotation.y, 0, delta * 4.0)
         }
         if (inter) {
-          inter.rotation.z = THREE.MathUtils.lerp(inter.rotation.z, sign * (curlBase * 1.3), delta * 4.0)
+          inter.rotation.z = THREE.MathUtils.lerp(inter.rotation.z, sign * (curlBase * 1.4), delta * 4.0)
           inter.rotation.x = THREE.MathUtils.lerp(inter.rotation.x, 0, delta * 4.0)
           inter.rotation.y = THREE.MathUtils.lerp(inter.rotation.y, 0, delta * 4.0)
         }
         if (dist) {
-          dist.rotation.z = THREE.MathUtils.lerp(dist.rotation.z, sign * (curlBase * 0.8), delta * 4.0)
+          dist.rotation.z = THREE.MathUtils.lerp(dist.rotation.z, sign * (curlBase * 0.85), delta * 4.0)
           dist.rotation.x = THREE.MathUtils.lerp(dist.rotation.x, 0, delta * 4.0)
           dist.rotation.y = THREE.MathUtils.lerp(dist.rotation.y, 0, delta * 4.0)
         }
@@ -387,16 +387,16 @@ export class ProceduralAnimator {
           if (leftHand) leftHand.rotation.x = THREE.MathUtils.lerp(leftHand.rotation.x, armSwing * 0.20, delta * 5.0)
           if (rightHand) rightHand.rotation.x = THREE.MathUtils.lerp(rightHand.rotation.x, -armSwing * 0.20, delta * 5.0)
         } else {
-          // Standing Idle: graceful feminine resting posture with gentle breathing sway
-          const rRestZ = weightPhase > 0.1 ? -0.92 : -1.15
-          const rRestX = weightPhase > 0.1 ? -0.12 : -0.04
-          const rForeZ = weightPhase > 0.1 ? -0.32 : -0.12
-          const rForeY = weightPhase > 0.1 ? 0.25 : 0.0
+          // Standing Idle: graceful feminine resting posture (upper arms down ~70 deg, relaxed elbows & wrists)
+          const rRestZ = weightPhase > 0.1 ? -1.22 : -1.26
+          const rRestX = weightPhase > 0.1 ? -0.06 : -0.02
+          const rForeZ = weightPhase > 0.1 ? -0.34 : -0.22
+          const rForeY = weightPhase > 0.1 ? 0.18 : 0.06
 
-          const lRestZ = weightPhase < -0.1 ? 0.92 : 1.15
-          const lRestX = weightPhase < -0.1 ? -0.12 : -0.04
-          const lForeZ = weightPhase < -0.1 ? 0.32 : 0.12
-          const lForeY = weightPhase < -0.1 ? -0.25 : 0.0
+          const lRestZ = weightPhase < -0.1 ? 1.22 : 1.26
+          const lRestX = weightPhase < -0.1 ? -0.06 : -0.02
+          const lForeZ = weightPhase < -0.1 ? 0.34 : 0.22
+          const lForeY = weightPhase < -0.1 ? -0.18 : -0.06
 
           rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, rRestZ, delta * 3.0)
           rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, rRestX, delta * 3.0)

@@ -117,6 +117,24 @@ flowchart TB
   - [x] Dockerfile and docker-compose.yml for 1-click startup
   - [x] Complete README with architecture, setup, env vars, and deployment guides
 
+- [x] **Phase 13: Round 6 Visual Quality Pass & Kinematic Polish (100% Verified)**
+  - [x] Concentric horizontal floor rings: eliminated tilted ring & vertical cyan line artifacts
+  - [x] Camera safe area & elevation: feet and home pad fully visible above bottom control bar
+  - [x] Rich crimson red dress (`#C81E2F`) with toon shading, outline pass, and glossy hair sheen
+  - [x] Natural resting hands with delicate finger curl (no claw hands)
+  - [x] Balanced proportions: head scale 1.12, upper leg scale 0.94
+  - [x] Panel layout refinement: eliminated empty black space in left and right panels
+  - [x] Warm companion greeting with user name (`Priyanraj`) without Jarvis tactical jargon
+
+- [x] **Phase 14: Round 7 Reactions, Wardrobe, Always-On Voice, Environments & Stickers (100% Verified)**
+  - [x] Kinematic Reaction Engine: 60+ reactions in `reactions.json`, fast <50ms classifier layer, backchanneling nods/tilts, and `/reaction-lab` test bench
+  - [x] Wardrobe System: 15+ outfits including Indian festive wear (Royal Crimson Silk Saree, Golden Lehenga, Emerald Salwar Kameez, Kurta Set), magical 360° spin FX, and voice commands ("Ada, wear a saree")
+  - [x] Always-On Live Voice: eliminated Hands-Free/Push-to-Talk terminology, single dynamic status pill (`LISTENING / SPEAKING / THINKING / MUTED`), hard 'M' key mute shortcut
+  - [x] 16 3D Environments & Stage Studio: time and weather auto-syncing across 16 scene presets
+  - [x] Playful Talk & Mini-Games: Hinglish slang, banter, 8+ mini-games (RPS, trivia, riddles, would-you-rather)
+  - [x] Ada Stickers & Memes: 24+ sticker pack, tapback emoji reactions
+  - [x] CI/CD & Evals: GitHub Actions workflow (`.github/workflows/ci.yml`) and expanded 60/60 evals suite (100% pass)
+
 ---
 
 ## 3. Needs From Me (Optional External Keys & Assets)

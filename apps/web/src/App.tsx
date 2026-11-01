@@ -9,7 +9,10 @@ import { MemoryManagerModal } from './components/modals/MemoryManagerModal.js'
 import { MoodJournalModal } from './components/modals/MoodJournalModal.js'
 import { DebugHUD } from './components/hud/DebugHUD.js'
 import { StageDrawer } from './components/hud/StageDrawer.js'
+import { WardrobeDrawer } from './components/wardrobe/WardrobeDrawer.js'
+import { EnvironmentDrawer } from './components/hud/EnvironmentDrawer.js'
 import { AnimationTestPage } from './pages/AnimationTest.js'
+import { ReactionLab } from './pages/ReactionLab.js'
 import { VoiceEngine } from './components/voice/VoiceEngine.js'
 import { globalSongEngine } from './avatar/engine/singer.js'
 import { useAppStore } from './store/useAppStore.js'
@@ -28,13 +31,26 @@ export const App: React.FC = () => {
     setEmotionAndGesture,
     tickPomodoro,
     fullScreenHoloMode,
+    showWardrobeDrawer,
+    setShowWardrobeDrawer,
+    showEnvironmentDrawer,
+    setShowEnvironmentDrawer,
   } = useAppStore()
 
-  // Task D: Check for hidden /animation-test route
+  // Task D: Check for hidden /animation-test or /reaction-lab route
   const isAnimTest =
     typeof window !== 'undefined' &&
     (window.location.pathname === '/animation-test' ||
       window.location.search.includes('anim-test=1'))
+
+  const isReactionLab =
+    typeof window !== 'undefined' &&
+    (window.location.pathname === '/reaction-lab' ||
+      window.location.search.includes('reaction-lab=1'))
+
+  if (isReactionLab) {
+    return <ReactionLab />
+  }
 
   // 1. Futuristic Boot-Up Animation Sequence
   useEffect(() => {
@@ -220,13 +236,25 @@ export const App: React.FC = () => {
       {/* 5. Stage Performance Drawer (Dance, Sing, Roam, Cuteness) */}
       <StageDrawer />
 
-      {/* 6. Right Chat & Transcript Drawer */}
+      {/* 6. Wardrobe Drawer (15+ Outfits, Desi Festive Wear) */}
+      <WardrobeDrawer
+        isOpen={showWardrobeDrawer}
+        onClose={() => setShowWardrobeDrawer(false)}
+      />
+
+      {/* 7. 3D Environments Drawer (16 Scenes) */}
+      <EnvironmentDrawer
+        isOpen={showEnvironmentDrawer}
+        onClose={() => setShowEnvironmentDrawer(false)}
+      />
+
+      {/* 8. Right Chat & Transcript Drawer */}
       <ChatDrawer />
 
-      {/* 7. Diagnostics HUD (?debug=1) */}
+      {/* 9. Diagnostics HUD (?debug=1) */}
       <DebugHUD />
 
-      {/* 7. Modals */}
+      {/* 10. Modals */}
       <SettingsModal />
       <MemoryManagerModal />
       <MoodJournalModal />

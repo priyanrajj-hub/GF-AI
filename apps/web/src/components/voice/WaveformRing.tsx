@@ -13,14 +13,28 @@ export const WaveformRing: React.FC<WaveformRingProps> = ({ onSendMessage }) => 
     systemState,
     setSystemState,
     audioFrequencies,
-    isHandsFree,
-    toggleHandsFree,
     isMuted,
     toggleMute,
     activeMode,
     settings,
     updateSettings,
   } = useAppStore()
+
+  // One-key hard Mute (M key)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.key === 'm' || e.key === 'M') &&
+        (e.target as HTMLElement)?.tagName !== 'INPUT' &&
+        (e.target as HTMLElement)?.tagName !== 'TEXTAREA'
+      ) {
+        toggleMute()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [toggleMute])
+
 
   // Draw miniature circular waveform oscilloscope
   useEffect(() => {
@@ -112,7 +126,7 @@ export const WaveformRing: React.FC<WaveformRingProps> = ({ onSendMessage }) => 
                   ? 'bg-amber-500/30 border-2 border-amber-400 shadow-[0_0_20px_rgba(255,183,3,0.6)]'
                   : 'bg-cyan-950/60 border border-cyan-400/50 hover:border-cyan-300 hover:shadow-[0_0_15px_rgba(0,243,255,0.4)]'
           }`}
-          title="Click to speak (Push to talk / interrupt)"
+          title="Ada Voice Live (Always-on mic / Click to interrupt)"
         >
           {systemState === 'listening' ? (
             <Mic className="w-5 h-5 text-emerald-400 animate-pulse" />
@@ -126,19 +140,42 @@ export const WaveformRing: React.FC<WaveformRingProps> = ({ onSendMessage }) => 
         </button>
       </div>
 
-      {/* 2. Audio & Control Pill */}
+      {/* 2. Audio & Control Pill (Always-On Voice Status Pill) */}
       <div className="flex items-center gap-2 font-mono text-xs">
-        {/* Hands-Free Button */}
-        <button
-          onClick={toggleHandsFree}
-          className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-            isHandsFree
-              ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/60 shadow-[0_0_10px_rgba(0,243,255,0.3)]'
-              : 'text-slate-400 hover:text-white bg-slate-900/40 border border-slate-800'
+        {/* Status Pill: LISTENING / SPEAKING / THINKING / MUTED */}
+        <div
+          className={`px-3 py-1 rounded-xl text-[11px] font-semibold tracking-wider flex items-center gap-1.5 transition-all select-none ${
+            isMuted
+              ? 'bg-red-500/20 text-red-300 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.25)]'
+              : systemState === 'speaking'
+                ? 'bg-pink-500/25 text-pink-300 border border-pink-400/50 shadow-[0_0_12px_rgba(255,0,127,0.4)] animate-pulse'
+                : systemState === 'thinking'
+                  ? 'bg-amber-500/25 text-amber-300 border border-amber-400/50 shadow-[0_0_12px_rgba(255,183,3,0.4)]'
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 shadow-[0_0_10px_rgba(0,255,136,0.3)]'
           }`}
         >
-          HANDS-FREE: {isHandsFree ? 'ON' : 'OFF'}
-        </button>
+          <span
+            className={`w-2 h-2 rounded-full ${
+              isMuted
+                ? 'bg-red-400'
+                : systemState === 'speaking'
+                  ? 'bg-pink-400 animate-ping'
+                  : systemState === 'thinking'
+                    ? 'bg-amber-400 animate-spin'
+                    : 'bg-emerald-400 animate-pulse'
+            }`}
+          />
+          <span>
+            {isMuted
+              ? 'MUTED'
+              : systemState === 'speaking'
+                ? 'SPEAKING'
+                : systemState === 'thinking'
+                  ? 'THINKING'
+                  : 'LISTENING'}
+          </span>
+        </div>
+
 
         {/* Volume / Mute Toggle */}
         <button

@@ -22,25 +22,25 @@ function CameraRig() {
     const adaY = (avatarPosition && avatarPosition[1] !== undefined) ? avatarPosition[1] : -0.72
     const adaZ = (avatarPosition && avatarPosition[2]) || 0
 
-    // Full-body responsive framing distance
-    let baseDist = 3.50
+    // Full-body responsive framing distance (ensures home pad and feet never clip or get covered)
+    let baseDist = 3.60
     if (aspect < 1.0) {
-      baseDist = 4.15 // Mobile portrait
+      baseDist = 4.25 // Mobile portrait
     } else if (size.height < 650) {
-      baseDist = 3.65 // Short landscape (1024x579)
+      baseDist = 3.75 // Short landscape (1024x579)
     }
 
     const targetZ = isCloseUp ? adaZ + 1.45 : baseDist
-    const targetY = isCloseUp ? adaY + 1.25 : (size.height < 650 ? 0.08 : 0.04)
+    const targetY = isCloseUp ? adaY + 1.25 : (size.height < 650 ? -0.06 : -0.12)
     const targetX = adaX * (isCloseUp ? 0.90 : 0.35) + pointer.x * (isCloseUp ? 0.04 : 0.12)
 
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetX, delta * 3.0)
     state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetY + Math.sin(t * 0.4) * 0.006, delta * 3.0)
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, delta * 3.0)
 
-    // Target chest/hips center in full body (0.02), or face in close-up
+    // Target slightly lower center so Ada and her home pad are raised with generous safe-area padding above the bottom bar
     const lookAtX = adaX * (isCloseUp ? 0.90 : 0.35)
-    const lookAtY = isCloseUp ? adaY + 1.22 : 0.02
+    const lookAtY = isCloseUp ? adaY + 1.22 : -0.14
     const lookAtZ = isCloseUp ? adaZ : 0
     state.camera.lookAt(lookAtX, lookAtY, lookAtZ)
   })

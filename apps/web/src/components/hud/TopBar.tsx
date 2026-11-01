@@ -9,6 +9,9 @@ import {
   Eye,
   Activity,
   Sparkles,
+  Shirt,
+  Compass,
+  Smile,
 } from 'lucide-react'
 import type { PersonalityMode } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
@@ -24,6 +27,10 @@ export const TopBar: React.FC = () => {
     toggleChatDrawer,
     showStageDrawer,
     setShowStageDrawer,
+    showWardrobeDrawer,
+    setShowWardrobeDrawer,
+    showEnvironmentDrawer,
+    setShowEnvironmentDrawer,
     fullScreenHoloMode,
     toggleFullScreenHolo,
     setShowSettingsModal,
@@ -32,6 +39,7 @@ export const TopBar: React.FC = () => {
     settings,
     updateSettings,
   } = useAppStore()
+
 
   const [isMockMode, setIsMockMode] = useState<boolean>(false)
 
@@ -152,6 +160,42 @@ export const TopBar: React.FC = () => {
         >
           <Sparkles className="w-4 h-4" />
         </button>
+
+        {/* Wardrobe Drawer (15+ Outfits & Desi Saree/Lehenga) */}
+        <button
+          onClick={() => setShowWardrobeDrawer(!showWardrobeDrawer)}
+          className={`p-2 rounded-xl glass-panel-subtle transition-all cursor-pointer ${
+            showWardrobeDrawer
+              ? 'text-pink-300 border border-pink-400/50 bg-pink-500/20 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+              : 'text-slate-400 hover:text-pink-300'
+          }`}
+          title="Ada Wardrobe (15+ Outfits, Saree, Lehenga, Blazer, Pajamas)"
+        >
+          <Shirt className="w-4 h-4" />
+        </button>
+
+        {/* 3D Environments Drawer (16 Scenes) */}
+        <button
+          onClick={() => setShowEnvironmentDrawer(!showEnvironmentDrawer)}
+          className={`p-2 rounded-xl glass-panel-subtle transition-all cursor-pointer ${
+            showEnvironmentDrawer
+              ? 'text-cyan-300 border border-cyan-400/50 bg-cyan-500/20 shadow-[0_0_12px_rgba(0,243,255,0.4)]'
+              : 'text-slate-400 hover:text-cyan-300'
+          }`}
+          title="3D Stage Environments (Holo Lab, Bedroom, Rooftop, Sakura Garden, Library)"
+        >
+          <Compass className="w-4 h-4" />
+        </button>
+
+        {/* Reaction Lab Link */}
+        <a
+          href="/reaction-lab"
+          className="p-2 rounded-xl glass-panel-subtle hover:text-amber-300 text-slate-300 transition-colors cursor-pointer"
+          title="Reaction Lab (Test 60+ Kinematic Reactions & Safety Overrides)"
+        >
+          <Smile className="w-4 h-4 text-amber-400" />
+        </a>
+
 
         <button
           onClick={() => setShowMoodModal(true)}

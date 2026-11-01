@@ -1,0 +1,44 @@
+name: Ada CI / Test Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-eval:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build -w packages/shared
+
+      - name: Run Relationship Guardrails & Crisis Evals (50+ Tests)
+        run: npm run test:evals
+        env:
+          MOCK_PROVIDERS: "true"
+
+      - name: Typecheck Web App
+        run: npx tsc --noEmit -p apps/web
+
+      - name: Typecheck Server
+        run: npx tsc --noEmit -p apps/server
+
+      - name: Build Web Production Bundle
+        run: npm run build -w apps/web
+
+      - name: Build Server
+        run: npm run build -w apps/server

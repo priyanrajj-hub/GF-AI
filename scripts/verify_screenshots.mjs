@@ -95,7 +95,6 @@ async function run() {
     const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
     await page.goto('http://localhost:5173', { waitUntil: 'networkidle', timeout: 15000 });
     await page.waitForTimeout(6000);
-    // Click stage button
     const stageBtn = await page.$('button[title*="Performance Stage"]');
     if (stageBtn) {
       await stageBtn.click();
@@ -103,6 +102,49 @@ async function run() {
     }
     const stageBuffer = await page.screenshot({ fullPage: false });
     saveScreenshot('stage_drawer_1920x1080.png', stageBuffer);
+    await page.close();
+  }
+
+  // Test Wardrobe Drawer Open at 1920x1080
+  console.log('\nTesting Wardrobe Drawer at http://localhost:5173...');
+  {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    await page.goto('http://localhost:5173', { waitUntil: 'networkidle', timeout: 15000 });
+    await page.waitForTimeout(6000);
+    const wardrobeBtn = await page.$('button[title*="Wardrobe"]');
+    if (wardrobeBtn) {
+      await wardrobeBtn.click();
+      await page.waitForTimeout(1000);
+    }
+    const wardrobeBuffer = await page.screenshot({ fullPage: false });
+    saveScreenshot('wardrobe_drawer_1920x1080.png', wardrobeBuffer);
+    await page.close();
+  }
+
+  // Test Environment Drawer Open at 1920x1080
+  console.log('\nTesting Environment Drawer at http://localhost:5173...');
+  {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    await page.goto('http://localhost:5173', { waitUntil: 'networkidle', timeout: 15000 });
+    await page.waitForTimeout(6000);
+    const envBtn = await page.$('button[title*="Environments"]');
+    if (envBtn) {
+      await envBtn.click();
+      await page.waitForTimeout(1000);
+    }
+    const envBuffer = await page.screenshot({ fullPage: false });
+    saveScreenshot('environment_drawer_1920x1080.png', envBuffer);
+    await page.close();
+  }
+
+  // Test Reaction Lab at http://localhost:5173/reaction-lab
+  console.log('\nTesting Reaction Lab at http://localhost:5173/reaction-lab...');
+  {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    await page.goto('http://localhost:5173/reaction-lab', { waitUntil: 'networkidle', timeout: 15000 });
+    await page.waitForTimeout(3000);
+    const reactionBuffer = await page.screenshot({ fullPage: false });
+    saveScreenshot('reaction_lab_1920x1080.png', reactionBuffer);
     await page.close();
   }
 

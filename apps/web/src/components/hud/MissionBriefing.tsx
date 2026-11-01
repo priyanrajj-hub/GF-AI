@@ -28,6 +28,11 @@ export const MissionBriefing: React.FC = () => {
     pausePomodoro,
     resetPomodoro,
     fullScreenHoloMode,
+    setActiveAction,
+    setActiveFX,
+    setSkinId,
+    setShowWardrobeDrawer,
+    setShowStageDrawer,
   } = useAppStore()
 
   const [newTodoText, setNewTodoText] = useState('')
@@ -82,9 +87,9 @@ export const MissionBriefing: React.FC = () => {
   }
 
   return (
-    <aside className="fixed left-4 top-16 bottom-20 w-80 z-30 pointer-events-none flex flex-col gap-2.5 max-h-[calc(100dvh-150px)]">
+    <aside className="fixed left-4 top-16 w-80 z-30 pointer-events-none flex flex-col gap-2.5 max-h-[calc(100dvh-95px)] overflow-y-auto scrollbar-none pb-2">
       {/* 1. Today's Briefing & Weather Card */}
-      <div className="glass-panel p-3.5 rounded-2xl pointer-events-auto border border-cyan-500/25 space-y-2">
+      <div className="glass-panel p-3.5 rounded-2xl pointer-events-auto border border-cyan-500/25 space-y-2 shadow-lg">
         <div className="flex items-center justify-between text-xs font-mono">
           <div className="flex items-center gap-1.5 text-cyan-300 font-semibold">
             <CloudSun className="w-3.5 h-3.5 text-cyan-400" />
@@ -107,7 +112,7 @@ export const MissionBriefing: React.FC = () => {
       </div>
 
       {/* 2. Focus / Pomodoro Module */}
-      <div className="glass-panel p-3.5 rounded-2xl pointer-events-auto border border-cyan-500/25">
+      <div className="glass-panel p-3.5 rounded-2xl pointer-events-auto border border-cyan-500/25 shadow-lg">
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs tracking-wider uppercase">
             <Clock className="w-3.5 h-3.5" />
@@ -154,7 +159,7 @@ export const MissionBriefing: React.FC = () => {
       </div>
 
       {/* 3. Priority Targets & Action Items */}
-      <div className="glass-panel p-3.5 rounded-2xl pointer-events-auto border border-cyan-500/25 flex-1 flex flex-col min-h-0">
+      <div className="glass-panel p-3.5 rounded-2xl pointer-events-auto border border-cyan-500/25 flex flex-col shadow-lg">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs tracking-wider uppercase">
             <Calendar className="w-3.5 h-3.5" />
@@ -182,11 +187,11 @@ export const MissionBriefing: React.FC = () => {
           </button>
         </form>
 
-        {/* Task List Scroll */}
-        <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
+        {/* Task List */}
+        <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 scrollbar-none">
           {notes.length === 0 ? (
-            <div className="text-center py-4 text-xs text-slate-500 font-mono">
-              All milestones clear.
+            <div className="text-center py-2 text-xs text-slate-400 font-mono">
+              Ready for high-leverage milestones.
             </div>
           ) : (
             notes.map((note) => (
@@ -219,6 +224,66 @@ export const MissionBriefing: React.FC = () => {
               </div>
             ))
           )}
+        </div>
+      </div>
+
+      {/* 4. Quick Companion & Stage Actions Card */}
+      <div className="glass-panel p-3 rounded-2xl pointer-events-auto border border-pink-500/25 shadow-lg space-y-2">
+        <div className="flex items-center justify-between text-xs font-mono">
+          <div className="flex items-center gap-1.5 text-pink-300 font-semibold">
+            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+            <span>QUICK INTERACTIONS</span>
+          </div>
+          <span className="text-[9px] font-mono text-slate-400">STAGE & STYLE</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            onClick={() => {
+              setActiveAction('sassy_hip_pop')
+              setActiveFX(['sparkles', 'confetti'])
+              setTimeout(() => {
+                setActiveAction('idle')
+                setActiveFX([])
+              }, 4000)
+            }}
+            className="px-2.5 py-1.5 rounded-xl bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-200 text-[11px] font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <span>💃</span>
+            <span>Dance Move</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSkinId('saree-crimson')
+              setActiveFX(['sparkles', 'stars'])
+              setActiveAction('sassy_hip_pop')
+              setTimeout(() => {
+                setActiveAction('idle')
+                setActiveFX([])
+              }, 3000)
+            }}
+            className="px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-200 text-[11px] font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <span>🥻</span>
+            <span>Wear Saree</span>
+          </button>
+
+          <button
+            onClick={() => setShowWardrobeDrawer(true)}
+            className="px-2.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-200 text-[11px] font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <span>👗</span>
+            <span>Wardrobe</span>
+          </button>
+
+          <button
+            onClick={() => setShowStageDrawer(true)}
+            className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-200 text-[11px] font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <span>🎤</span>
+            <span>Stage Studio</span>
+          </button>
         </div>
       </div>
     </aside>

@@ -49,6 +49,10 @@ interface AppState {
   setShowMemoryModal: (show: boolean) => void
   showMoodModal: boolean
   setShowMoodModal: (show: boolean) => void
+  showWardrobeDrawer: boolean
+  setShowWardrobeDrawer: (show: boolean) => void
+  showEnvironmentDrawer: boolean
+  setShowEnvironmentDrawer: (show: boolean) => void
   fullScreenHoloMode: boolean
   toggleFullScreenHolo: () => void
 
@@ -106,7 +110,7 @@ interface AppState {
 
 const DEFAULT_USER_SETTINGS: UserSettings = {
   userId: 'default-user-1',
-  userName: 'Operator',
+  userName: 'Priyanraj',
   language: 'auto',
   mode: 'companion',
   sliders: {
@@ -188,10 +192,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     {
       id: 'welcome-1',
       role: 'assistant',
-      content: getTimeAwareGreeting(DEFAULT_USER_SETTINGS.userName).content,
-      speech: getTimeAwareGreeting(DEFAULT_USER_SETTINGS.userName).speech,
+      content: getTimeAwareGreeting(DEFAULT_USER_SETTINGS.userName, DEFAULT_USER_SETTINGS.mode).content,
+      speech: getTimeAwareGreeting(DEFAULT_USER_SETTINGS.userName, DEFAULT_USER_SETTINGS.mode).speech,
       emotion: 'happy',
-      gesture: 'idle',
+      gesture: 'wave',
       timestamp: Date.now(),
     },
   ],
@@ -214,6 +218,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setShowMemoryModal: (show) => set({ showMemoryModal: show }),
   showMoodModal: false,
   setShowMoodModal: (show) => set({ showMoodModal: show }),
+  showWardrobeDrawer: false,
+  setShowWardrobeDrawer: (show) => set({ showWardrobeDrawer: show }),
+  showEnvironmentDrawer: false,
+  setShowEnvironmentDrawer: (show) => set({ showEnvironmentDrawer: show }),
   fullScreenHoloMode: false,
   toggleFullScreenHolo: () => set((s) => ({ fullScreenHoloMode: !s.fullScreenHoloMode })),
 

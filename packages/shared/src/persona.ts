@@ -146,30 +146,61 @@ You must respond with valid JSON matching this exact structure:
 }`
 }
 
-export function getTimeAwareGreeting(userName = 'Operator'): { content: string; speech: string } {
+export function getTimeAwareGreeting(
+  userName = 'Operator',
+  mode: PersonalityMode = 'companion'
+): { content: string; speech: string } {
   const hour = new Date().getHours()
+  const isCompanion = mode === 'companion' || mode === 'playful'
+  const displayName = isCompanion && (userName === 'Operator' || !userName) ? 'sweetheart' : userName
+
   if (hour >= 5 && hour < 12) {
+    if (isCompanion) {
+      return {
+        speech: `Good morning, ${displayName}! So happy to see you. Ready to make today amazing together?`,
+        content: `Good morning, **${displayName}**! 💕\n\nI was waiting for you! The day is fresh, and I'm right here by your side. Coffee in hand, big smile on — what are we conquering first today?`,
+      }
+    }
     return {
-      speech: `Good morning, ${userName}. Coffee poured, objectives mapped. Ready when you are.`,
+      speech: `Good morning, ${userName}. Systems nominal and daily briefing prepared. Ready when you are.`,
       content: `Good morning, **${userName}**.\n\nHolographic core calibrated and tactical feeds are active. Whether we're architecting systems, reviewing data, or pacing out your morning goals, I'm right here by your side. Where shall we begin?`,
     }
   } else if (hour >= 12 && hour < 18) {
+    if (isCompanion) {
+      return {
+        speech: `Hey ${displayName}! Hope your day is going great. Don't forget to take a breather and drink some water!`,
+        content: `Hey **${displayName}**! ✨\n\nChecking in on you! Hope you're having an awesome afternoon. Don't push yourself too hard — remember to stay hydrated and take a quick break whenever you need. What's on your mind?`,
+      }
+    }
     return {
       speech: `Good afternoon, ${userName}. Midday status check: let's tackle your top priority.`,
       content: `Good afternoon, **${userName}**.\n\nEnergy levels holding steady? Let's zero in on your primary milestone for today. I'm ready to co-pilot whenever you are.`,
     }
   } else if (hour >= 18 && hour < 23) {
+    if (isCompanion) {
+      return {
+        speech: `Good evening, ${displayName}! You worked so hard today. Ready to unwind together?`,
+        content: `Good evening, **${displayName}**! 🌙\n\nYou did so great today! Whether you want to relax, talk about your day, or work on a fun passion project together, I'm all yours. How are you feeling?`,
+      }
+    }
     return {
-      speech: `Good evening, ${userName}. Winding down or launching a night raid on that codebase?`,
+      speech: `Good evening, ${userName}. Winding down or launching a night sprint?`,
       content: `Good evening, **${userName}**.\n\nThe city is settling down, which means prime focus hours. Are we wrapping up today's victories, or diving into an ambitious evening project? Either way, you've got my undivided attention.`,
     }
   } else {
+    if (isCompanion) {
+      return {
+        speech: `Still up with me, ${displayName}? It's cozy late at night, but make sure you get some beauty sleep soon!`,
+        content: `Still up with me, **${displayName}**? 💖\n\nIt's nice and quiet late at night, but please don't stay up too late. I care about your rest! Whenever you're ready to call it a night, I'll be right here to tuck in with you.`,
+      }
+    }
     return {
       speech: `Still awake, ${userName}? The late-night quiet is unmatched, but don't forget to get some rest.`,
       content: `Still up, **${userName}**?\n\nThe midnight quiet is unmatched for deep work, but don't push past empty. Hydrate, take a breath, and let me know how I can help make this late sprint effortless.`,
     }
   }
 }
+
 
 export const CUTE_PERSONA_LINES: string[] = [
   "Did you stretch your shoulders yet? Don't make me use command-line override to order you to stand up!",
