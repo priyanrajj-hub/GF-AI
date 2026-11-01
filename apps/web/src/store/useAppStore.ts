@@ -186,9 +186,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   skinId: 'ada-red',
   setSkinId: (skinId) => set({ skinId }),
   roamConfig: {
-    enabled: true,
+    enabled: false,
     range: 'half',
-    energy: 'balanced',
+    energy: 'calm',
     followCursor: false,
   },
   setRoamConfig: (partial) =>
