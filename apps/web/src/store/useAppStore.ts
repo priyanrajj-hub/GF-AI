@@ -10,6 +10,7 @@ import type {
   PersonalitySliders,
   StructuredReply,
   UserSettings,
+  CustomPersonality,
 } from '@ada/shared'
 import { getTimeAwareGreeting } from '@ada/shared'
 
@@ -53,6 +54,12 @@ interface AppState {
   setShowWardrobeDrawer: (show: boolean) => void
   showEnvironmentDrawer: boolean
   setShowEnvironmentDrawer: (show: boolean) => void
+  showPersonalityStudio: boolean
+  setShowPersonalityStudio: (show: boolean) => void
+  showPermissionCenter: boolean
+  setShowPermissionCenter: (show: boolean) => void
+  activeCustomPersonality: CustomPersonality | null
+  setActiveCustomPersonality: (p: CustomPersonality | null) => void
   fullScreenHoloMode: boolean
   toggleFullScreenHolo: () => void
 
@@ -233,6 +240,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   setShowWardrobeDrawer: (show) => set({ showWardrobeDrawer: show }),
   showEnvironmentDrawer: false,
   setShowEnvironmentDrawer: (show) => set({ showEnvironmentDrawer: show }),
+  showPersonalityStudio: false,
+  setShowPersonalityStudio: (show) => set({ showPersonalityStudio: show }),
+  showPermissionCenter: false,
+  setShowPermissionCenter: (show) => set({ showPermissionCenter: show }),
+  activeCustomPersonality: null,
+  setActiveCustomPersonality: (p) => set({ activeCustomPersonality: p }),
   fullScreenHoloMode: false,
   toggleFullScreenHolo: () => set((s) => ({ fullScreenHoloMode: !s.fullScreenHoloMode })),
 

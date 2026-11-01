@@ -9,6 +9,8 @@ import {
   type PersonalityMode,
   type PersonalitySliders,
   type StructuredReply,
+  MODEL_REGISTRY,
+  PolicyEngine,
 } from '@ada/shared'
 import { db } from './db/index.js'
 import { authMiddleware, type AuthenticatedRequest } from './middleware/auth.js'
@@ -86,6 +88,111 @@ app.get('/api/health', (req, res) => {
 app.get('/api/providers/status', (_req, res) => {
   res.json(ProviderRegistry.getStatus())
 })
+
+// Model Registry Config & Licensing
+app.get('/api/models/config', (_req, res) => {
+  res.json({ registry: MODEL_REGISTRY })
+})
+
+// Private Mode Toggle (Zero cloud leakage)
+app.post('/api/providers/private-mode', (req, res) => {
+  const { enabled } = req.body
+  const router = ProviderRegistry.getRouter()
+  router.setPrivateMode(Boolean(enabled))
+  res.json({ success: true, privateMode: router.getPrivateMode() })
+})
+
+// Router Usage & Cost/Token Stats
+app.get('/api/providers/router-stats', (_req, res) => {
+  res.json(ProviderRegistry.getRouter().getStats())
+})
+
+// Relationship Journal
+app.get('/api/relationship-journal', (req, res) => {
+  const authReq = req as AuthenticatedRequest
+  res.json({ entries: db.getRelationshipJournal(authReq.userId) })
+})
+
+app.post('/api/relationship-journal', (req, res) => {
+  const authReq = req as AuthenticatedRequest
+  const { type, title, content } = req.body
+  if (!title || !content) return res.status(400).json({ error: 'Title and content are required' })
+  const created = db.addRelationshipJournalEntry(authReq.userId, {
+    type: type || 'shared_memory',
+    title,
+    content,
+    editedByUser: false,
+  })
+  res.json({ entry: created })
+})
+
+app.put('/api/relationship-journal/:id', (req, res) => {
+  const authReq = req as unknown as AuthenticatedRequest
+  const updated = db.updateRelationshipJournalEntry(authReq.userId, req.params.id, req.body)
+  if (!updated) return res.status(404).json({ error: 'Entry not found' })
+  res.json({ entry: updated })
+})
+
+app.delete('/api/relationship-journal/:id', (req, res) => {
+  const authReq = req as unknown as AuthenticatedRequest
+  const deleted = db.deleteRelationshipJournalEntry(authReq.userId, req.params.id)
+  res.json({ success: deleted })
+})
+
+// "What do you know about me" Transparency View
+app.get('/api/memory/transparency', (req, res) => {
+  const authReq = req as AuthenticatedRequest
+  res.json(db.getTransparencyReport(authReq.userId))
+})
+
+// Memory Consolidation & Decay
+app.post('/api/memory/consolidate', (req, res) => {
+  const authReq = req as AuthenticatedRequest
+  const result = db.consolidateAndDecay(authReq.userId)
+  res.json({ success: true, result })
+})
+
+// RAG Documents with Source Citations
+app.get('/api/memory/rag', (req, res) => {
+  const authReq = req as AuthenticatedRequest
+  const q = (req.query.q as string) || ''
+  const docs = db.searchRagDocs(authReq.userId, q)
+  res.json({ docs })
+})
+
+app.post('/api/memory/rag', (req, res) => {
+  const authReq = req as AuthenticatedRequest
+  const { docTitle, chunkText, sourceCitation } = req.body
+  if (!docTitle || !chunkText) return res.status(400).json({ error: 'docTitle and chunkText are required' })
+  const created = db.addRagDoc(authReq.userId, docTitle, chunkText, sourceCitation || 'Uploaded document')
+  res.json({ doc: created })
+})
+
+app.delete('/api/memory/rag/:id', (req, res) => {
+  const authReq = req as unknown as AuthenticatedRequest
+  const deleted = db.deleteRagDoc(authReq.userId, req.params.id)
+  res.json({ success: deleted })
+})
+
+// Policy Engine Check
+app.post('/api/permissions/policy/check', (req, res) => {
+  const { integrationId, actionType, payloadDescription, sourceChannel } = req.body
+  const decision = PolicyEngine.evaluateAction(integrationId, actionType, payloadDescription, sourceChannel)
+  res.json({ decision })
+})
+
+// Master Killswitch: Pause All Integrations
+app.post('/api/permissions/pause-all', (req, res) => {
+  const { paused } = req.body
+  PolicyEngine.setAllPaused(Boolean(paused))
+  res.json({ allPaused: PolicyEngine.isAllPaused() })
+})
+
+// Permissions Audit Log
+app.get('/api/permissions/audit', (_req, res) => {
+  res.json({ auditLog: PolicyEngine.getAuditLog() })
+})
+
 
 
 // ==========================================

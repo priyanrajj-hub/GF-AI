@@ -135,6 +135,15 @@ flowchart TB
   - [x] Ada Stickers & Memes: 24+ sticker pack, tapback emoji reactions
   - [x] CI/CD & Evals: GitHub Actions workflow (`.github/workflows/ci.yml`) and expanded 60/60 evals suite (100% pass)
 
+- [x] **Phase 15: Round 8 Brain, 42-Archetype Personality Engine, Model Stack, Training & Permission Center (100% Verified)**
+  - [x] **Task A: Personality Engine**: Big Five traits + Style axes, 42 archetype JSON library, weighted blending, adaptive personality learning with drift bounds, and Personality Studio modal.
+  - [x] **Task B: Model Stack & Multi-Tier Router**: Gemini primary, Groq LPU, OpenRouter free community models, Hugging Face inference, Ollama local private mode (zero cloud leakage), and task-based routing (chit-chat vs reasoning).
+  - [x] **Task C: $0 Free Training Pipeline**: `training/data_builder.py` (PII scrubber, archetype dialogues, train/val/test splits), `training/train_lora.py` (4-bit NF4 QLoRA on free Colab/Kaggle T4), `training/dpo_train.py` (DPO alignment), and `training/export_ollama.py` (Ollama Modelfile + rollback).
+  - [x] **Task D: Custom Neural Networks / ML**: Emotion classifier (English & Hinglish with valence/arousal), intent classifier, contextual bandit reaction policy with safety boundaries, transient audio prosody analyzer, and sticker recommender.
+  - [x] **Task E: Memory & Knowledge**: Relationship journal (milestones, shared jokes, preferences), document RAG with citations, "what do you know about me" transparency export, and nightly consolidation/decay.
+  - [x] **Task F: Permission Center**: Least privilege integrations, risk tiers (Low/Medium/High/Prohibited), prompt-injection defense shield, master pause-all killswitch, and audit logging.
+  - [x] **Task G: Repo Hygiene & Evaluation**: `.env.example`, `npm run models:check`, `npm run train:data`, `npm run eval:persona` (5/5 passed), `CREDITS.md` with open weights licenses, `docs/TRAINING.md`, `docs/PERSONALITY.md`, `docs/PERMISSIONS.md`, and 100/100 evals verified.
+
 ---
 
 ## 3. Needs From Me (Optional External Keys & Assets)

@@ -7,6 +7,8 @@ import { WaveformRing } from './components/voice/WaveformRing.js'
 import { SettingsModal } from './components/modals/SettingsModal.js'
 import { MemoryManagerModal } from './components/modals/MemoryManagerModal.js'
 import { MoodJournalModal } from './components/modals/MoodJournalModal.js'
+import { PersonalityStudioModal } from './components/personality/PersonalityStudioModal.js'
+import { PermissionCenterModal } from './components/permissions/PermissionCenterModal.js'
 import { DebugHUD } from './components/hud/DebugHUD.js'
 import { StageDrawer } from './components/hud/StageDrawer.js'
 import { WardrobeDrawer } from './components/wardrobe/WardrobeDrawer.js'
@@ -263,6 +265,8 @@ export const App: React.FC = () => {
       <SettingsModal />
       <MemoryManagerModal />
       <MoodJournalModal />
+      <PersonalityStudioModal />
+      <PermissionCenterModal />
     </div>
   )
 }

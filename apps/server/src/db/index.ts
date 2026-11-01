@@ -8,12 +8,33 @@ import type {
   UserSettings,
 } from '@ada/shared'
 
+export interface RelationshipJournalEntry {
+  id: string
+  userId: string
+  type: 'shared_joke' | 'user_preference' | 'milestone' | 'shared_memory'
+  title: string
+  content: string
+  timestamp: number
+  editedByUser: boolean
+}
+
+export interface RagDocChunk {
+  id: string
+  userId: string
+  docTitle: string
+  chunkText: string
+  sourceCitation: string
+  createdAt: number
+}
+
 interface DatabaseSchema {
   users: Record<string, UserSettings>
   messages: Record<string, ChatMessage[]>
   memories: Record<string, MemoryItem[]>
   notes: Record<string, NoteItem[]>
   journal: Record<string, MoodJournalEntry[]>
+  relationshipJournal: Record<string, RelationshipJournalEntry[]>
+  ragDocs: Record<string, RagDocChunk[]>
   tokenLogs: Array<{
     userId: string
     timestamp: number
@@ -115,6 +136,29 @@ export class AppDatabase {
         ],
       },
       journal: { 'default-user-1': [] },
+      relationshipJournal: {
+        'default-user-1': [
+          {
+            id: 'rj-1',
+            userId: 'default-user-1',
+            type: 'milestone',
+            title: 'First Holographic Activation',
+            content: 'Activated Ada Hologram v0.8 with 42 personalities and multi-tier model stack.',
+            timestamp: Date.now() - 3600000,
+            editedByUser: false,
+          },
+          {
+            id: 'rj-2',
+            userId: 'default-user-1',
+            type: 'shared_joke',
+            title: 'Tea vs Coffee Protocol',
+            content: 'Ada knows Operator loves chai first thing in the morning.',
+            timestamp: Date.now() - 1800000,
+            editedByUser: false,
+          },
+        ],
+      },
+      ragDocs: { 'default-user-1': [] },
       tokenLogs: [],
     }
   }
@@ -280,6 +324,155 @@ export class AppDatabase {
     const totalTokens = logs.reduce((acc, l) => acc + l.promptTokens + l.completionTokens, 0)
     const totalCostUsd = logs.reduce((acc, l) => acc + l.costUsd, 0)
     return { totalTokens, totalCostUsd, requestCount: logs.length }
+  }
+
+  // --- Relationship Journal (Milestones, shared jokes, preferences) ---
+  getRelationshipJournal(userId: string): RelationshipJournalEntry[] {
+    return this.data.relationshipJournal?.[userId] || []
+  }
+
+  addRelationshipJournalEntry(
+    userId: string,
+    entry: Omit<RelationshipJournalEntry, 'id' | 'userId' | 'timestamp'>
+  ): RelationshipJournalEntry {
+    if (!this.data.relationshipJournal) this.data.relationshipJournal = {}
+    if (!this.data.relationshipJournal[userId]) this.data.relationshipJournal[userId] = []
+    const newEntry: RelationshipJournalEntry = {
+      ...entry,
+      id: `rj-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      userId,
+      timestamp: Date.now(),
+    }
+    this.data.relationshipJournal[userId].unshift(newEntry)
+    this.save()
+    return newEntry
+  }
+
+  updateRelationshipJournalEntry(
+    userId: string,
+    id: string,
+    partial: Partial<RelationshipJournalEntry>
+  ): RelationshipJournalEntry | null {
+    const list = this.data.relationshipJournal?.[userId] || []
+    const idx = list.findIndex((e) => e.id === id)
+    if (idx === -1) return null
+    list[idx] = { ...list[idx], ...partial, editedByUser: true }
+    this.save()
+    return list[idx]
+  }
+
+  deleteRelationshipJournalEntry(userId: string, id: string): boolean {
+    const list = this.data.relationshipJournal?.[userId] || []
+    const filtered = list.filter((e) => e.id !== id)
+    const changed = filtered.length !== list.length
+    if (!this.data.relationshipJournal) this.data.relationshipJournal = {}
+    this.data.relationshipJournal[userId] = filtered
+    if (changed) this.save()
+    return changed
+  }
+
+  // --- RAG Document Chunks & Source Citations ---
+  addRagDoc(userId: string, docTitle: string, chunkText: string, sourceCitation: string): RagDocChunk {
+    if (!this.data.ragDocs) this.data.ragDocs = {}
+    if (!this.data.ragDocs[userId]) this.data.ragDocs[userId] = []
+    const chunk: RagDocChunk = {
+      id: `rag-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      userId,
+      docTitle,
+      chunkText,
+      sourceCitation,
+      createdAt: Date.now(),
+    }
+    this.data.ragDocs[userId].push(chunk)
+    this.save()
+    return chunk
+  }
+
+  searchRagDocs(userId: string, query: string, topK: number = 3): RagDocChunk[] {
+    const list = this.data.ragDocs?.[userId] || []
+    const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2)
+    if (queryWords.length === 0) return list.slice(0, topK)
+
+    const scored = list.map((doc) => {
+      const textLower = (doc.docTitle + ' ' + doc.chunkText).toLowerCase()
+      let score = 0
+      for (const w of queryWords) {
+        if (textLower.includes(w)) score += 1
+      }
+      return { doc, score }
+    })
+
+    return scored
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK)
+      .map((s) => s.doc)
+  }
+
+  deleteRagDoc(userId: string, id: string): boolean {
+    const list = this.data.ragDocs?.[userId] || []
+    const filtered = list.filter((d) => d.id !== id)
+    const changed = filtered.length !== list.length
+    if (!this.data.ragDocs) this.data.ragDocs = {}
+    this.data.ragDocs[userId] = filtered
+    if (changed) this.save()
+    return changed
+  }
+
+  // --- "What do you know about me" Transparency View ---
+  getTransparencyReport(userId: string) {
+    const user = this.getUserSettings(userId)
+    const memories = this.getMemories(userId)
+    const journalEntries = this.getRelationshipJournal(userId)
+    const ragDocs = this.data.ragDocs?.[userId] || []
+    const notes = this.getNotes(userId)
+
+    return {
+      userName: user.userName,
+      mode: user.mode,
+      memoriesCount: memories.length,
+      memories: memories.map((m) => ({ id: m.id, key: m.key, content: m.content, pinned: m.pinned, importance: m.importance })),
+      relationshipMilestones: journalEntries.map((j) => ({ id: j.id, type: j.type, title: j.title, content: j.content })),
+      documentsIndexed: ragDocs.map((d) => ({ id: d.id, title: d.docTitle, citation: d.sourceCitation })),
+      notesCount: notes.length,
+    }
+  }
+
+  // --- Nightly Consolidation & Memory Decay ---
+  consolidateAndDecay(userId: string): { deduplicatedCount: number; decayedCount: number } {
+    const list = this.data.memories[userId] || []
+    const now = Date.now()
+    const thirtyDaysMs = 30 * 86400000
+
+    let decayedCount = 0
+    let deduplicatedCount = 0
+
+    // 1. Decay unpinned memories older than 30 days
+    for (const mem of list) {
+      if (!mem.pinned && now - mem.updatedAt > thirtyDaysMs) {
+        if (mem.importance > 1) {
+          mem.importance = Math.max(1, mem.importance - 1)
+          mem.updatedAt = now
+          decayedCount++
+        }
+      }
+    }
+
+    // 2. Simple deduplication by key
+    const seenKeys = new Set<string>()
+    const deduped: MemoryItem[] = []
+    for (const mem of list) {
+      if (!seenKeys.has(mem.key)) {
+        seenKeys.add(mem.key)
+        deduped.push(mem)
+      } else {
+        deduplicatedCount++
+      }
+    }
+
+    this.data.memories[userId] = deduped
+    this.save()
+    return { deduplicatedCount, decayedCount }
   }
 }
 

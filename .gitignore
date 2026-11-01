@@ -35,10 +35,13 @@ lerna-debug.log*
 # OS & Editor
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Training adapter weights
+training/ada-lora-adapter/
+training/ada-dpo-adapter/
+

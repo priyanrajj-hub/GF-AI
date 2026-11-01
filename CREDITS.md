@@ -23,8 +23,14 @@ All assets, models, audio, and open-source libraries used in Project Ada are str
 ## 3. Speech, Voice & AI Providers
 - **Kokoro-82M TTS**: High-speed, natural neural voice model hosted on Hugging Face (Apache 2.0 License).
 - **Web Speech API**: Zero-cost, on-device browser speech recognition and synthesis.
-- **Google Gemini 2.5 Flash / Pro**: Structured reasoning, multimode perception, and tool routing.
-- **Hugging Face Inference**: Dual API key support for open-source foundation models (`Qwen/Qwen2.5-72B-Instruct`, `meta-llama/Llama-3.3-70B-Instruct`).
+- **Google Gemini 2.0 Flash / Flash Lite**: Primary structured multimodal reasoning and tool execution.
+- **Groq Cloud Inference**: Ultra-low-latency LPU inference for `llama-3.3-70b-versatile` and `llama-3.1-8b-instant`.
+- **OpenRouter Free Tier**: Community open models (`meta-llama/llama-3.2-3b-instruct:free`, `qwen/qwen-2.5-7b-instruct:free`).
+- **Ollama Local Engine**: MIT License, enabling 100% private offline edge inference.
+- **Meta Llama Family**: `Llama-3.3-70B-Instruct`, `Llama-3.2-3B-Instruct` under Meta Llama 3.3 Community License Agreement.
+- **Alibaba Qwen Family**: `Qwen/Qwen2.5-72B-Instruct`, `Qwen/Qwen2.5-7B-Instruct` under Apache 2.0 License.
+- **OpenAI Whisper STT**: Audio transcription under MIT License.
+- **ElevenLabs Neural Voice**: User-provided API key pipeline with graceful free-tier voice fallback.
 
 ---
 
