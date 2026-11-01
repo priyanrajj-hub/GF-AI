@@ -1,4 +1,5 @@
 import { useAppStore } from '../../store/useAppStore.js'
+import { apiUrl } from '../../utils/api.js'
 
 class VoiceEngineManager {
   private recognition: any = null
@@ -7,6 +8,8 @@ class VoiceEngineManager {
   private dataArray: Uint8Array = new Uint8Array(32)
   private animFrameId: number | null = null
   private currentUtterance: SpeechSynthesisUtterance | null = null
+  private currentAudioSource: AudioBufferSourceNode | null = null
+  private isNeuralPlaying = false
 
   initAudioContext(): void {
     if (!this.audioContext) {
@@ -37,6 +40,17 @@ class VoiceEngineManager {
 
   // --- Instant Barge-In Interrupt ---
   interruptSpeaking(): void {
+    if (this.currentAudioSource) {
+      try {
+        this.currentAudioSource.stop()
+        this.currentAudioSource.disconnect()
+      } catch {
+        // ignore
+      }
+      this.currentAudioSource = null
+    }
+    this.isNeuralPlaying = false
+
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel()
     }
@@ -46,19 +60,13 @@ class VoiceEngineManager {
     }
   }
 
-  // --- Text-to-Speech (TTS) ---
-  speak(
+  // --- Primary Text-to-Speech (TTS) with Girl Voice ---
+  async speak(
     text: string,
     options: { rate?: number; pitch?: number; language?: string; onEnd?: () => void } = {}
-  ): void {
+  ): Promise<void> {
     this.initAudioContext()
     this.interruptSpeaking()
-
-    if (!('speechSynthesis' in window)) {
-      console.warn('[TTS] SpeechSynthesis not supported in this browser.')
-      if (options.onEnd) options.onEnd()
-      return
-    }
 
     const store = useAppStore.getState()
     if (store.isMuted) {
@@ -66,7 +74,7 @@ class VoiceEngineManager {
       return
     }
 
-    // Clean text (remove URLs, symbols, code blocks)
+    // Clean text (remove URLs, markdown symbols, asterisks, brackets)
     const cleanSpeech = text
       .replace(/https?:\/\/\S+/gi, '')
       .replace(/```[\s\S]*?```/gi, '')
@@ -78,32 +86,115 @@ class VoiceEngineManager {
       return
     }
 
+    // 1. Try High-Fidelity Neural Gemini AI Girl Voice (Aoede: sultry, confident, feminine)
+    try {
+      const res = await fetch(apiUrl('/api/tts'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': store.settings.userId || 'default-user-1',
+        },
+        body: JSON.stringify({
+          text: cleanSpeech,
+          voice: 'Aoede', // Google's natural feminine girl voice
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.audioBase64 && this.audioContext) {
+          const binary = atob(data.audioBase64)
+          const bytes = new Uint8Array(binary.length)
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i)
+          }
+
+          const audioBuffer = await this.audioContext.decodeAudioData(bytes.buffer)
+          const source = this.audioContext.createBufferSource()
+          source.buffer = audioBuffer
+
+          // Gain control
+          const gainNode = this.audioContext.createGain()
+          gainNode.gain.value = store.audioVolume ?? 0.95
+
+          // Connect to analyser for real-time lip-sync & visualizer rings
+          if (this.analyser) {
+            source.connect(gainNode)
+            gainNode.connect(this.analyser)
+            this.analyser.connect(this.audioContext.destination)
+          } else {
+            source.connect(gainNode)
+            gainNode.connect(this.audioContext.destination)
+          }
+
+          this.currentAudioSource = source
+          this.isNeuralPlaying = true
+
+          source.onended = () => {
+            this.isNeuralPlaying = false
+            this.currentAudioSource = null
+            store.setSystemState('idle')
+            if (options.onEnd) options.onEnd()
+          }
+
+          store.setSystemState('speaking')
+          store.triggerGlitch()
+          source.start(0)
+          return
+        }
+      }
+    } catch (err) {
+      console.warn('[Neural TTS] Server voice synthesis failed, falling back to Web Speech girl voice:', err)
+    }
+
+    // 2. High-Quality Web Speech API Female Girl Voice Fallback
+    this.speakWebSpeech(cleanSpeech, options)
+  }
+
+  private speakWebSpeech(
+    cleanSpeech: string,
+    options: { rate?: number; pitch?: number; language?: string; onEnd?: () => void } = {}
+  ): void {
+    if (!('speechSynthesis' in window)) {
+      console.warn('[TTS] SpeechSynthesis not supported in this browser.')
+      if (options.onEnd) options.onEnd()
+      return
+    }
+
+    const store = useAppStore.getState()
     const utterance = new SpeechSynthesisUtterance(cleanSpeech)
     this.currentUtterance = utterance
 
+    // Feminine girl pitch (1.14 = sweet, bright, feminine tone)
+    utterance.pitch = options.pitch ?? 1.14
     utterance.rate = options.rate ?? 1.05
-    utterance.pitch = options.pitch ?? 1.0
-    utterance.volume = store.audioVolume ?? 0.9
+    utterance.volume = store.audioVolume ?? 0.95
 
-    // Language selection (Hindi, English, or default)
     const lang = options.language || store.settings.language
-    if (lang === 'hi') {
-      utterance.lang = 'hi-IN'
-    } else {
-      utterance.lang = 'en-US'
-    }
+    utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US'
 
-    // Voice neural selection
+    // Explicitly filter for FEMALE / GIRL voices, strictly avoiding male voices
     const voices = window.speechSynthesis.getVoices()
-    const preferredVoice = voices.find(
-      (v) =>
-        (lang === 'hi' && v.lang.startsWith('hi')) ||
-        v.name.includes('Samantha') ||
-        v.name.includes('Natural') ||
-        v.name.includes('Google') ||
-        v.name.includes('Zira') ||
-        v.name.includes('Jenny')
+    const maleNames = ['david', 'mark', 'george', 'richard', 'guy', 'stefan', 'male']
+    const femaleCandidates = voices.filter(
+      (v) => !maleNames.some((m) => v.name.toLowerCase().includes(m))
     )
+
+    const preferredVoice =
+      femaleCandidates.find(
+        (v) =>
+          v.name.includes('Jenny') ||
+          v.name.includes('Aria') ||
+          v.name.includes('Ana') ||
+          v.name.includes('Samantha') ||
+          v.name.includes('Google US English') ||
+          v.name.includes('Zira') ||
+          v.name.includes('Victoria') ||
+          v.name.includes('Natural')
+      ) ||
+      femaleCandidates.find((v) => v.lang.startsWith('en')) ||
+      voices[0]
+
     if (preferredVoice) {
       utterance.voice = preferredVoice
     }
@@ -119,7 +210,7 @@ class VoiceEngineManager {
     }
 
     utterance.onerror = (e) => {
-      console.warn('[TTS Error]', e)
+      console.warn('[WebSpeech Error]', e)
       store.setSystemState('idle')
       if (options.onEnd) options.onEnd()
     }

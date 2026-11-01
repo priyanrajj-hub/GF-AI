@@ -215,6 +215,37 @@ app.post('/api/chat/vision', upload.single('file'), async (req, res) => {
 })
 
 // ==========================================
+// 3.5. NEURAL AI VOICE SYNTHESIS (GIRL VOICE)
+// ==========================================
+app.post('/api/tts', async (req, res) => {
+  const { text, voice } = req.body
+
+  if (!text || typeof text !== 'string') {
+    return res.status(400).json({ error: 'Text is required for TTS synthesis' })
+  }
+
+  // Prebuilt female voices: 'Aoede' (sultry, confident, spy-chic) or 'Kore' (sweet, gentle girlfriend)
+  const voiceName = (voice === 'Kore' ? 'Kore' : 'Aoede') as 'Aoede' | 'Kore'
+
+  try {
+    const llm = ProviderRegistry.getLLM() as any
+    if (typeof llm.generateTTS === 'function') {
+      const result = await llm.generateTTS(text, voiceName)
+      return res.json(result)
+    }
+
+    const { GeminiLLMProvider } = await import('./providers/geminiProvider.js')
+    const provider = new GeminiLLMProvider()
+    const result = await provider.generateTTS(text, voiceName)
+    return res.json(result)
+  } catch (err: unknown) {
+    const error = err as Error
+    console.error('[TTS Endpoint Error]', error.message)
+    return res.status(500).json({ error: error.message || 'TTS generation failed' })
+  }
+})
+
+// ==========================================
 // 4. SETTINGS & PROFILE
 // ==========================================
 app.get('/api/settings', (req, res) => {

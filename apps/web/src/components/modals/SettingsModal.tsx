@@ -1,5 +1,5 @@
 import React, { useRef } from 'react'
-import { X, Sliders, Palette, Cpu, Shield, Globe, Zap, Box, Sparkles, Upload, Eye } from 'lucide-react'
+import { X, Sliders, Palette, Cpu, Shield, Globe, Zap, Box, Sparkles, Upload, Eye, Volume2 } from 'lucide-react'
 import type { AvatarRenderMode } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
 
@@ -67,7 +67,7 @@ export const SettingsModal: React.FC = () => {
         </div>
 
         {/* Modal Scroll Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div id="settings-modal-scroll" className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* 1. 3D Avatar Model & Render Modes */}
           <div className="space-y-4">
             <h4 className="text-xs font-mono uppercase tracking-wider text-cyan-300 flex items-center gap-2">
@@ -295,6 +295,63 @@ export const SettingsModal: React.FC = () => {
                   onChange={(e) => updateSettings({ lowPerformanceMode: e.target.checked })}
                   className="w-4 h-4 accent-cyan-400 cursor-pointer"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Ada Girl Voice & Neural Speech Synthesis */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-mono uppercase tracking-wider text-pink-300 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Volume2 className="w-3.5 h-3.5 text-pink-400" />
+                <span>Ada Girl Voice & Speech Engine</span>
+              </span>
+              <span className="text-[10px] text-pink-400/80 font-mono px-2 py-0.5 rounded border border-pink-500/30 bg-pink-950/40">
+                GEMINI NEURAL AI ACTIVE
+              </span>
+            </h4>
+
+            <div className="glass-panel-subtle p-4 rounded-xl border border-pink-500/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-mono font-semibold text-white">
+                    Primary Voice: Aoede (Sultry Spy-Chic Girl)
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    High-fidelity neural audio/wav generated directly via Gemini 3.8 TTS
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    import('../voice/VoiceEngine.js').then(({ VoiceEngine }) => {
+                      VoiceEngine.speak("Hey Operator! How do I sound? Ready for our next mission, or just hanging out with me? 😉")
+                    })
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-pink-500/20 text-pink-300 border border-pink-400/50 hover:bg-pink-500/30 text-xs font-mono flex items-center gap-1.5 cursor-pointer transition-all shadow-[0_0_10px_rgba(244,63,94,0.3)]"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>TEST VOICE</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800/80">
+                <div>
+                  <div className="text-[11px] font-mono text-slate-400 mb-1">
+                    Voice Persona Style
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-pink-200 font-mono">
+                    Ada Wong (Confident, Warm & Playful)
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-mono text-slate-400 mb-1">
+                    Fallback Voice Engine
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-cyan-200 font-mono">
+                    Filtered Female Browser Neural TTS
+                  </div>
+                </div>
               </div>
             </div>
           </div>
