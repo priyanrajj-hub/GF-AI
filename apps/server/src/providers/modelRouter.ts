@@ -117,10 +117,16 @@ export class ModelRouter implements LLMProvider {
 
     const taskType = this.classifyTask(userMessage)
 
-    // 2. Select candidates based on task type
+    // 2. Select candidates based on task type and user provider preference
     const candidateProviders: { name: string; provider: LLMProvider }[] = []
 
-    if (taskType === 'reasoning') {
+    if (normOptions.llmProvider === 'huggingface') {
+      candidateProviders.push({ name: 'huggingface', provider: this.huggingface })
+      if (this.gemini.isConfigured()) candidateProviders.push({ name: 'gemini', provider: this.gemini })
+    } else if (normOptions.llmProvider === 'gemini') {
+      if (this.gemini.isConfigured()) candidateProviders.push({ name: 'gemini', provider: this.gemini })
+      if (this.huggingface.isConfigured()) candidateProviders.push({ name: 'huggingface', provider: this.huggingface })
+    } else if (taskType === 'reasoning') {
       // Stronger reasoning providers first
       if (this.gemini.isConfigured()) candidateProviders.push({ name: 'gemini', provider: this.gemini })
       if (this.groq.isConfigured()) candidateProviders.push({ name: 'groq', provider: this.groq })

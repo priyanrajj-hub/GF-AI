@@ -168,6 +168,38 @@ flowchart TB
     - Monorepo build: Zero TypeScript or bundling errors across `@ada/shared`, `ada-server`, `ada-worker`, `ada-web`.
     - Visual Quality screenshots verified at 1920x1080 and 1366x768 (`ada_v9_first_run_1080p.png`, `ada_v9_first_run_768p.png`, `ada_v9_original_skin_1080p.png`, `ada_v9_wellbeing_dashboard_1080p.png`, `ada_v9_wardrobe_accessories_1080p.png`).
 
+- [x] **Phase 17: Round 10 Fix the Broken Core: Reply Parsing, Real-Time Expressions, Working Motion & High-Fidelity Voice (100% Verified)**
+  - [x] **Task A: Bulletproof Structured Reply Pipeline & UI Guardrails**:
+    - Zero raw JSON leaking: implemented `packages/shared/src/reply/parseReply.ts` with balanced brace extractor, smart quote/trailing comma repair, Zod schema validation, speech sanitizer (`sanitizeSpeechText`), and strict UI guardrail (`sanitizeBubbleText`).
+    - 32/32 unit tests passing in `packages/shared/src/reply/parseReply.test.ts`.
+    - Replaced all "Operator" and "Partner" titles with `userName: 'Priyanraj'` across all personality greetings, providers, and database schemas.
+  - [x] **Task B: Real-Time Expressions, Cues & HUD Synchronization**:
+    - Built `apps/web/src/avatar/cues/CueScheduler.ts` to schedule streaming inline emotion/action cues along speech timeline.
+    - Connected backchannel typing indicators (`globalBackchannel.setUserTyping(true)`) to chat input.
+    - Synchronized `TopBar.tsx` status HUD to show live state, mood, and active action.
+  - [x] **Task C: Working Procedural Motion & Artifact Elimination**:
+    - Eliminated stray vertical cyan line artifact cutting through legs in `ProjectorBase.tsx`.
+    - Fixed mascot orbit ring tilt from `-Math.PI / 3` to clean horizontal ring.
+    - Built `apps/web/src/avatar/motion/performAction.ts` action dispatcher and `procedural/danceStyles.ts` with 6 beat-quantized dance styles (Cute Idol, Pop Groove, Hip-Hop Bounce, Slow Sway, Jazzy Spy Walk-Turn, Jump Dance).
+    - Natural relaxed arm resting angles and delicate finger curl kinematics (no claw hands).
+  - [x] **Task D: Voice Engine Overhaul (ElevenLabs & Speech Sanitizer)**:
+    - Connected ElevenLabs hyper-realistic expressive girl voice (`NOpBlnGInO9m6vDvFkFC`) with user key `sk_219ca6a4315e38f74478bcb10c1df0662decb4b6f6302bbe`.
+    - Sanitized speech text: stripped all markdown headers, asterisks, URLs, code blocks, emojis, and inline cue tags.
+  - [x] **Task E: 20s+ Beat-Quantized Dance & Singing Choreographies**:
+    - Connected "Dance Move" button in `MissionBriefing.tsx` to 22s random beat-quantized choreography.
+    - Connected "Wear Saree" to crimson saree wardrobe change + sassy hip pop.
+    - Synchronized Stage Studio dance selector and karaoke singing.
+  - [x] **Task F: Viewport Cutoffs & Soft Radial Particle Sprites**:
+    - Replaced square pixel particles in `FloatingParticles.tsx` and `fx.tsx` with smooth circular radial canvas sprite textures.
+    - Set viewport layout to `100dvh` with safe-area padding; verified zero cutoff at 1920x1080 and 1366x768.
+  - [x] **Task G: Diagnostics Overlay & Girlfriend/Companion Defaults**:
+    - Built `DebugHUD.tsx` with `?debug=1` and `Ctrl+Shift+D` toggle, showing real-time FPS (55+ FPS), System State, Emotion, Action, ElevenLabs TTS engine, Hugging Face/Gemini brain, user `Priyanraj (companion)`, and live audio levels.
+    - Hugging Face API key persistence and configuration in Settings.
+  - [x] **Task H: Verification & Quality Bar**:
+    - 32/32 Reply Pipeline tests passing (`packages/shared/src/reply/parseReply.test.ts`).
+    - 108/108 Comprehensive Evaluation tests passing (`npm run test:evals`).
+    - Full-resolution screenshots captured and verified (`ada_round10_stage_verified_1080p.png`, `ada_round10_live_chat_1080p.png`, `ada_round10_responsive_768p.png`, `ada_round10_dance_action_1080p.png`).
+
 ---
 
 ## 3. Needs From Me (Optional External Keys & Assets)

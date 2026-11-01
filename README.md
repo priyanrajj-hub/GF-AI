@@ -48,6 +48,12 @@ flowchart TB
 ### 2. Kinematic Reaction Engine (<50ms)
 - **Reaction Library:** 60+ distinct reactions in `reactions.json` (cheer, shy blush, dramatic pout, gentle concern, giggle, victory pose, yawn, eye roll, etc.).
 - **Fast Local Classifier Layer:** <50ms instant micro-reaction before the full LLM reply arrives, followed by LLM reconciler.
+- **6 Beat-Quantized Dance Styles:** Procedural idol dances, pop groove, hip-hop bounce, slow sway, jazzy walk-turn, and jump dances lasting 20+ seconds with beat synchronization.
+
+### 3. Bulletproof Reply Pipeline & High-Fidelity Voice
+- **Zero Raw JSON Leaks:** Zod-validated streaming reply extractor with balanced-brace detection, smart quote & trailing comma repair, and strict UI guardrail (`sanitizeBubbleText`).
+- **ElevenLabs Ultra-Realistic Neural Voice:** Integrated voice ID `NOpBlnGInO9m6vDvFkFC` with full sentence-level speech sanitization (clean of markdown syntax, asterisks, URLs, code blocks, emojis, and cues).
+- **Diagnostics Overlay (`?debug=1`):** Real-time HUD showing FPS, bone kinematics, voice engine, LLM brain, emotion, and audio levels.
 - **Natural Backchanneling:** Micro-nods, eyebrow raises, head tilts, and thinking pose every 3–6s while the user speaks or types.
 - **Reaction Lab:** Interactive visual bench at `/reaction-lab` to preview all 60+ kinematic reactions with full body animation and safety overrides.
 

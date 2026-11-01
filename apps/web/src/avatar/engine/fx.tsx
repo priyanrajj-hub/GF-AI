@@ -18,6 +18,26 @@ export const AnimeFXLayer: React.FC<AnimeFXProps> = ({
 
   // Floating particles pool
   const particleCount = 45
+
+  const particleTexture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)')
+      gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.75)')
+      gradient.addColorStop(0.65, 'rgba(255, 255, 255, 0.25)')
+      gradient.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)')
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, 64, 64)
+    }
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.needsUpdate = true
+    return texture
+  }, [])
+
   const [positions, colors, scales] = useMemo(() => {
     const pos = new Float32Array(particleCount * 3)
     const col = new Float32Array(particleCount * 3)
@@ -107,7 +127,8 @@ export const AnimeFXLayer: React.FC<AnimeFXProps> = ({
             />
           </bufferGeometry>
           <pointsMaterial
-            size={0.06}
+            map={particleTexture}
+            size={0.08}
             vertexColors
             transparent
             opacity={0.85}
@@ -153,10 +174,10 @@ export const AnimeFXLayer: React.FC<AnimeFXProps> = ({
             <meshBasicMaterial color="#05070f" />
           </mesh>
 
-          {/* Floating Orbit Ring */}
-          <mesh rotation={[-Math.PI / 3, 0, 0]}>
+          {/* Horizontal Halo Orbit Ring */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[0.11, 0.125, 32]} />
-            <meshBasicMaterial color="#00f3ff" transparent opacity={0.5} wireframe />
+            <meshBasicMaterial color="#00f3ff" transparent opacity={0.65} />
           </mesh>
         </group>
       )}

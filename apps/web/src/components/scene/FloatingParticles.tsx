@@ -7,8 +7,33 @@ interface FloatingParticlesProps {
   count?: number
 }
 
+/**
+ * Creates a smooth radial soft particle sprite texture (Task F)
+ * Eliminates harsh square pixel particles, rendering soft glowing round bokeh orbs.
+ */
+function createRadialParticleTexture(): THREE.Texture {
+  const canvas = document.createElement('canvas')
+  canvas.width = 64
+  canvas.height = 64
+  const ctx = canvas.getContext('2d')
+  if (ctx) {
+    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)')
+    gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.75)')
+    gradient.addColorStop(0.65, 'rgba(255, 255, 255, 0.25)')
+    gradient.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)')
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, 64, 64)
+  }
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.needsUpdate = true
+  return texture
+}
+
 export const FloatingParticles: React.FC<FloatingParticlesProps> = ({ color = '#00f3ff', count = 120 }) => {
   const pointsRef = useRef<THREE.Points>(null)
+
+  const particleTexture = useMemo(() => createRadialParticleTexture(), [])
 
   const [positions, speeds] = useMemo(() => {
     const pos = new Float32Array(count * 3)
@@ -52,10 +77,11 @@ export const FloatingParticles: React.FC<FloatingParticlesProps> = ({ color = '#
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.018}
+        map={particleTexture}
+        size={0.038}
         color={color}
         transparent
-        opacity={0.45}
+        opacity={0.65}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />

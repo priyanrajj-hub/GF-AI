@@ -146,6 +146,8 @@ export const App: React.FC = () => {
           mode: activeMode,
           sliders: settings.sliders,
           language: settings.language,
+          llmProvider: settings.llmProvider,
+          huggingfaceApiKey: settings.huggingfaceApiKey,
           stream: false,
         }),
       })
@@ -246,7 +248,7 @@ export const App: React.FC = () => {
 
       {/* 4. Docked Bottom Control Bar (Below stage, out of base area) */}
       {!fullScreenHoloMode && (
-        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+        <div className="fixed bottom-4 md:bottom-5 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
           <WaveformRing onSendMessage={handleVoiceMessage} />
         </div>
       )}

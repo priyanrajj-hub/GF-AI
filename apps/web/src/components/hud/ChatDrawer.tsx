@@ -126,6 +126,8 @@ export const ChatDrawer: React.FC = () => {
           mode: activeMode,
           sliders: settings.sliders,
           language: settings.language,
+          llmProvider: settings.llmProvider,
+          huggingfaceApiKey: settings.huggingfaceApiKey,
           stream: false,
         }),
       })

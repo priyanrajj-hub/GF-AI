@@ -113,9 +113,9 @@ export const ProjectorBase: React.FC<ProjectorBaseProps> = ({ color = '#00f3ff' 
         />
       </mesh>
 
-      {/* 10. Subtle Stage Floor Grid */}
+      {/* 10. Subtle Stage Floor Grid (Dark neutral grid lines, no bright center line through avatar legs) */}
       <gridHelper
-        args={[16, 32, color, '#0c1527']}
+        args={[16, 32, '#0c1527', '#080d18']}
         position={[0, -0.042, 0]}
       />
     </group>
