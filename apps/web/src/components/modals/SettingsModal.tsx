@@ -351,25 +351,9 @@ export const SettingsModal: React.FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   <button
                     type="button"
-                    onClick={() => updateSettings({ voice: 'NOpBlnGInO9m6vDvFkFC', elevenlabsVoiceId: 'NOpBlnGInO9m6vDvFkFC' })}
-                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                      (settings.voice || 'NOpBlnGInO9m6vDvFkFC') === 'NOpBlnGInO9m6vDvFkFC'
-                        ? 'border-pink-500 bg-pink-950/50 text-pink-200 shadow-[0_0_10px_rgba(236,72,153,0.3)]'
-                        : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="text-xs font-semibold font-mono flex items-center gap-1">
-                      <span>✨ Expressive</span>
-                    </div>
-                    <div className="text-[10px] text-pink-300">Creator Voice</div>
-                    <div className="text-[9px] text-slate-500 font-mono truncate">NOpBlnGInO9...</div>
-                  </button>
-
-                  <button
-                    type="button"
                     onClick={() => updateSettings({ voice: 'cgSgspJ2msm6clMCkdW9', elevenlabsVoiceId: 'cgSgspJ2msm6clMCkdW9' })}
                     className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                      settings.voice === 'cgSgspJ2msm6clMCkdW9'
+                      (settings.voice || 'cgSgspJ2msm6clMCkdW9') === 'cgSgspJ2msm6clMCkdW9'
                         ? 'border-pink-500 bg-pink-950/50 text-pink-200 shadow-[0_0_10px_rgba(236,72,153,0.3)]'
                         : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
                     }`}
@@ -377,22 +361,40 @@ export const SettingsModal: React.FC = () => {
                     <div className="text-xs font-semibold font-mono flex items-center gap-1">
                       <span>✨ Jessica</span>
                     </div>
-                    <div className="text-[10px] text-pink-300">Playful & Warm</div>
-                    <div className="text-[9px] text-slate-500 font-mono">Free Tier Ready</div>
+                    <div className="text-[10px] text-pink-300">Playful & Warm Girl</div>
+                    <div className="text-[9px] text-slate-500 font-mono">ElevenLabs Turbo</div>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => updateSettings({ voice: 'Aoede' })}
+                    onClick={() => updateSettings({ voice: 'EXAVITQu4vr4xnSDxMaL', elevenlabsVoiceId: 'EXAVITQu4vr4xnSDxMaL' })}
                     className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                      settings.voice === 'Aoede'
-                        ? 'border-pink-500 bg-pink-950/50 text-pink-200'
+                      settings.voice === 'EXAVITQu4vr4xnSDxMaL'
+                        ? 'border-pink-500 bg-pink-950/50 text-pink-200 shadow-[0_0_10px_rgba(236,72,153,0.3)]'
                         : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
                     }`}
                   >
-                    <div className="text-xs font-semibold font-mono">Aoede</div>
-                    <div className="text-[10px] text-slate-400">Sultry Spy</div>
-                    <div className="text-[9px] text-slate-500 font-mono">Gemini Neural</div>
+                    <div className="text-xs font-semibold font-mono flex items-center gap-1">
+                      <span>✨ Sarah</span>
+                    </div>
+                    <div className="text-[10px] text-pink-300">Reassuring Girl</div>
+                    <div className="text-[9px] text-slate-500 font-mono">ElevenLabs Neural</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateSettings({ voice: 'FGY2WhTYpPnrIDTdsKH5', elevenlabsVoiceId: 'FGY2WhTYpPnrIDTdsKH5' })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      settings.voice === 'FGY2WhTYpPnrIDTdsKH5'
+                        ? 'border-pink-500 bg-pink-950/50 text-pink-200 shadow-[0_0_10px_rgba(236,72,153,0.3)]'
+                        : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold font-mono flex items-center gap-1">
+                      <span>✨ Laura</span>
+                    </div>
+                    <div className="text-[10px] text-pink-300">Sassy Girl</div>
+                    <div className="text-[9px] text-slate-500 font-mono">ElevenLabs Neural</div>
                   </button>
 
                   <button
@@ -420,7 +422,7 @@ export const SettingsModal: React.FC = () => {
                   >
                     <div className="text-xs font-semibold font-mono">Kokoro-82M</div>
                     <div className="text-[10px] text-slate-400">Hugging Face</div>
-                    <div className="text-[9px] text-slate-500 font-mono">Open-Source</div>
+                    <div className="text-[9px] text-slate-500 font-mono">Open-Source Girl</div>
                   </button>
                 </div>
               </div>

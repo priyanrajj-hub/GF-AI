@@ -340,19 +340,19 @@ app.post('/api/tts', async (req, res) => {
         voice === 'cgSgspJ2msm6clMCkdW9' ||
         voice.toLowerCase().includes('eleven')))
 
-  const elevenVoiceId =
+  const rawVoiceId =
     elevenlabsVoiceId ||
     (voice && voice.startsWith('elevenlabs:')
       ? voice.replace(/^elevenlabs:/, '')
-      : voice === 'NOpBlnGInO9m6vDvFkFC' || voice === 'cgSgspJ2msm6clMCkdW9'
-      ? voice
-      : process.env.ELEVENLABS_VOICE_ID || 'NOpBlnGInO9m6vDvFkFC')
-  const elevenModel = elevenlabsModelId || process.env.ELEVENLABS_MODEL_ID || 'eleven_v4'
+      : voice || 'cgSgspJ2msm6clMCkdW9')
+  // Automatically remap Grandpa Spuds Oxley to Jessica (real human girl)
+  const elevenVoiceId = rawVoiceId === 'NOpBlnGInO9m6vDvFkFC' ? 'cgSgspJ2msm6clMCkdW9' : rawVoiceId
+  const elevenModel = elevenlabsModelId || 'eleven_turbo_v2_5'
 
-  // Prebuilt female voices: 'Aoede' (sultry, confident, spy-chic) or 'Kore' (sweet, gentle girlfriend)
+  // Prebuilt female voices: 'Kore' (sweet, gentle, young girlfriend voice) as default
   const isHFVoice = voice && (voice.startsWith('hf:') || voice.includes('/') || voice.toLowerCase().includes('kokoro'))
   const cleanHFModel = isHFVoice ? voice.replace(/^hf:/, '') : 'hexgrad/Kokoro-82M'
-  const geminiVoice = (voice === 'Kore' ? 'Kore' : 'Aoede') as 'Aoede' | 'Kore'
+  const geminiVoice = (voice === 'Aoede' ? 'Aoede' : 'Kore') as 'Aoede' | 'Kore'
 
   // Try requested provider or fallback
   try {

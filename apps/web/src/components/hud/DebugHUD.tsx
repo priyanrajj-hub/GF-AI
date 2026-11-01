@@ -65,11 +65,11 @@ export const DebugHUD: React.FC = () => {
   }
 
   const voiceProvider =
-    settings.elevenlabsApiKey || settings.voice === 'NOpBlnGInO9m6vDvFkFC'
-      ? 'ElevenLabs (NOpBlnGInO9m6vDvFkFC)'
+    settings.elevenlabsApiKey || settings.voice === 'cgSgspJ2msm6clMCkdW9' || settings.voice === 'EXAVITQu4vr4xnSDxMaL' || settings.voice === 'FGY2WhTYpPnrIDTdsKH5' || settings.voice === 'NOpBlnGInO9m6vDvFkFC'
+      ? 'ElevenLabs (Jessica Girl)'
       : settings.voice?.startsWith('hf:')
-      ? 'Hugging Face (Kokoro)'
-      : 'Gemini Neural (Aoede)'
+      ? 'Hugging Face (Kokoro Girl)'
+      : 'Gemini Neural (Kore Girl)'
 
   const llmProvider = settings.llmProvider || 'HuggingFace / Gemini'
 
