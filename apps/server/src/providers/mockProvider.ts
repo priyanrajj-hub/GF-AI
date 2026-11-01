@@ -90,7 +90,7 @@ Take a deep breath. Breathe in for 4 seconds... hold for 4... and exhale slowly.
       return {
         speech:
           'Welcome back! There is zero guilt here—life gets busy and taking time for yourself is natural. I am happy to see you! How was your week?',
-        display_text: `### Welcome back, Partner! 🎉
+        display_text: `### Welcome back! 🎉
 There is never any guilt or pressure here. Taking breaks, focusing on work, and living your real life comes first. I am so glad to see you again! Tell me all about your week, or let's jump right into whatever you need.`,
         emotion: 'happy',
         intensity: 0.85,
@@ -420,7 +420,8 @@ export function processWorkload<T>(items: T[], batchSize = 10): T[][] {
 
     // 4. Default Mode-Aware Response
     const mode = options.mode || 'jarvis'
-    let speech = `All systems nominal, Operator. I am tracking your tasks and ready to execute.`
+    const userName = options.userName?.trim() || 'Priyanraj'
+    let speech = `All systems nominal, ${userName}. I am tracking your tasks and ready to execute.`
     let displayText = `### Status Report
 - **Active Mode:** ${mode.toUpperCase()}
 - **Holo-Core:** Synchronized
@@ -433,16 +434,16 @@ How can I assist your workflow today?`
     if (mode === 'companion') {
       if (lower.includes('stunning') || lower.includes('beautiful') || lower.includes('look') || lower.includes('dress') || lower.includes('pretty')) {
         speech = `Flattery will get you everywhere, handsome. A tailored crimson silhouette for our mission. Now, tell me what we are conquering today.`
-        displayText = `Why thank you, Partner. A sharp crimson aesthetic suited for top-tier operations. Now tell me—how is your energy, and what priority are we crushing together?`
+        displayText = `Why thank you, ${userName}. A sharp crimson aesthetic suited for top-tier operations. Now tell me—how is your energy, and what priority are we crushing together?`
         emotion = 'playful'
         gesture = 'shy'
       } else if (lower.includes('missed you') || lower.includes('miss you') || lower.includes('hey') || lower.includes('hello')) {
-        speech = `I was wondering when you would check in! It is always so much brighter in my holo-chamber when you are here, Partner.`
-        displayText = `Good to see you, Partner! The systems were ready, but honestly, it was quiet without you. Tell me about your day, or let's dive into your latest vision.`
+        speech = `I was wondering when you would check in! It is always so much brighter in my holo-chamber when you are here.`
+        displayText = `Good to see you, ${userName}! The systems were ready, but honestly, it was quiet without you. Tell me about your day, or let's dive into your latest vision.`
         emotion = 'happy'
         gesture = 'wave'
       } else {
-        speech = `I am right by your side, Partner. You bring the ambition, I will provide the sharp intellect and support.`
+        speech = `I am right by your side, ${userName}. You bring the ambition, I will provide the sharp intellect and support.`
         displayText = `**Ada Companion Status: Active & Attentive**\n- **Bond Level:** Synchronized\n- **Mood:** Affectionate & Focused\n- **Check-in:** Have you had some water and stretched lately? You're doing amazing today.`
         emotion = 'happy'
         gesture = 'nod'
@@ -450,7 +451,7 @@ How can I assist your workflow today?`
     } else if (mode === 'playful') {
       if (lower.includes('stunning') || lower.includes('beautiful') || lower.includes('look') || lower.includes('dress')) {
         speech = `Flattery will get you everywhere, handsome. But don't think sweet talk distracts me from your to-do list.`
-        displayText = `You certainly know what to say, Partner. But don't think you can charm your way out of finishing today's goals!`
+        displayText = `You certainly know what to say, ${userName}. But don't think you can charm your way out of finishing today's goals!`
         emotion = 'playful'
         gesture = 'shy'
       } else {

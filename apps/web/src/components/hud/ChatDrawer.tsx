@@ -15,7 +15,14 @@ import {
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { StickerProvider, type ChatMessage, type StructuredReply, type AdaSticker } from '@ada/shared'
+import {
+  StickerProvider,
+  type ChatMessage,
+  type StructuredReply,
+  type AdaSticker,
+  parseStructuredReply,
+  sanitizeBubbleText,
+} from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
 import { VoiceEngine } from '../voice/VoiceEngine.js'
 import { globalReactionReconciler } from '../../avatar/reactions/index.js'
@@ -124,28 +131,29 @@ export const ChatDrawer: React.FC = () => {
 
       if (!res.ok) throw new Error('Failed to communicate with Ada server')
       const data = await res.json()
-      const reply: StructuredReply = data.reply
+      const rawPayload = typeof data.reply === 'string' ? data.reply : JSON.stringify(data.reply || {})
+      const parsedReply = parseStructuredReply(rawPayload, { userName: settings.userName })
 
       // 2. Reconcile with incoming LLM reply
-      globalReactionReconciler.reconcileWithReply(reply)
+      globalReactionReconciler.reconcileWithReply(parsedReply)
 
-      // Add assistant message
+      // Add assistant message with strictly guarded display_text
       const assistantMsg: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,
         role: 'assistant',
-        content: reply.display_text,
-        speech: reply.speech,
-        emotion: reply.emotion,
-        gesture: reply.gesture,
+        content: sanitizeBubbleText(parsedReply.display_text, { userName: settings.userName }),
+        speech: parsedReply.speech,
+        emotion: parsedReply.emotion,
+        gesture: parsedReply.gesture,
         timestamp: Date.now(),
       }
       addMessage(assistantMsg)
 
       // Trigger Voice
-      if (reply.speech) {
-        VoiceEngine.speak(reply.speech, {
-          rate: reply.voice_style?.rate || 1.05,
-          pitch: reply.voice_style?.pitch || 1.0,
+      if (parsedReply.speech) {
+        VoiceEngine.speak(parsedReply.speech, {
+          rate: parsedReply.voice_style?.rate || 1.05,
+          pitch: parsedReply.voice_style?.pitch || 1.0,
           language: settings.language,
         })
       } else {
@@ -276,7 +284,7 @@ export const ChatDrawer: React.FC = () => {
               {/* Display text / Markdown */}
               <div className="prose prose-invert prose-xs max-w-none font-sans text-xs leading-relaxed break-words space-y-1.5 [&_p]:mb-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_code]:bg-slate-950 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-cyan-300 [&_pre]:bg-slate-950 [&_pre]:p-2 [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-cyan-500/20 [&_strong]:text-cyan-200">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {msg.content}
+                  {msg.role === 'assistant' ? sanitizeBubbleText(msg.content, { userName: settings.userName }) : msg.content}
                 </ReactMarkdown>
               </div>
 
