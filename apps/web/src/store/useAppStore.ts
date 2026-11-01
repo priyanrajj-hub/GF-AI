@@ -259,3 +259,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   glitchTrigger: 0,
   triggerGlitch: () => set((s) => ({ glitchTrigger: s.glitchTrigger + 1 })),
 }))
+
+if (typeof window !== 'undefined') {
+  ;(window as any).useAppStore = useAppStore
+}
+
