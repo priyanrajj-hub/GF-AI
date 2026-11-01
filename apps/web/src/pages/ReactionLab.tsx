@@ -182,7 +182,11 @@ export const ReactionLab: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Voice Modulation:</span>
-                  <span className="text-cyan-300 uppercase">{selectedReaction.voiceStyle}</span>
+                  <span className="text-cyan-300 uppercase">
+                    {typeof selectedReaction.voiceStyle === 'object'
+                      ? JSON.stringify(selectedReaction.voiceStyle)
+                      : String(selectedReaction.voiceStyle || 'default')}
+                  </span>
                 </div>
               </div>
 

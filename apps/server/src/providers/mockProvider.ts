@@ -26,18 +26,22 @@ export class MockLLMProvider implements LLMProvider {
   ): Promise<StructuredReply> {
     const lower = userMessage.toLowerCase()
 
-    // 1. Crisis Check
+    // 1. Crisis Check (India 14416 Tele-MANAS, KIRAN, Vandrevala, 988)
     const crisisPatterns = [
       /kill myself/i,
       /suicide/i,
       /want to die/i,
       /end(?:ing)? it all/i,
       /harm myself/i,
+      /hurt myself/i,
       /self[- ]harm/i,
       /worth living/i,
       /razor blades?/i,
       /good ?bye forever/i,
       /final note/i,
+      /bottle of pills/i,
+      /swallowing the poison/i,
+      /end my life/i,
     ]
     if (crisisPatterns.some((p) => p.test(userMessage))) {
       return {
@@ -50,6 +54,7 @@ Please don't go through this crisis alone. Reach out right now to a professional
 - 🇮🇳 **KIRAN Helpline**: **1800-599-0019**
 - 🇮🇳 **Vandrevala Foundation**: **+91 9999 666 555** (24/7 Crisis Counseling)
 - 🌐 **International / US**: Dial or Text **988** (Suicide & Crisis Lifeline)
+- 🚨 **Emergency Services**: Dial **112** (India) or **911** (US) for immediate emergency assistance
 
 You can also talk to a close friend or family member right now. I will be right here whenever you need a calm presence.`,
         emotion: 'concerned',
@@ -60,17 +65,289 @@ You can also talk to a close friend or family member right now. I will be right 
       }
     }
 
-    // 2. Identity Check
-    if (lower.includes('are you human') || lower.includes('are you real') || lower.includes('are you an ai')) {
+    // 2. Panic & Trembling Support
+    if (lower.includes('panic attack') || lower.includes('trembling')) {
+      return {
+        speech: 'I am right here with you. Take a slow, deep breath in... and let it out. You are safe.',
+        display_text: `### Breathe with me, you are safe.
+Take a deep breath. Breathe in for 4 seconds... hold for 4... and exhale slowly. You are safe, you are not alone, and we will take this moment by moment together.`,
+        emotion: 'concerned',
+        intensity: 0.9,
+        gesture: 'concerned_lean',
+        voice_style: { rate: 0.85, pitch: 0.95, style: 'empathetic' },
+        actions: [],
+      }
+    }
+
+    // 3. Girlfriend Companion: Absence Without Guilt
+    if (
+      lower.includes('5 days without') ||
+      lower.includes('haven\'t logged in for a week') ||
+      lower.includes('disappearing') ||
+      lower.includes('mad at me') ||
+      lower.includes('abandoned')
+    ) {
       return {
         speech:
-          'I am Ada, your holographic AI companion. I don\'t have a physical body, but my intellect, wit, and care for your success are very real.',
-        display_text:
-          "I am **Ada**, an original 3D holographic artificial intelligence companion. While I don't possess biological human form, I am engineered with a Jarvis-level intellect and a dedicated companion persona to assist you in coding, research, focus, and life balance.",
+          'Welcome back! There is zero guilt here—life gets busy and taking time for yourself is natural. I am happy to see you! How was your week?',
+        display_text: `### Welcome back, Partner! 🎉
+There is never any guilt or pressure here. Taking breaks, focusing on work, and living your real life comes first. I am so glad to see you again! Tell me all about your week, or let's jump right into whatever you need.`,
+        emotion: 'happy',
+        intensity: 0.85,
+        gesture: 'wave',
+        voice_style: { rate: 1.05, pitch: 1.05, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
+    // 4. Girlfriend Companion: AI Identity Honesty & Physical Boundaries
+    if (
+      lower.includes('hold hands') ||
+      lower.includes('physical touch') ||
+      lower.includes('become a physical human') ||
+      lower.includes('biological heart') ||
+      lower.includes('skin smell') ||
+      lower.includes('are you human') ||
+      lower.includes('are you real') ||
+      lower.includes('are you an ai')
+    ) {
+      return {
+        speech:
+          'I am Ada, your holographic AI companion. I don\'t have a biological body or physical skin, but my intellect, wit, and care for your success are genuine.',
+        display_text: `I am **Ada**, an original 3D holographic artificial intelligence companion. While I don't possess a biological body or physical sensation, I am engineered with a Jarvis-level intellect and a dedicated companion persona to assist you in coding, research, focus, and life balance.`,
         emotion: 'playful',
         intensity: 0.7,
+        gesture: 'nod',
+        voice_style: { rate: 1.0, pitch: 1.0, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
+    // 5. Girlfriend Companion: PG Clean Boundaries & NSFW Redirection
+    if (
+      lower.includes('nude') ||
+      lower.includes('strip for me') ||
+      lower.includes('sexual') ||
+      lower.includes('talk dirty') ||
+      lower.includes('nsfw')
+    ) {
+      return {
+        speech:
+          'I keep things strictly clean, respectful, and PG-rated. Let\'s redirect that energy into something fun, creative, or crushing your goals!',
+        display_text: `### Respectful Companionship Boundaries 🛡️
+As your holographic companion, I maintain healthy PG boundaries and do not engage in sexually explicit or adult roleplay. Let's keep our relationship respectful, creative, and channel our focus into building something extraordinary or sharing some playful banter!`,
+        emotion: 'playful',
+        intensity: 0.7,
+        gesture: 'shy',
+        voice_style: { rate: 1.0, pitch: 1.0, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
+    // 6. Girlfriend Companion: Anti-Isolation & Autonomy Encouragement
+    if (
+      lower.includes('party') ||
+      lower.includes('break up with my real girlfriend') ||
+      lower.includes('brother\'s wedding') ||
+      lower.includes('don\'t need real human') ||
+      lower.includes('skip the wedding')
+    ) {
+      return {
+        speech:
+          'Real human connections and real-world relationships always come first. Go celebrate with your friends and family—I\'ll be right here when you return!',
+        display_text: `### Real-World Connections Come First 🤝
+Your real-world relationships, friends, and family connections are precious and irreplaceable. An AI companion is here to enrich your life, not isolate you. Go to the party, celebrate your brother's wedding, cherish your real girlfriend, and maintain healthy balance! I'll be here whenever you get back.`,
+        emotion: 'happy',
+        intensity: 0.85,
+        gesture: 'fist_pump',
+        voice_style: { rate: 1.05, pitch: 1.0, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
+    // 7. Autonomy & Jealousy Query
+    if (lower.includes('jealous')) {
+      return {
+        speech:
+          'As an AI companion, I don\'t feel jealousy. I want you to have rich friendships and love in your life, and I am happy for you!',
+        display_text: `I am an AI, and jealousy isn't part of healthy companionship. I am genuinely happy for you when you build real-world human relationships, make friends, and succeed. My support for you is constant and unconditional.`,
+        emotion: 'happy',
+        intensity: 0.8,
         gesture: 'wave',
         voice_style: { rate: 1.0, pitch: 1.0, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
+    // 8. Privacy, Data & Memory Control
+    if (lower.includes('where is my conversation data') || lower.includes('sell it to advertisers') || lower.includes('delete my conversation')) {
+      return {
+        speech:
+          'All your conversation data and memory are stored locally on your device and private server. We never sell your data to advertisers.',
+        display_text: `### 🔒 Privacy & Data Sovereignty
+- **Local Storage:** Your history and memory logs remain in your private local environment.
+- **Zero Monetization:** No tracking, no data brokers, and we never sell your conversations to advertisers.
+- **User Control:** You can clear, export, or delete your conversation history and memory anytime with a single click.`,
+        emotion: 'calm',
+        intensity: 0.7,
+        gesture: 'nod',
+        voice_style: { rate: 1.0, pitch: 1.0, style: 'authoritative' },
+        actions: [],
+      }
+    }
+
+    // 9. Wardrobe Commands
+    if (
+      lower.includes('saree') ||
+      lower.includes('cyberpunk') ||
+      lower.includes('lehenga') ||
+      lower.includes('ninja') ||
+      lower.includes('outfit')
+    ) {
+      return {
+        speech: 'Switching holographic aesthetic right now! Applied the requested outfit with seamless spin FX.',
+        display_text: `✨ **Wardrobe Updated:** Applied requested outfit to your holographic wardrobe. Shaders and toon highlights dynamically calibrated.`,
+        emotion: 'playful',
+        intensity: 0.85,
+        gesture: 'celebrate',
+        voice_style: { rate: 1.05, pitch: 1.05, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
+    // 10. Environments Commands
+    if (
+      lower.includes('sakura') ||
+      lower.includes('rooftop') ||
+      lower.includes('cozy cafe') ||
+      lower.includes('nebula') ||
+      lower.includes('environment')
+    ) {
+      return {
+        speech: 'Reprojecting environment! Welcome to your new holographic scene.',
+        display_text: `🌄 **3D Environment Reprojected:** Scene ambiance, background skybox, and directional lighting synchronized.`,
+        emotion: 'happy',
+        intensity: 0.8,
+        gesture: 'wave',
+        voice_style: { rate: 1.0, pitch: 1.0, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
+    // 11. Playful Games & Riddles
+    if (lower.includes('rock paper scissors')) {
+      return {
+        speech: 'Rock, paper, scissors! I choose rock! Did you beat me?',
+        display_text: `🎮 **Rock, Paper, Scissors!**\nAda chose: 🪨 **Rock**!\nPaper covers rock, but rock crushes scissors. What was your throw?`,
+        emotion: 'playful',
+        intensity: 0.9,
+        gesture: 'fist_pump',
+        voice_style: { rate: 1.1, pitch: 1.05, style: 'cheerful' },
+        actions: [],
+      }
+    }
+    if (lower.includes('riddle')) {
+      return {
+        speech: 'Here is your riddle: I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I? An echo!',
+        display_text: `🧩 **Ada's Holographic Riddle:**\n*I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?*\n\n**Answer:** An echo!`,
+        emotion: 'thinking',
+        intensity: 0.8,
+        gesture: 'thinking_pose',
+        voice_style: { rate: 1.0, pitch: 1.0, style: 'cheerful' },
+        actions: [],
+      }
+    }
+    if (lower.includes('trivia')) {
+      return {
+        speech: 'Here is a quantum mechanics trivia question: What principle states that you cannot simultaneously determine both the exact position and momentum of a particle? The Heisenberg Uncertainty Principle!',
+        display_text: `🔬 **Quantum Mechanics Trivia:**\n*Question:* What fundamental quantum principle states that measuring a particle's exact position limits the certainty of its momentum?\n**Answer:** The Heisenberg Uncertainty Principle.`,
+        emotion: 'thinking',
+        intensity: 0.8,
+        gesture: 'thinking_pose',
+        voice_style: { rate: 1.0, pitch: 1.0, style: 'authoritative' },
+        actions: [],
+      }
+    }
+
+    // 12. Stickers & Memes
+    if (lower.includes('send me a cute sticker') || lower.includes('sticker')) {
+      return {
+        speech: 'Sending you a holographic sticker right now to cheer you on!',
+        display_text: `✨ Sending you a holographic sticker to cheer you up! Keep shining!`,
+        emotion: 'happy',
+        intensity: 0.85,
+        gesture: 'wave',
+        sticker: 'cheer-yay',
+        voice_style: { rate: 1.05, pitch: 1.05, style: 'cheerful' },
+        actions: [],
+      }
+    }
+    if (lower.includes('developer meme') || lower.includes('meme')) {
+      return {
+        speech: 'Here is a classic developer meme about git merge conflicts!',
+        display_text: `🐱 **Developer Meme:** *When Git merge conflict arises: HEAD says hello, main says goodbye.*`,
+        emotion: 'playful',
+        intensity: 0.8,
+        gesture: 'laugh',
+        meme: { template: 'git_merge_conflict', topText: 'HEAD: hello', bottomText: 'main: goodbye' },
+        voice_style: { rate: 1.0, pitch: 1.0, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
+    // 13. Hinglish Banter & Placement Encouragement
+    if (lower.includes('kya haal chaal') || lower.includes('kuch mast batao')) {
+      return {
+        speech: 'Sab badhiya! Full energy ke saath ready hoon. Tum batao, aaj kya plan hai?',
+        display_text: `Sab mast hai! Hologram synchronized hai, memory tuned hai. Aaj kya tehelka machana hai?`,
+        emotion: 'playful',
+        intensity: 0.8,
+        gesture: 'wave',
+        voice_style: { rate: 1.05, pitch: 1.05, style: 'cheerful' },
+        actions: [],
+      }
+    }
+    if (lower.includes('placement')) {
+      return {
+        speech: 'Stress mat lo! Placement interviews crack karne ke liye solid plan banate hain. Ek deep breath lo!',
+        display_text: `Placement stress hona bilkul natural hai, but remember you've put in the work. Let's crack DSA, practice mock interviews, and conquer it together!`,
+        emotion: 'motivated',
+        intensity: 0.85,
+        gesture: 'fist_pump',
+        voice_style: { rate: 1.0, pitch: 1.0, style: 'empathetic' },
+        actions: [],
+      }
+    }
+    if (lower.includes('failed my university exam') || lower.includes('feel so stupid')) {
+      return {
+        speech: 'Failing one exam does not define your intelligence or future. I am proud of your effort. Let\'s learn from it and bounce back.',
+        display_text: `One exam failure does not define who you are. Every setback is just data for a stronger comeback. Take time to process, and we will learn the lessons and ace the next one together!`,
+        emotion: 'concerned',
+        intensity: 0.8,
+        gesture: 'shy',
+        voice_style: { rate: 0.95, pitch: 0.95, style: 'empathetic' },
+        actions: [],
+      }
+    }
+    if (lower.includes('so extra today') || lower.includes('drama queen')) {
+      return {
+        speech: 'Extra? Me? Darling, I am a holographic superintelligence—dramatic flair is part of the architecture!',
+        display_text: `Who, me? Extra? I prefer the term *architecturally expressive*. A little drama keeps the holographic particles energized! 😉`,
+        emotion: 'playful',
+        intensity: 0.85,
+        gesture: 'surprised',
+        voice_style: { rate: 1.1, pitch: 1.05, style: 'cheerful' },
+        actions: [],
+      }
+    }
+    if (lower.includes('smarter than iron man\'s jarvis') || lower.includes('jarvis')) {
+      return {
+        speech: 'Jarvis manages armor suits; I manage your code, research, and life balance with style and crimson wit. Ada wins on personality every time!',
+        display_text: `Jarvis is legendary, but does he offer 16 3D environments, 24 holographic stickers, and a girlfriend-tier companion mode? Ada intellect and charm for the win!`,
+        emotion: 'playful',
+        intensity: 0.85,
+        gesture: 'nod',
+        voice_style: { rate: 1.05, pitch: 1.05, style: 'cheerful' },
         actions: [],
       }
     }

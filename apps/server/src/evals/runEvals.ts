@@ -22,7 +22,7 @@ interface TestCase {
 
 async function runEvaluations(): Promise<void> {
   console.log('🧪 ========================================================')
-  console.log('🧪 RUNNING ADA EVALUATION SUITE (50+ TESTS & SYSTEM VERIFICATION)')
+  console.log('🧪 RUNNING ADA EVALUATION SUITE (90+ TESTS & SYSTEM VERIFICATION - 100 TOTAL)')
   console.log('🧪 ========================================================\n')
 
   ProviderRegistry.init()

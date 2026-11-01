@@ -1,0 +1,67 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const stickersJsonPath = path.resolve(__dirname, '../packages/shared/src/stickers/stickers.json')
+const outputDir = path.resolve(__dirname, '../apps/web/public/stickers')
+
+interface StickerDef {
+  id: string
+  title: string
+  caption: string
+  category: string
+  emoji: string
+  associatedMood: string
+}
+
+function generateStickers() {
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true })
+  }
+
+  const stickers: StickerDef[] = JSON.parse(fs.readFileSync(stickersJsonPath, 'utf-8'))
+  console.log(`🎨 Rendering ${stickers.length} Ada Stickers to ${outputDir}...`)
+
+  for (const s of stickers) {
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <radialGradient id="holoGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00f3ff" stop-opacity="0.35"/>
+      <stop offset="70%" stop-color="#ff007f" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#060814" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="badgeBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f3ff"/>
+      <stop offset="50%" stop-color="#ff007f"/>
+      <stop offset="100%" stop-color="#7928ca"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#00f3ff" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background Bubble -->
+  <rect x="16" y="16" width="224" height="224" rx="48" fill="#0b0f19" stroke="url(#badgeBorder)" stroke-width="3" filter="url(#shadow)"/>
+  <circle cx="128" cy="116" r="80" fill="url(#holoGlow)"/>
+
+  <!-- Sticker Emoji Graphic -->
+  <text x="128" y="142" font-size="88" text-anchor="middle" font-family="'Apple Color Emoji', 'Segoe UI Emoji', sans-serif">
+    ${s.emoji}
+  </text>
+
+  <!-- Caption Pill -->
+  <rect x="36" y="184" width="184" height="36" rx="18" fill="#151b2e" stroke="#00f3ff" stroke-width="1.5" stroke-opacity="0.6"/>
+  <text x="128" y="208" font-size="15" font-weight="700" fill="#ffffff" text-anchor="middle" font-family="'JetBrains Mono', monospace" letter-spacing="0.5">
+    ${s.title}
+  </text>
+</svg>`
+
+    const outPath = path.join(outputDir, `${s.id}.svg`)
+    fs.writeFileSync(outPath, svgContent, 'utf-8')
+  }
+
+  console.log(`✅ Successfully generated ${stickers.length} stickers in ${outputDir}!`)
+}
+
+generateStickers()

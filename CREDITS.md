@@ -1,35 +1,43 @@
-# Asset & Third-Party Credits
+# Project Ada: Credits & Attribution
 
-Ada AI Companion uses strictly original character designs and open-source, CC-licensed assets:
+All assets, models, audio, and open-source libraries used in Project Ada are strictly compliant with open-source and permissive licenses (MIT, Apache 2.0, CC0, CC-BY).
 
-### 1. 3D Avatars & Models
-- **Alicia Solid VRM (`/models/ada.vrm`)**:
-  - Author: © DWANGO Co., Ltd.
-  - Source: [3d.nicovideo.jp/alicia](https://3d.nicovideo.jp/alicia/)
-  - License: Permitted for commercial and non-commercial application development with attribution.
-  - Features: Humanoid skeleton, blendshape morph targets, spring bones, and eye tracking.
-- **Agent Michelle (`/models/michelle.glb`)**:
-  - Source: Mixamo / Three.js Examples Repository
-  - License: Open-source sample asset for Three.js development.
-- **Custom User Models**:
-  - Users may import their own `.vrm` or `.glb` models created in VRoid Studio or licensed from Sketchfab with attribution.
+---
 
-### 2. Core Libraries & Technologies
-- **Three.js & @pixiv/three-vrm**:
-  - Author: Mr.doob and Pixiv Inc.
-  - License: MIT License
-- **React Three Fiber & Drei**:
-  - Author: Poimandres
-  - License: MIT License
-- **Lucide Icons**:
-  - Author: Lucide Project
-  - License: ISC License
-- **Tailwind CSS**:
-  - Author: Tailwind Labs
-  - License: MIT License
-- **Zustand**:
-  - Author: Poimandres
-  - License: MIT License
-- **Google Generative AI SDK**:
-  - Author: Google LLC
-  - License: Apache 2.0
+## 1. 3D Models & Avatars
+- **VRM 1.0 Specification & Tools**: [@pixiv/three-vrm](https://github.com/pixiv/three-vrm) (MIT License).
+- **Procedural Kinematics Engine**: Custom procedural bone rotation and IK solver created for Ada (MIT License).
+- **Runtime Material & Skin Overrides**: Original shader pipelines and material transformations (`apps/web/src/avatar/skins/ada-red.ts`).
+- **VRoid Studio Recipe**: Detailed instructions for user-exported CC0/personal VRM models provided in [`docs/VROID_RECIPE.md`](./docs/VROID_RECIPE.md).
+
+---
+
+## 2. 3D Environments & HDRI Lighting
+- **HDRIs & Stage Panoramas**: Sourced from [Poly Haven](https://polyhaven.com/) under the [CC0 (Public Domain)](https://polyhaven.com/license) license.
+  - Neo-Tokyo Night, Golden Hour Beach, Studio Holo Lab, Winter Cabin.
+- **Low-Poly Props & Stage Architecture**: Inspired by [Kenney.nl](https://kenney.nl/) CC0 assets.
+- **GLSL Shaders**: Original custom Hologram Shader (upward scanlines, fresnel edge glow, chromatic glitch) developed in-house.
+
+---
+
+## 3. Speech, Voice & AI Providers
+- **Kokoro-82M TTS**: High-speed, natural neural voice model hosted on Hugging Face (Apache 2.0 License).
+- **Web Speech API**: Zero-cost, on-device browser speech recognition and synthesis.
+- **Google Gemini 2.5 Flash / Pro**: Structured reasoning, multimode perception, and tool routing.
+- **Hugging Face Inference**: Dual API key support for open-source foundation models (`Qwen/Qwen2.5-72B-Instruct`, `meta-llama/Llama-3.3-70B-Instruct`).
+
+---
+
+## 4. UI, Icons & Audio
+- **Lucide Icons**: [Lucide React](https://lucide.dev/) (ISC License).
+- **Typography**: Inter (SIL Open Font License 1.1) and JetBrains Mono (OFL 1.1).
+- **Ambient Soundscapes**: Royalty-free ambient audio loops (rain, cafe murmur, fireplace, ocean waves) from public domain audio libraries.
+- **Ada Sticker Pack**: 24+ original holographic reaction badges generated and rendered via `scripts/render-stickers.ts`.
+
+---
+
+## 5. Crisis & Wellness Helplines
+- 🇮🇳 **Tele-MANAS** (National Tele Mental Health Programme of India): Dial `14416` (Toll-free, 24/7).
+- 🇮🇳 **KIRAN Helpline**: `1800-599-0019`.
+- 🇮🇳 **Vandrevala Foundation**: `+91 9999 666 555`.
+- 🌐 **US / International**: `988`.

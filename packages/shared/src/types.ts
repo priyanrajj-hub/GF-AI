@@ -62,6 +62,14 @@ export interface StructuredReply {
   gesture: GestureType
   voice_style: VoiceStyle
   actions?: ActionCall[]
+  sticker?: string
+  meme?: {
+    template: string
+    topText?: string
+    bottomText?: string
+  }
+  gif_query?: string
+  reactions?: string[]
 }
 
 export interface ChatMessage {
@@ -71,6 +79,14 @@ export interface ChatMessage {
   speech?: string
   emotion?: EmotionType
   gesture?: GestureType
+  sticker?: string
+  meme?: {
+    template: string
+    topText?: string
+    bottomText?: string
+  }
+  gif_query?: string
+  reactions?: string[]
   timestamp: number
   metadata?: {
     model?: string
