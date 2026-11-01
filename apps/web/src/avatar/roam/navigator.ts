@@ -26,22 +26,24 @@ export class RoamNavigator {
   private wanderInterval = 8.5
   public pendingArrivalAction?: string
 
-  // Expanded Stage Boundaries: traversing across whole screen
+  // Expanded Stage Boundaries: traversing across whole cyber stage
   private bounds = {
-    xMin: -1.75,
-    xMax: 1.75,
-    zMin: -0.85,
-    zMax: 0.65,
+    xMin: -1.45,
+    xMax: 1.45,
+    zMin: -0.15,
+    zMax: 0.55,
   }
 
-  // Meaningful Stage Hotspots (Tuned for unobstructed view between UI drawers)
+  // Meaningful Stage Hotspots (Tuned for unobstructed spotlight between UI drawers)
   private hotspots = [
     { name: 'home_pad', x: 0.0, z: 0.0, action: 'hair_tuck' },
-    { name: 'front_lean', x: -0.15, z: 0.45, action: 'curious_lean' },
-    { name: 'left_stage', x: -0.60, z: 0.15, action: 'think' },
-    { name: 'center_sassy', x: 0.15, z: 0.20, action: 'sassy_hip_pop' },
-    { name: 'left_twirl', x: -0.45, z: -0.15, action: 'playful_twirl' },
-    { name: 'companion_chic', x: -0.25, z: 0.30, action: 'shy_giggle' },
+    { name: 'stage_front_center', x: -0.05, z: 0.35, action: 'curious_lean' },
+    { name: 'stage_left_catwalk', x: -0.45, z: 0.15, action: 'sassy_hip_pop' },
+    { name: 'stage_left_cute', x: -0.30, z: 0.25, action: 'shy_giggle' },
+    { name: 'stage_left_twirl', x: -0.35, z: 0.05, action: 'playful_twirl' },
+    { name: 'stage_front_kiss', x: -0.15, z: 0.25, action: 'blow_kiss' },
+    { name: 'stage_center_wave', x: 0.10, z: 0.20, action: 'wave' },
+    { name: 'stage_companion_paws', x: -0.20, z: 0.15, action: 'cat_paws' },
   ]
   private lastHotspotIndex = -1
 
@@ -59,7 +61,7 @@ export class RoamNavigator {
     const clampedX = THREE.MathUtils.clamp(x, this.bounds.xMin, this.bounds.xMax)
     const clampedZ = THREE.MathUtils.clamp(z, this.bounds.zMin, this.bounds.zMax)
     this.targetPos.set(clampedX, 0, clampedZ)
-    this.moveSpeed = isRunning ? 1.6 : 0.95
+    this.moveSpeed = isRunning ? 1.45 : 0.90
     this.pendingArrivalAction = arrivalAction
   }
 
@@ -67,7 +69,7 @@ export class RoamNavigator {
     this.moveTo(0, 0, false, 'hair_tuck')
   }
 
-  handlePoke(): { action: string; reaction: string } {
+  handlePoke(): { action: string; reaction: string; speech: string } {
     const now = Date.now()
     if (now - this.lastPokeTime < 4000) {
       this.pokeCount = (this.pokeCount + 1) % 4
@@ -78,14 +80,30 @@ export class RoamNavigator {
 
     switch (this.pokeCount) {
       case 0:
-        return { action: 'shy_giggle', reaction: 'giggle' }
+        return {
+          action: 'shy_giggle',
+          reaction: 'giggle',
+          speech: 'Hehe! That tickles, Operator~ 😉',
+        }
       case 1:
-        return { action: 'playful_twirl', reaction: 'twirl' }
+        return {
+          action: 'playful_twirl',
+          reaction: 'twirl',
+          speech: "Spin for you? Anything for my favorite partner! ✨",
+        }
       case 2:
-        return { action: 'pout', reaction: 'playful_pout' }
+        return {
+          action: 'cat_paws',
+          reaction: 'playful_pout',
+          speech: 'Rawr! Careful or this kitty might bite~ 🐾',
+        }
       case 3:
       default:
-        return { action: 'blow_kiss', reaction: 'kiss' }
+        return {
+          action: 'blow_kiss',
+          reaction: 'kiss',
+          speech: 'Mwah! 💋 Right back at you, handsome!',
+        }
     }
   }
 
@@ -104,15 +122,15 @@ export class RoamNavigator {
     if (config.followCursor && cursorWorldPos) {
       const distToCursor = cursorWorldPos.distanceTo(this.currentPos)
       if (distToCursor > 0.8) {
-        this.moveTo(cursorWorldPos.x * 0.7, cursorWorldPos.z * 0.7, distToCursor > 1.6)
+        this.moveTo(cursorWorldPos.x * 0.65, cursorWorldPos.z * 0.65, distToCursor > 1.6)
       }
     }
 
-    // 2. Active Stage Wandering (every 5-9s)
+    // 2. Active Stage Wandering (every 5-8s)
     if (!config.followCursor && time - this.lastWanderTime > this.wanderInterval) {
       this.lastWanderTime = time
-      const intervalFactor = config.energy === 'playful' ? 4.5 : config.energy === 'calm' ? 10.0 : 6.5
-      this.wanderInterval = intervalFactor + Math.random() * 3.5
+      const intervalFactor = config.energy === 'playful' ? 4.2 : config.energy === 'calm' ? 9.0 : 6.0
+      this.wanderInterval = intervalFactor + Math.random() * 3.0
 
       // Select next hotspot across the scene
       let nextIndex = Math.floor(Math.random() * this.hotspots.length)
@@ -122,7 +140,7 @@ export class RoamNavigator {
       this.lastHotspotIndex = nextIndex
 
       const spot = this.hotspots[nextIndex]
-      const isRunning = config.energy === 'playful' || Math.random() > 0.55
+      const isRunning = config.energy === 'playful' || Math.random() > 0.60
       this.moveTo(spot.x, spot.z, isRunning, spot.action)
     }
 
@@ -136,14 +154,18 @@ export class RoamNavigator {
       this.isMoving = true
       toTarget.normalize()
 
-      // Smooth turning toward direction of movement
-      const targetAngle = Math.atan2(toTarget.x, toTarget.z)
+      // CATWALK STEERING: Ada ALWAYS faces the user/camera!
+      // She turns at most +/-30 deg (+/-0.52 rad) toward direction of travel,
+      // gliding with model runway presence, NEVER turning her back!
+      const lateralBias = Math.atan2(toTarget.x, Math.max(0.35, Math.abs(toTarget.z) * 0.7))
+      const targetAngle = THREE.MathUtils.clamp(lateralBias, -0.52, 0.52)
+
       let diff = targetAngle - this.currentRotationY
       while (diff < -Math.PI) diff += Math.PI * 2
       while (diff > Math.PI) diff -= Math.PI * 2
-      this.currentRotationY += diff * Math.min(1.0, delta * 7.5)
+      this.currentRotationY += diff * Math.min(1.0, delta * 6.0)
 
-      // Advance position
+      // Advance position smoothly
       const step = Math.min(dist, this.moveSpeed * delta)
       this.currentPos.addScaledVector(toTarget, step)
     } else {
@@ -156,13 +178,14 @@ export class RoamNavigator {
       }
       this.isMoving = false
 
-      // Turn back to face the camera smoothly when stopped
+      // Turn back to face the camera smoothly when stopped (0 rad)
       let diffToFront = 0 - this.currentRotationY
       while (diffToFront < -Math.PI) diffToFront += Math.PI * 2
       while (diffToFront > Math.PI) diffToFront -= Math.PI * 2
-      this.currentRotationY += diffToFront * Math.min(1.0, delta * 3.5)
+      this.currentRotationY += diffToFront * Math.min(1.0, delta * 4.5)
     }
 
     return { isMoving: this.isMoving, actionToTrigger }
   }
 }
+
