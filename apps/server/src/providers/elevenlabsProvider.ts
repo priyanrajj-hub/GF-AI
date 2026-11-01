@@ -29,8 +29,8 @@ export class ElevenLabsProvider {
    */
   async generateTTS(
     text: string,
-    voiceId: string = process.env.ELEVENLABS_VOICE_ID || 'NOpBlnGInO9m6vDvFkFC',
-    modelId: string = process.env.ELEVENLABS_MODEL_ID || 'eleven_v4',
+    voiceId: string = 'cgSgspJ2msm6clMCkdW9',
+    modelId: string = 'eleven_turbo_v2_5',
     customApiKey?: string
   ): Promise<{ audioBase64: string; mimeType: string }> {
     if (customApiKey && customApiKey.trim() && customApiKey !== this.activeApiKey) {
@@ -43,22 +43,29 @@ export class ElevenLabsProvider {
       )
     }
 
+    // Strictly map any old grandpa/male voice IDs to Jessica (real human girl)
+    let primaryVoice = voiceId
+    if (!primaryVoice || primaryVoice === 'NOpBlnGInO9m6vDvFkFC') {
+      primaryVoice = 'cgSgspJ2msm6clMCkdW9' // Jessica - young, cute, bright feminine girl
+    }
+
+    // 100% Real human female girl voices only
     const candidateVoices = Array.from(
       new Set([
-        voiceId,
-        process.env.ELEVENLABS_VOICE_ID,
-        process.env.ELEVENLABS_FALLBACK_VOICE_ID || 'cgSgspJ2msm6clMCkdW9',
-        'EXAVITQu4vr4xnSDxMaL',
+        primaryVoice,
+        'cgSgspJ2msm6clMCkdW9', // Jessica (young, cute, conversational girl)
+        'EXAVITQu4vr4xnSDxMaL', // Sarah (young reassuring girl)
+        'FGY2WhTYpPnrIDTdsKH5', // Laura (young sassy girl)
+        'hpp4J3VqNfWAUOO0d1Us', // Bella (warm bright girl)
       ].filter(Boolean) as string[])
     )
 
     const candidateModels = Array.from(
       new Set([
-        modelId,
-        'eleven_multilingual_v2',
-        'eleven_v4',
         'eleven_turbo_v2_5',
-        'eleven_monolingual_v1',
+        'eleven_multilingual_v2',
+        modelId,
+        'eleven_v4',
       ].filter(Boolean) as string[])
     )
 
@@ -71,6 +78,12 @@ export class ElevenLabsProvider {
             text,
             modelId: mId,
             languageCode: 'en',
+            voiceSettings: {
+              stability: 0.38,
+              similarityBoost: 0.85,
+              style: 0.55,
+              useSpeakerBoost: true,
+            },
           })
 
           // Collect chunks from response stream

@@ -171,13 +171,13 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
   skinId: 'ada-red',
   roamEnabled: true,
   liveliness: 70,
-  voice: 'NOpBlnGInO9m6vDvFkFC',
+  voice: 'cgSgspJ2msm6clMCkdW9',
   elevenlabsApiKey:
     typeof window !== 'undefined'
       ? localStorage.getItem('ada_elevenlabs_api_key') || 'sk_219ca6a4315e38f74478bcb10c1df0662decb4b6f6302bbe'
       : 'sk_219ca6a4315e38f74478bcb10c1df0662decb4b6f6302bbe',
-  elevenlabsVoiceId: 'NOpBlnGInO9m6vDvFkFC',
-  elevenlabsModelId: 'eleven_multilingual_v2',
+  elevenlabsVoiceId: 'cgSgspJ2msm6clMCkdW9',
+  elevenlabsModelId: 'eleven_turbo_v2_5',
   huggingfaceApiKey:
     typeof window !== 'undefined'
       ? localStorage.getItem('ada_hf_api_key') || ''

@@ -74,10 +74,13 @@ class VoiceEngineManager {
       return
     }
 
-    const voiceSetting = store.settings.voice || 'NOpBlnGInO9m6vDvFkFC'
+    // Ensure voice is 100% real human female girl voice
+    const rawVoice = store.settings.voice || 'cgSgspJ2msm6clMCkdW9'
+    const voiceSetting = rawVoice === 'NOpBlnGInO9m6vDvFkFC' ? 'cgSgspJ2msm6clMCkdW9' : rawVoice
     const isElevenLabs =
-      voiceSetting === 'NOpBlnGInO9m6vDvFkFC' ||
       voiceSetting === 'cgSgspJ2msm6clMCkdW9' ||
+      voiceSetting === 'EXAVITQu4vr4xnSDxMaL' ||
+      voiceSetting === 'FGY2WhTYpPnrIDTdsKH5' ||
       voiceSetting.startsWith('elevenlabs:') ||
       Boolean(store.settings.elevenlabsApiKey)
 
@@ -99,8 +102,13 @@ class VoiceEngineManager {
       return
     }
 
-    // 1. Try High-Fidelity Neural Voice (ElevenLabs AI Girl / Gemini / Hugging Face)
+    // 1. Try High-Fidelity Real Girl Voice (ElevenLabs Jessica / Gemini Kore / Hugging Face)
     try {
+      const activeVoiceId =
+        store.settings.elevenlabsVoiceId === 'NOpBlnGInO9m6vDvFkFC' || !store.settings.elevenlabsVoiceId
+          ? 'cgSgspJ2msm6clMCkdW9'
+          : store.settings.elevenlabsVoiceId
+
       const res = await fetch(apiUrl('/api/tts'), {
         method: 'POST',
         headers: {
@@ -116,8 +124,8 @@ class VoiceEngineManager {
             ? 'huggingface'
             : 'auto',
           elevenlabsApiKey: store.settings.elevenlabsApiKey,
-          elevenlabsVoiceId: store.settings.elevenlabsVoiceId || 'NOpBlnGInO9m6vDvFkFC',
-          elevenlabsModelId: store.settings.elevenlabsModelId || 'eleven_v4',
+          elevenlabsVoiceId: activeVoiceId,
+          elevenlabsModelId: store.settings.elevenlabsModelId || 'eleven_turbo_v2_5',
         }),
       })
 
@@ -134,17 +142,25 @@ class VoiceEngineManager {
           const source = this.audioContext.createBufferSource()
           source.buffer = audioBuffer
 
+          // Real Girl Vocal Presence & Air EQ: Gentle high-shelf boost at 3.8kHz (+2.2dB)
+          // giving sweet, silky, breathy feminine warmth
+          const highShelf = this.audioContext.createBiquadFilter()
+          highShelf.type = 'highshelf'
+          highShelf.frequency.value = 3800
+          highShelf.gain.value = 2.2
+
           // Gain control
           const gainNode = this.audioContext.createGain()
           gainNode.gain.value = store.audioVolume ?? 0.95
 
+          source.connect(highShelf)
+          highShelf.connect(gainNode)
+
           // Connect to analyser for real-time lip-sync & visualizer rings
           if (this.analyser) {
-            source.connect(gainNode)
             gainNode.connect(this.analyser)
             this.analyser.connect(this.audioContext.destination)
           } else {
-            source.connect(gainNode)
             gainNode.connect(this.audioContext.destination)
           }
 
@@ -186,9 +202,9 @@ class VoiceEngineManager {
     const utterance = new SpeechSynthesisUtterance(cleanSpeech)
     this.currentUtterance = utterance
 
-    // Feminine girl pitch (1.14 = sweet, bright, feminine tone)
-    utterance.pitch = options.pitch ?? 1.14
-    utterance.rate = options.rate ?? 1.05
+    // Feminine girl pitch (1.24 = sweet, bright, melodic feminine tone)
+    utterance.pitch = options.pitch ?? 1.24
+    utterance.rate = options.rate ?? 1.02
     utterance.volume = store.audioVolume ?? 0.95
 
     const lang = options.language || store.settings.language
