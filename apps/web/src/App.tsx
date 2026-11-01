@@ -15,6 +15,7 @@ import { AnimationTestPage } from './pages/AnimationTest.js'
 import { ReactionLab } from './pages/ReactionLab.js'
 import { VoiceEngine } from './components/voice/VoiceEngine.js'
 import { globalSongEngine } from './avatar/engine/singer.js'
+import { globalReactionReconciler } from './avatar/reactions/index.js'
 import { useAppStore } from './store/useAppStore.js'
 import { apiUrl } from './utils/api.js'
 import type { StructuredReply, ChatMessage } from '@ada/shared'
@@ -121,6 +122,9 @@ export const App: React.FC = () => {
     }
     addMessage(userMsg)
 
+    // 1. Instant local micro-reaction (<50ms)
+    globalReactionReconciler.dispatchMicroReaction(transcript)
+
     try {
       const res = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
@@ -141,7 +145,8 @@ export const App: React.FC = () => {
       const data = await res.json()
       const reply: StructuredReply = data.reply
 
-      setEmotionAndGesture(reply.emotion, reply.intensity, reply.gesture)
+      // 2. Reconcile with incoming LLM reply
+      globalReactionReconciler.reconcileWithReply(reply)
 
       const assistantMsg: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,

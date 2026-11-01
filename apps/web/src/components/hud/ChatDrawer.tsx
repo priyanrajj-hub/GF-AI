@@ -18,6 +18,7 @@ import remarkGfm from 'remark-gfm'
 import { StickerProvider, type ChatMessage, type StructuredReply, type AdaSticker } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
 import { VoiceEngine } from '../voice/VoiceEngine.js'
+import { globalReactionReconciler } from '../../avatar/reactions/index.js'
 import { apiUrl } from '../../utils/api.js'
 
 export const ChatDrawer: React.FC = () => {
@@ -62,26 +63,26 @@ export const ChatDrawer: React.FC = () => {
     const stickerMsg: ChatMessage = {
       id: `msg-${Date.now()}-user`,
       role: 'user',
-      content: `${sticker.emoji} [Sticker: ${sticker.name}]`,
+      content: `${sticker.emoji} [Sticker: ${sticker.title}]`,
       timestamp: Date.now(),
     }
     addMessage(stickerMsg)
 
     // Trigger instant cute assistant reaction
-    const replySticker = StickerProvider.getReaction(sticker.id)
-    setEmotionAndGesture('happy', 1.0, 'sassy_hip_pop')
+    const replySticker = StickerProvider.getForMood('happy')
+    setEmotionAndGesture('happy', 1.0, 'celebrate')
     setTimeout(() => {
       const assistantMsg: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,
         role: 'assistant',
-        content: `${replySticker.emoji} *${replySticker.voiceLine}*`,
-        speech: replySticker.voiceLine,
+        content: `${replySticker.emoji} *${replySticker.caption}*`,
+        speech: replySticker.caption,
         emotion: 'happy',
         gesture: 'nod',
         timestamp: Date.now(),
       }
       addMessage(assistantMsg)
-      VoiceEngine.speak(replySticker.voiceLine)
+      VoiceEngine.speak(replySticker.caption)
     }, 400)
   }
 
@@ -101,6 +102,9 @@ export const ChatDrawer: React.FC = () => {
       timestamp: Date.now(),
     }
     addMessage(userMsg)
+
+    // 1. Instant fast local micro-reaction (<50ms)
+    globalReactionReconciler.dispatchMicroReaction(text)
 
     try {
       const res = await fetch(apiUrl('/api/chat'), {
@@ -122,8 +126,8 @@ export const ChatDrawer: React.FC = () => {
       const data = await res.json()
       const reply: StructuredReply = data.reply
 
-      // Update emotion & gesture
-      setEmotionAndGesture(reply.emotion, reply.intensity, reply.gesture)
+      // 2. Reconcile with incoming LLM reply
+      globalReactionReconciler.reconcileWithReply(reply)
 
       // Add assistant message
       const assistantMsg: ChatMessage = {
@@ -346,11 +350,11 @@ export const ChatDrawer: React.FC = () => {
                 key={st.id}
                 onClick={() => handleSendSticker(st)}
                 className="p-1.5 rounded-xl bg-slate-900/60 hover:bg-pink-950/40 border border-slate-800 hover:border-pink-500/50 flex flex-col items-center gap-0.5 text-center transition-all cursor-pointer"
-                title={st.description}
+                title={st.caption}
               >
                 <span className="text-xl">{st.emoji}</span>
                 <span className="text-[9px] font-mono text-slate-300 truncate w-full">
-                  {st.name}
+                  {st.title}
                 </span>
               </button>
             ))}

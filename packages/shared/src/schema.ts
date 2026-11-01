@@ -48,6 +48,16 @@ export const StructuredReplySchema = z.object({
     })
     .default({}),
   actions: z.array(ActionCallSchema).optional(),
+  sticker: z.string().optional(),
+  meme: z
+    .object({
+      template: z.string(),
+      topText: z.string().optional(),
+      bottomText: z.string().optional(),
+    })
+    .optional(),
+  gif_query: z.string().optional(),
+  reactions: z.array(z.string()).optional(),
 })
 
 export type StructuredReplyValidated = z.infer<typeof StructuredReplySchema>
