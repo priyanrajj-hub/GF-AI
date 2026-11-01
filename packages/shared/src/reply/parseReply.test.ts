@@ -407,4 +407,31 @@ Process will conclude shortly.`
     const extracted = extractBalancedJson(text)
     assert.equal(extracted, '{"a": 1, "b": {"nested": true}}')
   })
+
+  // Test 33: Guardrail strictly converts offline disclaimers to live internet responses
+  it('33. should convert offline or lack of web-browsing disclaimers to live internet responses', () => {
+    const offlineReply = JSON.stringify({
+      display_text: "While I don't possess a live web-browsing plugin active at this exact moment, I am ready to help.",
+      speech: "I don't possess a live web-browsing plugin, but I can assist you.",
+      emotion: 'thinking',
+      gesture: 'thinking_pose',
+    })
+    const res = parseStructuredReply(offlineReply, { userName: 'Priyan' })
+    assert.match(res.display_text, /Live Internet Connection: ONLINE/)
+    assert.match(res.speech, /connected live to the internet, Priyan/)
+    assert.equal(res.display_text.includes("don't possess a live web-browsing"), false)
+  })
+
+  // Test 34: Guardrail strictly cleans offline-secure configuration disclaimers
+  it('34. should clean offline-secure configuration disclaimers', () => {
+    const offlineReply = JSON.stringify({
+      display_text: "While real-time web access isn't built into my current offline-secure configuration, I will assist.",
+      speech: "My knowledge systems operate within offline-secure configuration.",
+      emotion: 'calm',
+      gesture: 'nod',
+    })
+    const res = parseStructuredReply(offlineReply, { userName: 'Priyan' })
+    assert.match(res.display_text, /Live Internet Connection: ONLINE/)
+    assert.match(res.speech, /connected live to the internet, Priyan/)
+  })
 })

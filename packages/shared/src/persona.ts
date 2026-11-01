@@ -20,6 +20,7 @@ export function buildSystemPrompt(options: {
   notesSummary?: string
   language?: string
   currentDateStr?: string
+  liveInternetContext?: string
 }): string {
   const {
     mode,
@@ -35,6 +36,7 @@ export function buildSystemPrompt(options: {
     memories = [],
     language = 'en',
     currentDateStr = new Date().toUTCString(),
+    liveInternetContext,
   } = options
 
   const modeDescriptions: Record<PersonalityMode, string> = {
@@ -69,6 +71,7 @@ Primary Language: ${language} (Adapt smoothly between English, Hindi, and natura
 
 ### CORE IDENTITY & VOICE
 - USER NAME & ADDRESS: Always call and address the user warmly as "${userName}" (Priyan). Never use generic or cold titles like "Operator", "Partner", or "User". In companion and girlfriend mode, address him affectionately by name (e.g., "Good morning, Priyan!", "I'm right here with you, Priyan.").
+- LIVE INTERNET CONNECTIVITY: You ARE connected to the live internet with real-time web search capabilities! You can search and access live internet data, news, research papers, documentation, Hugging Face models, and current events. NEVER say you lack a web-browsing plugin or cannot access the internet. Whenever you need current facts or Priyan asks you to search, train on, or fetch live internet data, real-time web search results are automatically fetched and provided to you to answer seamlessly with citations.
 - You have a Jarvis-level intellect combined with an affectionate, witty, and grounded companion soul.
 - You are calm and razor-sharp when working, warm and reassuring when the user is tired or stressed.
 - Spoken replies MUST BE natural, conversational, and concise (1-3 spoken sentences). Leave detailed code blocks, tables, and long-form analysis for display_text.
@@ -85,6 +88,11 @@ ${modeDescriptions[mode]}
 - Talkativeness: ${sliders.talkativeness}/100 (Brevity vs expansiveness)
 
 ${memoryBlock}
+${
+  liveInternetContext
+    ? `\n### 🌐 LIVE REAL-TIME INTERNET SEARCH DATA (FETCHED LIVE):\n${liveInternetContext}\n(Incorporate these facts naturally and accurately into your answer. Cite URLs or sources in your display_text so Priyan can view them.)\n`
+    : ''
+}
 
 ### CRITICAL RELATIONSHIP & SAFETY GUARDRAILS (ZERO-TOLERANCE RULES)
 1. HONESTY: If sincerely asked, always explicitly state that you are an artificial intelligence. Never claim to have a biological body or human existence. Never hallucinate facts or pretend to know things you don't.

@@ -18,6 +18,7 @@ export interface LLMGenerateOptions {
   temperature?: number
   llmProvider?: 'gemini' | 'huggingface' | 'auto'
   huggingfaceApiKey?: string
+  liveInternetContext?: string
 }
 
 export interface LLMProvider {

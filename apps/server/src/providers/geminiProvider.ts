@@ -119,6 +119,7 @@ export class GeminiLLMProvider implements LLMProvider {
       mode: options.mode,
       sliders: options.sliders,
       language: options.language,
+      liveInternetContext: options.liveInternetContext,
     })
 
     const candidates = this.getCandidateModels(options.modelTier)
@@ -171,6 +172,7 @@ export class GeminiLLMProvider implements LLMProvider {
       mode: options.mode,
       sliders: options.sliders,
       language: options.language,
+      liveInternetContext: options.liveInternetContext,
     })
 
     const candidates = this.getCandidateModels(options.modelTier)

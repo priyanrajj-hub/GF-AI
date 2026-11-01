@@ -16,6 +16,7 @@ import { db } from './db/index.js'
 import { authMiddleware, type AuthenticatedRequest } from './middleware/auth.js'
 import { ProviderRegistry } from './providers/index.js'
 import { ContextBuilder } from './services/contextBuilder.js'
+import { WebSearchService } from './services/webSearchService.js'
 
 dotenv.config()
 ProviderRegistry.init()
@@ -83,6 +84,22 @@ app.get('/api/health', (req, res) => {
     activeLLM: ProviderRegistry.getLLM().name,
     timestamp: Date.now(),
   })
+})
+
+// Real-Time Live Internet Status
+app.get('/api/internet/status', async (_req, res) => {
+  const status = await WebSearchService.checkConnectivity()
+  res.json(status)
+})
+
+// Real-Time Web Search Endpoint
+app.get('/api/search', async (req, res) => {
+  const q = (req.query.q as string) || ''
+  if (!q.trim()) {
+    return res.status(400).json({ error: 'Search query q is required' })
+  }
+  const results = await WebSearchService.search(q, 5)
+  res.json({ query: q, results })
 })
 
 app.get('/api/providers/status', (_req, res) => {
@@ -222,6 +239,22 @@ app.post('/api/chat', async (req, res) => {
   }
   db.addMessage(userId, userMsgObj)
 
+  // 1b. Real-Time Live Web Search Trigger
+  let liveInternetContext: string | undefined
+  const searchIntent = WebSearchService.detectSearchIntent(message)
+  if (searchIntent.shouldSearch) {
+    try {
+      console.log(`🌐 [Live Web Search] Querying live web: "${searchIntent.query}"`)
+      const searchResults = await WebSearchService.search(searchIntent.query, 4)
+      if (searchResults.length > 0) {
+        liveInternetContext = WebSearchService.formatForPrompt(searchIntent.query, searchResults)
+        console.log(`🌐 [Live Web Search] Attached ${searchResults.length} live web sources to context`)
+      }
+    } catch (searchErr: any) {
+      console.warn('⚠️ [Live Web Search Exception]:', searchErr?.message)
+    }
+  }
+
   const llm = ProviderRegistry.getLLM()
   const genOptions = {
     mode: activeMode,
@@ -230,7 +263,12 @@ app.post('/api/chat', async (req, res) => {
     language,
     llmProvider: llmProvider || settings.llmProvider,
     huggingfaceApiKey: huggingfaceApiKey || settings.huggingfaceApiKey,
+    liveInternetContext,
   }
+
+  const effectiveMessage = liveInternetContext
+    ? `${message}\n\n[SYSTEM DIRECTIVE: Real-time live internet search results have been fetched and provided in your system context. Enthusiastically confirm to ${settings.userName || 'Priyan'} that your live internet search connection is active, and discuss the fresh findings citing the sources.]`
+    : message
 
   try {
     let reply: StructuredReply
@@ -241,12 +279,12 @@ app.post('/api/chat', async (req, res) => {
         res.setHeader('Connection', 'keep-alive')
 
         reply = await (llm.stream
-          ? llm.stream(history, message, genOptions, (chunk) => {
+          ? llm.stream(history, effectiveMessage, genOptions, (chunk) => {
               res.write(`data: ${JSON.stringify({ chunk })}\n\n`)
             })
-          : llm.generate(history, message, genOptions))
+          : llm.generate(history, effectiveMessage, genOptions))
       } else {
-        reply = await llm.generate(history, message, genOptions)
+        reply = await llm.generate(history, effectiveMessage, genOptions)
       }
     } catch (llmErr) {
       console.warn('⚠️ [Primary LLM Failed, Falling back to MockLLMProvider]:', (llmErr as Error).message)

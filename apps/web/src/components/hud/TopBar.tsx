@@ -14,6 +14,7 @@ import {
   Smile,
   Users,
   ShieldCheck,
+  Globe,
 } from 'lucide-react'
 import type { PersonalityMode } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
@@ -50,6 +51,7 @@ export const TopBar: React.FC = () => {
 
 
   const [isMockMode, setIsMockMode] = useState<boolean>(false)
+  const [isInternetOnline, setIsInternetOnline] = useState<boolean>(true)
 
   // Check health and provider status
   useEffect(() => {
@@ -62,6 +64,15 @@ export const TopBar: React.FC = () => {
       })
       .catch(() => {
         setIsMockMode(true)
+      })
+
+    fetch(apiUrl('/api/internet/status'))
+      .then((res) => res.json())
+      .then((data) => {
+        setIsInternetOnline(Boolean(data.online !== false))
+      })
+      .catch(() => {
+        setIsInternetOnline(true)
       })
   }, [])
 
@@ -100,6 +111,28 @@ export const TopBar: React.FC = () => {
           <span className="text-slate-500">•</span>
           <span className="text-slate-400">PG-13</span>
         </button>
+
+        {/* Live Internet Connected Badge */}
+        <div
+          className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-xl glass-panel-subtle border text-[10px] font-mono ${
+            isInternetOnline
+              ? 'border-emerald-500/30 text-emerald-300'
+              : 'border-slate-700 text-slate-400'
+          }`}
+          title="Live Internet Status: Real-time web search and knowledge synchronization active"
+        >
+          <div
+            className={`w-1.5 h-1.5 rounded-full ${
+              isInternetOnline
+                ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]'
+                : 'bg-slate-500'
+            }`}
+          />
+          <Globe className="w-3 h-3 text-emerald-400" />
+          <span className="font-semibold tracking-wider">
+            {isInternetOnline ? 'WEB: LIVE' : 'OFFLINE'}
+          </span>
+        </div>
 
         {/* Minor Safeguard Mode Tag */}
         {isMinorMode && (

@@ -14,6 +14,7 @@ import { GroqLLMProvider } from './groqProvider.js'
 import { OpenRouterLLMProvider } from './openrouterProvider.js'
 import { OllamaLLMProvider } from './ollamaProvider.js'
 import { ModelRouter } from './modelRouter.js'
+import { LiveWebSearchProvider } from './searchProvider.js'
 import {
   MockChannelProvider,
   MockLLMProvider,
@@ -78,8 +79,8 @@ export class ProviderRegistry {
     // 3. TTS
     this.ttsProvider = new MockTTSProvider()
 
-    // 4. Search
-    this.searchProvider = new MockSearchProvider()
+    // 4. Search (Live Internet Search Engine)
+    this.searchProvider = new LiveWebSearchProvider()
 
     // 5. Meme
     this.memeProvider = new MockMemeProvider()
