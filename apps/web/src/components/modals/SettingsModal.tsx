@@ -307,25 +307,76 @@ export const SettingsModal: React.FC = () => {
                 <span>Ada Girl Voice & Speech Engine</span>
               </span>
               <span className="text-[10px] text-pink-400/80 font-mono px-2 py-0.5 rounded border border-pink-500/30 bg-pink-950/40">
-                GEMINI NEURAL AI ACTIVE
+                MULTI-PROVIDER NEURAL ACTIVE
               </span>
             </h4>
 
             <div className="glass-panel-subtle p-4 rounded-xl border border-pink-500/20 space-y-3">
-              <div className="flex items-center justify-between">
+              {/* Voice Selector */}
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1.5">
+                  Select Neural Girl Voice Preset
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateSettings({ voice: 'Aoede' })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      (settings.voice || 'Aoede') === 'Aoede'
+                        ? 'border-pink-500 bg-pink-950/50 text-pink-200'
+                        : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold font-mono">Aoede</div>
+                    <div className="text-[10px] text-slate-400">Sultry Spy Ada (Gemini)</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateSettings({ voice: 'Kore' })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      settings.voice === 'Kore'
+                        ? 'border-pink-500 bg-pink-950/50 text-pink-200'
+                        : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold font-mono">Kore</div>
+                    <div className="text-[10px] text-slate-400">Sweet Girlfriend (Gemini)</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateSettings({ voice: 'hf:hexgrad/Kokoro-82M' })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      settings.voice === 'hf:hexgrad/Kokoro-82M'
+                        ? 'border-pink-500 bg-pink-950/50 text-pink-200'
+                        : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold font-mono">Kokoro-82M</div>
+                    <div className="text-[10px] text-slate-400">Open-Source (Hugging Face)</div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
                 <div>
                   <div className="text-xs font-mono font-semibold text-white">
-                    Primary Voice: Aoede (Sultry Spy-Chic Girl)
+                    Active Voice: {settings.voice === 'hf:hexgrad/Kokoro-82M' ? 'Kokoro-82M (Hugging Face)' : settings.voice === 'Kore' ? 'Kore (Sweet Girl)' : 'Aoede (Ada Wong Spy-Chic)'}
                   </div>
                   <div className="text-[10px] text-slate-400">
-                    High-fidelity neural audio/wav generated directly via Gemini 3.8 TTS
+                    Lip-sync blendshapes, visemes & dynamic waveform visualizer enabled
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
                     import('../voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-                      VoiceEngine.speak("Hey Operator! How do I sound? Ready for our next mission, or just hanging out with me? 😉")
+                      const voiceName = settings.voice || 'Aoede'
+                      const greeting = voiceName.includes('Kore')
+                        ? "Hi babe! I'm so glad we're together today! Anything you want me to do? 💕"
+                        : "Hey Operator. Voice synthesis calibrated. Ready for whatever mission you've got in mind."
+                      VoiceEngine.speak(greeting)
                     })
                   }}
                   className="px-3 py-1.5 rounded-lg bg-pink-500/20 text-pink-300 border border-pink-400/50 hover:bg-pink-500/30 text-xs font-mono flex items-center gap-1.5 cursor-pointer transition-all shadow-[0_0_10px_rgba(244,63,94,0.3)]"
@@ -335,22 +386,37 @@ export const SettingsModal: React.FC = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800/80">
-                <div>
-                  <div className="text-[11px] font-mono text-slate-400 mb-1">
-                    Voice Persona Style
-                  </div>
-                  <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-pink-200 font-mono">
-                    Ada Wong (Confident, Warm & Playful)
-                  </div>
+              {/* LLM & AI Provider Integration */}
+              <div className="pt-2 border-t border-slate-800/80">
+                <div className="text-[11px] font-mono text-slate-400 mb-1.5">
+                  Assistance & Conversational Intelligence Engine
                 </div>
-                <div>
-                  <div className="text-[11px] font-mono text-slate-400 mb-1">
-                    Fallback Voice Engine
-                  </div>
-                  <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-cyan-200 font-mono">
-                    Filtered Female Browser Neural TTS
-                  </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateSettings({ llmProvider: 'gemini' })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      (settings.llmProvider || 'gemini') === 'gemini'
+                        ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200'
+                        : 'border-slate-800 bg-slate-900/40 text-slate-400'
+                    }`}
+                  >
+                    <div className="text-xs font-mono font-semibold">Google Gemini 3.8</div>
+                    <div className="text-[10px] text-slate-400">Dual-Key Automatic Failover</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateSettings({ llmProvider: 'huggingface' })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      settings.llmProvider === 'huggingface'
+                        ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200'
+                        : 'border-slate-800 bg-slate-900/40 text-slate-400'
+                    }`}
+                  >
+                    <div className="text-xs font-mono font-semibold">Hugging Face</div>
+                    <div className="text-[10px] text-slate-400">Qwen 2.5 / Llama 3.3 Open LLM</div>
+                  </button>
                 </div>
               </div>
             </div>

@@ -8,6 +8,7 @@ import type {
   VisionProvider,
 } from '@ada/shared'
 import { GeminiLLMProvider } from './geminiProvider.js'
+import { HuggingFaceProvider } from './huggingfaceProvider.js'
 import {
   MockChannelProvider,
   MockLLMProvider,
@@ -20,6 +21,8 @@ import {
 
 export class ProviderRegistry {
   private static llmProvider: LLMProvider
+  private static geminiProvider: GeminiLLMProvider
+  private static huggingfaceProvider: HuggingFaceProvider
   private static sttProvider: STTProvider
   private static ttsProvider: TTSProvider
   private static searchProvider: SearchProvider
@@ -28,13 +31,23 @@ export class ProviderRegistry {
   private static visionProvider: VisionProvider
 
   static init(): void {
-    // 1. LLM
-    const gemini = new GeminiLLMProvider()
-    if (gemini.isConfigured()) {
-      console.log('🤖 [Provider] Using Google Gemini LLM Provider')
-      this.llmProvider = gemini
+    this.geminiProvider = new GeminiLLMProvider()
+    this.huggingfaceProvider = new HuggingFaceProvider()
+
+    // 1. LLM selection: check explicit preference or active keys
+    const preferred = process.env.LLM_PROVIDER?.toLowerCase()
+
+    if (preferred === 'huggingface' && this.huggingfaceProvider.isConfigured()) {
+      console.log('🤗 [Provider] Using Hugging Face LLM Provider (Primary)')
+      this.llmProvider = this.huggingfaceProvider
+    } else if (this.geminiProvider.isConfigured()) {
+      console.log('🤖 [Provider] Using Google Gemini LLM Provider (Dual-key failover enabled)')
+      this.llmProvider = this.geminiProvider
+    } else if (this.huggingfaceProvider.isConfigured()) {
+      console.log('🤗 [Provider] Using Hugging Face LLM Provider')
+      this.llmProvider = this.huggingfaceProvider
     } else {
-      console.log('🤖 [Provider] Gemini API key not provided; using MockLLMProvider with full persona')
+      console.log('🤖 [Provider] No active API key found; using MockLLMProvider with full persona')
       this.llmProvider = new MockLLMProvider()
     }
 
@@ -95,4 +108,31 @@ export class ProviderRegistry {
     if (!this.visionProvider) this.init()
     return this.visionProvider
   }
+
+  static getGemini(): GeminiLLMProvider {
+
+    if (!this.geminiProvider) this.init()
+    return this.geminiProvider
+  }
+
+  static getHuggingFace(): HuggingFaceProvider {
+    if (!this.huggingfaceProvider) this.init()
+    return this.huggingfaceProvider
+  }
+
+  static getStatus() {
+    if (!this.llmProvider) this.init()
+    return {
+      activeLLM: this.llmProvider.name,
+      geminiConfigured: this.geminiProvider?.isConfigured() ?? false,
+      huggingfaceConfigured: this.huggingfaceProvider?.isConfigured() ?? false,
+      models: {
+        geminiChat: process.env.GEMINI_MODEL || 'gemini-flash-lite-latest',
+        geminiTTS: process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts',
+        hfModel: process.env.HF_MODEL || 'Qwen/Qwen2.5-72B-Instruct',
+        hfTTS: process.env.HF_TTS_MODEL || 'hexgrad/Kokoro-82M',
+      },
+    }
+  }
 }
+

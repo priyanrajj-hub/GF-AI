@@ -96,7 +96,8 @@ class VoiceEngineManager {
         },
         body: JSON.stringify({
           text: cleanSpeech,
-          voice: 'Aoede', // Google's natural feminine girl voice
+          voice: store.settings.voice || 'Aoede',
+          provider: store.settings.voice?.startsWith('hf:') ? 'huggingface' : 'auto',
         }),
       })
 

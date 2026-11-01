@@ -140,6 +140,8 @@ export interface UserSettings {
   skinId?: string // 'ada-red' | 'cozy-night' | 'original-pastel'
   roamEnabled?: boolean // default true
   liveliness?: number // 0-100, default 70
+  voice?: string // 'Aoede' | 'Kore' | 'hexgrad/Kokoro-82M'
+  llmProvider?: 'gemini' | 'huggingface' | 'auto'
 }
 
 export interface BriefingData {
