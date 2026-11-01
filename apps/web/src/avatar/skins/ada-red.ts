@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import type { VRM } from '@pixiv/three-vrm'
+import { WardrobeProvider } from '@ada/shared'
 
 export interface AvatarSkin {
   id: string
@@ -66,43 +67,54 @@ export const AdaRedSkin: AvatarSkin = {
             return
           }
 
-          // Hair Materials -> Pitch Charcoal/Jet Black with subtle sheen
+          // Hair Materials -> Glossy Near-Black with Blue-White Sheen Band (Task A)
           if (/hair/i.test(matName)) {
             mat.visible = true
             mat.transparent = false
             mat.opacity = 1.0
-            if (mat.color) mat.color.set('#090a0f')
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#040407')
-            if (mat.outlineColorFactor) mat.outlineColorFactor.set('#000000')
-            if ('shadeColor' in mat && mat.shadeColor) mat.shadeColor.set('#040407')
-            if ('outlineColor' in mat && mat.outlineColor) mat.outlineColor.set('#000000')
-            if (mat.roughness !== undefined) mat.roughness = 0.35
+            if (mat.color) mat.color.set('#15151A')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0b0b0f')
+            if (mat.outlineColorFactor) mat.outlineColorFactor.set('#040406')
+            if ('shadeColor' in mat && mat.shadeColor) mat.shadeColor.set('#0b0b0f')
+            if ('outlineColor' in mat && mat.outlineColor) mat.outlineColor.set('#040406')
+            if (mat.roughness !== undefined) mat.roughness = 0.28
+            if (mat.metalness !== undefined) mat.metalness = 0.15
           }
 
-          // Halter Straps, Choker, and Lingerie Underlayer -> Sleek Midnight Spy Black
-          else if (/body_wear/i.test(matName)) {
+          // Gloves & Halter Straps -> Sleek Midnight Spy Black with subtle specular
+          else if (/body_wear|glove/i.test(matName)) {
             mat.visible = true
             mat.transparent = false
             mat.opacity = 1.0
-            if (mat.color) mat.color.set('#121318')
+            if (mat.color) mat.color.set('#111216')
             if (mat.shadeColorFactor) mat.shadeColorFactor.set('#060609')
             if (mat.outlineColorFactor) mat.outlineColorFactor.set('#000000')
-            if (mat.roughness !== undefined) mat.roughness = 0.5
-            if (mat.metalness !== undefined) mat.metalness = 0.2
+            if (mat.roughness !== undefined) mat.roughness = 0.38
+            if (mat.metalness !== undefined) mat.metalness = 0.25
           }
 
-          // Main Cocktail Dress Bodice & Skirt -> Deep Crimson Velvet Red
+          // Semi-Sheer Black Stockings / Tights -> Leg silhouette reads clearly
+          else if (/stocking|tight|leg_wear/i.test(matName)) {
+            mat.visible = true
+            mat.transparent = true
+            mat.opacity = 0.88
+            if (mat.color) mat.color.set('#141418')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#09090c')
+            if (mat.roughness !== undefined) mat.roughness = 0.42
+          }
+
+          // Main Cocktail Dress Bodice & Skirt -> Rich Vibrant Crimson Red (#C81E2F) with Toon Shade Step
           else if (/wear|cloth|dress/i.test(matName)) {
             mat.visible = true
             mat.transparent = false
             mat.opacity = 1.0
-            if (mat.color) mat.color.set('#B0101E')
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#320308')
-            if (mat.outlineColorFactor) mat.outlineColorFactor.set('#150103')
-            if ('shadeColor' in mat && mat.shadeColor) mat.shadeColor.set('#320308')
-            if ('outlineColor' in mat && mat.outlineColor) mat.outlineColor.set('#150103')
-            if (mat.roughness !== undefined) mat.roughness = 0.52
-            if (mat.metalness !== undefined) mat.metalness = 0.15
+            if (mat.color) mat.color.set('#C81E2F')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#5c0912')
+            if (mat.outlineColorFactor) mat.outlineColorFactor.set('#280205')
+            if ('shadeColor' in mat && mat.shadeColor) mat.shadeColor.set('#5c0912')
+            if ('outlineColor' in mat && mat.outlineColor) mat.outlineColor.set('#280205')
+            if (mat.roughness !== undefined) mat.roughness = 0.42
+            if (mat.metalness !== undefined) mat.metalness = 0.12
           }
 
           // Eyelashes & Eyeliner -> Bold Inky Black Cat-Eye
@@ -250,6 +262,45 @@ export const AVATAR_SKINS: Record<string, AvatarSkin> = {
 }
 
 export function applyAvatarSkin(vrm: VRM, skinId: string = 'ada-red'): void {
-  const skin = AVATAR_SKINS[skinId] || AdaRedSkin
-  skin.apply(vrm)
+  if (AVATAR_SKINS[skinId]) {
+    AVATAR_SKINS[skinId].apply(vrm)
+    return
+  }
+
+  // Dynamic wardrobe outfit support for all 15+ presets (Indian wear, casual, formal, etc.)
+  AdaRedSkin.apply(vrm) // Apply base bob hair and makeup styling
+
+  const outfit = WardrobeProvider.getOutfitById(skinId)
+  if (!outfit) return
+
+  vrm.scene.traverse((obj) => {
+    if ((obj as THREE.Mesh).isMesh) {
+      const mesh = obj as THREE.Mesh
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+
+      materials.forEach((mat: any) => {
+        if (!mat) return
+        const matName = (mat.name || '').toLowerCase()
+
+        // Apply outfit hair color if specified
+        if (/hair/i.test(matName) && outfit.hairColor) {
+          if (mat.color) mat.color.set(outfit.hairColor)
+        }
+
+        // Apply outfit dress / cloth color
+        if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+          if (mat.color) mat.color.set(outfit.dressColor)
+          if (mat.shadeColorFactor) {
+            // Darker tone for shade
+            const c = new THREE.Color(outfit.dressColor).multiplyScalar(0.55)
+            mat.shadeColorFactor.set(c)
+          }
+          if ('shadeColor' in mat && mat.shadeColor) {
+            const c = new THREE.Color(outfit.dressColor).multiplyScalar(0.55)
+            mat.shadeColor.set(c)
+          }
+        }
+      })
+    }
+  })
 }

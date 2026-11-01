@@ -1,0 +1,178 @@
+[
+  {
+    "id": "holo-lab",
+    "name": "Holo Lab Core (Default)",
+    "category": "cyber",
+    "ambientColor": "#060814",
+    "keyLight": "#fff4eb",
+    "rimLight": "#ff007f",
+    "fillLight": "#00f3ff",
+    "ambientAudio": "none",
+    "description": "High-tech holographic projection laboratory with floating cyan particle matrix."
+  },
+  {
+    "id": "cozy-bedroom",
+    "name": "Cozy Bedroom (Warm Lamps)",
+    "category": "indoor",
+    "ambientColor": "#120e18",
+    "keyLight": "#ffe4cc",
+    "rimLight": "#ff8866",
+    "fillLight": "#a855f7",
+    "ambientAudio": "lofi",
+    "description": "Warm bedroom with glowing fairy lights, plush pillows, and relaxing lo-fi beats."
+  },
+  {
+    "id": "rooftop-night",
+    "name": "Neo-Tokyo Night Rooftop",
+    "category": "urban",
+    "ambientColor": "#050714",
+    "keyLight": "#67e8f9",
+    "rimLight": "#f43f5e",
+    "fillLight": "#8b5cf6",
+    "ambientAudio": "city",
+    "description": "Cyberpunk skyscraper rooftop overlooking illuminated neon spires."
+  },
+  {
+    "id": "sakura-garden",
+    "name": "Sakura Blossom Garden",
+    "category": "nature",
+    "ambientColor": "#140a12",
+    "keyLight": "#fce7f3",
+    "rimLight": "#ec4899",
+    "fillLight": "#38bdf8",
+    "ambientAudio": "birds",
+    "description": "Serene Japanese garden with drifting pink cherry blossom petals."
+  },
+  {
+    "id": "rainy-window",
+    "name": "Rainy Window Study",
+    "category": "indoor",
+    "ambientColor": "#08101e",
+    "keyLight": "#93c5fd",
+    "rimLight": "#38bdf8",
+    "fillLight": "#1e293b",
+    "ambientAudio": "rain",
+    "description": "Gentle raindrops streaking across a panoramic window with soft thunder."
+  },
+  {
+    "id": "snow-cabin",
+    "name": "Winter Fireplace Cabin",
+    "category": "cozy",
+    "ambientColor": "#180c06",
+    "keyLight": "#fb923c",
+    "rimLight": "#f97316",
+    "fillLight": "#e2e8f0",
+    "ambientAudio": "fireplace",
+    "description": "Rustic alpine timber cabin with crackling hearth fire and falling snow outside."
+  },
+  {
+    "id": "beach-sunset",
+    "name": "Golden Hour Beach",
+    "category": "nature",
+    "ambientColor": "#1a0c10",
+    "keyLight": "#fde047",
+    "rimLight": "#fb7185",
+    "fillLight": "#06b6d4",
+    "ambientAudio": "waves",
+    "description": "Sunset ocean breeze with golden sunlight reflecting on rolling waves."
+  },
+  {
+    "id": "cafe-lofi",
+    "name": "Midnight Coffee Shop",
+    "category": "chill",
+    "ambientColor": "#160f0c",
+    "keyLight": "#fed7aa",
+    "rimLight": "#fbbf24",
+    "fillLight": "#64748b",
+    "ambientAudio": "cafe",
+    "description": "Warm mahogany coffee shop with espresso aroma and gentle background chatter."
+  },
+  {
+    "id": "study-library",
+    "name": "Grand Classical Library",
+    "category": "study",
+    "ambientColor": "#0f1311",
+    "keyLight": "#fef08a",
+    "rimLight": "#10b981",
+    "fillLight": "#334155",
+    "ambientAudio": "lofi",
+    "description": "Towering oak bookshelves, leather armchairs, and green banker lamps for deep focus."
+  },
+  {
+    "id": "space-station",
+    "name": "Orbital Space Station",
+    "category": "sci-fi",
+    "ambientColor": "#030712",
+    "keyLight": "#e0f2fe",
+    "rimLight": "#38bdf8",
+    "fillLight": "#6366f1",
+    "ambientAudio": "none",
+    "description": "Observation cupola overlooking Earth with glittering stars and aurora borealis."
+  },
+  {
+    "id": "anime-classroom",
+    "name": "Golden Hour Classroom",
+    "category": "anime",
+    "ambientColor": "#191108",
+    "keyLight": "#fed7aa",
+    "rimLight": "#f59e0b",
+    "fillLight": "#38bdf8",
+    "ambientAudio": "birds",
+    "description": "Sun-drenched wooden desks with billowing white curtains and late afternoon breeze."
+  },
+  {
+    "id": "concert-stage",
+    "name": "Live Concert Hologram Stage",
+    "category": "music",
+    "ambientColor": "#0f051d",
+    "keyLight": "#c084fc",
+    "rimLight": "#f43f5e",
+    "fillLight": "#00f3ff",
+    "ambientAudio": "none",
+    "description": "Dynamic concert arena with strobe laser beams, stage smoke, and audio visualizer."
+  },
+  {
+    "id": "indian-palace",
+    "name": "Royal Heritage Palace",
+    "category": "festival",
+    "ambientColor": "#1c0d02",
+    "keyLight": "#f59e0b",
+    "rimLight": "#ef4444",
+    "fillLight": "#eab308",
+    "ambientAudio": "lofi",
+    "description": "Grand palace courtyard adorned with glowing Diwali diyas, marigold garlands, and archways."
+  },
+  {
+    "id": "athletic-gym",
+    "name": "High-Performance Gym",
+    "category": "sport",
+    "ambientColor": "#0b0f19",
+    "keyLight": "#e2e8f0",
+    "rimLight": "#06b6d4",
+    "fillLight": "#f43f5e",
+    "ambientAudio": "none",
+    "description": "Sleek matte black fitness training studio with motivational lighting."
+  },
+  {
+    "id": "park-promenade",
+    "name": "Central Park Promenade",
+    "category": "nature",
+    "ambientColor": "#09140c",
+    "keyLight": "#fef9c3",
+    "rimLight": "#84cc16",
+    "fillLight": "#0ea5e9",
+    "ambientAudio": "birds",
+    "description": "Sunlit promenade with green elm canopies, benches, and singing birds."
+  },
+  {
+    "id": "studio-gradient",
+    "name": "Minimalist Studio Gradient",
+    "category": "minimal",
+    "ambientColor": "#08090d",
+    "keyLight": "#ffffff",
+    "rimLight": "#94a3b8",
+    "fillLight": "#1e293b",
+    "ambientAudio": "none",
+    "description": "Clean dark studio cyclorama highlighting Ada with high-end editorial lighting."
+  }
+]
