@@ -62,59 +62,13 @@ export const StructuredReplySchema = z.object({
 
 export type StructuredReplyValidated = z.infer<typeof StructuredReplySchema>
 
+import { parseStructuredReply } from './reply/parseReply.js'
+
 /**
  * Robustly parses and repairs LLM structured JSON output.
- * Extracts JSON even when enclosed in markdown fences or preceded by conversational chatter.
+ * Delegates to the bulletproof parseStructuredReply pipeline.
  */
 export function parseAndRepairStructuredReply(rawText: string): StructuredReplyValidated {
-  const fallback: StructuredReplyValidated = {
-    speech: rawText.slice(0, 200).replace(/[*_#`[\]]/g, ''),
-    display_text: rawText,
-    emotion: 'calm',
-    intensity: 0.5,
-    gesture: 'idle',
-    voice_style: { rate: 1.0, pitch: 1.0 },
-    actions: [],
-  }
-
-  if (!rawText || !rawText.trim()) {
-    return fallback
-  }
-
-  // 1. Try direct JSON parse
-  try {
-    const parsed = JSON.parse(rawText.trim())
-    const validated = StructuredReplySchema.safeParse(parsed)
-    if (validated.success) return validated.data
-  } catch {
-    // Continue to regex extractor
-  }
-
-  // 2. Extract from markdown code blocks ```json ... ``` or ``` ... ```
-  const codeBlockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-  if (codeBlockMatch && codeBlockMatch[1]) {
-    try {
-      const parsed = JSON.parse(codeBlockMatch[1].trim())
-      const validated = StructuredReplySchema.safeParse(parsed)
-      if (validated.success) return validated.data
-    } catch {
-      // Continue
-    }
-  }
-
-  // 3. Extract outermost { ... }
-  const firstBrace = rawText.indexOf('{')
-  const lastBrace = rawText.lastIndexOf('}')
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    const jsonSubstring = rawText.substring(firstBrace, lastBrace + 1)
-    try {
-      const parsed = JSON.parse(jsonSubstring)
-      const validated = StructuredReplySchema.safeParse(parsed)
-      if (validated.success) return validated.data
-    } catch {
-      // continue to fallback
-    }
-  }
-
-  return fallback
+  return parseStructuredReply(rawText)
 }
+

@@ -23,6 +23,7 @@ import { globalReactionReconciler } from './avatar/reactions/index.js'
 import { useAppStore } from './store/useAppStore.js'
 import { apiUrl } from './utils/api.js'
 import type { StructuredReply, ChatMessage } from '@ada/shared'
+import { parseStructuredReply, sanitizeBubbleText } from '@ada/shared'
 
 export const App: React.FC = () => {
   const [booting, setBooting] = useState(true)
@@ -150,26 +151,27 @@ export const App: React.FC = () => {
 
       if (!res.ok) throw new Error('Failed to query Ada')
       const data = await res.json()
-      const reply: StructuredReply = data.reply
+      const rawPayload = typeof data.reply === 'string' ? data.reply : JSON.stringify(data.reply || {})
+      const parsedReply = parseStructuredReply(rawPayload, { userName: settings.userName })
 
       // 2. Reconcile with incoming LLM reply
-      globalReactionReconciler.reconcileWithReply(reply)
+      globalReactionReconciler.reconcileWithReply(parsedReply)
 
       const assistantMsg: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,
         role: 'assistant',
-        content: reply.display_text,
-        speech: reply.speech,
-        emotion: reply.emotion,
-        gesture: reply.gesture,
+        content: sanitizeBubbleText(parsedReply.display_text, { userName: settings.userName }),
+        speech: parsedReply.speech,
+        emotion: parsedReply.emotion,
+        gesture: parsedReply.gesture,
         timestamp: Date.now(),
       }
       addMessage(assistantMsg)
 
-      if (reply.speech) {
-        VoiceEngine.speak(reply.speech, {
-          rate: reply.voice_style?.rate || 1.05,
-          pitch: reply.voice_style?.pitch || 1.0,
+      if (parsedReply.speech) {
+        VoiceEngine.speak(parsedReply.speech, {
+          rate: parsedReply.voice_style?.rate || 1.05,
+          pitch: parsedReply.voice_style?.pitch || 1.0,
           language: settings.language,
         })
       } else {

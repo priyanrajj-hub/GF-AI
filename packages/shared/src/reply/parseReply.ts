@@ -1,0 +1,560 @@
+import { z } from 'zod'
+import {
+  EmotionEnum,
+  GestureEnum,
+  ActionCallSchema,
+  StructuredReplySchema,
+  type StructuredReplyValidated,
+} from '../schema.js'
+import type {
+  EmotionType,
+  GestureType,
+  StructuredReply,
+  VoiceStyle,
+  ActionCall,
+} from '../types.js'
+
+/**
+ * Hard UI Guardrail Regex.
+ * If any chat bubble text matches this regex, raw JSON has leaked into the UI!
+ */
+export const UI_GUARDRAIL_REGEX = /"display_text"|"emotion"\s*:|"gesture"\s*:|^\s*[{[]/
+
+export interface ParsedReplyCues {
+  emotion: EmotionType
+  intensity: number
+  gesture: GestureType
+  voice_style: VoiceStyle
+  actions: ActionCall[]
+  sticker?: string
+  meme?: {
+    template: string
+    topText?: string
+    bottomText?: string
+  }
+  gif_query?: string
+  reactions?: string[]
+}
+
+export interface ParsedReply extends StructuredReply {
+  cues: ParsedReplyCues
+}
+
+export interface ParseOptions {
+  userName?: string
+  defaultEmotion?: EmotionType
+  defaultGesture?: GestureType
+}
+
+/**
+ * Strips code fences, markdown wrapping, and backticks.
+ */
+export function stripCodeFences(text: string): string {
+  if (!text) return ''
+  let cleaned = text.trim()
+
+  // Match ```json ... ``` or ``` ... ```
+  const fenceMatch = cleaned.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)
+  if (fenceMatch && fenceMatch[1]) {
+    return fenceMatch[1].trim()
+  }
+
+  // If text contains a code fence somewhere inside
+  const innerFenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+  if (innerFenceMatch && innerFenceMatch[1]) {
+    return innerFenceMatch[1].trim()
+  }
+
+  return cleaned
+}
+
+/**
+ * Finds the first balanced { ... } object in the given text.
+ * Correctly ignores braces inside string literals and handles escape characters.
+ */
+export function extractBalancedJson(text: string): string | null {
+  if (!text) return null
+
+  // If text doesn't have an opening brace but looks like a JSON fragment ("display_text": ...)
+  let candidate = text.trim()
+  if (!candidate.startsWith('{') && /"display_text"\s*:|"speech"\s*:/i.test(candidate)) {
+    candidate = '{' + candidate
+    if (!candidate.endsWith('}')) {
+      candidate = candidate + '}'
+    }
+  }
+
+  const startIdx = candidate.indexOf('{')
+  if (startIdx === -1) return null
+
+  let depth = 0
+  let inString = false
+  let isEscaped = false
+
+  for (let i = startIdx; i < candidate.length; i++) {
+    const char = candidate[i]
+
+    if (isEscaped) {
+      isEscaped = false
+      continue
+    }
+
+    if (char === '\\') {
+      isEscaped = true
+      continue
+    }
+
+    if (char === '"') {
+      inString = !inString
+      continue
+    }
+
+    if (!inString) {
+      if (char === '{') {
+        depth++
+      } else if (char === '}') {
+        depth--
+        if (depth === 0) {
+          return candidate.slice(startIdx, i + 1)
+        }
+      }
+    }
+  }
+
+  // If brackets are unbalanced (e.g. truncated JSON from streaming), return from startIdx to end
+  if (depth > 0) {
+    return candidate.slice(startIdx)
+  }
+
+  return null
+}
+
+/**
+ * Repairs common JSON formatting flaws (smart quotes, trailing commas, unescaped newlines, unclosed braces).
+ */
+export function repairJsonText(jsonStr: string): string {
+  if (!jsonStr) return ''
+
+  let repaired = jsonStr.trim()
+
+  // 1. Convert smart quotes to standard ASCII quotes
+  repaired = repaired
+    .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB]/g, '"')
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+
+  // 2. Remove trailing commas before closing braces/brackets
+  repaired = repaired.replace(/,\s*([}\]])/g, '$1')
+
+  // 3. Fix unescaped newlines inside JSON strings
+  // Replace raw newlines inside double-quotes with \n
+  let inString = false
+  let isEscaped = false
+  let charArray = repaired.split('')
+
+  for (let i = 0; i < charArray.length; i++) {
+    const ch = charArray[i]
+    if (isEscaped) {
+      isEscaped = false
+      continue
+    }
+    if (ch === '\\') {
+      isEscaped = true
+      continue
+    }
+    if (ch === '"') {
+      inString = !inString
+      continue
+    }
+    if (inString && (ch === '\n' || ch === '\r')) {
+      charArray[i] = ch === '\n' ? '\\n' : ''
+    }
+  }
+  repaired = charArray.join('')
+
+  // 4. Handle truncated JSON by closing open quotes and braces
+  let depthBrace = 0
+  let depthBracket = 0
+  inString = false
+  isEscaped = false
+
+  for (let i = 0; i < repaired.length; i++) {
+    const ch = repaired[i]
+    if (isEscaped) {
+      isEscaped = false
+      continue
+    }
+    if (ch === '\\') {
+      isEscaped = true
+      continue
+    }
+    if (ch === '"') {
+      inString = !inString
+      continue
+    }
+    if (!inString) {
+      if (ch === '{') depthBrace++
+      else if (ch === '}') depthBrace = Math.max(0, depthBrace - 1)
+      else if (ch === '[') depthBracket++
+      else if (ch === ']') depthBracket = Math.max(0, depthBracket - 1)
+    }
+  }
+
+  // If string was left open, close it
+  if (inString) {
+    repaired += '"'
+  }
+
+  // Close unclosed arrays then objects
+  while (depthBracket > 0) {
+    repaired += ']'
+    depthBracket--
+  }
+  while (depthBrace > 0) {
+    repaired += '}'
+    depthBrace--
+  }
+
+  // Remove any remaining trailing commas that might have been exposed before newly added closing braces
+  repaired = repaired.replace(/,\s*([}\]])/g, '$1')
+
+  return repaired
+}
+
+/**
+ * Sanitizes speech text so TTS speaks natural, warm words without markdown, symbols or tags.
+ */
+export function sanitizeSpeechText(text: string, options?: { userName?: string }): string {
+  if (!text) return ''
+
+  let s = text.trim()
+
+  // 1. Unescape JSON escaped quotes/slashes if any
+  s = s.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\n/g, ' ')
+
+  // 2. Strip cue tags: [emo:...], [act:...], [look:...], [fx:...], [pause:...], [voice:...]
+  s = s.replace(/\[(?:emo|act|look|fx|pause|voice):[^\]]+\]/gi, '')
+
+  // 3. Strip code blocks and inline backticks
+  s = s.replace(/```[\s\S]*?```/g, '')
+  s = s.replace(/`([^`]+)`/g, '$1')
+
+  // 4. Strip markdown headings (###, ##, #)
+  s = s.replace(/^#{1,6}\s+/gm, '')
+
+  // 5. Strip markdown bold, italics, strikethrough: **text**, *text*, __text__, _text_, ~~text~~
+  s = s.replace(/\*\*([^*]+)\*\*/g, '$1')
+  s = s.replace(/\*([^*]+)\*/g, '$1')
+  s = s.replace(/__([^_]+)__/g, '$1')
+  s = s.replace(/_([^_]+)_/g, '$1')
+  s = s.replace(/~~([^~]+)~~/g, '$1')
+
+  // 6. Strip links and URLs: [text](url) -> text, and raw https?://...
+  s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+  s = s.replace(/https?:\/\/\S+/gi, '')
+
+  // 7. Strip HTML tags
+  s = s.replace(/<[^>]+>/g, '')
+
+  // 8. Strip bullet points and list markers
+  s = s.replace(/^[-*+]\s+/gm, '')
+  s = s.replace(/^\d+\.\s+/gm, '')
+
+  // 9. Expand common symbols and dates for natural pronunciation
+  // Date formats: MM/DD/YYYY or DD/MM/YYYY or YYYY-MM-DD
+  s = s.replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g, (_match, m, d, y) => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ]
+    const mNum = parseInt(m, 10)
+    const monthName = (mNum >= 1 && mNum <= 12) ? months[mNum - 1] : m
+    return `${monthName} ${d}, ${y}`
+  })
+
+  s = s.replace(/\$/g, ' dollars ')
+  s = s.replace(/%/g, ' percent ')
+  s = s.replace(/&/g, ' and ')
+  s = s.replace(/@/g, ' at ')
+  s = s.replace(/\+/g, ' plus ')
+  s = s.replace(/=/g, ' equals ')
+  s = s.replace(/#/g, '')
+
+  // 10. Strip emojis (surrogate pairs and symbols)
+  s = s.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+
+  // 11. Replace "Operator" / "Partner" with user's name
+  const userName = options?.userName?.trim() || 'Priyanraj'
+  s = s.replace(/\bOperator\b/gi, userName)
+  s = s.replace(/\bPartner\b/gi, userName)
+
+  // 12. Normalize multiple spaces, newlines, and punctuation
+  s = s.replace(/[\r\n]+/g, ' ')
+  s = s.replace(/[ \t]+/g, ' ')
+  s = s.replace(/\s+([.,!?])/g, '$1')
+  s = s.replace(/([.,!?]){2,}/g, '$1')
+  s = s.trim()
+
+  return s
+}
+
+/**
+ * Hard guardrail for chat bubble display text.
+ * Strictly guarantees that no JSON fragments or keys ever appear in chat bubbles!
+ */
+export function sanitizeBubbleText(text: string, options?: { userName?: string }): string {
+  if (!text) return ''
+
+  let cleaned = text.trim()
+
+  // If text matches the forbidden UI guardrail regex, extract the human-readable payload
+  if (UI_GUARDRAIL_REGEX.test(cleaned)) {
+    // 1. Try to extract "display_text": "..."
+    const dtMatch = cleaned.match(/"display_text"\s*:\s*"((?:[^"\\]|\\.)*)"/s)
+    if (dtMatch && dtMatch[1]) {
+      cleaned = dtMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\')
+    } else {
+      // 2. Try to extract unclosed "display_text": "...
+      const dtUnclosed = cleaned.match(/"display_text"\s*:\s*"([^"]+)/s)
+      if (dtUnclosed && dtUnclosed[1]) {
+        cleaned = dtUnclosed[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+      } else {
+        // 3. Try to extract "speech": "..."
+        const spMatch = cleaned.match(/"speech"\s*:\s*"((?:[^"\\]|\\.)*)"/s)
+        if (spMatch && spMatch[1]) {
+          cleaned = spMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+        } else {
+          // 4. Strip JSON keys, quotes and braces aggressively
+          cleaned = cleaned
+            .replace(/\{\s*"display_text"\s*:\s*/i, '')
+            .replace(/\{/g, '')
+            .replace(/\}/g, '')
+            .replace(/"(?:speech|display_text|emotion|intensity|gesture|voice_style|actions)"\s*:\s*[^,\n]+/gi, '')
+            .replace(/^[",\s]+|[",\s]+$/g, '')
+        }
+      }
+    }
+  }
+
+  // Strip leading/trailing raw braces or brackets if still present
+  cleaned = cleaned.replace(/^\s*[{}\[\]]+\s*/, '').replace(/\s*[{}\[\]]+\s*$/, '').trim()
+
+  // Replace "Operator" / "Partner" with user's name
+  const userName = options?.userName?.trim() || 'Priyanraj'
+  cleaned = cleaned.replace(/\bOperator\b/gi, userName)
+  cleaned = cleaned.replace(/\bPartner\b/gi, userName)
+
+  // Double check UI guardrail regex. If somehow still matching, strip the specific token
+  if (UI_GUARDRAIL_REGEX.test(cleaned)) {
+    cleaned = cleaned
+      .replace(/"display_text"\s*:/gi, '')
+      .replace(/"emotion"\s*:\s*"[^"]*"/gi, '')
+      .replace(/"gesture"\s*:\s*"[^"]*"/gi, '')
+      .replace(/[{}\[\]]/g, '')
+      .trim()
+  }
+
+  return cleaned
+}
+
+/**
+ * Bulletproof Structured Reply Parser.
+ *
+ * Guarantees:
+ * 1. Never throws.
+ * 2. Never returns raw JSON in display_text or speech.
+ * 3. Extracts cues (emotion, gesture, voice style, actions) reliably.
+ * 4. Fulfills the hard UI guardrail: UI_GUARDRAIL_REGEX.test(result.display_text) === false.
+ */
+export function parseStructuredReply(rawText: string, options?: ParseOptions): ParsedReply {
+  const userName = options?.userName?.trim() || 'Priyanraj'
+  const defEmotion: EmotionType = options?.defaultEmotion || 'calm'
+  const defGesture: GestureType = options?.defaultGesture || 'idle'
+
+  const defaultVoiceStyle: VoiceStyle = { rate: 1.0, pitch: 1.0, style: 'calm' }
+
+  // Default empty reply
+  const createResult = (
+    displayText: string,
+    speechText: string,
+    emotion: EmotionType = defEmotion,
+    intensity = 0.7,
+    gesture: GestureType = defGesture,
+    voiceStyle: VoiceStyle = defaultVoiceStyle,
+    actions: ActionCall[] = [],
+    extra?: { sticker?: string; meme?: any; gif_query?: string; reactions?: string[] }
+  ): ParsedReply => {
+    const finalDisplay = sanitizeBubbleText(displayText, { userName })
+    const finalSpeech = sanitizeSpeechText(speechText || finalDisplay, { userName })
+
+    const cues: ParsedReplyCues = {
+      emotion,
+      intensity: typeof intensity === 'number' && !isNaN(intensity) ? Math.min(1, Math.max(0, intensity)) : 0.7,
+      gesture,
+      voice_style: voiceStyle || defaultVoiceStyle,
+      actions: Array.isArray(actions) ? actions : [],
+      sticker: extra?.sticker,
+      meme: extra?.meme,
+      gif_query: extra?.gif_query,
+      reactions: extra?.reactions,
+    }
+
+    return {
+      display_text: finalDisplay,
+      speech: finalSpeech,
+      cues,
+      // Backward-compatible properties matching StructuredReply
+      emotion: cues.emotion,
+      intensity: cues.intensity,
+      gesture: cues.gesture,
+      voice_style: cues.voice_style,
+      actions: cues.actions,
+      sticker: cues.sticker,
+      meme: cues.meme,
+      gif_query: cues.gif_query,
+      reactions: cues.reactions,
+    }
+  }
+
+  if (!rawText || !rawText.trim()) {
+    return createResult(
+      `Hello ${userName}! How can I assist you right now?`,
+      `Hello ${userName}! How can I assist you right now?`
+    )
+  }
+
+  let text = rawText.trim()
+
+  // 1. Unwrap double-encoded JSON if applicable (e.g. "\"{\\\"display_text\\\":...}\"")
+  if (text.startsWith('"') && text.endsWith('"') && text.length > 2) {
+    try {
+      const unwrapped = JSON.parse(text)
+      if (typeof unwrapped === 'string') {
+        text = unwrapped.trim()
+      }
+    } catch {
+      // Continue with text
+    }
+  }
+
+  // 2. Strip code fences
+  text = stripCodeFences(text)
+
+  // 3. Attempt direct JSON parse on cleaned text
+  try {
+    const directObj = JSON.parse(text)
+    if (directObj && typeof directObj === 'object') {
+      const validated = StructuredReplySchema.safeParse(directObj)
+      if (validated.success) {
+        const d = validated.data
+        return createResult(
+          d.display_text,
+          d.speech,
+          d.emotion as EmotionType,
+          d.intensity,
+          d.gesture as GestureType,
+          d.voice_style,
+          d.actions as ActionCall[],
+          {
+            sticker: d.sticker,
+            meme: d.meme,
+            gif_query: d.gif_query,
+            reactions: d.reactions,
+          }
+        )
+      }
+    }
+  } catch {
+    // Continue to balanced JSON extraction and repair
+  }
+
+  // 4. Extract balanced JSON block
+  const balanced = extractBalancedJson(text)
+  if (balanced) {
+    // Try parsing balanced JSON
+    try {
+      const parsed = JSON.parse(balanced)
+      const validated = StructuredReplySchema.safeParse(parsed)
+      if (validated.success) {
+        const d = validated.data
+        return createResult(
+          d.display_text,
+          d.speech,
+          d.emotion as EmotionType,
+          d.intensity,
+          d.gesture as GestureType,
+          d.voice_style,
+          d.actions as ActionCall[],
+          {
+            sticker: d.sticker,
+            meme: d.meme,
+            gif_query: d.gif_query,
+            reactions: d.reactions,
+          }
+        )
+      }
+    } catch {
+      // Try repairing balanced JSON
+      const repaired = repairJsonText(balanced)
+      try {
+        const parsedRepaired = JSON.parse(repaired)
+        const validated = StructuredReplySchema.safeParse(parsedRepaired)
+        if (validated.success) {
+          const d = validated.data
+          return createResult(
+            d.display_text,
+            d.speech,
+            d.emotion as EmotionType,
+            d.intensity,
+            d.gesture as GestureType,
+            d.voice_style,
+            d.actions as ActionCall[],
+            {
+              sticker: d.sticker,
+              meme: d.meme,
+              gif_query: d.gif_query,
+              reactions: d.reactions,
+            }
+          )
+        }
+      } catch {
+        // Fall through to regex extraction
+      }
+    }
+  }
+
+  // 5. Regex-based field extraction for damaged or partial JSON
+  const dtMatch = text.match(/"display_text"\s*:\s*"((?:[^"\\]|\\.)*)"/s)
+  const spMatch = text.match(/"speech"\s*:\s*"((?:[^"\\]|\\.)*)"/s)
+  const emoMatch = text.match(/"emotion"\s*:\s*"([a-zA-Z_-]+)"/)
+  const intMatch = text.match(/"intensity"\s*:\s*([0-9.]+)/)
+  const gesMatch = text.match(/"gesture"\s*:\s*"([a-zA-Z_-]+)"/)
+
+  if (dtMatch || spMatch) {
+    const extractedDisplay = dtMatch ? dtMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n') : ''
+    const extractedSpeech = spMatch ? spMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n') : ''
+    const extractedEmotion = (emoMatch?.[1]?.toLowerCase() as EmotionType) || defEmotion
+    const extractedIntensity = intMatch ? parseFloat(intMatch[1]) : 0.7
+    const extractedGesture = (gesMatch?.[1]?.toLowerCase() as GestureType) || defGesture
+
+    return createResult(
+      extractedDisplay || extractedSpeech,
+      extractedSpeech || extractedDisplay,
+      extractedEmotion,
+      extractedIntensity,
+      extractedGesture
+    )
+  }
+
+  // 6. Plain Prose Fallback: the model responded with plain conversational text
+  // Ensure we strip any stray JSON artifacts if present
+  const cleanedBubble = sanitizeBubbleText(text, { userName })
+  const cleanedSpeech = sanitizeSpeechText(text, { userName })
+
+  return createResult(
+    cleanedBubble,
+    cleanedSpeech,
+    defEmotion,
+    0.6,
+    defGesture
+  )
+}

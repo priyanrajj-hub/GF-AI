@@ -5,7 +5,8 @@ import type {
   PersonalitySliders,
   StructuredReply,
 } from '@ada/shared'
-import { buildAdaSystemPrompt } from '@ada/shared'
+import { buildAdaSystemPrompt, parseStructuredReply } from '@ada/shared'
+
 
 export class OllamaLLMProvider implements LLMProvider {
   name = 'ollama'
@@ -86,30 +87,7 @@ export class OllamaLLMProvider implements LLMProvider {
 
       const data = await res.json()
       const rawText = data.message?.content || '{}'
-
-      try {
-        const parsed = JSON.parse(rawText)
-        return {
-          speech: parsed.speech || parsed.display_text || 'Acknowledged, Operator.',
-          display_text: parsed.display_text || parsed.speech || rawText,
-          emotion: parsed.emotion || 'happy',
-          intensity: parsed.intensity ?? 0.7,
-          gesture: parsed.gesture || 'idle',
-          voice_style: parsed.voice_style || { rate: 1.0, pitch: 1.0 },
-          sticker: parsed.sticker,
-          meme: parsed.meme,
-          reactions: parsed.reactions,
-        }
-      } catch {
-        return {
-          speech: rawText.slice(0, 150),
-          display_text: rawText,
-          emotion: 'calm',
-          intensity: 0.6,
-          gesture: 'idle',
-          voice_style: { rate: 1.0, pitch: 1.0 },
-        }
-      }
+      return parseStructuredReply(rawText, { userName: context?.userName })
     } catch (err: any) {
       console.warn('[Ollama Provider Error]:', err.message)
       throw err

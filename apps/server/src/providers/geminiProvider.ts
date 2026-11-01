@@ -1,12 +1,64 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai'
 import {
   type ChatMessage,
   type LLMGenerateOptions,
   type LLMProvider,
-  parseAndRepairStructuredReply,
+  parseStructuredReply,
   type StructuredReply,
 } from '@ada/shared'
 import { ContextBuilder } from '../services/contextBuilder.js'
+
+const GEMINI_RESPONSE_SCHEMA = {
+  type: SchemaType.OBJECT,
+  properties: {
+    speech: {
+      type: SchemaType.STRING,
+      description: '1-3 short spoken sentences for TTS, written for the ear. No markdown, no tags, no symbols.',
+    },
+    display_text: {
+      type: SchemaType.STRING,
+      description: 'Formatted display text for the chat UI with markdown if desired.',
+    },
+    emotion: {
+      type: SchemaType.STRING,
+      enum: ['happy', 'sad', 'excited', 'concerned', 'thinking', 'surprised', 'playful', 'calm', 'motivated', 'tired'],
+    },
+    intensity: {
+      type: SchemaType.NUMBER,
+      description: 'Emotion intensity from 0.0 to 1.0',
+    },
+    gesture: {
+      type: SchemaType.STRING,
+      enum: ['idle', 'nod', 'shake', 'shrug', 'wave', 'thinking_pose', 'laugh', 'shy', 'surprised', 'concerned_lean', 'celebrate', 'fist_pump', 'sleepy'],
+    },
+    voice_style: {
+      type: SchemaType.OBJECT,
+      properties: {
+        rate: { type: SchemaType.NUMBER },
+        pitch: { type: SchemaType.NUMBER },
+        style: { type: SchemaType.STRING },
+      },
+    },
+    actions: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          name: { type: SchemaType.STRING },
+          arguments: { type: SchemaType.OBJECT },
+        },
+        required: ['name'],
+      },
+    },
+    sticker: { type: SchemaType.STRING },
+    gif_query: { type: SchemaType.STRING },
+    reactions: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    },
+  },
+  required: ['speech', 'display_text', 'emotion', 'gesture'],
+}
 
 export class GeminiLLMProvider implements LLMProvider {
   name = 'Gemini'
@@ -82,6 +134,7 @@ export class GeminiLLMProvider implements LLMProvider {
             systemInstruction: systemPrompt,
             generationConfig: {
               responseMimeType: 'application/json',
+              responseSchema: GEMINI_RESPONSE_SCHEMA as any,
               temperature: options.temperature ?? 0.7,
             },
           })
@@ -93,7 +146,7 @@ export class GeminiLLMProvider implements LLMProvider {
           const result = await chat.sendMessage(userMessage)
           const text = result.response.text()
 
-          return parseAndRepairStructuredReply(text)
+          return parseStructuredReply(text, { userName: options.userName })
         } catch (err: any) {
           lastError = err
           console.warn(`[GeminiLLMProvider] Model '${modelName}' key #${(this.currentKeyIndex % this.apiKeys.length) + 1} failed (${err?.status || err?.message}). Trying next fallback...`)
@@ -133,6 +186,7 @@ export class GeminiLLMProvider implements LLMProvider {
             systemInstruction: systemPrompt,
             generationConfig: {
               responseMimeType: 'application/json',
+              responseSchema: GEMINI_RESPONSE_SCHEMA as any,
               temperature: options.temperature ?? 0.7,
             },
           })
@@ -143,14 +197,37 @@ export class GeminiLLMProvider implements LLMProvider {
 
           const result = await chat.sendMessageStream(userMessage)
           let accumulatedText = ''
+          let emittedLength = 0
 
           for await (const chunk of result.stream) {
             const chunkText = chunk.text()
             accumulatedText += chunkText
-            onChunk(chunkText)
+
+            // Stream ONLY the clean display_text content, never raw JSON tokens!
+            const dtIndex = accumulatedText.indexOf('"display_text"')
+            if (dtIndex !== -1) {
+              const valueStartIndex = accumulatedText.indexOf('"', dtIndex + 14)
+              if (valueStartIndex !== -1) {
+                const currentVal = accumulatedText.slice(valueStartIndex + 1)
+                let endIdx = -1
+                for (let i = 0; i < currentVal.length; i++) {
+                  if (currentVal[i] === '"' && (i === 0 || currentVal[i - 1] !== '\\')) {
+                    endIdx = i
+                    break
+                  }
+                }
+                const streamable = endIdx === -1 ? currentVal : currentVal.slice(0, endIdx)
+                const decoded = streamable.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\')
+                if (decoded.length > emittedLength) {
+                  const delta = decoded.slice(emittedLength)
+                  emittedLength = decoded.length
+                  onChunk(delta)
+                }
+              }
+            }
           }
 
-          return parseAndRepairStructuredReply(accumulatedText)
+          return parseStructuredReply(accumulatedText, { userName: options.userName })
         } catch (err: any) {
           lastError = err
           console.warn(`[GeminiLLMProvider stream] Model '${modelName}' key #${(this.currentKeyIndex % this.apiKeys.length) + 1} failed (${err?.status || err?.message}). Trying next fallback...`)
