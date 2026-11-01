@@ -12,6 +12,8 @@ import {
   Shirt,
   Compass,
   Smile,
+  Users,
+  ShieldCheck,
 } from 'lucide-react'
 import type { PersonalityMode } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
@@ -36,6 +38,8 @@ export const TopBar: React.FC = () => {
     setShowSettingsModal,
     setShowMemoryModal,
     setShowMoodModal,
+    setShowPersonalityStudio,
+    setShowPermissionCenter,
     settings,
     updateSettings,
   } = useAppStore()
@@ -211,6 +215,24 @@ export const TopBar: React.FC = () => {
           title="Memory Manager (Consented Memories)"
         >
           <Brain className="w-4 h-4 text-cyan-400" />
+        </button>
+
+        {/* Personality Studio (42 Archetypes & Blending) */}
+        <button
+          onClick={() => setShowPersonalityStudio(true)}
+          className="p-2 rounded-xl glass-panel-subtle hover:text-pink-300 text-slate-300 transition-colors cursor-pointer"
+          title="Personality Studio (42 Archetypes, Blending, Big Five & Adaptive Learning)"
+        >
+          <Users className="w-4 h-4 text-pink-400" />
+        </button>
+
+        {/* Permission Center (Safe Integrations & Risk Tiers) */}
+        <button
+          onClick={() => setShowPermissionCenter(true)}
+          className="p-2 rounded-xl glass-panel-subtle hover:text-emerald-300 text-slate-300 transition-colors cursor-pointer"
+          title="Permission Center (Least-Privilege Scopes, Risk Tiers, Prompt Shield)"
+        >
+          <ShieldCheck className="w-4 h-4 text-emerald-400" />
         </button>
 
         <button
