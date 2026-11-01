@@ -1,5 +1,38 @@
 [
   {
+    "id": "crimson_turtleneck",
+    "name": "Ada Original (Crimson Turtleneck & Harness)",
+    "category": "signature",
+    "description": "Default signature ribbed burgundy/crimson turtleneck sweater dress with black leather tactical chest harness, belt, boots, and gloves.",
+    "dressColor": "#800020",
+    "accentColor": "#16161A",
+    "hairColor": "#15151A",
+    "tags": ["signature", "turtleneck", "harness", "crimson", "ada", "spy", "default"],
+    "voiceComment": "Equipped signature crimson turtleneck dress and tactical harness. Systems locked and ready."
+  },
+  {
+    "id": "black_stealth",
+    "name": "Black Stealth Variant",
+    "category": "signature",
+    "description": "All-black ribbed turtleneck sweater dress with matte leather tactical chest harness and dark boots.",
+    "dressColor": "#16161A",
+    "accentColor": "#0F1014",
+    "hairColor": "#15151A",
+    "tags": ["stealth", "black", "turtleneck", "harness", "covert"],
+    "voiceComment": "Black stealth variant engaged. Low visual profile calibrated."
+  },
+  {
+    "id": "crimson_jacket",
+    "name": "Crimson Field Jacket & Pants",
+    "category": "signature",
+    "description": "Tailored crimson operative field jacket with sleek black tactical trousers and holster harness.",
+    "dressColor": "#A50F22",
+    "accentColor": "#121318",
+    "hairColor": "#15151A",
+    "tags": ["jacket", "crimson", "pants", "tactical", "field"],
+    "voiceComment": "Crimson jacket and tactical pants equipped. Field mobility optimized."
+  },
+  {
     "id": "ada-red",
     "name": "Spy-Chic Red Dress (Signature)",
     "category": "signature",

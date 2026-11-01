@@ -255,13 +255,242 @@ export const OriginalPastelSkin: AvatarSkin = {
   },
 }
 
+/**
+ * Ada Original Signature Skin (Ribbed Burgundy Turtleneck & Tactical Harness)
+ * Milestone 1 / Round 9 default skin
+ */
+export const CrimsonTurtleneckSkin: AvatarSkin = {
+  id: 'crimson_turtleneck',
+  name: 'Ada Original (Crimson Turtleneck & Harness)',
+  description: 'Default ribbed burgundy/crimson turtleneck sweater dress with black tactical leather harness, boots, and gloves.',
+  apply: (vrm: VRM) => {
+    AdaRedSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+          // Deep burgundy ribbed dress tone
+          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+            if (mat.color) mat.color.set('#800020') // Deep Burgundy
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#400010')
+            if (mat.roughness !== undefined) mat.roughness = 0.55 // ribbed knit texture
+          }
+          // Matte leather tactical harness
+          if (/body_wear|glove|strap/i.test(matName)) {
+            if (mat.color) mat.color.set('#16161A')
+            if (mat.metalness !== undefined) mat.metalness = 0.35 // metallic buckle sheen
+            if (mat.roughness !== undefined) mat.roughness = 0.3
+          }
+        })
+      }
+    })
+  },
+}
+
+/**
+ * Black Stealth Variant
+ */
+export const BlackStealthSkin: AvatarSkin = {
+  id: 'black_stealth',
+  name: 'Black Stealth Variant',
+  description: 'All-black covert turtleneck sweater dress with matte leather chest harness.',
+  apply: (vrm: VRM) => {
+    AdaRedSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+            if (mat.color) mat.color.set('#16161A')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0A0A0E')
+            if (mat.roughness !== undefined) mat.roughness = 0.5
+          }
+        })
+      }
+    })
+  },
+}
+
+/**
+ * Crimson Jacket & Black Pants Variant
+ */
+export const CrimsonJacketSkin: AvatarSkin = {
+  id: 'crimson_jacket',
+  name: 'Crimson Field Jacket & Pants',
+  description: 'Tailored crimson operative field jacket with sleek black tactical trousers.',
+  apply: (vrm: VRM) => {
+    AdaRedSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+            if (mat.color) mat.color.set('#A50F22') // Field Crimson Jacket
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#520711')
+          }
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            if (mat.color) mat.color.set('#141418') // Black tactical pants
+            mat.opacity = 1.0
+            mat.transparent = false
+          }
+        })
+      }
+    })
+  },
+}
+
 export const AVATAR_SKINS: Record<string, AvatarSkin> = {
   'ada-red': AdaRedSkin,
+  'crimson_turtleneck': CrimsonTurtleneckSkin,
+  'black_stealth': BlackStealthSkin,
+  'crimson_jacket': CrimsonJacketSkin,
   'cozy-night': CozyNightSkin,
   'original-pastel': OriginalPastelSkin,
 }
 
-export function applyAvatarSkin(vrm: VRM, skinId: string = 'ada-red'): void {
+/**
+ * Attaches or updates the Tactical Comms Headset with boom mic and LED indicator
+ */
+export function updateCommsHeadset(vrm: VRM, visible: boolean, isListening: boolean): void {
+  const headBone = vrm.humanoid?.getNormalizedBoneNode('head')
+  if (!headBone) return
+
+  let headsetGroup = headBone.getObjectByName('__ada_comms_headset__') as THREE.Group | undefined
+
+  if (!headsetGroup) {
+    headsetGroup = new THREE.Group()
+    headsetGroup.name = '__ada_comms_headset__'
+
+    // 1. Sleek metallic headband arc over crown
+    const bandGeo = new THREE.TorusGeometry(0.13, 0.007, 8, 24, Math.PI * 0.95)
+    const bandMat = new THREE.MeshStandardMaterial({
+      color: 0x16161a,
+      roughness: 0.3,
+      metalness: 0.8,
+    })
+    const bandMesh = new THREE.Mesh(bandGeo, bandMat)
+    bandMesh.rotation.x = Math.PI / 2
+    bandMesh.rotation.z = -Math.PI / 2
+    bandMesh.position.set(0, 0.08, 0)
+    headsetGroup.add(bandMesh)
+
+    // 2. Right ear cup
+    const earGeo = new THREE.CylinderGeometry(0.024, 0.024, 0.016, 16)
+    const earMat = new THREE.MeshStandardMaterial({
+      color: 0x111216,
+      roughness: 0.35,
+      metalness: 0.7,
+    })
+    const earMesh = new THREE.Mesh(earGeo, earMat)
+    earMesh.rotation.z = Math.PI / 2
+    earMesh.position.set(0.125, 0.01, 0)
+    headsetGroup.add(earMesh)
+
+    // 3. Articulated Boom Mic arm curving forward toward lips
+    const boomGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.12, 8)
+    const boomMesh = new THREE.Mesh(boomGeo, bandMat)
+    boomMesh.position.set(0.115, -0.04, 0.06)
+    boomMesh.rotation.x = Math.PI / 3.8
+    boomMesh.rotation.z = -Math.PI / 18
+    headsetGroup.add(boomMesh)
+
+    // 4. Microphone tip capsule with illuminated LED status indicator
+    const tipGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.02, 12)
+    const tipMat = new THREE.MeshStandardMaterial({
+      color: 0x1a1a20,
+      roughness: 0.4,
+    })
+    const tipMesh = new THREE.Mesh(tipGeo, tipMat)
+    tipMesh.position.set(0.10, -0.095, 0.11)
+    tipMesh.rotation.x = Math.PI / 3.8
+    headsetGroup.add(tipMesh)
+
+    const ledGeo = new THREE.SphereGeometry(0.004, 8, 8)
+    const ledMat = new THREE.MeshBasicMaterial({
+      color: 0x00f3ff,
+    })
+    const ledMesh = new THREE.Mesh(ledGeo, ledMat)
+    ledMesh.name = '__headset_led__'
+    ledMesh.position.set(0.098, -0.105, 0.12)
+    headsetGroup.add(ledMesh)
+
+    headBone.add(headsetGroup)
+  }
+
+  headsetGroup.visible = visible
+
+  // Update LED brightness/color based on listening state
+  const led = headsetGroup.getObjectByName('__headset_led__') as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> | undefined
+  if (led && led.material) {
+    if (isListening) {
+      led.material.color.set('#00ffcc') // Bright cyan/emerald pulse
+    } else {
+      led.material.color.set('#0077aa') // Dim standby cyan
+    }
+  }
+}
+
+/**
+ * Applies accessory overrides (comms headset, gloves, boots)
+ */
+export function applyAvatarAccessories(
+  vrm: VRM,
+  accessories: { commsHeadset?: boolean; gloves?: boolean; boots?: boolean },
+  isListening: boolean = false
+): void {
+  if (accessories.commsHeadset !== undefined) {
+    updateCommsHeadset(vrm, accessories.commsHeadset, isListening)
+  }
+
+  if (accessories.gloves !== undefined) {
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+          if (/glove|body_wear/i.test(matName)) {
+            if (accessories.gloves) {
+              if (mat.color) mat.color.set('#111216')
+              mat.visible = true
+            } else {
+              // Hide gloves overlay / skin tone
+              if (mat.color) mat.color.set('#f5ded6')
+            }
+          }
+        })
+      }
+    })
+  }
+
+  if (accessories.boots !== undefined) {
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            mat.visible = accessories.boots !== false
+          }
+        })
+      }
+    })
+  }
+}
+
+export function applyAvatarSkin(vrm: VRM, skinId: string = 'crimson_turtleneck'): void {
   if (AVATAR_SKINS[skinId]) {
     AVATAR_SKINS[skinId].apply(vrm)
     return
@@ -291,7 +520,6 @@ export function applyAvatarSkin(vrm: VRM, skinId: string = 'ada-red'): void {
         if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
           if (mat.color) mat.color.set(outfit.dressColor)
           if (mat.shadeColorFactor) {
-            // Darker tone for shade
             const c = new THREE.Color(outfit.dressColor).multiplyScalar(0.55)
             mat.shadeColorFactor.set(c)
           }
@@ -299,13 +527,13 @@ export function applyAvatarSkin(vrm: VRM, skinId: string = 'ada-red'): void {
             const c = new THREE.Color(outfit.dressColor).multiplyScalar(0.55)
             mat.shadeColor.set(c)
           }
-          if (skinId === 'tripo-tactical-turtleneck') {
+          if (skinId === 'tripo-tactical-turtleneck' || skinId === 'crimson_turtleneck') {
             if (mat.roughness !== undefined) mat.roughness = 0.55 // ribbed wool texture
           }
         }
 
-        // Tactical Harness & Buckle Straps for Tripo outfit
-        if (skinId === 'tripo-tactical-turtleneck' && /glove|strap|body_wear|arm/i.test(matName)) {
+        // Tactical Harness & Buckle Straps for Tripo outfit & Crimson Turtleneck
+        if ((skinId === 'tripo-tactical-turtleneck' || skinId === 'crimson_turtleneck') && /glove|strap|body_wear|arm/i.test(matName)) {
           if (mat.color) mat.color.set('#16161A') // matte tactical harness black
           if (mat.metalness !== undefined) mat.metalness = 0.35 // metallic buckle sheen
           if (mat.roughness !== undefined) mat.roughness = 0.3
@@ -314,3 +542,4 @@ export function applyAvatarSkin(vrm: VRM, skinId: string = 'ada-red'): void {
     }
   })
 }
+
