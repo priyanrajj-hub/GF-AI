@@ -223,11 +223,35 @@ app.post('/api/chat/vision', upload.single('file'), async (req, res) => {
 // 3.5. NEURAL AI VOICE SYNTHESIS (GIRL VOICE)
 // ==========================================
 app.post('/api/tts', async (req, res) => {
-  const { text, voice, provider = 'auto' } = req.body
+  const {
+    text,
+    voice,
+    provider = 'auto',
+    elevenlabsApiKey,
+    elevenlabsVoiceId,
+    elevenlabsModelId,
+  } = req.body
 
   if (!text || typeof text !== 'string') {
     return res.status(400).json({ error: 'Text is required for TTS synthesis' })
   }
+
+  // Check for ElevenLabs voice request (NOpBlnGInO9m6vDvFkFC or elevenlabs:*)
+  const isElevenLabs =
+    provider === 'elevenlabs' ||
+    (voice &&
+      (voice.startsWith('elevenlabs:') ||
+        voice === 'NOpBlnGInO9m6vDvFkFC' ||
+        voice.toLowerCase().includes('eleven')))
+
+  const elevenVoiceId =
+    elevenlabsVoiceId ||
+    (voice && voice.startsWith('elevenlabs:')
+      ? voice.replace(/^elevenlabs:/, '')
+      : voice === 'NOpBlnGInO9m6vDvFkFC'
+      ? 'NOpBlnGInO9m6vDvFkFC'
+      : process.env.ELEVENLABS_VOICE_ID || 'NOpBlnGInO9m6vDvFkFC')
+  const elevenModel = elevenlabsModelId || process.env.ELEVENLABS_MODEL_ID || 'eleven_v4'
 
   // Prebuilt female voices: 'Aoede' (sultry, confident, spy-chic) or 'Kore' (sweet, gentle girlfriend)
   const isHFVoice = voice && (voice.startsWith('hf:') || voice.includes('/') || voice.toLowerCase().includes('kokoro'))
@@ -236,6 +260,23 @@ app.post('/api/tts', async (req, res) => {
 
   // Try requested provider or fallback
   try {
+    // 1. ElevenLabs Ultra-Realistic Expressive Girl Voice
+    const elevenlabs = ProviderRegistry.getElevenLabs()
+    if (isElevenLabs || (elevenlabsApiKey && elevenlabsApiKey.trim()) || (provider === 'auto' && elevenlabs.isConfigured())) {
+      if (elevenlabs.isConfigured() || (elevenlabsApiKey && elevenlabsApiKey.trim())) {
+        try {
+          const result = await elevenlabs.generateTTS(text, elevenVoiceId, elevenModel, elevenlabsApiKey)
+          return res.json({ ...result, provider: 'elevenlabs', voice: elevenVoiceId, model: elevenModel })
+        } catch (elErr: any) {
+          console.warn('[ElevenLabs TTS Failed, falling back to Gemini]:', elErr.message)
+          if (provider === 'elevenlabs') {
+            return res.status(502).json({ error: elErr.message || 'ElevenLabs synthesis failed' })
+          }
+        }
+      }
+    }
+
+    // 2. Hugging Face
     if (provider === 'huggingface' || isHFVoice) {
       const hf = ProviderRegistry.getHuggingFace()
       if (hf.isConfigured()) {
@@ -244,14 +285,14 @@ app.post('/api/tts', async (req, res) => {
       }
     }
 
-    // Default to Gemini Aoede/Kore neural voice if available
+    // 3. Google Gemini Aoede/Kore neural voice
     const gemini = ProviderRegistry.getGemini()
     if (gemini.isConfigured()) {
       const result = await gemini.generateTTS(text, geminiVoice)
       return res.json({ ...result, provider: 'gemini', voice: geminiVoice })
     }
 
-    // Secondary fallback to Hugging Face if Gemini not configured
+    // 4. Secondary fallback to Hugging Face
     const hf = ProviderRegistry.getHuggingFace()
     if (hf.isConfigured()) {
       const result = await hf.generateTTS(text, cleanHFModel)
@@ -259,8 +300,9 @@ app.post('/api/tts', async (req, res) => {
     }
 
     return res.status(503).json({
-      error: 'No TTS provider configured. Add GEMINI_API_KEY or HF_TOKEN in .env',
+      error: 'No TTS provider configured. Add ELEVENLABS_API_KEY, GEMINI_API_KEY, or HF_TOKEN in .env or settings.',
       availableProviders: {
+        elevenlabs: elevenlabs.isConfigured() || Boolean(elevenlabsApiKey),
         gemini: gemini.isConfigured(),
         huggingface: hf.isConfigured(),
       },

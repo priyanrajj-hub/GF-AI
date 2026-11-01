@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ada/shared": "*",
+    "@elevenlabs/elevenlabs-js": "^2.75.0",
     "@google/generative-ai": "^0.24.1",
     "@huggingface/inference": "^4.13.32",
     "cors": "^2.8.5",
