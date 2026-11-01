@@ -22,8 +22,8 @@ export class RoamNavigator {
   public moveSpeed = 0
   public pokeCount = 0
   public lastPokeTime = 0
-  private lastWanderTime = -8
-  private wanderInterval = 4.5
+  private lastWanderTime = 6.0
+  private wanderInterval = 8.5
   public pendingArrivalAction?: string
 
   // Expanded Stage Boundaries: traversing across whole screen
