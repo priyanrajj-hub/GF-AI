@@ -171,10 +171,14 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
   voice: 'NOpBlnGInO9m6vDvFkFC',
   elevenlabsApiKey:
     typeof window !== 'undefined'
-      ? localStorage.getItem('ada_elevenlabs_api_key') || ''
-      : '',
+      ? localStorage.getItem('ada_elevenlabs_api_key') || '[PURGED_ELEVENLABS_KEY]'
+      : '[PURGED_ELEVENLABS_KEY]',
   elevenlabsVoiceId: 'NOpBlnGInO9m6vDvFkFC',
   elevenlabsModelId: 'eleven_multilingual_v2',
+  huggingfaceApiKey:
+    typeof window !== 'undefined'
+      ? localStorage.getItem('ada_hf_api_key') || ''
+      : '',
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -242,8 +246,13 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   settings: DEFAULT_USER_SETTINGS,
   updateSettings: (partial) => {
-    if (typeof window !== 'undefined' && partial.elevenlabsApiKey !== undefined) {
-      localStorage.setItem('ada_elevenlabs_api_key', partial.elevenlabsApiKey)
+    if (typeof window !== 'undefined') {
+      if (partial.elevenlabsApiKey !== undefined) {
+        localStorage.setItem('ada_elevenlabs_api_key', partial.elevenlabsApiKey)
+      }
+      if (partial.huggingfaceApiKey !== undefined) {
+        localStorage.setItem('ada_hf_api_key', partial.huggingfaceApiKey)
+      }
     }
     set((s) => ({
       settings: { ...s.settings, ...partial },

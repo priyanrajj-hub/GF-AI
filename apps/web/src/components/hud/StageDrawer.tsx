@@ -16,6 +16,7 @@ import { useAppStore } from '../../store/useAppStore.js'
 import { ACTION_CATALOG } from '../../avatar/engine/actions.js'
 import { EXPRESSION_PRESETS } from '../../avatar/engine/expressions.js'
 import { ORIGINAL_SONGS, globalSongEngine } from '../../avatar/engine/singer.js'
+import { performAction } from '../../avatar/motion/performAction.js'
 
 const songEngine = globalSongEngine
 
@@ -48,20 +49,17 @@ export const StageDrawer: React.FC = () => {
   if (!showStageDrawer) return null
 
   const handlePlayDance = (danceId: string) => {
-    setActiveAction(danceId)
-    setActiveFX(ACTION_CATALOG[danceId]?.fx || ['music_notes'])
+    performAction(danceId, { duration: 30, emotion: 'happy' })
   }
 
   const handlePlayAction = (actionId: string) => {
-    setActiveAction(actionId)
-    setActiveFX(ACTION_CATALOG[actionId]?.fx || [])
+    performAction(actionId)
   }
 
   const handlePlaySong = (songId: string) => {
     const song = songEngine.playSong(songId)
     setActiveSong(song)
-    setActiveAction('dance_ballad_sway')
-    setActiveFX(['music_notes', 'sparkles'])
+    performAction('dance_slow_sway', { duration: 60, emotion: 'singing' as any, fx: ['music_notes', 'sparkles'] })
     setKaraokeLine(song.lyrics[0]?.text || '')
   }
 

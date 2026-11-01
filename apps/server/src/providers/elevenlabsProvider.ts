@@ -5,7 +5,11 @@ export class ElevenLabsProvider {
   private activeApiKey: string = ''
 
   constructor(apiKey?: string) {
-    this.setApiKey(apiKey || process.env.ELEVENLABS_API_KEY || '')
+    this.setApiKey(
+      apiKey ||
+      process.env.ELEVENLABS_API_KEY ||
+      '[PURGED_ELEVENLABS_KEY]'
+    )
   }
 
   setApiKey(apiKey: string): void {

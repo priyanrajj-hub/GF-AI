@@ -201,14 +201,14 @@ app.get('/api/permissions/audit', (_req, res) => {
 app.post('/api/chat', async (req, res) => {
   const authReq = req as AuthenticatedRequest
   const userId = authReq.userId
-  const { message, mode, sliders, language, stream } = req.body
+  const { message, mode, sliders, language, stream, llmProvider, huggingfaceApiKey } = req.body
 
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Message is required' })
   }
 
   const settings = db.getUserSettings(userId)
-  const activeMode: PersonalityMode = mode || settings.mode || 'jarvis'
+  const activeMode: PersonalityMode = mode || settings.mode || 'companion'
   const activeSliders: PersonalitySliders = sliders || settings.sliders
 
   const history = db.getMessages(userId, 20)
@@ -223,6 +223,14 @@ app.post('/api/chat', async (req, res) => {
   db.addMessage(userId, userMsgObj)
 
   const llm = ProviderRegistry.getLLM()
+  const genOptions = {
+    mode: activeMode,
+    sliders: activeSliders,
+    userName: settings.userName,
+    language,
+    llmProvider: llmProvider || settings.llmProvider,
+    huggingfaceApiKey: huggingfaceApiKey || settings.huggingfaceApiKey,
+  }
 
   try {
     let reply: StructuredReply
@@ -233,37 +241,17 @@ app.post('/api/chat', async (req, res) => {
         res.setHeader('Connection', 'keep-alive')
 
         reply = await (llm.stream
-          ? llm.stream(
-              history,
-              message,
-              { mode: activeMode, sliders: activeSliders, userName: settings.userName, language },
-              (chunk) => {
-                res.write(`data: ${JSON.stringify({ chunk })}\n\n`)
-              }
-            )
-          : llm.generate(history, message, {
-              mode: activeMode,
-              sliders: activeSliders,
-              userName: settings.userName,
-              language,
-            }))
+          ? llm.stream(history, message, genOptions, (chunk) => {
+              res.write(`data: ${JSON.stringify({ chunk })}\n\n`)
+            })
+          : llm.generate(history, message, genOptions))
       } else {
-        reply = await llm.generate(history, message, {
-          mode: activeMode,
-          sliders: activeSliders,
-          userName: settings.userName,
-          language,
-        })
+        reply = await llm.generate(history, message, genOptions)
       }
     } catch (llmErr) {
       console.warn('⚠️ [Primary LLM Failed, Falling back to MockLLMProvider]:', (llmErr as Error).message)
       const mockLLM = ProviderRegistry.getMockLLM()
-      reply = await mockLLM.generate(history, message, {
-        mode: activeMode,
-        sliders: activeSliders,
-        userName: settings.userName,
-        language,
-      })
+      reply = await mockLLM.generate(history, message, genOptions)
       if (stream) {
         res.write(`data: ${JSON.stringify({ chunk: reply.display_text })}\n\n`)
       }

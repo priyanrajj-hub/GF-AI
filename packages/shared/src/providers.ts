@@ -16,6 +16,8 @@ export interface LLMGenerateOptions {
   language?: string
   modelTier?: 'fast' | 'reasoning'
   temperature?: number
+  llmProvider?: 'gemini' | 'huggingface' | 'auto'
+  huggingfaceApiKey?: string
 }
 
 export interface LLMProvider {

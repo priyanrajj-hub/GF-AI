@@ -16,6 +16,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore.js'
+import { performAction } from '../../avatar/motion/performAction.js'
 
 export const MissionBriefing: React.FC = () => {
   const {
@@ -239,47 +240,36 @@ export const MissionBriefing: React.FC = () => {
 
         <div className="grid grid-cols-2 gap-1.5">
           <button
-            onClick={() => {
-              setActiveAction('sassy_hip_pop')
-              setActiveFX(['sparkles', 'confetti'])
-              setTimeout(() => {
-                setActiveAction('idle')
-                setActiveFX([])
-              }, 4000)
-            }}
+            onClick={() => performAction('dance')}
             className="px-2.5 py-1.5 rounded-xl bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-200 text-[11px] font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Perform 22s Procedural Dance"
           >
             <span>💃</span>
             <span>Dance Move</span>
           </button>
 
           <button
-            onClick={() => {
-              setSkinId('saree-crimson')
-              setActiveFX(['sparkles', 'stars'])
-              setActiveAction('sassy_hip_pop')
-              setTimeout(() => {
-                setActiveAction('idle')
-                setActiveFX([])
-              }, 3000)
-            }}
+            onClick={() => performAction('wear_saree')}
             className="px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-200 text-[11px] font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Wear Crimson Saree & Pose"
           >
             <span>🥻</span>
             <span>Wear Saree</span>
           </button>
 
           <button
-            onClick={() => setShowWardrobeDrawer(true)}
+            onClick={() => performAction('wardrobe')}
             className="px-2.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-200 text-[11px] font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Open Wardrobe & Accessories"
           >
             <span>👗</span>
             <span>Wardrobe</span>
           </button>
 
           <button
-            onClick={() => setShowStageDrawer(true)}
+            onClick={() => performAction('stage_studio')}
             className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-200 text-[11px] font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Open Stage Studio & Choreographies"
           >
             <span>🎤</span>
             <span>Stage Studio</span>

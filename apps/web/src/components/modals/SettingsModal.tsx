@@ -446,6 +446,26 @@ export const SettingsModal: React.FC = () => {
                 </div>
               </div>
 
+              {/* Hugging Face API Configuration */}
+              <div className="p-2.5 rounded-xl bg-slate-950/60 border border-cyan-500/20 space-y-2">
+                <div className="text-xs font-mono text-cyan-300 flex items-center justify-between">
+                  <span>HUGGING FACE API CONFIG (HF_TOKEN)</span>
+                  <span className="text-[10px] text-slate-400 font-mono">Qwen 2.5 / Llama 3.3 / Kokoro</span>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                    Hugging Face Token
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="hf_..."
+                    value={settings.huggingfaceApiKey || ''}
+                    onChange={(e) => updateSettings({ huggingfaceApiKey: e.target.value })}
+                    className="w-full bg-slate-900 border border-cyan-500/30 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 font-mono"
+                  />
+                </div>
+              </div>
+
               <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
                 <div>
                   <div className="text-xs font-mono font-semibold text-white">
@@ -468,11 +488,12 @@ export const SettingsModal: React.FC = () => {
                   onClick={() => {
                     import('../voice/VoiceEngine.js').then(({ VoiceEngine }) => {
                       const voiceName = settings.voice || 'NOpBlnGInO9m6vDvFkFC'
+                      const userName = settings.userName || 'Priyanraj'
                       const greeting = voiceName === 'NOpBlnGInO9m6vDvFkFC' || voiceName === 'cgSgspJ2msm6clMCkdW9'
-                        ? 'Hey Operator... [giggles] I was waiting for you. [whispers] Ready to conquer today together?'
+                        ? `Hey ${userName}... [giggles] I was waiting for you. [whispers] Ready to conquer today together?`
                         : voiceName.includes('Kore')
-                        ? "Hi babe! I'm so glad we're together today! Anything you want me to do? 💕"
-                        : "Hey Operator. Voice synthesis calibrated. Ready for whatever mission you've got in mind."
+                        ? `Hi ${userName}! I'm so glad we're together today! Anything you want me to do? 💕`
+                        : `Hey ${userName}. Voice synthesis calibrated. Ready for whatever mission you've got in mind.`
                       VoiceEngine.speak(greeting)
                     })
                   }}

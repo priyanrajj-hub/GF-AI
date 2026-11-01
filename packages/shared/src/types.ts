@@ -161,6 +161,7 @@ export interface UserSettings {
   elevenlabsApiKey?: string
   elevenlabsVoiceId?: string
   elevenlabsModelId?: string
+  huggingfaceApiKey?: string
 }
 
 export interface BriefingData {

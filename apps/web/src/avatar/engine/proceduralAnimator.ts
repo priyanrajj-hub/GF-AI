@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import type { VRM } from '@pixiv/three-vrm'
 import { ACTION_CATALOG } from './actions.js'
+import { applyProceduralDance } from '../motion/procedural/danceStyles.js'
+import { getBoneNodes } from '../motion/procedural/types.js'
 
 export interface AnimationState {
   currentActionId: string
@@ -138,21 +140,22 @@ export class ProceduralAnimator {
         const inter = humanoid.getNormalizedBoneNode(`${side}${f}Intermediate` as any)
         const dist = humanoid.getNormalizedBoneNode(`${side}${f}Distal` as any)
 
-        const curlBase = 0.42 + i * 0.05
+        // Natural delicate relaxed fingers (soft gentle curve, NO claw hands)
+        const curlBase = 0.18 + i * 0.03
         if (prox) {
-          prox.rotation.z = THREE.MathUtils.lerp(prox.rotation.z, sign * curlBase, delta * 4.0)
-          prox.rotation.x = THREE.MathUtils.lerp(prox.rotation.x, -0.04 * (i - 1.5), delta * 4.0)
-          prox.rotation.y = THREE.MathUtils.lerp(prox.rotation.y, 0, delta * 4.0)
+          prox.rotation.z = THREE.MathUtils.lerp(prox.rotation.z, sign * curlBase, delta * 3.5)
+          prox.rotation.x = THREE.MathUtils.lerp(prox.rotation.x, -0.02 * (i - 1.5), delta * 3.5)
+          prox.rotation.y = THREE.MathUtils.lerp(prox.rotation.y, 0, delta * 3.5)
         }
         if (inter) {
-          inter.rotation.z = THREE.MathUtils.lerp(inter.rotation.z, sign * (curlBase * 1.4), delta * 4.0)
-          inter.rotation.x = THREE.MathUtils.lerp(inter.rotation.x, 0, delta * 4.0)
-          inter.rotation.y = THREE.MathUtils.lerp(inter.rotation.y, 0, delta * 4.0)
+          inter.rotation.z = THREE.MathUtils.lerp(inter.rotation.z, sign * (curlBase * 1.15), delta * 3.5)
+          inter.rotation.x = THREE.MathUtils.lerp(inter.rotation.x, 0, delta * 3.5)
+          inter.rotation.y = THREE.MathUtils.lerp(inter.rotation.y, 0, delta * 3.5)
         }
         if (dist) {
-          dist.rotation.z = THREE.MathUtils.lerp(dist.rotation.z, sign * (curlBase * 0.85), delta * 4.0)
-          dist.rotation.x = THREE.MathUtils.lerp(dist.rotation.x, 0, delta * 4.0)
-          dist.rotation.y = THREE.MathUtils.lerp(dist.rotation.y, 0, delta * 4.0)
+          dist.rotation.z = THREE.MathUtils.lerp(dist.rotation.z, sign * (curlBase * 0.70), delta * 3.5)
+          dist.rotation.x = THREE.MathUtils.lerp(dist.rotation.x, 0, delta * 3.5)
+          dist.rotation.y = THREE.MathUtils.lerp(dist.rotation.y, 0, delta * 3.5)
         }
       })
 
@@ -414,107 +417,24 @@ export class ProceduralAnimator {
   }
 
   private applyDanceMotion(danceId: string, time: number, delta: number, humanoid: any, cute: number): void {
-    const hips = humanoid.getNormalizedBoneNode('hips')
-    const spine = humanoid.getNormalizedBoneNode('spine')
-    const chest = humanoid.getNormalizedBoneNode('chest')
-    const leftArm = humanoid.getNormalizedBoneNode('leftUpperArm')
-    const rightArm = humanoid.getNormalizedBoneNode('rightUpperArm')
-    const leftForeArm = humanoid.getNormalizedBoneNode('leftLowerArm')
-    const rightForeArm = humanoid.getNormalizedBoneNode('rightLowerArm')
-    const head = humanoid.getNormalizedBoneNode('head')
+    const bones = getBoneNodes(humanoid)
+    const ctx = {
+      time,
+      delta,
+      humanoid,
+      initialHipsY: this.initialHipsY,
+      cuteRatio: cute,
+      liveRatio: this.state.liveliness / 100.0,
+    }
+    const handled = applyProceduralDance(danceId, bones, ctx)
+    if (handled) return
 
-    switch (danceId) {
-      case 'dance_cute_idol': {
-        const beat = time * 7.2
-        if (hips) {
-          hips.position.y = this.initialHipsY + Math.abs(Math.sin(beat)) * 0.04
-          hips.rotation.y = Math.sin(beat * 0.5) * 0.25
-          hips.rotation.z = Math.cos(beat * 0.5) * 0.12
-        }
-        if (leftArm && rightArm) {
-          leftArm.rotation.z = 0.65 + Math.sin(beat) * 0.32
-          rightArm.rotation.z = -0.65 - Math.cos(beat) * 0.32
-          leftArm.rotation.x = -0.45 + Math.cos(beat * 0.5) * 0.25
-          rightArm.rotation.x = -0.45 - Math.sin(beat * 0.5) * 0.25
-        }
-        if (head) {
-          head.rotation.z = Math.sin(beat * 0.5) * 0.12
-        }
-        break
-      }
-      case 'dance_pop_groove': {
-        const beat = time * 7.8
-        if (hips) {
-          hips.position.y = this.initialHipsY
-          hips.rotation.y = Math.sin(beat * 0.5) * 0.28
-          hips.position.x = Math.sin(beat * 0.5) * 0.035
-        }
-        if (spine) spine.rotation.z = Math.sin(beat * 0.5) * 0.08
-        if (leftArm && rightArm) {
-          leftArm.rotation.z = 0.78 + Math.sin(beat) * 0.22
-          rightArm.rotation.z = -0.78 - Math.sin(beat) * 0.22
-        }
-        break
-      }
-      case 'dance_hiphop': {
-        const beat = time * 6.2
-        if (hips) {
-          hips.position.y = this.initialHipsY - 0.04 + Math.abs(Math.sin(beat)) * 0.045
-          hips.rotation.y = Math.sin(beat * 0.5) * 0.30
-        }
-        if (leftArm && rightArm) {
-          leftArm.rotation.x = -0.65 + Math.sin(beat) * 0.30
-          rightArm.rotation.x = -0.65 - Math.sin(beat) * 0.30
-        }
-        break
-      }
-      case 'dance_ballad_sway': {
-        const beat = time * 3.2
-        if (hips) {
-          hips.position.y = this.initialHipsY
-          hips.rotation.y = Math.sin(beat) * 0.22
-          hips.rotation.z = Math.cos(beat) * 0.09
-        }
-        if (leftArm && rightArm) {
-          leftArm.rotation.z = 0.88 + Math.sin(beat) * 0.28
-          rightArm.rotation.z = -0.88 - Math.sin(beat) * 0.28
-        }
-        break
-      }
-      case 'dance_spy_jazz': {
-        const beat = time * 4.8
-        if (hips) {
-          hips.position.y = this.initialHipsY
-          hips.rotation.y = Math.sin(beat * 0.5) * 0.32
-          hips.position.x = Math.cos(beat * 0.5) * 0.04
-        }
-        if (rightArm && rightForeArm) {
-          rightArm.rotation.z = -0.45 + Math.sin(beat) * 0.2
-          rightArm.rotation.x = -0.55
-          rightForeArm.rotation.y = 1.05
-        }
-        break
-      }
-      case 'dance_jump_energetic': {
-        const beat = time * 8.5
-        if (hips) hips.position.y = this.initialHipsY + Math.abs(Math.sin(beat)) * 0.065
-        if (leftArm && rightArm) {
-          leftArm.rotation.z = 0.45 + Math.sin(beat) * 0.35
-          rightArm.rotation.z = -0.45 - Math.sin(beat) * 0.35
-          leftArm.rotation.x = -0.75
-          rightArm.rotation.x = -0.75
-        }
-        break
-      }
-      default: {
-        // dance_lofi_chill / celebration
-        const beat = time * 4.0
-        if (hips) hips.rotation.y = Math.sin(beat) * 0.18
-        if (leftArm && rightArm) {
-          leftArm.rotation.z = 0.95 + Math.sin(beat) * 0.15
-          rightArm.rotation.z = -0.95 - Math.sin(beat) * 0.15
-        }
-      }
+    const { hips, leftUpperArm, rightUpperArm } = bones
+    const beat = time * 4.0
+    if (hips) hips.rotation.y = Math.sin(beat) * 0.18
+    if (leftUpperArm && rightUpperArm) {
+      leftUpperArm.rotation.z = 0.95 + Math.sin(beat) * 0.15
+      rightUpperArm.rotation.z = -0.95 - Math.sin(beat) * 0.15
     }
   }
 

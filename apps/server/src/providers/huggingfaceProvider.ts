@@ -3,7 +3,7 @@ import {
   type ChatMessage,
   type LLMGenerateOptions,
   type LLMProvider,
-  parseAndRepairStructuredReply,
+  parseStructuredReply,
   type StructuredReply,
 } from '@ada/shared'
 import { ContextBuilder } from '../services/contextBuilder.js'
@@ -97,7 +97,7 @@ export class HuggingFaceProvider implements LLMProvider {
         })
 
         const content = response.choices?.[0]?.message?.content || ''
-        return parseAndRepairStructuredReply(content)
+        return parseStructuredReply(content, { userName: options.userName })
       } catch (err: any) {
         lastError = err
         console.warn(`[HuggingFaceProvider] Model '${model}' failed: ${err.message}. Trying next fallback...`)
@@ -145,15 +145,41 @@ export class HuggingFaceProvider implements LLMProvider {
         })
 
         let accumulated = ''
+        let emittedLength = 0
         for await (const chunk of stream) {
           const text = chunk.choices?.[0]?.delta?.content || ''
           if (text) {
             accumulated += text
-            onChunk(text)
+
+            // Only stream clean display_text characters
+            const dtIndex = accumulated.indexOf('"display_text"')
+            if (dtIndex !== -1) {
+              const valueStartIndex = accumulated.indexOf('"', dtIndex + 14)
+              if (valueStartIndex !== -1) {
+                const currentVal = accumulated.slice(valueStartIndex + 1)
+                let endIdx = -1
+                for (let i = 0; i < currentVal.length; i++) {
+                  if (currentVal[i] === '"' && (i === 0 || currentVal[i - 1] !== '\\')) {
+                    endIdx = i
+                    break
+                  }
+                }
+                const streamable = endIdx === -1 ? currentVal : currentVal.slice(0, endIdx)
+                const decoded = streamable.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\')
+                if (decoded.length > emittedLength) {
+                  const delta = decoded.slice(emittedLength)
+                  emittedLength = decoded.length
+                  onChunk(delta)
+                }
+              }
+            } else if (!accumulated.trim().startsWith('{')) {
+              // Not JSON, stream plain text
+              onChunk(text)
+            }
           }
         }
 
-        return parseAndRepairStructuredReply(accumulated)
+        return parseStructuredReply(accumulated, { userName: options.userName })
       } catch (err: any) {
         lastError = err
         console.warn(`[HuggingFaceProvider stream] Model '${model}' failed: ${err.message}. Trying next...`)
