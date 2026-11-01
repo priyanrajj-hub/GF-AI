@@ -299,6 +299,16 @@ export function applyAvatarSkin(vrm: VRM, skinId: string = 'ada-red'): void {
             const c = new THREE.Color(outfit.dressColor).multiplyScalar(0.55)
             mat.shadeColor.set(c)
           }
+          if (skinId === 'tripo-tactical-turtleneck') {
+            if (mat.roughness !== undefined) mat.roughness = 0.55 // ribbed wool texture
+          }
+        }
+
+        // Tactical Harness & Buckle Straps for Tripo outfit
+        if (skinId === 'tripo-tactical-turtleneck' && /glove|strap|body_wear|arm/i.test(matName)) {
+          if (mat.color) mat.color.set('#16161A') // matte tactical harness black
+          if (mat.metalness !== undefined) mat.metalness = 0.35 // metallic buckle sheen
+          if (mat.roughness !== undefined) mat.roughness = 0.3
         }
       })
     }

@@ -74,19 +74,31 @@ class VoiceEngineManager {
       return
     }
 
-    // Clean text (remove URLs, markdown symbols, asterisks, brackets)
-    const cleanSpeech = text
-      .replace(/https?:\/\/\S+/gi, '')
-      .replace(/```[\s\S]*?```/gi, '')
-      .replace(/[*_#`[\]]/g, '')
-      .trim()
+    const voiceSetting = store.settings.voice || 'NOpBlnGInO9m6vDvFkFC'
+    const isElevenLabs =
+      voiceSetting === 'NOpBlnGInO9m6vDvFkFC' ||
+      voiceSetting.startsWith('elevenlabs:') ||
+      Boolean(store.settings.elevenlabsApiKey)
+
+    // Clean text: For ElevenLabs keep acting cues like [giggles], [whispers], [sarcastically]
+    const cleanSpeech = isElevenLabs
+      ? text
+          .replace(/https?:\/\/\S+/gi, '')
+          .replace(/```[\s\S]*?```/gi, '')
+          .replace(/[*_#`]/g, '')
+          .trim()
+      : text
+          .replace(/https?:\/\/\S+/gi, '')
+          .replace(/```[\s\S]*?```/gi, '')
+          .replace(/[*_#`[\]]/g, '')
+          .trim()
 
     if (!cleanSpeech) {
       if (options.onEnd) options.onEnd()
       return
     }
 
-    // 1. Try High-Fidelity Neural Gemini AI Girl Voice (Aoede: sultry, confident, feminine)
+    // 1. Try High-Fidelity Neural Voice (ElevenLabs AI Girl / Gemini / Hugging Face)
     try {
       const res = await fetch(apiUrl('/api/tts'), {
         method: 'POST',
@@ -96,8 +108,15 @@ class VoiceEngineManager {
         },
         body: JSON.stringify({
           text: cleanSpeech,
-          voice: store.settings.voice || 'Aoede',
-          provider: store.settings.voice?.startsWith('hf:') ? 'huggingface' : 'auto',
+          voice: voiceSetting,
+          provider: isElevenLabs
+            ? 'elevenlabs'
+            : voiceSetting.startsWith('hf:')
+            ? 'huggingface'
+            : 'auto',
+          elevenlabsApiKey: store.settings.elevenlabsApiKey,
+          elevenlabsVoiceId: store.settings.elevenlabsVoiceId || 'NOpBlnGInO9m6vDvFkFC',
+          elevenlabsModelId: store.settings.elevenlabsModelId || 'eleven_v4',
         }),
       })
 

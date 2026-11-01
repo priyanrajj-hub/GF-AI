@@ -10,6 +10,17 @@
     "voiceComment": "Back to business. The classic red dress never fails."
   },
   {
+    "id": "tripo-tactical-turtleneck",
+    "name": "Tactical Turtleneck & Harness (Tripo 3D)",
+    "category": "tactical",
+    "description": "Ribbed maroon turtleneck sweater with twin-buckle tactical chest harness and comms headset, modeled after Tripo AI.",
+    "dressColor": "#7D1324",
+    "accentColor": "#1A1A1E",
+    "hairColor": "#121216",
+    "tags": ["tactical", "tripo3d", "turtleneck", "harness", "headset", "spy", "ada"],
+    "voiceComment": "Tactical turtleneck and harness equipped. Comm-link online and locked onto your frequency."
+  },
+  {
     "id": "saree-crimson",
     "name": "Royal Crimson Silk Saree",
     "category": "indian",

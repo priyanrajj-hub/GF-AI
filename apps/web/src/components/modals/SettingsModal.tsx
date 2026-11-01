@@ -317,18 +317,35 @@ export const SettingsModal: React.FC = () => {
                 <label className="block text-xs font-mono text-slate-300 mb-1.5">
                   Select Neural Girl Voice Preset
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateSettings({ voice: 'NOpBlnGInO9m6vDvFkFC' })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      (settings.voice || 'NOpBlnGInO9m6vDvFkFC') === 'NOpBlnGInO9m6vDvFkFC'
+                        ? 'border-pink-500 bg-pink-950/50 text-pink-200 shadow-[0_0_10px_rgba(236,72,153,0.3)]'
+                        : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold font-mono flex items-center gap-1">
+                      <span>✨ ElevenLabs</span>
+                    </div>
+                    <div className="text-[10px] text-pink-300">Expressive AI Girl</div>
+                    <div className="text-[9px] text-slate-500 font-mono truncate">NOpBlnGInO9...</div>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => updateSettings({ voice: 'Aoede' })}
                     className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                      (settings.voice || 'Aoede') === 'Aoede'
+                      settings.voice === 'Aoede'
                         ? 'border-pink-500 bg-pink-950/50 text-pink-200'
                         : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
                     }`}
                   >
                     <div className="text-xs font-semibold font-mono">Aoede</div>
-                    <div className="text-[10px] text-slate-400">Sultry Spy Ada (Gemini)</div>
+                    <div className="text-[10px] text-slate-400">Sultry Spy (Gemini)</div>
+                    <div className="text-[9px] text-slate-500 font-mono">Dual-Key failover</div>
                   </button>
 
                   <button
@@ -341,7 +358,8 @@ export const SettingsModal: React.FC = () => {
                     }`}
                   >
                     <div className="text-xs font-semibold font-mono">Kore</div>
-                    <div className="text-[10px] text-slate-400">Sweet Girlfriend (Gemini)</div>
+                    <div className="text-[10px] text-slate-400">Sweet Girlfriend</div>
+                    <div className="text-[9px] text-slate-500 font-mono">Gemini Neural</div>
                   </button>
 
                   <button
@@ -354,26 +372,69 @@ export const SettingsModal: React.FC = () => {
                     }`}
                   >
                     <div className="text-xs font-semibold font-mono">Kokoro-82M</div>
-                    <div className="text-[10px] text-slate-400">Open-Source (Hugging Face)</div>
+                    <div className="text-[10px] text-slate-400">Hugging Face</div>
+                    <div className="text-[9px] text-slate-500 font-mono">Open-Source</div>
                   </button>
+                </div>
+              </div>
+
+              {/* ElevenLabs API Key Configuration */}
+              <div className="p-2.5 rounded-xl bg-slate-950/60 border border-pink-500/20 space-y-2">
+                <div className="text-xs font-mono text-pink-300 flex items-center justify-between">
+                  <span>ELEVENLABS API KEY & VOICE CONFIG</span>
+                  <span className="text-[10px] text-slate-400 font-mono">modelId: eleven_v4</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                      ElevenLabs API Key
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="sk_..."
+                      value={settings.elevenlabsApiKey || ''}
+                      onChange={(e) => updateSettings({ elevenlabsApiKey: e.target.value })}
+                      className="w-full bg-slate-900 border border-pink-500/30 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-pink-400 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                      ElevenLabs Voice ID
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="NOpBlnGInO9m6vDvFkFC"
+                      value={settings.elevenlabsVoiceId || 'NOpBlnGInO9m6vDvFkFC'}
+                      onChange={(e) => updateSettings({ elevenlabsVoiceId: e.target.value })}
+                      className="w-full bg-slate-900 border border-pink-500/30 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-pink-400 font-mono"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
                 <div>
                   <div className="text-xs font-mono font-semibold text-white">
-                    Active Voice: {settings.voice === 'hf:hexgrad/Kokoro-82M' ? 'Kokoro-82M (Hugging Face)' : settings.voice === 'Kore' ? 'Kore (Sweet Girl)' : 'Aoede (Ada Wong Spy-Chic)'}
+                    Active Voice: {(settings.voice || 'NOpBlnGInO9m6vDvFkFC') === 'NOpBlnGInO9m6vDvFkFC'
+                      ? 'ElevenLabs Expressive Girl (NOpBlnGInO9m6vDvFkFC)'
+                      : settings.voice === 'hf:hexgrad/Kokoro-82M'
+                      ? 'Kokoro-82M (Hugging Face)'
+                      : settings.voice === 'Kore'
+                      ? 'Kore (Sweet Girl)'
+                      : 'Aoede (Ada Wong Spy-Chic)'}
                   </div>
                   <div className="text-[10px] text-slate-400">
-                    Lip-sync blendshapes, visemes & dynamic waveform visualizer enabled
+                    Lip-sync blendshapes, visemes & acting cues ([giggles], [whispers]) enabled
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
                     import('../voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-                      const voiceName = settings.voice || 'Aoede'
-                      const greeting = voiceName.includes('Kore')
+                      const voiceName = settings.voice || 'NOpBlnGInO9m6vDvFkFC'
+                      const greeting = voiceName === 'NOpBlnGInO9m6vDvFkFC'
+                        ? 'Hey Operator... [giggles] I was waiting for you. [whispers] Ready to conquer today together?'
+                        : voiceName.includes('Kore')
                         ? "Hi babe! I'm so glad we're together today! Anything you want me to do? 💕"
                         : "Hey Operator. Voice synthesis calibrated. Ready for whatever mission you've got in mind."
                       VoiceEngine.speak(greeting)

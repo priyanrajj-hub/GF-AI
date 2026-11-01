@@ -9,6 +9,7 @@ import type {
 } from '@ada/shared'
 import { GeminiLLMProvider } from './geminiProvider.js'
 import { HuggingFaceProvider } from './huggingfaceProvider.js'
+import { ElevenLabsProvider } from './elevenlabsProvider.js'
 import {
   MockChannelProvider,
   MockLLMProvider,
@@ -23,6 +24,7 @@ export class ProviderRegistry {
   private static llmProvider: LLMProvider
   private static geminiProvider: GeminiLLMProvider
   private static huggingfaceProvider: HuggingFaceProvider
+  private static elevenlabsProvider: ElevenLabsProvider
   private static sttProvider: STTProvider
   private static ttsProvider: TTSProvider
   private static searchProvider: SearchProvider
@@ -33,6 +35,7 @@ export class ProviderRegistry {
   static init(): void {
     this.geminiProvider = new GeminiLLMProvider()
     this.huggingfaceProvider = new HuggingFaceProvider()
+    this.elevenlabsProvider = new ElevenLabsProvider()
 
     // 1. LLM selection: check explicit preference or active keys
     const preferred = process.env.LLM_PROVIDER?.toLowerCase()
@@ -120,17 +123,25 @@ export class ProviderRegistry {
     return this.huggingfaceProvider
   }
 
+  static getElevenLabs(): ElevenLabsProvider {
+    if (!this.elevenlabsProvider) this.init()
+    return this.elevenlabsProvider
+  }
+
   static getStatus() {
     if (!this.llmProvider) this.init()
     return {
       activeLLM: this.llmProvider.name,
       geminiConfigured: this.geminiProvider?.isConfigured() ?? false,
       huggingfaceConfigured: this.huggingfaceProvider?.isConfigured() ?? false,
+      elevenlabsConfigured: this.elevenlabsProvider?.isConfigured() ?? false,
       models: {
         geminiChat: process.env.GEMINI_MODEL || 'gemini-flash-lite-latest',
         geminiTTS: process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts',
         hfModel: process.env.HF_MODEL || 'Qwen/Qwen2.5-72B-Instruct',
         hfTTS: process.env.HF_TTS_MODEL || 'hexgrad/Kokoro-82M',
+        elevenlabsVoice: process.env.ELEVENLABS_VOICE_ID || 'NOpBlnGInO9m6vDvFkFC',
+        elevenlabsModel: process.env.ELEVENLABS_MODEL_ID || 'eleven_v4',
       },
     }
   }
