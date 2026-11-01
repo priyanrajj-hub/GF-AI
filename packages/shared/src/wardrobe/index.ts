@@ -36,6 +36,9 @@ export class WardrobeProvider {
     const hour = options.hour ?? new Date().getHours()
 
     // 1. Voice command detection
+    if (/turtleneck|harness|ada original/i.test(cmd)) return this.getOutfitById('crimson_turtleneck')
+    if (/stealth|black stealth/i.test(cmd)) return this.getOutfitById('black_stealth')
+    if (/jacket|crimson jacket|field jacket/i.test(cmd)) return this.getOutfitById('crimson_jacket')
     if (/saree/i.test(cmd)) return this.getOutfitById('saree-crimson')
     if (/lehenga/i.test(cmd)) return this.getOutfitById('lehenga-gold')
     if (/salwar/i.test(cmd)) return this.getOutfitById('salwar-emerald')
@@ -50,7 +53,7 @@ export class WardrobeProvider {
     if (/kimono|yukata/i.test(cmd)) return this.getOutfitById('sakura-yukata')
     if (/gala|gown|party/i.test(cmd)) return this.getOutfitById('party-gown')
     if (/cosplay|valkyrie|armor/i.test(cmd)) return this.getOutfitById('fantasy-cosplay')
-    if (/red dress|classic|spy/i.test(cmd)) return this.getOutfitById('ada-red')
+    if (/red dress|classic|spy/i.test(cmd)) return this.getOutfitById('crimson_turtleneck')
     if (/surprise me|random/i.test(cmd)) {
       const all = this.getAllOutfits()
       return all[Math.floor(Math.random() * all.length)]
@@ -66,7 +69,7 @@ export class WardrobeProvider {
     if (options.mode === 'mentor') return this.getOutfitById('office-blazer')
     if (options.mode === 'coach') return this.getOutfitById('gym-athletic')
 
-    // Default signature red dress
-    return this.getOutfitById('ada-red')
+    // Default signature crimson turtleneck
+    return this.getOutfitById('crimson_turtleneck')
   }
 }

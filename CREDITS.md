@@ -47,3 +47,12 @@ All assets, models, audio, and open-source libraries used in Project Ada are str
 - 🇮🇳 **KIRAN Helpline**: `1800-599-0019`.
 - 🇮🇳 **Vandrevala Foundation**: `+91 9999 666 555`.
 - 🌐 **US / International**: `988`.
+
+---
+
+## 6. Research & Legal Frameworks
+- **California Senate Bill 243 (SB 243)**: Regulating AI Companion Chatbots (effective Jan 1, 2026).
+- **New York AI Companion Models Law**: Standards for conversational AI and psychological safeguards.
+- **IIM Lucknow Study**: *Emotional bonding with AI can lead to social isolation* (Journal of Consumer Behaviour, May 2026).
+- **Capcom Co., Ltd.**: Fan Creation and Derivatives Guidelines (non-commercial fan policy).
+- **Trinity College Dublin / UK AI Security Institute**: Research on deceptive interface design and companion AI practices.

@@ -45,3 +45,7 @@ Thumbs.db
 training/ada-lora-adapter/
 training/ada-dpo-adapter/
 
+# Private local 3D models (Milestone 1 Capcom fan guidelines compliance)
+apps/web/public/models/private/
+*.private.vrm
+

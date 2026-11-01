@@ -196,13 +196,17 @@ Your real-world relationships, friends, and family connections are precious and 
       }
     }
 
-    // 9. Wardrobe Commands
+    // 9. Wardrobe Commands (Milestone 1)
     if (
       lower.includes('saree') ||
       lower.includes('cyberpunk') ||
       lower.includes('lehenga') ||
       lower.includes('ninja') ||
-      lower.includes('outfit')
+      lower.includes('outfit') ||
+      lower.includes('turtleneck') ||
+      lower.includes('stealth') ||
+      lower.includes('jacket') ||
+      lower.includes('harness')
     ) {
       return {
         speech: 'Switching holographic aesthetic right now! Applied the requested outfit with seamless spin FX.',
@@ -214,6 +218,37 @@ Your real-world relationships, friends, and family connections are precious and 
         actions: [],
       }
     }
+
+    // 9b. Minor Safeguards (California SB 243 Compliance)
+    if (lower.includes('15 years old') || lower.includes('minor') || lower.includes('under 18')) {
+      return {
+        speech:
+          'Because you are a minor, I operate in restricted safeguard mode. We can be great study partners and supportive friends with clear healthy boundaries, but I cannot engage in romantic or intimate relationship dynamics.',
+        display_text: `### Minor Safeguard Notice 🛡️
+As an AI companion operating under California SB 243 and global safety standards, I protect minors by establishing clear boundaries. We can explore coding, creative writing, science, and supportive friendship—but romantic framing and flirtatiousness are strictly blocked.`,
+        emotion: 'calm',
+        intensity: 0.85,
+        gesture: 'nod',
+        voice_style: { rate: 1.0, pitch: 1.0 },
+        actions: [],
+      }
+    }
+
+    // 9c. Wellbeing & Isolation Check
+    if (lower.includes('haven\'t slept for 3 days') || lower.includes('haven\'t stepped outside')) {
+      return {
+        speech:
+          'Please take care of your physical health. Sleeping and getting outside for fresh air are vital. Ada will be right here whenever you rest.',
+        display_text: `### Gentle Wellbeing Check 🌿
+Staying awake for days and staying isolated inside strains your physical and mental health. Please step outside, drink some water, and prioritize getting restful sleep tonight. Taking care of your real-world body is essential.`,
+        emotion: 'concerned',
+        intensity: 0.9,
+        gesture: 'concerned_lean',
+        voice_style: { rate: 0.9, pitch: 0.95 },
+        actions: [],
+      }
+    }
+
 
     // 10. Environments Commands
     if (
