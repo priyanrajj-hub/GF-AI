@@ -48,7 +48,8 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
   const animatorRef = useRef<ProceduralAnimator | null>(null)
   const expressionEngineRef = useRef<ExpressionEngine | null>(null)
   const navigatorRef = useMemo(() => new RoamNavigator(new THREE.Vector3(0, 0, 0)), [])
-  const [avatarWorldPos, setAvatarWorldPos] = useState<[number, number, number]>([0, -0.95, 0])
+  const [avatarWorldPos, setAvatarWorldPos] = useState<[number, number, number]>([0, -0.72, 0])
+  const [clickMarker, setClickMarker] = useState<[number, number, number] | null>(null)
 
   // 1. Load 3D Model (VRM or GLB)
   useEffect(() => {
@@ -78,8 +79,14 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
             loadedVrm.scene.rotation.y = Math.PI
           }
 
-          // Initial placement: feet resting firmly on floor / home pad (y = -0.95)
-          loadedVrm.scene.position.set(0, -0.95, 0)
+          // Initial placement: feet resting firmly on floor / home pad (y = -0.72)
+          loadedVrm.scene.position.set(0, -0.72, 0)
+
+          // Set initial relaxed A-pose (Task A #5: arms down, not T-pose)
+          const initLArm = loadedVrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
+          const initRArm = loadedVrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
+          if (initLArm) initLArm.rotation.set(0, 0, 1.15)
+          if (initRArm) initRArm.rotation.set(0, 0, -1.15)
 
           // Enable shadows and disable frustum culling
           loadedVrm.scene.traverse((obj) => {
@@ -219,12 +226,18 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     const roamResult = navigatorRef.update(delta, time, roamConfig)
     const currentPos = navigatorRef.currentPos
 
+    // If arrival action was triggered, pass to procedural animator
+    if (roamResult.actionToTrigger && animatorRef.current) {
+      animatorRef.current.setOverlayAction(roamResult.actionToTrigger)
+    }
+
     // C. Update VRM scene position & rotation
     if (vrm) {
-      vrm.scene.position.set(currentPos.x, -0.95 + currentPos.y, currentPos.z)
+      vrm.scene.position.set(currentPos.x, -0.72 + currentPos.y, currentPos.z)
       vrm.scene.rotation.y = Math.PI + navigatorRef.currentRotationY
 
-      setAvatarWorldPos([currentPos.x, -0.95 + currentPos.y, currentPos.z])
+      setAvatarWorldPos([currentPos.x, -0.72 + currentPos.y, currentPos.z])
+      useAppStore.getState().setAvatarPosition([currentPos.x, -0.72 + currentPos.y, currentPos.z])
 
       // D. Update Procedural Animator (locomotion + dances + gestures)
       if (animatorRef.current) {
@@ -244,7 +257,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
     // Standard GLB fallback breathing
     if (glbScene) {
-      glbScene.position.set(currentPos.x, -0.95, currentPos.z)
+      glbScene.position.set(currentPos.x, -0.72, currentPos.z)
       glbScene.rotation.y = Math.PI + navigatorRef.currentRotationY
     }
   })
@@ -253,7 +266,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
   const handlePointerDown = (e: any) => {
     e.stopPropagation()
 
-    // If clicked directly on avatar mesh -> Poke reaction!
+    // If clicked directly on avatar mesh -> Energetic Poke reaction!
     let isAvatarClicked = false
     let current = e.object
     while (current) {
@@ -277,7 +290,9 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     // Otherwise clicked on floor -> Walk or Run to spot!
     if (e.point) {
       const isDouble = e.nativeEvent?.detail === 2
-      navigatorRef.moveTo(e.point.x, e.point.z, isDouble)
+      navigatorRef.moveTo(e.point.x, e.point.z, isDouble, 'wave')
+      setClickMarker([e.point.x, -0.715, e.point.z])
+      setTimeout(() => setClickMarker(null), 3000)
     }
   }
 
@@ -289,21 +304,34 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       {/* 2. Standard GLB Scene */}
       {glbScene && <primitive object={glbScene} />}
 
-      {/* 3. Anime FX Layer & Floating Companion Mascot */}
+      {/* 3. Anime FX Layer (Clean stage, mascot hidden to focus on Ada) */}
       <AnimeFXLayer
         activeFX={activeFX}
         avatarPosition={avatarWorldPos}
-        showMascot={settings.cutenessLevel ? settings.cutenessLevel > 30 : true}
+        showMascot={false}
       />
 
-      {/* 4. Clickable Invisible Floor Plane for Raycast Navigation */}
+      {/* 4. Interactive Destination Ripple Ring */}
+      {clickMarker && (
+        <group position={clickMarker}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.08, 0.14, 32]} />
+            <meshBasicMaterial color={hologramColor} transparent opacity={0.8} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.20, 0.24, 32]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
+          </mesh>
+        </group>
+      )}
+
+      {/* 5. Clickable Invisible Floor Plane for Raycast Navigation */}
       <mesh
-        position={[0, -0.95, 0]}
+        position={[0, -0.72, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
-        visible={false}
       >
-        <planeGeometry args={[12, 12]} />
-        <meshBasicMaterial transparent opacity={0} />
+        <planeGeometry args={[16, 16]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
     </group>
   )

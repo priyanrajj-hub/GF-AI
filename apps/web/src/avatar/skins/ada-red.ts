@@ -24,17 +24,30 @@ export const AdaRedSkin: AvatarSkin = {
     const scene = vrm.scene
 
     scene.traverse((obj) => {
-      // Hide twin-tail bones to leave sleek short bob hair
-      if (/hair[1-8]_[LR]/i.test(obj.name)) {
+      // Hide three-strand braids (mituami), ribbons, and long side-strands to leave sleek chin-length Ada bob
+      if (/mituami|ribbon|hair[2-8]_[LR]/i.test(obj.name)) {
+        obj.scale.set(0, 0, 0)
+        obj.visible = false
+      }
+
+      // Hide hair bow sub-mesh on bangs if separated
+      if (obj.name.toLowerCase().includes('flonthairbaked_2') || obj.name.toLowerCase().includes('flonthair_2')) {
+        obj.visible = false
         obj.scale.set(0, 0, 0)
       }
 
-      // Hide bow & accessory meshes & ribbons
+      // Hide oversized bows, extra accessories, and flared tulip ruffle layers
       if (
-        /ribbon|other|bow|accessory/i.test(obj.name) ||
+        /other|cloth1|cloth2/i.test(obj.name) ||
         obj.name.toLowerCase().includes('cloth_ribbon')
       ) {
         obj.visible = false
+        obj.scale.set(0, 0, 0)
+      }
+
+      // Scale flared skirt bones inward to form a sleek pencil-cut cocktail dress
+      if (/skirt_\d+_\d+/i.test(obj.name)) {
+        obj.scale.set(0.72, 1.0, 0.72)
       }
 
       if ((obj as THREE.Mesh).isMesh) {
@@ -53,36 +66,126 @@ export const AdaRedSkin: AvatarSkin = {
             return
           }
 
-          // Hair Materials -> Pitch Charcoal Black with subtle sheen
+          // Hair Materials -> Pitch Charcoal/Jet Black with subtle sheen
           if (/hair/i.test(matName)) {
             mat.visible = true
             mat.transparent = false
             mat.opacity = 1.0
-            if (mat.color) mat.color.set('#111218')
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#06060a')
+            if (mat.color) mat.color.set('#090a0f')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#040407')
             if (mat.outlineColorFactor) mat.outlineColorFactor.set('#000000')
-            if ('shadeColor' in mat && mat.shadeColor) mat.shadeColor.set('#08080c')
-            if ('outlineColor' in mat && mat.outlineColor) mat.outlineColor.set('#050508')
-            if (mat.roughness !== undefined) mat.roughness = 0.4
+            if ('shadeColor' in mat && mat.shadeColor) mat.shadeColor.set('#040407')
+            if ('outlineColor' in mat && mat.outlineColor) mat.outlineColor.set('#000000')
+            if (mat.roughness !== undefined) mat.roughness = 0.35
           }
 
-          // Clothing / Dress / Sleeves / Stockings -> Deep Crimson Red & Black
-          else if (/wear|cloth|dress|body_wear/i.test(matName)) {
+          // Halter Straps, Choker, and Lingerie Underlayer -> Sleek Midnight Spy Black
+          else if (/body_wear/i.test(matName)) {
+            mat.visible = true
+            mat.transparent = false
+            mat.opacity = 1.0
+            if (mat.color) mat.color.set('#121318')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#060609')
+            if (mat.outlineColorFactor) mat.outlineColorFactor.set('#000000')
+            if (mat.roughness !== undefined) mat.roughness = 0.5
+            if (mat.metalness !== undefined) mat.metalness = 0.2
+          }
+
+          // Main Cocktail Dress Bodice & Skirt -> Deep Crimson Velvet Red
+          else if (/wear|cloth|dress/i.test(matName)) {
             mat.visible = true
             mat.transparent = false
             mat.opacity = 1.0
             if (mat.color) mat.color.set('#B0101E')
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#3d0308')
-            if (mat.outlineColorFactor) mat.outlineColorFactor.set('#1a0104')
-            if ('shadeColor' in mat && mat.shadeColor) mat.shadeColor.set('#3d0308')
-            if ('outlineColor' in mat && mat.outlineColor) mat.outlineColor.set('#1a0104')
-            if (mat.roughness !== undefined) mat.roughness = 0.55
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#320308')
+            if (mat.outlineColorFactor) mat.outlineColorFactor.set('#150103')
+            if ('shadeColor' in mat && mat.shadeColor) mat.shadeColor.set('#320308')
+            if ('outlineColor' in mat && mat.outlineColor) mat.outlineColor.set('#150103')
+            if (mat.roughness !== undefined) mat.roughness = 0.52
             if (mat.metalness !== undefined) mat.metalness = 0.15
           }
 
-          // Eye Accent -> Rich confident tint
+          // Eyelashes & Eyeliner -> Bold Inky Black Cat-Eye
+          else if (/mastuge/i.test(matName)) {
+            mat.visible = true
+            mat.opacity = 1.0
+            if (mat.color) mat.color.set('#000000')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#000000')
+          }
+
+          // Eyes -> Alluring Amber-Hazel with Golden Depth
           else if (/eye/i.test(matName) && !/white/i.test(matName)) {
-            if (mat.color) mat.color.set('#c4823f')
+            if (mat.color) mat.color.set('#9e5124')
+          }
+
+          // Face Texture -> Dynamic Canvas Enhancement for Ruby Lips & Soft Blush
+          else if (/alicia_face\b/i.test(matName)) {
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#f5ded6')
+            if (mat.map && mat.map.image && !mat.userData.__adaMakeupApplied && typeof document !== 'undefined') {
+              try {
+                const img = mat.map.image
+                if (img.width && img.height) {
+                  const canvas = document.createElement('canvas')
+                  canvas.width = 1024
+                  canvas.height = 1024
+                  const ctx = canvas.getContext('2d')
+                  if (ctx) {
+                    ctx.drawImage(img, 0, 0, 1024, 1024)
+
+                    // 1. Soft Rosy Cheek Blush
+                    const gradL = ctx.createRadialGradient(380, 460, 4, 380, 460, 45)
+                    gradL.addColorStop(0, 'rgba(238, 90, 110, 0.40)')
+                    gradL.addColorStop(1, 'rgba(238, 90, 110, 0)')
+                    ctx.fillStyle = gradL
+                    ctx.beginPath()
+                    ctx.arc(380, 460, 45, 0, Math.PI * 2)
+                    ctx.fill()
+
+                    const gradR = ctx.createRadialGradient(644, 460, 4, 644, 460, 45)
+                    gradR.addColorStop(0, 'rgba(238, 90, 110, 0.40)')
+                    gradR.addColorStop(1, 'rgba(238, 90, 110, 0)')
+                    ctx.fillStyle = gradR
+                    ctx.beginPath()
+                    ctx.arc(644, 460, 45, 0, Math.PI * 2)
+                    ctx.fill()
+
+                    // 2. Ada Wong's Signature Ruby Lips (Cupid's bow + fullness)
+                    ctx.fillStyle = 'rgba(185, 12, 30, 0.92)'
+                    ctx.beginPath()
+                    ctx.moveTo(476, 594)
+                    ctx.quadraticCurveTo(494, 582, 505, 587)
+                    ctx.quadraticCurveTo(512, 591, 519, 587)
+                    ctx.quadraticCurveTo(530, 582, 548, 594)
+                    ctx.quadraticCurveTo(534, 612, 512, 613)
+                    ctx.quadraticCurveTo(490, 612, 476, 594)
+                    ctx.closePath()
+                    ctx.fill()
+
+                    // Inner velvet depth
+                    ctx.fillStyle = 'rgba(110, 5, 15, 0.85)'
+                    ctx.beginPath()
+                    ctx.ellipse(512, 597, 24, 5, 0, 0, Math.PI * 2)
+                    ctx.fill()
+
+                    // Glossy lower-lip highlight
+                    ctx.fillStyle = 'rgba(255, 220, 230, 0.55)'
+                    ctx.beginPath()
+                    ctx.ellipse(512, 604, 11, 3, 0, 0, Math.PI * 2)
+                    ctx.fill()
+
+                    const newTex = new THREE.CanvasTexture(canvas)
+                    newTex.flipY = mat.map.flipY
+                    newTex.colorSpace = THREE.SRGBColorSpace
+                    newTex.needsUpdate = true
+                    mat.map = newTex
+                    mat.needsUpdate = true
+                    mat.userData.__adaMakeupApplied = true
+                  }
+                }
+              } catch (e) {
+                console.warn('[Ada Skin] Failed to apply face makeup canvas overlay:', e)
+              }
+            }
           }
         })
       }
