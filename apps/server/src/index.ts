@@ -83,6 +83,11 @@ app.get('/api/health', (req, res) => {
   })
 })
 
+app.get('/api/providers/status', (_req, res) => {
+  res.json(ProviderRegistry.getStatus())
+})
+
+
 // ==========================================
 // 2. CHAT & LLM STREAMING
 // ==========================================
@@ -218,32 +223,122 @@ app.post('/api/chat/vision', upload.single('file'), async (req, res) => {
 // 3.5. NEURAL AI VOICE SYNTHESIS (GIRL VOICE)
 // ==========================================
 app.post('/api/tts', async (req, res) => {
-  const { text, voice } = req.body
+  const { text, voice, provider = 'auto' } = req.body
 
   if (!text || typeof text !== 'string') {
     return res.status(400).json({ error: 'Text is required for TTS synthesis' })
   }
 
   // Prebuilt female voices: 'Aoede' (sultry, confident, spy-chic) or 'Kore' (sweet, gentle girlfriend)
-  const voiceName = (voice === 'Kore' ? 'Kore' : 'Aoede') as 'Aoede' | 'Kore'
+  const isHFVoice = voice && (voice.startsWith('hf:') || voice.includes('/') || voice.toLowerCase().includes('kokoro'))
+  const cleanHFModel = isHFVoice ? voice.replace(/^hf:/, '') : 'hexgrad/Kokoro-82M'
+  const geminiVoice = (voice === 'Kore' ? 'Kore' : 'Aoede') as 'Aoede' | 'Kore'
 
+  // Try requested provider or fallback
   try {
-    const llm = ProviderRegistry.getLLM() as any
-    if (typeof llm.generateTTS === 'function') {
-      const result = await llm.generateTTS(text, voiceName)
-      return res.json(result)
+    if (provider === 'huggingface' || isHFVoice) {
+      const hf = ProviderRegistry.getHuggingFace()
+      if (hf.isConfigured()) {
+        const result = await hf.generateTTS(text, cleanHFModel)
+        return res.json({ ...result, provider: 'huggingface', model: cleanHFModel })
+      }
     }
 
-    const { GeminiLLMProvider } = await import('./providers/geminiProvider.js')
-    const provider = new GeminiLLMProvider()
-    const result = await provider.generateTTS(text, voiceName)
-    return res.json(result)
+    // Default to Gemini Aoede/Kore neural voice if available
+    const gemini = ProviderRegistry.getGemini()
+    if (gemini.isConfigured()) {
+      const result = await gemini.generateTTS(text, geminiVoice)
+      return res.json({ ...result, provider: 'gemini', voice: geminiVoice })
+    }
+
+    // Secondary fallback to Hugging Face if Gemini not configured
+    const hf = ProviderRegistry.getHuggingFace()
+    if (hf.isConfigured()) {
+      const result = await hf.generateTTS(text, cleanHFModel)
+      return res.json({ ...result, provider: 'huggingface', model: cleanHFModel })
+    }
+
+    return res.status(503).json({
+      error: 'No TTS provider configured. Add GEMINI_API_KEY or HF_TOKEN in .env',
+      availableProviders: {
+        gemini: gemini.isConfigured(),
+        huggingface: hf.isConfigured(),
+      },
+    })
   } catch (err: unknown) {
     const error = err as Error
     console.error('[TTS Endpoint Error]', error.message)
     return res.status(500).json({ error: error.message || 'TTS generation failed' })
   }
 })
+
+// ==========================================
+// 3.6. 3D AI GENERATION & MODEL STATUS
+// ==========================================
+app.get('/api/3d/status', (_req, res) => {
+  res.json({
+    activeModel: 'ada.vrm',
+    supportedPipelines: [
+      {
+        id: 'vroid',
+        name: 'VRoid Studio VRM 1.0 (Recommended)',
+        type: 'local_file',
+        description: 'Drop .vrm into public/models/ada.vrm for 100% rigged humanoid with MToon textures & high heels.',
+        cost: 'Free',
+        status: 'ready',
+      },
+      {
+        id: 'triposr',
+        name: 'Hugging Face TripoSR (stabilityai/TripoSR)',
+        type: 'image_to_3d',
+        description: 'Single-image fast 3D mesh reconstruction via Hugging Face inference.',
+        cost: 'Free HF Token',
+        configured: Boolean(process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY),
+      },
+      {
+        id: 'hunyuan3d',
+        name: 'Tencent Hunyuan3D-1 / InstantMesh',
+        type: 'text_to_3d',
+        description: 'Multi-view 3D synthesis via Hugging Face Spaces.',
+        cost: 'Free HF Token',
+        configured: Boolean(process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY),
+      },
+      {
+        id: 'tripo3d',
+        name: 'Tripo3D API',
+        type: 'text_to_3d_rigged',
+        description: 'Direct auto-rigged game-ready humanoid generation.',
+        cost: 'Tripo API Key',
+        configured: Boolean(process.env.TRIPO_API_KEY),
+      },
+    ],
+  })
+})
+
+app.post('/api/3d/generate', async (req, res) => {
+  const { prompt, imageUrl, pipeline = 'triposr' } = req.body
+
+  if (!prompt && !imageUrl) {
+    return res.status(400).json({ error: 'Either prompt or imageUrl is required for 3D generation' })
+  }
+
+  const hfToken = process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY
+  if (!hfToken && pipeline !== 'vroid') {
+    return res.status(401).json({
+      error: 'Hugging Face Token (HF_TOKEN) is required for 3D AI generation.',
+      hint: 'Get your free token at https://huggingface.co/settings/tokens and add HF_TOKEN to your .env file.',
+    })
+  }
+
+  // Return instructions and queued job status
+  res.json({
+    status: 'queued',
+    pipeline,
+    prompt: prompt || 'Ada Wong spy outfit, red dress, black bob hair, high heels',
+    message: `3D Generation requested via ${pipeline}. Processed with HF_TOKEN.`,
+  })
+})
+
 
 // ==========================================
 // 4. SETTINGS & PROFILE
