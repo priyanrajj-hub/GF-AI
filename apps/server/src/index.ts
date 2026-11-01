@@ -239,16 +239,31 @@ app.post('/api/chat', async (req, res) => {
   }
   db.addMessage(userId, userMsgObj)
 
-  // 1b. Real-Time Live Web Search Trigger
+  // 1b. Real-Time Live Web Search & Market Data Trigger
   let liveInternetContext: string | undefined
   const searchIntent = WebSearchService.detectSearchIntent(message)
   if (searchIntent.shouldSearch) {
     try {
-      console.log(`🌐 [Live Web Search] Querying live web: "${searchIntent.query}"`)
-      const searchResults = await WebSearchService.search(searchIntent.query, 4)
-      if (searchResults.length > 0) {
-        liveInternetContext = WebSearchService.formatForPrompt(searchIntent.query, searchResults)
-        console.log(`🌐 [Live Web Search] Attached ${searchResults.length} live web sources to context`)
+      console.log(`🌐 [Live Web Search] Querying live data for: "${searchIntent.query}" (${searchIntent.category || 'general'})`)
+      let marketData: string | null = null
+      let weatherData: string | null = null
+
+      if (searchIntent.category === 'commodity') {
+        marketData = await WebSearchService.fetchLiveMarketQuote(searchIntent.query)
+      } else if (searchIntent.category === 'weather') {
+        weatherData = await WebSearchService.fetchLiveWeather(searchIntent.query)
+      }
+
+      const searchResults = await WebSearchService.search(searchIntent.query, 3)
+
+      if (searchResults.length > 0 || marketData || weatherData) {
+        liveInternetContext = WebSearchService.formatForPrompt(
+          searchIntent.query,
+          searchResults,
+          marketData,
+          weatherData
+        )
+        console.log(`🌐 [Live Web Search] Successfully injected live data & web context`)
       }
     } catch (searchErr: any) {
       console.warn('⚠️ [Live Web Search Exception]:', searchErr?.message)
@@ -267,7 +282,7 @@ app.post('/api/chat', async (req, res) => {
   }
 
   const effectiveMessage = liveInternetContext
-    ? `${message}\n\n[SYSTEM DIRECTIVE: Real-time live internet search results have been fetched and provided in your system context. Enthusiastically confirm to ${settings.userName || 'Priyan'} that your live internet search connection is active, and discuss the fresh findings citing the sources.]`
+    ? `${message}\n\n[SYSTEM MANDATE: Real-time live internet data has been pulled and provided in your context. YOU MUST GIVE THE EXACT NUMBERS, PRICES, RATES, AND FACTS DIRECTLY TO ${settings.userName || 'Priyan'}. NEVER tell him to check a website, visit a link, or look at an external tracker.]`
     : message
 
   try {
