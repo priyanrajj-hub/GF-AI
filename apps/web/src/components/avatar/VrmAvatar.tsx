@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { VRM, VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import * as THREE from 'three'
 import { useAppStore } from '../../store/useAppStore.js'
 import { applyAvatarSkin } from '../../avatar/skins/ada-red.js'
@@ -58,6 +59,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     setLoadError(null)
 
     const loader = new GLTFLoader()
+    loader.setMeshoptDecoder(MeshoptDecoder)
     loader.register((parser) => new VRMLoaderPlugin(parser))
 
     const activeUrl = modelUrl || '/models/ada.vrm'
@@ -146,15 +148,33 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           ;(window as any).__ADA_VRM__ = loadedVrm
           setGlbScene(null)
         } else if (gltf.scene) {
-          // Standard GLB Model (e.g. Michelle)
+          // Standard GLB Model (e.g. Tripo3D Full-Body Ada or Michelle)
+          const container = new THREE.Group()
           const scene = gltf.scene
-          scene.position.set(0, -0.95, 0)
+          const isTripo = activeUrl.includes('tripo')
+          const box = new THREE.Box3().setFromObject(scene)
+          const size = box.getSize(new THREE.Vector3())
+          const center = box.getCenter(new THREE.Vector3())
+
+          if (size.y > 0) {
+            // Tripo diorama model includes pedestal base; scale to 1.48 to fit framing
+            const targetHeight = isTripo ? 1.48 : 1.65
+            const scale = targetHeight / size.y
+            scene.scale.set(scale, scale, scale)
+            // Center scene horizontally and set base at y = 0
+            scene.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale)
+          }
+
           scene.traverse((obj) => {
             if ((obj as THREE.Mesh).isMesh) {
-              ;(obj as THREE.Mesh).frustumCulled = false
+              const mesh = obj as THREE.Mesh
+              mesh.frustumCulled = false
+              mesh.castShadow = true
+              mesh.receiveShadow = true
             }
           })
-          setGlbScene(scene)
+          container.add(scene)
+          setGlbScene(container)
           setVrm(null)
         }
       },
@@ -286,10 +306,17 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       vrm.update(delta)
     }
 
-    // Standard GLB fallback breathing
+    // Standard GLB fallback positioning & idle breathing
     if (glbScene) {
-      glbScene.position.set(currentPos.x, -0.72, currentPos.z)
-      glbScene.rotation.y = Math.PI + navigatorRef.currentRotationY
+      glbScene.position.set(currentPos.x, -0.72 + currentPos.y, currentPos.z)
+      const isTripo = (modelUrl || '').includes('tripo')
+      const baseRotation = isTripo ? 0 : Math.PI
+      glbScene.rotation.y = baseRotation + navigatorRef.currentRotationY
+      // Subtle ambient breathing float
+      glbScene.position.y += Math.sin(time * 2.0) * 0.003
+
+      setAvatarWorldPos([currentPos.x, -0.72 + currentPos.y, currentPos.z])
+      useAppStore.getState().setAvatarPosition([currentPos.x, -0.72 + currentPos.y, currentPos.z])
     }
   })
 

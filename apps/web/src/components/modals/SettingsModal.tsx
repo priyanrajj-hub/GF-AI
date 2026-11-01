@@ -101,7 +101,7 @@ export const SettingsModal: React.FC = () => {
                 <span className="text-cyan-400 font-mono">VRM 0.x / 1.0 & GLB</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => updateSettings({ avatarModelUrl: '/models/ada.vrm' })}
@@ -117,6 +117,24 @@ export const SettingsModal: React.FC = () => {
                   </div>
                   <div className="text-[10px] text-slate-400 mt-0.5">
                     Animated with Lip-Sync, Blinking & Gestures
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ avatarModelUrl: '/models/ada_fullbody_tripo.glb' })}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    settings.avatarModelUrl === '/models/ada_fullbody_tripo.glb'
+                      ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200'
+                      : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="text-xs font-mono font-semibold flex items-center gap-1.5">
+                    <Box className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Tripo 3D Crossbow</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Tactical Full-Body PBR Figurine (.glb)
                   </div>
                 </button>
 
