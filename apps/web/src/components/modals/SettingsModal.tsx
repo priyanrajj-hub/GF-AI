@@ -282,10 +282,23 @@ export const SettingsModal: React.FC = () => {
           <div className="space-y-4">
             <h4 className="text-xs font-mono uppercase tracking-wider text-cyan-300 flex items-center gap-2">
               <Globe className="w-3.5 h-3.5" />
-              <span>Language & Performance</span>
+              <span>Identity & Language</span>
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="glass-panel-subtle p-3 rounded-xl">
+                <label className="block text-xs font-mono text-slate-300 mb-1.5">
+                  Your Name / Callsign
+                </label>
+                <input
+                  type="text"
+                  value={settings.userName || ''}
+                  onChange={(e) => updateSettings({ userName: e.target.value })}
+                  placeholder="Priyan"
+                  className="w-full bg-slate-900 border border-cyan-500/30 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+                />
+              </div>
+
               <div className="glass-panel-subtle p-3 rounded-xl">
                 <label className="block text-xs font-mono text-slate-300 mb-1.5">
                   Language Preference
@@ -488,7 +501,7 @@ export const SettingsModal: React.FC = () => {
                   onClick={() => {
                     import('../voice/VoiceEngine.js').then(({ VoiceEngine }) => {
                       const voiceName = settings.voice || 'NOpBlnGInO9m6vDvFkFC'
-                      const userName = settings.userName || 'Priyanraj'
+                      const userName = settings.userName || 'Priyan'
                       const greeting = voiceName === 'NOpBlnGInO9m6vDvFkFC' || voiceName === 'cgSgspJ2msm6clMCkdW9'
                         ? `Hey ${userName}... [giggles] I was waiting for you. [whispers] Ready to conquer today together?`
                         : voiceName.includes('Kore')

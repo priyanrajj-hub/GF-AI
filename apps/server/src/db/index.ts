@@ -47,7 +47,7 @@ interface DatabaseSchema {
 
 const DEFAULT_SETTINGS: UserSettings = {
   userId: 'default-user-1',
-  userName: 'Priyanraj',
+  userName: 'Priyan',
   language: 'auto',
   mode: 'jarvis',
   sliders: {
@@ -152,7 +152,7 @@ export class AppDatabase {
             userId: 'default-user-1',
             type: 'shared_joke',
             title: 'Tea vs Coffee Protocol',
-            content: 'Ada knows Priyanraj loves chai first thing in the morning.',
+            content: 'Ada knows Priyan loves chai first thing in the morning.',
             timestamp: Date.now() - 1800000,
             editedByUser: false,
           },

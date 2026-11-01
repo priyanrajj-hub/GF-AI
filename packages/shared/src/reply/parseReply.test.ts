@@ -54,14 +54,14 @@ describe('Task A: Bulletproof Reply Pipeline & UI Guardrails', () => {
   it('3. should strip plain ``` code fences', () => {
     const raw = `\`\`\`
 {
-  "speech": "Good afternoon, Priyanraj.",
-  "display_text": "Good afternoon, Priyanraj.",
+  "speech": "Good afternoon, Priyan.",
+  "display_text": "Good afternoon, Priyan.",
   "emotion": "calm",
   "gesture": "idle"
 }
 \`\`\``
     const res = parseStructuredReply(raw)
-    assert.equal(res.display_text, 'Good afternoon, Priyanraj.')
+    assert.equal(res.display_text, 'Good afternoon, Priyan.')
     assert.equal(UI_GUARDRAIL_REGEX.test(res.display_text), false)
   })
 
@@ -273,37 +273,37 @@ Process will conclude shortly.`
 
   // Test 24: sanitizeSpeechText removes emojis
   it('24. sanitizeSpeechText should strip emojis', () => {
-    const input = 'Good morning Priyanraj! ✨💖🚀 Ready to conquer today? 🎉'
+    const input = 'Good morning Priyan! ✨💖🚀 Ready to conquer today? 🎉'
     const cleaned = sanitizeSpeechText(input)
-    assert.equal(cleaned, 'Good morning Priyanraj! Ready to conquer today?')
+    assert.equal(cleaned, 'Good morning Priyan! Ready to conquer today?')
   })
 
-  // Test 25: Title replacement: replaces Operator with Priyanraj
-  it('25. should replace Operator with userName (Priyanraj)', () => {
+  // Test 25: Title replacement: replaces Operator with Priyan
+  it('25. should replace Operator with userName (Priyan)', () => {
     const raw = JSON.stringify({
       speech: 'Good morning, Operator.',
       display_text: 'Good morning, **Operator**.',
       emotion: 'calm',
       gesture: 'nod',
     })
-    const res = parseStructuredReply(raw, { userName: 'Priyanraj' })
-    assert.equal(res.speech, 'Good morning, Priyanraj.')
-    assert.equal(res.display_text, 'Good morning, **Priyanraj**.')
+    const res = parseStructuredReply(raw, { userName: 'Priyan' })
+    assert.equal(res.speech, 'Good morning, Priyan.')
+    assert.equal(res.display_text, 'Good morning, **Priyan**.')
     assert.equal(res.speech.includes('Operator'), false)
     assert.equal(res.display_text.includes('Operator'), false)
   })
 
-  // Test 26: Title replacement: replaces Partner with Priyanraj
-  it('26. should replace Partner with userName (Priyanraj)', () => {
+  // Test 26: Title replacement: replaces Partner with Priyan
+  it('26. should replace Partner with userName (Priyan)', () => {
     const raw = JSON.stringify({
       speech: 'Why thank you, Partner.',
       display_text: 'Why thank you, Partner. Let us crush today!',
       emotion: 'playful',
       gesture: 'shy',
     })
-    const res = parseStructuredReply(raw, { userName: 'Priyanraj' })
-    assert.equal(res.speech, 'Why thank you, Priyanraj.')
-    assert.equal(res.display_text, 'Why thank you, Priyanraj. Let us crush today!')
+    const res = parseStructuredReply(raw, { userName: 'Priyan' })
+    assert.equal(res.speech, 'Why thank you, Priyan.')
+    assert.equal(res.display_text, 'Why thank you, Priyan. Let us crush today!')
     assert.equal(res.speech.includes('Partner'), false)
     assert.equal(res.display_text.includes('Partner'), false)
   })
@@ -347,7 +347,7 @@ Process will conclude shortly.`
       'companion',
     ]
     for (const mode of modes) {
-      const g = getTimeAwareGreeting('Priyanraj', mode)
+      const g = getTimeAwareGreeting('Priyan', mode)
       assert.equal(
         /operator|partner/i.test(g.content),
         false,

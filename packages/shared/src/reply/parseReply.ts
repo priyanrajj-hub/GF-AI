@@ -283,7 +283,7 @@ export function sanitizeSpeechText(text: string, options?: { userName?: string }
   s = s.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
 
   // 11. Replace "Operator" / "Partner" with user's name
-  const userName = options?.userName?.trim() || 'Priyanraj'
+  const userName = options?.userName?.trim() || 'Priyan'
   s = s.replace(/\bOperator\b/gi, userName)
   s = s.replace(/\bPartner\b/gi, userName)
 
@@ -339,7 +339,7 @@ export function sanitizeBubbleText(text: string, options?: { userName?: string }
   cleaned = cleaned.replace(/^\s*[{}\[\]]+\s*/, '').replace(/\s*[{}\[\]]+\s*$/, '').trim()
 
   // Replace "Operator" / "Partner" with user's name
-  const userName = options?.userName?.trim() || 'Priyanraj'
+  const userName = options?.userName?.trim() || 'Priyan'
   cleaned = cleaned.replace(/\bOperator\b/gi, userName)
   cleaned = cleaned.replace(/\bPartner\b/gi, userName)
 
@@ -366,7 +366,7 @@ export function sanitizeBubbleText(text: string, options?: { userName?: string }
  * 4. Fulfills the hard UI guardrail: UI_GUARDRAIL_REGEX.test(result.display_text) === false.
  */
 export function parseStructuredReply(rawText: string, options?: ParseOptions): ParsedReply {
-  const userName = options?.userName?.trim() || 'Priyanraj'
+  const userName = options?.userName?.trim() || 'Priyan'
   const defEmotion: EmotionType = options?.defaultEmotion || 'calm'
   const defGesture: GestureType = options?.defaultGesture || 'idle'
 
