@@ -9,6 +9,8 @@ import { MemoryManagerModal } from './components/modals/MemoryManagerModal.js'
 import { MoodJournalModal } from './components/modals/MoodJournalModal.js'
 import { PersonalityStudioModal } from './components/personality/PersonalityStudioModal.js'
 import { PermissionCenterModal } from './components/permissions/PermissionCenterModal.js'
+import { FirstRunModal } from './components/safety/FirstRunModal.js'
+import { WellbeingDashboardModal } from './components/wellbeing/WellbeingDashboardModal.js'
 import { DebugHUD } from './components/hud/DebugHUD.js'
 import { StageDrawer } from './components/hud/StageDrawer.js'
 import { WardrobeDrawer } from './components/wardrobe/WardrobeDrawer.js'
@@ -33,6 +35,8 @@ export const App: React.FC = () => {
     setSystemState,
     setEmotionAndGesture,
     tickPomodoro,
+    tickWellbeingSeconds,
+    isMinorMode,
     fullScreenHoloMode,
     showWardrobeDrawer,
     setShowWardrobeDrawer,
@@ -84,13 +88,14 @@ export const App: React.FC = () => {
     return () => clearInterval(interval)
   }, [isAnimTest])
 
-  // 2. Pomodoro 1-Second Timer Tick
+  // 2. Pomodoro & Wellbeing 1-Second Timer Tick
   useEffect(() => {
     const timer = setInterval(() => {
       tickPomodoro()
+      tickWellbeingSeconds()
     }, 1000)
     return () => clearInterval(timer)
-  }, [tickPomodoro])
+  }, [tickPomodoro, tickWellbeingSeconds])
 
   // Stop active song/performance on Spacebar
   useEffect(() => {
@@ -262,6 +267,8 @@ export const App: React.FC = () => {
       <DebugHUD />
 
       {/* 10. Modals */}
+      <FirstRunModal />
+      <WellbeingDashboardModal />
       <SettingsModal />
       <MemoryManagerModal />
       <MoodJournalModal />

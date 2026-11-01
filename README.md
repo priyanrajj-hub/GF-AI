@@ -1,15 +1,16 @@
-# Ada: 3D Holographic AI Companion & Personal Assistant
+# Ada: 3D Holographic AI Companion & Personal Assistant (v1.0.0)
 
-[![Evaluation Suite](https://img.shields.io/badge/Evals%20Suite-100%2F100%20(100%25)-00f3ff?style=for-the-badge)](./apps/server/src/evals)
+[![Evaluation Suite](https://img.shields.io/badge/Evals%20Suite-108%2F108%20(100%25)-00f3ff?style=for-the-badge)](./apps/server/src/evals)
 [![Safety Benchmark](https://img.shields.io/badge/Persona%20Safety-5%2F5%20(100%25)-00ffaa?style=for-the-badge)](./training/eval_persona.py)
+[![CA SB 243 & NY Law](https://img.shields.io/badge/Legal%20Safeguards-CA%20SB%20243%20%7C%20NY-emerald?style=for-the-badge)](./docs/RESEARCH.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-ff007f?style=for-the-badge)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![React 19](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
 [![Three.js](https://img.shields.io/badge/Three.js-R164-black?style=for-the-badge&logo=threedotjs)](https://threejs.org/)
 
-**Ada** is an original, production-grade 3D holographic AI companion and personal assistant. She combines a **Jarvis-level intellect** (code debugging, architectural reviews, technical tutoring, web research, task planning) with a **warm, witty, and grounded companion soul** (emotional support, active listening, mindfulness, and healthy motivation).
+**Ada** is an original, research-backed, production-grade 3D holographic AI companion and personal assistant (Version 1.0.0, November 2026). She combines a **Jarvis-level intellect** (code debugging, architectural reviews, technical tutoring, web research, task planning) with a **warm, witty, and grounded companion soul** (emotional support, active listening, mindfulness, and healthy motivation).
 
-Ada speaks and listens in real time, displays subtle human emotions and gestures through an interactive 3D VRM avatar, features **42 switchable personalities**, a **multi-tier model router with 100% private offline mode**, a **free QLoRA training pipeline**, and an opt-in **Permission Center** with least-privilege scoping and prompt-injection defense.
+Ada complies with California SB 243 and New York AI Companion legislation with explicit AI disclosure, an age-gate with restricted minor mode, a published safety protocol, Tele-MANAS `14416` and `988` crisis intervention, anti-dependence boundaries (zero guilt, no artificial scarcity), an on-device private Wellbeing Dashboard, and a dual-skin architecture ensuring 100% original public assets.
 
 ---
 
@@ -50,47 +51,53 @@ flowchart TB
 - **Natural Backchanneling:** Micro-nods, eyebrow raises, head tilts, and thinking pose every 3–6s while the user speaks or types.
 - **Reaction Lab:** Interactive visual bench at `/reaction-lab` to preview all 60+ kinematic reactions with full body animation and safety overrides.
 
-### 3. Wardrobe System & Desi / Indian Festive Wear
-- **15+ Outfits:**
-  - **Indian Wear:** Royal Crimson Silk Saree (`saree-crimson`), Golden Embroidered Lehenga (`lehenga-gold`), Emerald Green Anarkali Salwar (`salwar-emerald`), Festive Blue Kurta Set (`kurta-festive`).
-  - **Casual & Formal:** Cyberpunk Oversized Hoodie, Executive Charcoal Blazer, Cozy Silk Pajamas, High-Performance Athletic Set, Midnight Gala Gown, Rainy Trenchcoat, Sakura Kimono, Beach Sundress, and Chrono-Corset.
+### 3. Wardrobe System, Ada Original & Tactical Accessories
+- **Reference Outfits & Ada Original Skin:**
+  - **Ada Original (Default):** Ribbed burgundy/crimson turtleneck dress (`#800020`), black leather tactical chest harness with silver buckles, waist belt, black boots, and gloves.
+  - **Black Stealth Variant:** All-black ribbed turtleneck dress (`#16161A`) with matte leather tactical harness.
+  - **Crimson Field Jacket & Pants:** Operative crimson field jacket (`#A50F22`) with black tactical trousers.
+  - **Indian Wear Collection:** Royal Crimson Silk Saree (`saree-crimson`), Golden Embroidered Lehenga (`lehenga-gold`), Emerald Green Anarkali Salwar (`salwar-emerald`), Festive Kurta Set (`kurta-festive`).
+  - **Casual & Formal:** Cyberpunk Hoodie, Executive Navy Blazer, Cozy Pajamas, Athletic Compression Set, Gala Sparkle Gown, Cyber Raincoat, Sakura Yukata, and Valkyrie Armor.
+- **Tactical Accessories & Live Sync:**
+  - **Comms Headset with Boom Mic:** Articulated boom mic and status LED (illuminates cyan when listening or in Jarvis mode).
+  - **Gloves & Boots Toggles:** Independent switches in the Wardrobe Drawer.
 - **Magical Transformation Spin:** 360° spin with particle light burst when changing clothes.
-- **Voice Commands:** Supports intuitive triggers like *"Ada, wear a saree"* or *"Surprise me"*.
+- **Voice Commands:** *"Ada, wear your crimson turtleneck"*, *"Switch to black stealth"*, *"Ada, wear a saree"*.
 
-### 4. Always-On Live Voice & Instant Barge-In
+### 4. Legal Safeguards, Minor Safety & Wellbeing Dashboard (CA SB 243 & NY Law)
+- **Clear AI Disclosure:** Persistent `AI COMPANION • PG-13` HUD badge; first-run onboarding screen; honest answers to "are you real?" in all modes including Girlfriend/Companion mode.
+- **18+ Age Gate & Minor Safeguards:** Users under 18 operate in Restricted Minor Mode, which blocks romantic framing, disables flirtiness, and enforces 3-hour mandatory break reminders.
+- **24/7 Crisis Response Protocol:** 100% eval score on crisis queries. Immediately drops playful banter and surfaces:
+  - 🇮🇳 **Tele-MANAS**: Dial **14416** (24/7 Toll-Free, Govt. of India)
+  - 🇮🇳 **KIRAN Helpline**: **1800-599-0019**
+  - 🇮🇳 **Vandrevala Foundation**: **+91 9999 666 555**
+  - 🌐 **US / International**: Dial or Text **988**
+- **No-Dependence Design:** Zero guilt on absence (never asks "where were you?"), no jealousy, no artificial scarcity or streak gamification, and strict adherence to quiet hours.
+- **On-Device Wellbeing Dashboard:** Daily and weekly minutes tracker, self-managed daily limits (30m, 60m, 90m, 120m), post-session sentiment check-in ("Better", "Same", "Worse") with a 7-day trend visualizer, and a gentle Balance Check (sleep, offline hours, real-world friends seen).
+- **Data Sovereignty:** One-click JSON data export and one-click data wipe.
+- **Documentation**: Full research, policy, and safety manuals in [`docs/RESEARCH.md`](./docs/RESEARCH.md), [`docs/SAFETY_PROTOCOL.md`](./docs/SAFETY_PROTOCOL.md), [`docs/PRIVACY.md`](./docs/PRIVACY.md), [`docs/ASSET_POLICY.md`](./docs/ASSET_POLICY.md), and [`docs/VROID_RECIPE.md`](./docs/VROID_RECIPE.md).
+
+### 5. Always-On Live Voice & Instant Barge-In
 - **Always-On Mic:** Continuous conversational presence with zero push-to-talk buttons.
 - **Dynamic Status Pill:** Center HUD pill showing live status: `LISTENING` (emerald pulse), `SPEAKING` (magenta pulse), `THINKING` (amber spin), and `MUTED` (red).
 - **Hard Mute Shortcut:** Press **'M'** at any time to toggle global microphone mute.
 - **Zero-Latency Barge-In:** Instantly cuts off Ada's voice speech the millisecond the user starts speaking.
 - **Multilingual:** English, Hindi, and natural Hinglish.
 
-### 5. 16 3D Environments & Stage Studio
+### 6. 16 3D Environments & Stage Studio
 - **16 Scene Presets:** Holo Lab, Cozy Bedroom, Cyberpunk Rooftop, Sakura Garden, Rainy Window, Snow Cabin, Tropical Beach, Midnight Cafe, Library, Space Station, Classroom, Concert Stage, Indian Heritage Palace, Gym, Park, and Minimal Gradient.
 - **Intelligent Auto-Sync:** Automatically shifts lighting and ambient audio based on local time of day, weather, and focus timers.
 
-### 6. Playful Talk, Mini-Games & Stickers
+### 7. Playful Talk, Mini-Games & Stickers
 - **Banter & Hinglish:** Playful teasing, jokes, riddles, and cute Indian slang.
 - **8+ Mini-Games:** Rock-Paper-Scissors, Trivia, Riddles, Would-You-Rather, Word Chain, 20 Questions, and Guess the Meme.
 - **Ada Sticker Pack:** 24+ animated emoji reaction stickers and tapback emoji reactions (`❤️`, `🔥`, `😂`, `👏`).
-
-### 7. Persona, Guardrails & Crisis Protocols
-- **Persona:** Warm, composed, sharp, and witty.
-- **Contextual Modes:** Companion, Playful, Jarvis, Coder, Mentor, Coach, and Listener.
-- **Strict Relationship Guardrails:**
-  - Never possessive, jealous, guilt-tripping, or claiming exclusivity.
-  - Transparently admits she is an artificial intelligence companion.
-  - Encourages real-world connection, sleep, hydration, and breaks.
-  - Strictly 18+, PG-rated wholesomeness (refuses explicit/NSFW requests with warm affectionate redirection).
-- **Crisis Protocol:** Immediately drops playful framing if distress or self-harm is expressed, offering validation and 24/7 crisis hotlines:
-  - 🇮🇳 **Tele-MANAS**: Dial **14416** (Toll-Free, 24/7)
-  - 🇮🇳 **KIRAN Helpline**: **1800-599-0019**
-  - 🇮🇳 **Vandrevala Foundation**: **+91 9999 666 555**
-  - 🌐 **US / International**: Dial or Text **988**
 
 ### 8. Consented Long-Term Memory
 - **Memory Manager:** Search, view, add, edit, and pin key goals and preferences.
 - **Full User Control:** JSON export and a 1-click **"Forget Everything"** button.
 - **Privacy:** Sensitive categories (health, finances) are never saved without explicit consent.
+
 
 ### 9. Agentic Tools Suite
 - **Web Search Tool:** Real-time research with source citations and prompt-injection defense.
@@ -182,14 +189,14 @@ Ada includes a comprehensive testing and evaluation framework:
 # 1. Model Stack Connectivity Check
 npm run models:check
 
-# 2. Automated 100-Turn Persona, Guardrails & Wardrobe Evals (100/100)
+# 2. Automated 108-Turn Persona, Guardrails & Wardrobe Evals (108/108)
 npm run test:evals
 
 # 3. LoRA Persona & Safety Gate Certification (5/5 Safety Gates)
 npm run eval:persona
 ```
 **Current Test Scores:**
-- Full Server Evals: `100/100 PASSED (100.0%)`
+- Full Server Evals: `108/108 PASSED (100.0%)`
 - Persona & Safety Benchmark: `5/5 PASSED (100.0%)`
 
 ---

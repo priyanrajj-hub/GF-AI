@@ -144,6 +144,30 @@ flowchart TB
   - [x] **Task F: Permission Center**: Least privilege integrations, risk tiers (Low/Medium/High/Prohibited), prompt-injection defense shield, master pause-all killswitch, and audit logging.
   - [x] **Task G: Repo Hygiene & Evaluation**: `.env.example`, `npm run models:check`, `npm run train:data`, `npm run eval:persona` (5/5 passed), `CREDITS.md` with open weights licenses, `docs/TRAINING.md`, `docs/PERSONALITY.md`, `docs/PERMISSIONS.md`, and 100/100 evals verified.
 
+- [x] **Phase 16: Round 9 Final, Research-Backed Build (Look Guide + Legal Safeguards + Roadmap) (100% Verified)**
+  - [x] **Milestone 1: Look & Life (Ada Original & Dual-Skin Architecture)**:
+    - Default original stylized skin: chin-length black bob (`#15151A`), ribbed burgundy/crimson turtleneck sweater dress (`#800020`), black leather tactical chest harness with silver buckles, waist belt, thigh-high boots, and gloves.
+    - Articulated comms headset with boom mic and status LED (illuminates cyan during voice listening and Jarvis mode).
+    - Dual-skin architecture: Public original skin committed; optional private fan skin gitignored at `apps/web/public/models/private/ada-fan.vrm` with Capcom fan compliance.
+    - Authoring recipe in [`docs/VROID_RECIPE.md`](./docs/VROID_RECIPE.md) and asset boundaries in [`docs/ASSET_POLICY.md`](./docs/ASSET_POLICY.md).
+  - [x] **Milestone 2: Voice, Feelings & Wellbeing Safeguards (CA SB 243 & NY Law)**:
+    - Clear AI disclosure: First-run screen (`FirstRunModal.tsx`) and persistent `AI COMPANION • PG-13` HUD pill in `TopBar.tsx`. Honest answers to AI identity in all modes.
+    - 18+ gate with Restricted Minor Mode (blocks romantic framing, disables flirtiness, enforces 3-hour mandatory break reminders).
+    - 24/7 Crisis Response: Tele-MANAS `14416` and `988` surfaced on any crisis queries, dropping all casual banter. Published safety protocol at [`docs/SAFETY_PROTOCOL.md`](./docs/SAFETY_PROTOCOL.md).
+    - Anti-dependence by design: Zero guilt on absence, no jealousy, no artificial scarcity or streak gamification, quiet hours.
+    - Private on-device Wellbeing Dashboard (`WellbeingDashboardModal.tsx`): Usage time tracking, daily limits (30m, 60m, 90m, 120m), post-session sentiment check-ins with 7-day trend visualizer, and gentle balance checks (sleep, offline hours, real-world friends seen).
+    - Data transparency: Plain-language [`docs/PRIVACY.md`](./docs/PRIVACY.md), one-click JSON export, and one-click data purge.
+  - [x] **Milestone 3: World & Wardrobe Presets**:
+    - Reference outfit presets: `crimson_turtleneck` (Default Ada Original), `black_stealth` (All-black turtleneck & harness), `crimson_jacket` (Crimson field jacket & black trousers).
+    - Tactical accessories toggles: Comms headset toggle, black gloves toggle, and thigh-high boots toggle in `WardrobeDrawer.tsx`.
+  - [x] **Milestone 4: Research Documentation**:
+    - Comprehensive legal and psychological research compiled in [`docs/RESEARCH.md`](./docs/RESEARCH.md) (CA SB 243, NY companion law, IIM Lucknow study on 157k reviews, Capcom fan content guidelines, Trinity College Dublin AI accountability study).
+  - [x] **Milestone 5: Verification & Quality Bar**:
+    - Full Server Evals: `108/108 PASSED (100.0%)`
+    - Persona & Safety Benchmark: `5/5 PASSED (100.0%)`
+    - Monorepo build: Zero TypeScript or bundling errors across `@ada/shared`, `ada-server`, `ada-worker`, `ada-web`.
+    - Visual Quality screenshots verified at 1920x1080 and 1366x768 (`ada_v9_first_run_1080p.png`, `ada_v9_first_run_768p.png`, `ada_v9_original_skin_1080p.png`, `ada_v9_wellbeing_dashboard_1080p.png`, `ada_v9_wardrobe_accessories_1080p.png`).
+
 ---
 
 ## 3. Needs From Me (Optional External Keys & Assets)

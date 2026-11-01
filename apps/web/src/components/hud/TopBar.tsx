@@ -40,6 +40,8 @@ export const TopBar: React.FC = () => {
     setShowMoodModal,
     setShowPersonalityStudio,
     setShowPermissionCenter,
+    setShowWellbeingModal,
+    isMinorMode,
     settings,
     updateSettings,
   } = useAppStore()
@@ -84,6 +86,25 @@ export const TopBar: React.FC = () => {
             v2.0 3D
           </span>
         </div>
+
+        {/* Persistent AI Disclosure Badge (CA SB 243 / NY Law) */}
+        <button
+          onClick={() => setShowWellbeingModal(true)}
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-xl glass-panel-subtle border border-cyan-500/30 text-[10px] font-mono text-cyan-300 hover:text-white hover:border-cyan-400 transition-colors cursor-pointer"
+          title="Mandatory AI Disclosure: Ada is an artificial intelligence companion. Click for Wellbeing & Safety Protocol."
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="font-semibold tracking-wider">AI COMPANION</span>
+          <span className="text-slate-500">•</span>
+          <span className="text-slate-400">PG-13</span>
+        </button>
+
+        {/* Minor Safeguard Mode Tag */}
+        {isMinorMode && (
+          <div className="px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-400/40 text-[10px] font-mono text-amber-300 uppercase tracking-wider font-semibold">
+            MINOR SAFEGUARD
+          </div>
+        )}
 
         {/* Task G: MOCK MODE BADGE */}
         {isMockMode && (
@@ -200,6 +221,15 @@ export const TopBar: React.FC = () => {
           <Smile className="w-4 h-4 text-amber-400" />
         </a>
 
+
+        {/* Wellbeing Dashboard (Usage Caps, Sentiment Trends, Real-World Balance) */}
+        <button
+          onClick={() => setShowWellbeingModal(true)}
+          className="p-2 rounded-xl glass-panel-subtle hover:text-emerald-300 text-slate-300 transition-colors cursor-pointer"
+          title="Personal Wellbeing Dashboard (Time tracking, Mood trend, Boundaries)"
+        >
+          <Activity className="w-4 h-4 text-emerald-400" />
+        </button>
 
         <button
           onClick={() => setShowMoodModal(true)}

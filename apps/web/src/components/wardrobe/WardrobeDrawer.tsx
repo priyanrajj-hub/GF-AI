@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Sparkles, X, Check, Shirt, Heart, Palette } from 'lucide-react'
+import { Sparkles, X, Check, Shirt, Heart, Palette, Headphones, Shield } from 'lucide-react'
 import { WardrobeProvider, type WardrobeOutfit } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
 import { VoiceEngine } from '../voice/VoiceEngine.js'
@@ -10,7 +10,7 @@ interface WardrobeDrawerProps {
 }
 
 export const WardrobeDrawer: React.FC<WardrobeDrawerProps> = ({ isOpen, onClose }) => {
-  const { skinId, setSkinId, setActiveFX, setActiveAction } = useAppStore()
+  const { skinId, setSkinId, accessories, setAccessories, setActiveFX, setActiveAction } = useAppStore()
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
   if (!isOpen) return null
@@ -76,8 +76,75 @@ export const WardrobeDrawer: React.FC<WardrobeDrawerProps> = ({ isOpen, onClose 
         ))}
       </div>
 
-      {/* Outfits List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      {/* Outfits & Accessories List */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Tactical Accessories Toggles (Milestone 1) */}
+        <div className="p-3.5 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 space-y-2.5">
+          <div className="flex items-center justify-between text-[11px] font-mono text-cyan-300 font-semibold uppercase tracking-wider">
+            <span className="flex items-center gap-1.5">
+              <Headphones className="w-3.5 h-3.5 text-cyan-400" />
+              Tactical Accessories
+            </span>
+            <span className="text-[9px] text-cyan-400/60 lowercase">live sync</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {/* Comms Headset */}
+            <button
+              onClick={() =>
+                setAccessories({ commsHeadset: !accessories?.commsHeadset })
+              }
+              className={`p-2 rounded-xl text-center border transition-all text-[11px] font-mono cursor-pointer flex flex-col items-center gap-1 ${
+                accessories?.commsHeadset
+                  ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 shadow-[0_0_10px_rgba(0,243,255,0.3)]'
+                  : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              <Headphones className="w-3.5 h-3.5" />
+              <span>Headset</span>
+              <span className="text-[9px] text-cyan-400/80">
+                {accessories?.commsHeadset ? 'ON' : 'OFF'}
+              </span>
+            </button>
+
+            {/* Black Gloves */}
+            <button
+              onClick={() =>
+                setAccessories({ gloves: !accessories?.gloves })
+              }
+              className={`p-2 rounded-xl text-center border transition-all text-[11px] font-mono cursor-pointer flex flex-col items-center gap-1 ${
+                accessories?.gloves !== false
+                  ? 'bg-pink-500/25 border-pink-400 text-pink-200 shadow-[0_0_10px_rgba(244,63,94,0.3)]'
+                  : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>Gloves</span>
+              <span className="text-[9px] text-pink-400/80">
+                {accessories?.gloves !== false ? 'ON' : 'OFF'}
+              </span>
+            </button>
+
+            {/* Boots */}
+            <button
+              onClick={() =>
+                setAccessories({ boots: !accessories?.boots })
+              }
+              className={`p-2 rounded-xl text-center border transition-all text-[11px] font-mono cursor-pointer flex flex-col items-center gap-1 ${
+                accessories?.boots !== false
+                  ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                  : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Boots</span>
+              <span className="text-[9px] text-emerald-400/80">
+                {accessories?.boots !== false ? 'ON' : 'OFF'}
+              </span>
+            </button>
+          </div>
+        </div>
+
         {filtered.map((outfit) => {
           const isSelected = skinId === outfit.id
           return (

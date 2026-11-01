@@ -58,6 +58,29 @@ interface AppState {
   setShowPersonalityStudio: (show: boolean) => void
   showPermissionCenter: boolean
   setShowPermissionCenter: (show: boolean) => void
+  showWellbeingModal: boolean
+  setShowWellbeingModal: (show: boolean) => void
+  showFirstRunModal: boolean
+  setShowFirstRunModal: (show: boolean) => void
+  isMinorMode: boolean
+  setIsMinorMode: (isMinor: boolean) => void
+  accessories: {
+    commsHeadset: boolean
+    gloves: boolean
+    boots: boolean
+  }
+  setAccessories: (partial: Partial<{ commsHeadset: boolean; gloves: boolean; boots: boolean }>) => void
+  wellbeing: {
+    dailySeconds: number
+    weeklySeconds: number
+    dailyLimitMinutes: number
+    moodRatings: Array<{ timestamp: number; rating: 'better' | 'same' | 'worse' }>
+    balance: { sleepHours: number; offlineHours: number; friendsSeen: boolean }
+  }
+  recordWellbeingRating: (rating: 'better' | 'same' | 'worse') => void
+  setDailyLimitMinutes: (minutes: number) => void
+  updateBalanceCheck: (balance: Partial<{ sleepHours: number; offlineHours: number; friendsSeen: boolean }>) => void
+  tickWellbeingSeconds: () => void
   activeCustomPersonality: CustomPersonality | null
   setActiveCustomPersonality: (p: CustomPersonality | null) => void
   fullScreenHoloMode: boolean
@@ -244,6 +267,66 @@ export const useAppStore = create<AppState>((set, get) => ({
   setShowPersonalityStudio: (show) => set({ showPersonalityStudio: show }),
   showPermissionCenter: false,
   setShowPermissionCenter: (show) => set({ showPermissionCenter: show }),
+  showWellbeingModal: false,
+  setShowWellbeingModal: (show) => set({ showWellbeingModal: show }),
+  showFirstRunModal:
+    typeof window !== 'undefined'
+      ? localStorage.getItem('ada_first_run_acknowledged') !== 'true'
+      : false,
+  setShowFirstRunModal: (show) => set({ showFirstRunModal: show }),
+  isMinorMode:
+    typeof window !== 'undefined'
+      ? localStorage.getItem('ada_minor_mode') === 'true'
+      : false,
+  setIsMinorMode: (isMinor) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ada_minor_mode', isMinor ? 'true' : 'false')
+    }
+    set({ isMinorMode: isMinor })
+  },
+  accessories: {
+    commsHeadset: false,
+    gloves: true,
+    boots: true,
+  },
+  setAccessories: (partial) =>
+    set((s) => ({ accessories: { ...s.accessories, ...partial } })),
+  wellbeing: {
+    dailySeconds: 0,
+    weeklySeconds: 0,
+    dailyLimitMinutes: 60,
+    moodRatings: [],
+    balance: { sleepHours: 7.5, offlineHours: 4.0, friendsSeen: true },
+  },
+  recordWellbeingRating: (rating) =>
+    set((s) => ({
+      wellbeing: {
+        ...s.wellbeing,
+        moodRatings: [
+          ...s.wellbeing.moodRatings,
+          { timestamp: Date.now(), rating },
+        ],
+      },
+    })),
+  setDailyLimitMinutes: (minutes) =>
+    set((s) => ({
+      wellbeing: { ...s.wellbeing, dailyLimitMinutes: minutes },
+    })),
+  updateBalanceCheck: (partial) =>
+    set((s) => ({
+      wellbeing: {
+        ...s.wellbeing,
+        balance: { ...s.wellbeing.balance, ...partial },
+      },
+    })),
+  tickWellbeingSeconds: () =>
+    set((s) => ({
+      wellbeing: {
+        ...s.wellbeing,
+        dailySeconds: s.wellbeing.dailySeconds + 1,
+        weeklySeconds: s.wellbeing.weeklySeconds + 1,
+      },
+    })),
   activeCustomPersonality: null,
   setActiveCustomPersonality: (p) => set({ activeCustomPersonality: p }),
   fullScreenHoloMode: false,

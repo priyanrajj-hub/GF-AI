@@ -1,62 +1,82 @@
-# VRoid Studio Recipe: Custom Ada Companion Avatar
+# VRoid Studio Recipe: Ada Original (Spy-Chic)
 
-Follow this exact guide to create and export the definitive custom **Ada** VRM avatar in [VRoid Studio](https://vroid.com/en/studio) (free on Windows/macOS/Steam).
-
----
-
-## 1. Hair: Spy-Chic Short Bob
-- **Base Style:** Select the **Short Bob** preset from the Hair library.
-- **Bangs:** Choose **Side-Swept Bangs** angling gently across the forehead to the right cheek.
-- **Color Palette:**
-  - Base Color: `#0B0B0F` (Pitch Charcoal Black)
-  - Shade Color: `#050508`
-  - Highlight / Rim Sheen: `#1a2035` (Very subtle deep blue-violet sheen)
-- **Spring Bones:**
-  - Group hair into 3-4 bone chains with **Stiffness = 0.75**, **Drag Force = 0.4**, **Gravity = 0.05** so it sways naturally during movement and dances without clipping through the neck.
+A comprehensive guide for authoring the **Ada Original** avatar in VRoid Studio (v1.20+) or Blender, producing a standardized VRM model matching Milestone 1 specifications.
 
 ---
 
-## 2. Outfit: Red & Black Spy Elegance
-- **Clothing Category:** One-piece / Dress or Jacket & Pants.
-- **Dress / Top:**
-  - Main Fabric Color: `#C1121F` (Deep Crimson Red)
-  - Shade Color: `#59060E` (Dark Velvet)
-  - Silhouette: Fitted, clean lines, no bows or frilly accessories.
-- **Accents:**
-  - Collar / Trim: Pitch Black (`#0a0a0d`) with subtle gold clasp accents (`#d4af37`).
-  - Gloves: Black wrist-length or fingerless gloves.
-  - Legs: Sheer black tights or fitted black leggings.
-  - Footwear: Classic black spy boots or elegant low heels (`#0a0a0d`).
+## 1. Hair Modeling (Short Bob with Side-Swept Bangs)
+
+- **Style**: Sleek chin-length asymmetric bob with volume at the crown and left side-swept bangs.
+- **Base Color**: `#15151A` (Deep near-black charcoal).
+- **Shade Color**: `#0B0B0F` (Midnight velvet shade).
+- **Highlight Color**: `#2A2C38` (Subtle steel blue sheen band).
+- **Outline**: Thickness `15`, Outline Color `#040406`.
+- **Spring Bones**:
+  - Front Bangs: Stiffness `0.65`, Drag Force `0.30` (holds shape during movement).
+  - Back/Side Bob: Stiffness `0.55`, Gravity `0.05` (subtle natural bounce during head turns).
 
 ---
 
-## 3. Face & Expression Tuning
-- **Eyes:**
-  - Shape: Slightly sharper, narrower anime eyes with confident arch.
-  - Iris: Hazel / Warm Amber (`#8c531b`) or Cyber Hazel.
-  - Eyeliner: Clean black winged liner (`#0a0a0d`).
-- **Mouth & Lips:**
-  - Default Expression: Confident subtle smirk / calm warm smile.
-  - Lip Color: Deep red tint (`#9e1b27`).
-- **Accessories:**
-  - Ensure all ribbons, pastel clips, and oversized bows are removed.
+## 2. Facial Features & Makeup
+
+- **Eye Irises**:
+  - Iris Color: `#9E5124` (Deep warm amber-hazel).
+  - Highlight: Small dual circular catch-lights in upper-left quadrant.
+- **Eyelashes & Eyeliner**:
+  - Sharp black cat-eye eyeliner wing (`#000000`).
+  - Separated anime lash spikes.
+- **Eyebrows**:
+  - Slender, arched black brows (`#15151A`) with expressive tilt.
+- **Cheeks**:
+  - Soft radial blush: `rgba(238, 90, 110, 0.40)`.
+- **Lips**:
+  - Defined Cupid's bow silhouette.
+  - Base Color: `#C81E2F` (Rich crimson).
+  - Depth Center: `#6E050F` (Dark velvet inner lip).
+  - Gloss Highlight: Soft oval specular catch-light on center lower lip (`rgba(255, 220, 230, 0.55)`).
+
+---
+
+## 3. Outfit Layers & Textures
+
+### Layer 1: Ribbed Turtleneck Sweater Dress
+- **Base Cut**: High neck turtleneck with slender pencil-cut silhouette ending mid-thigh.
+- **Texture**: Fine vertical knit ribbing normal map.
+- **Base Color**: `#800020` / `#C81E2F` (Burgundy/Crimson red).
+- **Shade Color**: `#5C0912`.
+- **Roughness**: `0.55` (Knit wool texture).
+- **Metalness**: `0.08`.
+
+### Layer 2: Tactical Leather Chest Harness
+- **Design**: Twin cross-body chest straps crossing just above bust line, connecting to shoulder loops.
+- **Material**: Matte grain black leather (`#16161A`).
+- **Hardware**: Twin brushed silver metallic buckles (`#C0C0C0`), metalness `0.85`, roughness `0.20`.
+- **Waist**: Thin 1-inch black leather belt with silver rectangular buckle.
+
+### Layer 3: Armwear & Gloves
+- **Type**: Form-fitting tactical gloves reaching mid-forearm.
+- **Color**: `#111216` (Deep black).
+- **Material**: Semi-gloss leather, roughness `0.35`.
+
+### Layer 4: Legwear & Boots
+- **Stockings**: Semi-sheer midnight tights (`rgba(20, 20, 24, 0.88)`).
+- **Boots**: Black thigh-high leather boots with reinforced heel, color `#141418`, roughness `0.38`.
+
+### Layer 5: Tactical Comms Headset (Accessory)
+- **Design**: Ultra-slim metallic black headband over right ear with articulated boom microphone angled toward lip corner.
+- **Indicator**: Tiny cyan/amber status LED (`#00F3FF`) at mic tip.
 
 ---
 
 ## 4. VRM Export Settings
-1. Click **Export** in the top right of VRoid Studio -> **Export as VRM**.
-2. **Optimization Settings:**
-   - Reduce Polygons: Medium (target 35,000 - 55,000 polys).
-   - Texture Atlas: Target 2048x2048 or 4096x4096 compressed.
-   - Total file size: Keep under **15 MB**.
-3. **VRM Meta Information:**
-   - Title: `Ada`
-   - Version: `1.0` (or `0.0`)
-   - Author: `Your Name`
-   - Allowed User: `Only Author` or `Everyone`
-   - Commercial Use: Allowed
-4. Save the file directly to:
-   ```
-   apps/web/public/models/ada.vrm
-   ```
-5. Reload `http://localhost:5173` — the app will automatically mount your custom Ada avatar!
+
+1. **Format**: VRM 0.x / VRM 1.0.
+2. **Polygon Reduction**:
+   - Total Triangles: Target 32,000 – 48,000 tris for smooth 60fps web rendering.
+3. **Materials**:
+   - Shader: `MToon` (Pixiv Toon Shader).
+   - Texture Resolution: 1024x1024 (compressed sRGB).
+4. **Blend Shapes / Expressions**:
+   - Essential presets: `neutral`, `happy`, `angry`, `sad`, `relaxed`, `surprised`, `blink`, `blink_l`, `blink_r`, `aa`, `ih`, `ou`, `ee`, `oh`.
+5. **Output Path**:
+   - Commit public build as: `apps/web/public/models/ada.vrm`.

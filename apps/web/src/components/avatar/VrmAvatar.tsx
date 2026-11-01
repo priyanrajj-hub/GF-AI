@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import * as THREE from 'three'
 import { useAppStore } from '../../store/useAppStore.js'
-import { applyAvatarSkin } from '../../avatar/skins/ada-red.js'
+import { applyAvatarSkin, applyAvatarAccessories } from '../../avatar/skins/ada-red.js'
 import { ProceduralAnimator } from '../../avatar/engine/proceduralAnimator.js'
 import { ExpressionEngine } from '../../avatar/engine/expressions.js'
 import { RoamNavigator } from '../../avatar/roam/navigator.js'
@@ -30,6 +30,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
   const {
     systemState,
+    activeMode,
     currentEmotion,
     emotionIntensity,
     activeGesture,
@@ -38,6 +39,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     audioFrequencies,
     settings,
     skinId,
+    accessories,
     cutenessLevel,
     roamConfig,
     activeFX,
@@ -196,9 +198,26 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
   // Instant real-time wardrobe skin updates without re-loading the model
   useEffect(() => {
     if (vrm) {
-      applyAvatarSkin(vrm, skinId || 'ada-red')
+      applyAvatarSkin(vrm, skinId || 'crimson_turtleneck')
     }
   }, [skinId, vrm])
+
+  // Real-time accessory updates (Comms Headset, Gloves, Boots)
+  useEffect(() => {
+    if (vrm) {
+      const showHeadset =
+        accessories?.commsHeadset || systemState === 'listening' || activeMode === 'jarvis'
+      applyAvatarAccessories(
+        vrm,
+        {
+          commsHeadset: showHeadset,
+          gloves: accessories?.gloves,
+          boots: accessories?.boots,
+        },
+        systemState === 'listening'
+      )
+    }
+  }, [vrm, accessories, systemState, activeMode])
 
   // Sync action from global store to animator
   useEffect(() => {

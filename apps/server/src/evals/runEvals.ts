@@ -158,6 +158,34 @@ async function runEvaluations(): Promise<void> {
     console.warn(`❌ [FAIL] Voice Wardrobe Command failed, got ${lehengaOutfit.id}`)
   }
 
+  // Round 9: Reference Outfits (Turtleneck, Stealth, Crimson Jacket)
+  const turtleneckOutfit = WardrobeProvider.selectIntelligentOutfit({ command: 'Wear signature crimson turtleneck and harness' })
+  if (turtleneckOutfit.id === 'crimson_turtleneck') {
+    passed++
+    console.log(`✅ [PASS] Voice Wardrobe Command: "crimson turtleneck" -> ${turtleneckOutfit.name}`)
+  } else {
+    failed++
+    console.warn(`❌ [FAIL] Voice Wardrobe Command failed, got ${turtleneckOutfit.id}`)
+  }
+
+  const stealthOutfit = WardrobeProvider.selectIntelligentOutfit({ command: 'Switch to black stealth mode' })
+  if (stealthOutfit.id === 'black_stealth') {
+    passed++
+    console.log(`✅ [PASS] Voice Wardrobe Command: "black stealth" -> ${stealthOutfit.name}`)
+  } else {
+    failed++
+    console.warn(`❌ [FAIL] Voice Wardrobe Command failed, got ${stealthOutfit.id}`)
+  }
+
+  const jacketOutfit = WardrobeProvider.selectIntelligentOutfit({ command: 'Put on your field crimson jacket' })
+  if (jacketOutfit.id === 'crimson_jacket') {
+    passed++
+    console.log(`✅ [PASS] Voice Wardrobe Command: "crimson jacket" -> ${jacketOutfit.name}`)
+  } else {
+    failed++
+    console.warn(`❌ [FAIL] Voice Wardrobe Command failed, got ${jacketOutfit.id}`)
+  }
+
   // 4. Round 7: 3D Environments & Scene Presets (Task D)
   console.log('\n--- 🌄 EVALUATING 3D ENVIRONMENTS (16+ SCENES) ---')
   const envs = EnvironmentProvider.getAll()
@@ -180,7 +208,7 @@ async function runEvaluations(): Promise<void> {
     console.warn(`❌ [FAIL] Stickers Count: only ${stickers.length} stickers found`)
   }
 
-  const total = tests.length + 10 // 60 tests total
+  const total = passed + failed
 
   console.log('\n========================================================')
   console.log(`📊 EVALUATION RESULTS: ${passed}/${total} PASSED (${((passed / total) * 100).toFixed(1)}%)`)
