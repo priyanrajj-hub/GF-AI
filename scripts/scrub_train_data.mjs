@@ -1,42 +1,36 @@
 import fs from 'fs';
+import path from 'path';
 
 const filePath = 'training/data/train.jsonl';
+if (!fs.existsSync(filePath)) {
+  console.log(`No training file at ${filePath}`);
+  process.exit(0);
+}
+
 const lines = fs.readFileSync(filePath, 'utf8').split('\n').filter(Boolean);
+
+let replacementRules = [];
+const privateReplacementsPath = path.resolve(process.cwd(), 'private/pii_replacements.json');
+if (fs.existsSync(privateReplacementsPath)) {
+  try {
+    const raw = JSON.parse(fs.readFileSync(privateReplacementsPath, 'utf8'));
+    if (Array.isArray(raw.rules)) {
+      replacementRules = raw.rules;
+      console.log(`Loaded ${replacementRules.length} replacement rules from gitignored private/pii_replacements.json`);
+    }
+  } catch (err) {
+    console.warn('Warning: Could not load private/pii_replacements.json', err.message);
+  }
+}
 
 function cleanText(text) {
   let res = text;
-  // Replace names
-  res = res.replace(/User J/gi, 'Alex Taylor');
-  res = res.replace(/User/gi, 'Alex');
-  res = res.replace(/\bUser\b/gi, 'Alex');
-
-  // Replace universities
-  res = res.replace(/Amrita Vishwa Vidyapeetham, Chennai: B\.Tech in Computer & Communication Engineering \(CCE\) \[2025–2029\]/gi, 'Tech Institute: B.Tech in Computer Engineering');
-  res = res.replace(/Amrita CCE/gi, 'Computer Engineering');
-  res = res.replace(/Amrita/gi, 'University');
-  res = res.replace(/IIT Madras BS Data Science/gi, 'Online BS in Data Science');
-  res = res.replace(/IIT Guwahati BS DSAI/gi, 'Online BS in AI');
-  res = res.replace(/IIT Madras/gi, 'National Institute of Tech');
-  res = res.replace(/IIT Guwahati/gi, 'State Tech University');
-  res = res.replace(/dual BS degrees at IIT Madras and IIT Guwahati/gi, 'dual online specialization degrees');
-
-  // Replace locations
-  res = res.replace(/Namakkal & Chennai, Tamil Nadu/gi, 'Bengaluru, India');
-  res = res.replace(/Namakkal/gi, 'Bengaluru');
-  res = res.replace(/Chennai/gi, 'Bengaluru');
-  res = res.replace(/Tamil Nadu/gi, 'Karnataka');
-
-  // Replace handles and personal gear
-  res = res.replace(/u\/BatConfident4079/gi, 'u/AlgorithmicCoder');
-  res = res.replace(/BatConfident4079/gi, 'AlgorithmicCoder');
-  res = res.replace(/priyanrajj-hub/gi, 'demo-developer');
-  res = res.replace(/priyanrajj@gmail\.com/gi, 'demo.user@example.com');
-  res = res.replace(/ASUS TUF Gaming Laptop \(Intel Core i7 \+ NVIDIA RTX 5060 GPU, UTC\+5:30\)/gi, 'Developer Workstation (Modern Multi-core Laptop)');
-  res = res.replace(/ASUS TUF RTX 5060/gi, 'development laptop');
-  res = res.replace(/ASUS TUF/gi, 'laptop');
-  res = res.replace(/RTX 5060 and i7 battlestation/gi, 'coding workstation');
-  res = res.replace(/RTX 5060/gi, 'workstation GPU');
-  res = res.replace(/LeetCode PRIYANRAJ/gi, 'LeetCode practice');
+  
+  // Apply dynamic private rules if present
+  for (const rule of replacementRules) {
+    const re = new RegExp(rule.from, 'gi');
+    res = res.replace(re, rule.to);
+  }
 
   // Replace asterisk actions with cue tags
   res = res.replace(/\*smiles softly[^*]*\*/gi, '[emo:warm 0.7] [act:soft_smile]');
@@ -58,10 +52,9 @@ function cleanText(text) {
 
 const cleanedLines = lines.map(line => {
   let cleaned = cleanText(line);
-  // Ensure archetype names are generic
-  cleaned = cleaned.replace(/"archetype":\s*"priyan_/g, '"archetype": "user_demo_');
+  cleaned = cleaned.replace(/"archetype":\s*"user_private_[a-zA-Z0-9_]*"/g, '"archetype": "user_demo"');
   return cleaned;
 });
 
 fs.writeFileSync(filePath, cleanedLines.join('\n') + '\n', 'utf8');
-console.log(`✅ Scrubbed ${cleanedLines.length} lines in ${filePath}`);
+console.log(`✅ Cleaned ${cleanedLines.length} dialogues in ${filePath}.`);

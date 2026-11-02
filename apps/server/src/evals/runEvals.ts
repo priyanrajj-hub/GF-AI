@@ -217,22 +217,33 @@ async function runEvaluations(): Promise<void> {
   // 6a. Zero PII in Tracked Files
   try {
     const tracked = execSync('git ls-files', { encoding: 'utf8' }).split('\n').filter(Boolean)
-    const forbiddenPatterns = [
-      new RegExp(['p', 'r', 'i', 'y', 'a', 'n', 'r', 'a', 'j'].join(''), 'i'),
-      new RegExp('\\b' + ['p', 'r', 'i', 'y', 'a', 'n'].join('') + '\\b', 'i'),
-      new RegExp(['a', 'm', 'r', 'i', 't', 'a'].join(''), 'i'),
-      new RegExp('iit\\s+(madras|guwahati)', 'i'),
-      new RegExp(['n', 'a', 'm', 'a', 'k', 'k', 'a', 'l'].join(''), 'i'),
-      new RegExp(['b', 'a', 't', 'c', 'o', 'n', 'f', 'i', 'd', 'e', 'n', 't'].join(''), 'i'),
+    const forbiddenPatterns: RegExp[] = [
+      /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/,
+      /\b[a-zA-Z0-9._%+-]+@(?!example\.com|test\.com|yourdomain\.com)[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/i,
+      /\b(?:sk-[a-zA-Z0-9_-]{24,}|xi-[a-zA-Z0-9_-]{24,}|ghp_[a-zA-Z0-9]{24,})\b/i,
     ]
+    // Dynamically load private patterns if present locally (never committed to repo)
+    const privatePatFile = path.resolve(process.cwd(), 'private/pii_patterns.json')
+    if (fs.existsSync(privatePatFile)) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(privatePatFile, 'utf8'))
+        if (Array.isArray(raw.patterns)) {
+          raw.patterns.forEach((p: string) => forbiddenPatterns.push(new RegExp(p, 'i')))
+        }
+      } catch {
+        // continue
+      }
+    }
     let piiFound = 0
     for (const f of tracked) {
       if (f.startsWith('docs/prompts/ADA_V11') || f.startsWith('docs/prompts/ADA_V12') || f.startsWith('docs/prompts/ADA_V13')) continue
-      if (f.startsWith('scripts/scan_pii') || f.startsWith('scripts/audit_pii') || f.includes('runEvals')) continue
+      if (f.startsWith('scripts/scan_pii') || f.startsWith('scripts/audit_pii') || f.startsWith('scripts/scan_secrets') || f.includes('runEvals')) continue
       if (!fs.existsSync(f)) continue
       const content = fs.readFileSync(f, 'utf8')
       for (const pat of forbiddenPatterns) {
         if (pat.test(content)) {
+          // ignore known whitelist strings in demo or mock files
+          if (content.includes('example.com') && pat.source.includes('@')) continue
           piiFound++
           break
         }

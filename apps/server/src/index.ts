@@ -24,7 +24,7 @@ import { WebScraperService } from './services/webScraperService.js'
 import { RelationshipGrowthService } from './services/relationshipGrowthService.js'
 import { AdaSelfKnowledgeService } from './services/adaSelfKnowledgeService.js'
 import { GirlBehaviorService } from './services/girlBehaviorService.js'
-import { UserLifeMemoryService, PriyanLifeMemoryService } from './services/userLifeMemoryService.js'
+import { UserLifeMemoryService } from './services/userLifeMemoryService.js'
 
 dotenv.config()
 ProviderRegistry.init()
