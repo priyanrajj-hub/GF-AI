@@ -20,7 +20,8 @@ build/
 *.sqlite3
 *.db
 *.db-journal
-data/
+/data/
+/apps/server/data/
 server/data/
 server/uploads/
 

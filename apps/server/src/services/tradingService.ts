@@ -240,7 +240,7 @@ export class TradingService {
 
       // 20-day SMA
       const last20 = closes.slice(-20)
-      const sma20 = last20.length > 0 ? last20.reduce((a, b) => a + b, 0) / last20.length : price
+      const sma20 = last20.length > 0 ? last20.reduce((a: number, b: number) => a + b, 0) / last20.length : price
 
       // Trend Evaluation
       let trend: StockQuote['trend'] = 'Mild Bullish'
