@@ -62,7 +62,9 @@ export const DebugHUD: React.FC = () => {
 
   let avgAudio = 0
   if (audioFrequencies && audioFrequencies.length > 0) {
-    avgAudio = Math.round((audioFrequencies[4] / 255) * 100)
+    const rawVal = audioFrequencies[4] !== undefined ? audioFrequencies[4] : audioFrequencies[0]
+    const normalized = rawVal > 1.0 ? rawVal / 255 : rawVal
+    avgAudio = Math.round(normalized * 100)
   }
 
   const isTamil = settings.language === 'ta'

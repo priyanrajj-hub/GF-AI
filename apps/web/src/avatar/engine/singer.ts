@@ -66,36 +66,48 @@ export class SongEngine {
       duration: song.duration || 32,
     })
 
+    // Unlock audio context immediately
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      if (AudioContextClass) {
+        if (!this.audioCtx) this.audioCtx = new AudioContextClass()
+        if (this.audioCtx.state === 'suspended') {
+          this.audioCtx.resume()
+        }
+      }
+    } catch {}
+
     // If an original studio audio track is available (e.g. from iTunes API), stream & play it!
     if (song.audioUrl) {
       try {
-        this.audioElement = new Audio()
-        this.audioElement.src = song.audioUrl
-        this.audioElement.volume = 0.95
-        this.audioElement.preload = 'auto'
+        if (this.audioElement) {
+          try {
+            this.audioElement.pause()
+            this.audioElement.src = ''
+          } catch {}
+          this.audioElement = null
+        }
 
-        // Connect Web Audio Analyser if supported & not CORS-restricted
+        this.audioElement = new Audio(song.audioUrl)
+        this.audioElement.volume = store.audioVolume ?? 0.95
+        this.audioElement.preload = 'auto'
+        this.audioElement.crossOrigin = 'anonymous'
+
+        // Direct hardware speaker playback
+        // Also connect AnalyserNode for audio visualization if CORS permits
         try {
-          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-          if (AudioContextClass) {
-            this.audioCtx = new AudioContextClass()
-            if (this.audioCtx.state === 'suspended') {
-              this.audioCtx.resume()
-            }
+          if (this.audioCtx) {
             this.analyserNode = this.audioCtx.createAnalyser()
             this.analyserNode.fftSize = 64
-            this.audioElement.crossOrigin = 'anonymous'
-
             const source = this.audioCtx.createMediaElementSource(this.audioElement)
             source.connect(this.analyserNode)
             this.analyserNode.connect(this.audioCtx.destination)
           }
         } catch (corsErr) {
-          console.log('[SongEngine] Direct HTML5 playback active:', corsErr)
-          if (this.audioElement) {
-            this.audioElement.crossOrigin = null
-            this.audioElement.src = song.audioUrl
-          }
+          console.log('[SongEngine] Direct HTML5 speaker output active:', corsErr)
+          // Fresh audio element without createMediaElementSource for guaranteed audible sound
+          this.audioElement = new Audio(song.audioUrl)
+          this.audioElement.volume = store.audioVolume ?? 0.95
         }
 
         // Live Frequency Visualizer Loop for HUD & Lip-Sync
@@ -109,22 +121,23 @@ export class SongEngine {
               this.analyserNode.getByteFrequencyData(freqData)
               const avg = Array.from(freqData).reduce((a, b) => a + b, 0) / freqData.length
               if (avg > 2) {
-                store.setAudioFrequencies(Array.from(freqData).map((v) => v / 255))
+                store.setAudioFrequencies(new Uint8Array(freqData))
                 hasRealFreqs = true
               }
             } catch {}
           }
 
-          // If CORS restricts audio buffer access, synthesize rhythm beat frequencies matching song BPM!
+          // Generate synchronized rhythm beat frequencies matching song BPM!
           if (!hasRealFreqs) {
             const now = performance.now() / 1000
             const bpm = song.bpm || 120
             const beatPhase = Math.sin(now * (bpm / 60) * Math.PI * 2) * 0.5 + 0.5
-            const energy = 0.55 + beatPhase * 0.35 + Math.random() * 0.1
-            const simulated = Array.from({ length: 32 }, (_, idx) => {
-              const falloff = Math.max(0.2, 1.0 - idx / 32)
-              return Math.min(1.0, energy * falloff)
-            })
+            const energy = 0.65 + beatPhase * 0.30 + Math.random() * 0.08
+            const simulated = new Uint8Array(32)
+            for (let i = 0; i < 32; i++) {
+              const falloff = Math.max(0.35, 1.0 - i / 32)
+              simulated[i] = Math.round(Math.min(255, energy * falloff * 255))
+            }
             store.setAudioFrequencies(simulated)
           }
 

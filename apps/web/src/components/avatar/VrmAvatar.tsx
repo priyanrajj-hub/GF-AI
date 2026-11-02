@@ -304,8 +304,10 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     // A. Audio analysis for lip sync
     let avgAudio = 0
     if (audioFrequencies && audioFrequencies.length > 0) {
+      const rawFirst = audioFrequencies[0] || 0
+      const isByteScale = rawFirst > 1.0 || audioFrequencies.some((v: number) => v > 1.0)
       const sum = audioFrequencies.reduce((acc: number, v: number) => acc + v, 0)
-      avgAudio = sum / (audioFrequencies.length * 255)
+      avgAudio = sum / (audioFrequencies.length * (isByteScale ? 255 : 1.0))
     }
 
     // B. Roam Navigator update (wandering, steering, target approach)
