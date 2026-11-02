@@ -48,5 +48,15 @@ training/ada-dpo-adapter/
 
 # Private local 3D models (Milestone 1 Capcom fan guidelines compliance)
 apps/web/public/models/private/
+
+# Private personal data & PII stores (Strict Privacy Guardrail)
+private/
+*.private.json
+training/private/
+scripts/private/
+.user_profile.json
+local_profile.json
+*.local.json
+
 *.private.vrm
 

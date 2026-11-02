@@ -1,7 +1,7 @@
 # Master Plan: Ada AI GF Assistant
 
 > **Status:** All Phases Complete (100% Verified)  
-> **Repository:** `priyanrajj-hub/ai---gf---assistant-`  
+> **Repository:** `ai---gf---assistant-`  
 > **Master Specifications:** [`docs/prompts/`](./docs/prompts/)  
 > **Project Rules:** [`GEMINI.md`](./GEMINI.md)
 
@@ -81,8 +81,8 @@ flowchart TB
   - [x] Natural expressive girl emotes (`*giggles softly*`, `*blushes lightly*`, `*smiles warmly*`, `*playfully teases you*`)
   - [x] Complete self-knowledge (identity, aesthetic, voice, loves, and values)
 
-- [x] **Phase 8: Priyan's World, Life & Persistent Memory Engine**
-  - [x] Dedicated biographical profile of Priyan (craft, goals, trading, daily rhythms, and bond with Ada)
+- [x] **Phase 8: User World, Life & Persistent Memory Engine (Privacy Compliant)**
+  - [x] Dedicated private local profile (craft, goals, trading, daily rhythms, and companion bond) with zero PII in public code
   - [x] Automatic fact extraction from chat messages to persist user preferences and life updates
   - [x] Relationship intelligence and personal growth coaching (2-minute launch rule, imposter syndrome reframing)
 

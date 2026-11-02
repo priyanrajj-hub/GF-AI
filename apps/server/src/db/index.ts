@@ -47,7 +47,7 @@ interface DatabaseSchema {
 
 const DEFAULT_SETTINGS: UserSettings = {
   userId: 'default-user-1',
-  userName: 'Priyan',
+  userName: 'Demo User',
   language: 'auto',
   mode: 'companion',
   sliders: {
@@ -92,8 +92,8 @@ export class AppDatabase {
         // Normalize any legacy Operator/Partner usernames
         if (parsed.users) {
           for (const u of Object.values(parsed.users as Record<string, any>)) {
-            if (!u.userName || u.userName === 'Operator' || u.userName === 'Partner' || u.userName === 'Priyanraj') {
-              u.userName = 'Priyan'
+            if (!u.userName || u.userName === 'Operator' || u.userName === 'Partner') {
+              u.userName = 'Demo User'
             }
           }
         }
@@ -161,7 +161,7 @@ export class AppDatabase {
             userId: 'default-user-1',
             type: 'shared_joke',
             title: 'Tea vs Coffee Protocol',
-            content: 'Ada knows Priyan loves chai first thing in the morning.',
+            content: 'Ada knows the user loves a warm cup of chai or coffee first thing in the morning.',
             timestamp: Date.now() - 1800000,
             editedByUser: false,
           },
@@ -187,8 +187,8 @@ export class AppDatabase {
       this.save()
     }
     const currentName = this.data.users[userId].userName
-    if (!currentName || currentName === 'Operator' || currentName === 'Partner' || currentName === 'Priyanraj') {
-      this.data.users[userId].userName = 'Priyan'
+    if (!currentName || currentName === 'Operator' || currentName === 'Partner') {
+      this.data.users[userId].userName = 'Demo User'
       this.save()
     }
     return this.data.users[userId]
@@ -261,6 +261,15 @@ export class AppDatabase {
     this.data.memories[userId] = filtered
     if (changed) this.save()
     return changed
+  }
+
+  deleteMemoriesBySource(userId: string, source: string): number {
+    const list = this.data.memories[userId] || []
+    const filtered = list.filter((m) => (m.source || 'conversation') !== source)
+    const removedCount = list.length - filtered.length
+    this.data.memories[userId] = filtered
+    if (removedCount > 0) this.save()
+    return removedCount
   }
 
   clearMemories(userId: string): void {

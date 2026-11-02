@@ -18,7 +18,8 @@ export interface HedgingStrategy {
   instrument: string
   riskProfile: string
   implementation: string
-  benefitForPriyan: string
+  benefitForUser: string
+  benefitForPriyan?: string
 }
 
 export class FinanceAnalystService {
@@ -135,28 +136,28 @@ export class FinanceAnalystService {
       instrument: 'NIFTY / BANKNIFTY OTM Put Options',
       riskProfile: 'Low Risk, High Protection',
       implementation: 'Buy 1-2 strike Out-Of-The-Money (OTM) Monthly Puts against a long equity portfolio when VIX is low (<14). If the market drops 5-10%, the put value surges 200-400%, offsetting portfolio losses.',
-      benefitForPriyan: 'Shields your overall portfolio from sudden black swan events or global market corrections without selling your winner stocks.',
+      benefitForUser: 'Shields your overall portfolio from sudden black swan events or global market corrections without selling your winner stocks.',
     },
     {
       strategyName: 'Gold / Sovereign Gold Bonds (SGB) Asset Hedge',
       instrument: 'MCX Gold Futures / Gold BeES ETF / SGB',
       riskProfile: 'Conservative & Steady',
       implementation: 'Maintain an 8% to 12% allocation in Gold (Gold ETF or physical 24K bullion). Gold has historically shown inverse correlation to equity drawdowns and dollar depreciation.',
-      benefitForPriyan: 'Acts as your emotional anchor and wealth preserver during stagflation or market panics.',
+      benefitForUser: 'Acts as your emotional anchor and wealth preserver during stagflation or market panics.',
     },
     {
       strategyName: 'Systematic Stop-Loss Trailing (Trade Protection)',
       instrument: 'Dynamic Stop Loss Orders',
       riskProfile: 'Disciplined Capital Preservation',
       implementation: 'Every time a stock or swing position gains 5%, trail the stop loss to your entry price (breakeven). When it hits Target 1, trail stop-loss to lock in at least 50% profit.',
-      benefitForPriyan: 'Guarantees you never let a winning trade turn into a losing trade.',
+      benefitForUser: 'Guarantees you never let a winning trade turn into a losing trade.',
     },
     {
       strategyName: 'Liquid / Arbitrage Fund Buffer Hedge',
       instrument: 'Direct Liquid Funds / Overnight Funds',
       riskProfile: 'Zero Capital Risk',
       implementation: 'Keep 15-20% dry powder in Arbitrage/Liquid funds earning 6.8-7.2% annualized return with zero equity drawdown risk.',
-      benefitForPriyan: 'Gives you instant cash ready to "buy the dip" when great stocks drop to their major support levels.',
+      benefitForUser: 'Gives you instant cash ready to "buy the dip" when great stocks drop to their major support levels.',
     },
   ]
 
@@ -219,14 +220,14 @@ export class FinanceAnalystService {
       )
       .join('\n\n')
 
-    return `LIVE MUTUAL FUND ANALYTICS & COMPOUNDING WEALTH ENGINE (CURATED FOR PRIYAN):
+    return `LIVE MUTUAL FUND ANALYTICS & COMPOUNDING WEALTH ENGINE (CURATED FOR USER):
 ${listStr}
 
 💡 COMPASSIONATE WEALTH COMPOUNDING EXAMPLES (SIP):
 - ₹5,000/month for 5 years @ 16% CAGR: Invested ${sipExample5k.totalInvested} -> Wealth Created ${sipExample5k.totalFutureValue} (Gain: ${sipExample5k.estimatedWealthGain})
 - ₹10,000/month for 10 years @ 18% CAGR: Invested ${sipExample10k.totalInvested} -> Wealth Created ${sipExample10k.totalFutureValue} (Gain: ${sipExample10k.estimatedWealthGain})
 
-[FINANCE ANALYST MANDATE: Address Priyan with warm affection and razor-sharp intellect. Recommend exact funds tailored to his horizon (e.g. Parag Parikh for steady core wealth, Quant/Nippon Small Cap for aggressive growth, UTI Nifty 50 for zero headache index compounding). Emphasize disciplined SIP investing over timing the market.]`
+[FINANCE ANALYST MANDATE: Address the user with warm affection and razor-sharp intellect. Recommend exact funds tailored to his horizon (e.g. Parag Parikh for steady core wealth, Quant/Nippon Small Cap for aggressive growth, UTI Nifty 50 for zero headache index compounding). Emphasize disciplined SIP investing over timing the market.]`
   }
 
   /**
@@ -239,13 +240,13 @@ ${listStr}
         (s) => `• **${s.strategyName}** (Instrument: ${s.instrument})
   - Risk Level: ${s.riskProfile}
   - Execution: ${s.implementation}
-  - Why it protects Priyan: ${s.benefitForPriyan}`
+  - Benefit: ${s.benefitForUser}`
       )
       .join('\n\n')
 
-    return `PORTFOLIO HEDGING & CAPITAL PRESERVATION TACTICS (PREPARED FOR PRIYAN):
+    return `PORTFOLIO HEDGING & CAPITAL PRESERVATION TACTICS (PREPARED FOR USER):
 ${str}
 
-[ANALYST MANDATE: Explain these risk-reduction safeguards to Priyan clearly so he knows how professional institutions and hedge funds safeguard their profits during downturns.]`
+[ANALYST MANDATE: Explain these risk-reduction safeguards to the user clearly so he knows how professional institutions and hedge funds safeguard their profits during downturns.]`
   }
 }

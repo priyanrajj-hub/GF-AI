@@ -421,19 +421,19 @@ export const ChatDrawer: React.FC = () => {
           ✨ Who Are You Ada?
         </button>
         <button
-          onClick={() => handleSendMessage('Tell me what you know about my degrees at Amrita, IIT Madras, and IIT Guwahati!')}
+          onClick={() => handleSendMessage('Help me organize my study and coursework schedule for the week!')}
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-blue-950/50 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition-colors cursor-pointer"
         >
-          🎓 My Triple Degree
+          🎓 Coursework Plan
         </button>
         <button
-          onClick={() => handleSendMessage('What do you know about my Pharmaceutical Evergreening project, Autonomous Patrol Robot, and my ASUS TUF setup?')}
+          onClick={() => handleSendMessage('What systems engineering and architecture projects should we tackle today?')}
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer"
         >
           💻 My Projects & Stack
         </button>
         <button
-          onClick={() => handleSendMessage('What do you know about me, Priyan? Tell me about my world, my work, and our interactions!')}
+          onClick={() => handleSendMessage('What do you know about me and our journey together?')}
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer"
         >
           💭 About My World

@@ -294,7 +294,7 @@ export const SettingsModal: React.FC = () => {
                   type="text"
                   value={settings.userName || ''}
                   onChange={(e) => updateSettings({ userName: e.target.value })}
-                  placeholder="Priyan"
+                  placeholder="Demo User"
                   className="w-full bg-slate-900 border border-cyan-500/30 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
                 />
               </div>
@@ -503,7 +503,7 @@ export const SettingsModal: React.FC = () => {
                   onClick={() => {
                     import('../voice/VoiceEngine.js').then(({ VoiceEngine }) => {
                       const voiceName = settings.voice || 'NOpBlnGInO9m6vDvFkFC'
-                      const userName = settings.userName || 'Priyan'
+                      const userName = settings.userName || 'Demo User'
                       const greeting = voiceName === 'NOpBlnGInO9m6vDvFkFC' || voiceName === 'cgSgspJ2msm6clMCkdW9'
                         ? `Hey ${userName}... [giggles] I was waiting for you. [whispers] Ready to conquer today together?`
                         : voiceName.includes('Kore')

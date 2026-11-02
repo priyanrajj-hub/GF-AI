@@ -7,7 +7,7 @@ import {
 import { db } from '../db/index.js'
 import { AdaSelfKnowledgeService } from './adaSelfKnowledgeService.js'
 import { GirlBehaviorService } from './girlBehaviorService.js'
-import { PriyanLifeMemoryService } from './priyanLifeMemoryService.js'
+import { UserLifeMemoryService } from './userLifeMemoryService.js'
 
 export interface BudgetStatus {
   warning: boolean
@@ -64,16 +64,16 @@ export class ContextBuilder {
     const settings = db.getUserSettings(userId)
     const memories = settings.memoryConsent ? db.getMemories(userId).map((m) => m.content) : []
 
-    // Deep context layers: Ada Self-Knowledge, Girl Behavior & Activities, Priyan's World & Memories
+    // Deep context layers: Ada Self-Knowledge, Girl Behavior & Activities, User World & Memories
     const selfKnowledgeStr = AdaSelfKnowledgeService.formatSelfKnowledgeContext()
     const girlBehaviorStr = GirlBehaviorService.formatGirlBehaviorContext()
-    const priyanLifeStr = PriyanLifeMemoryService.formatPriyanLifeContext(userId)
+    const userLifeStr = UserLifeMemoryService.formatUserLifeContext(userId)
 
     const augmentedContext = [
       liveInternetContext,
       selfKnowledgeStr,
       girlBehaviorStr,
-      priyanLifeStr,
+      userLifeStr,
     ]
       .filter(Boolean)
       .join('\n\n')

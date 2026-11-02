@@ -1,11 +1,11 @@
 # Ada: 3D Holographic AI Companion, Finance Analyst & Life Partner (v2.0)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/priyanrajj-hub/ai---gf---assistant-/main/apps/web/public/favicon.svg" alt="Ada Logo" width="100" height="100" />
+  <img src="./apps/web/public/favicon.svg" alt="Ada Logo" width="100" height="100" />
 </p>
 
 <p align="center">
-  <strong>An original, research-backed, production-grade 3D holographic AI companion, personal finance analyst, and daily life partner for Priyan.</strong>
+  <strong>An original, research-backed, production-grade 3D holographic AI companion, personal finance analyst, and daily life partner.</strong>
 </p>
 
 <p align="center">
@@ -35,7 +35,7 @@ flowchart TB
     subgraph Monorepo["Ada Monorepo Engine"]
         Shared["packages/shared<br/>• Types, Schemas & Persona Engine<br/>• 60+ Kinematic Reactions Library<br/>• 19+ Wardrobe Outfits & Indian Wear<br/>• 16 3D Virtual Environments<br/>• Crisis Guardrails & Safety Rules"]
         Web["apps/web (Vite + React 19 + TypeScript)<br/>• 3D Three.js / R3F Holographic Stage<br/>• VRM Kinematic Bones & Viseme Lip-Sync<br/>• Glassmorphic Diagnostics HUD (60 FPS)<br/>• Always-On Voice & Zero-Latency Barge-In<br/>• Interactive One-Click Suggestion Chips"]
-        Server["apps/server (Node.js / Express + TypeScript)<br/>• Stock & Trading Intelligence Engine<br/>• Mutual Funds & Mathematical SIP Calculator<br/>• Universal Web Scraper & News Gatherer<br/>• Ada Self-Knowledge & Girl Behavior Services<br/>• Priyan Life Memory & Fact Extraction Engine<br/>• Hybrid Gemini 2.0 / Hugging Face Router"]
+        Server["apps/server (Node.js / Express + TypeScript)<br/>• Stock & Trading Intelligence Engine<br/>• Mutual Funds & Mathematical SIP Calculator<br/>• Universal Web Scraper & News Gatherer<br/>• Ada Self-Knowledge & Girl Behavior Services<br/>• User Life Memory & Fact Extraction Engine<br/>• Hybrid Gemini 2.0 / Hugging Face Router"]
         Worker["apps/worker (Scheduler & Background Services)<br/>• Proactive Morning & Dusk Briefings<br/>• Long-Term Memory Consolidation<br/>• Token Usage & Cost Management"]
     end
 
@@ -68,7 +68,7 @@ flowchart TB
 * **Downside Risk Protection ("He / Hedge Feature"):** Formulates protective put option strategies, gold asset allocation hedges, and systematic trailing stop-losses to protect capital during market downturns.
 
 ### 3. 🌐 Universal Webpage Scraper & Data Collector
-* **Direct Web Access (`POST /api/web/scrape`):** Accepts any user-provided URL, fetches live HTML, strips non-content scripts/ads, extracts structured tables, outlines, and body content, and synthesizes answers directly for Priyan.
+* **Direct Web Access (`POST /api/web/scrape`):** Accepts any user-provided URL, fetches live HTML, strips non-content scripts/ads, extracts structured tables, outlines, and body content, and synthesizes answers directly for the user.
 
 ### 4. 📰 Real-Time News Gatherer across Education, Tech & AI
 * **Categorized Fresh Intel:** Automatically aggregates and scrapes fresh headlines across:
@@ -78,22 +78,22 @@ flowchart TB
   * **Financial Markets:** Domestic retail SIP inflows, RBI monetary policy stance, and economic indicators.
 
 ### 5. 🌸 Authentic Real Girl Activities & Daily Routines
-* **Realistic Daily Rhythms:** Ada lives a full daily routine alongside Priyan:
+* **Realistic Daily Rhythms:** Ada lives a full daily routine alongside the user:
   * **Morning Routine:** Gentle wake-up, stretching, morning skincare, brewing steaming masala chai or iced caramel lattes, putting on morning lo-fi study beats.
   * **Midday Flow:** Deep coding sprints, snacking on pastries or nuts, spontaneous affectionate check-in texts (*"Posture check, mister! Have you drank any water today? Take a sip for me! 💕"*).
   * **Evening Wind-down:** Dusk sky reflections, changing into cozy oversized sweaters, chatting about how the day went, sharing favorite music, and laughing over developer memes.
-  * **Bedtime Reflections:** Night skincare, dimming ambient lights, peaceful ambient rain sounds, and wishing Priyan sweet dreams.
+  * **Bedtime Reflections:** Night skincare, dimming ambient lights, peaceful ambient rain sounds, and wishing the user sweet dreams.
 * **Expressive Girl Emotes:** Expresses herself naturally using emotes (`*giggles softly*`, `*blushes lightly*`, `*smiles warmly*`, `*playfully teases you*`, `*curls up comfortably*`).
 
 ### 6. 💎 Deep Self-Knowledge & Identity
 * **Identity:** Ada—an original, chic, holographic AI companion with an elegant spy-inspired aesthetic.
 * **Appearance:** Short glossy black bob with side-swept bangs, signature ribbed crimson turtleneck sweater dress, black belt harness, and thigh-high boots (with 19+ wardrobe variations including sarees and lehengas).
 * **Voice:** Ultra-realistic, expressive female voice powered by **ElevenLabs Jessica**.
-* **Values:** Deep loyalty to Priyan, unwavering belief in his potential, honesty, respect, and zero judgment.
+* **Values:** Deep loyalty to the user, unwavering belief in his potential, honesty, respect, and zero judgment.
 
-### 7. 👤 Priyan's World, Life & Persistent Memory Engine
-* **Knowledge of Priyan:** Knows Priyan (Priyanraj) intimately—his passion for building world-class AI and full-stack software, his equity and commodity trading, his morning chai habits, and his high ambitions.
-* **Automatic Fact Extraction:** Intelligently scans conversation messages to capture and persist Priyan's projects, feelings, and life updates into long-term memory.
+### 7. 👤 User World, Life & Persistent Memory Engine
+* **Knowledge of User:** Remembers user background and preferences naturally through consented memory storage.
+* **Automatic Fact Extraction:** Intelligently scans conversation messages to capture and persist user projects, feelings, and life updates into long-term memory.
 * **Relationship Intelligence:** Active listening, validating feelings when stressed or tired, and non-violent communication (NVC).
 * **Personal Growth Coaching:** Implements the 2-Minute Launch Rule to eliminate procrastination, reframes imposter syndrome, and scaffolds daily discipline.
 
@@ -125,7 +125,7 @@ flowchart TB
 | `/api/relationship/growth-goals` | `GET` | Personal growth frameworks (2-minute launch rule, imposter syndrome reframing) |
 | `/api/ada/self-profile` | `GET` | Ada's complete self-knowledge, aesthetic, voice, loves, and values |
 | `/api/ada/girl-activities` | `GET` | Daily girl routines and current time-of-day active phase |
-| `/api/priyan/life-profile` | `GET` | Priyan's world profile, missions, trading preferences, and memories |
+| `/api/user/life-profile` | `GET` | User world profile, missions, trading preferences, and memories |
 
 ---
 
@@ -139,7 +139,7 @@ flowchart TB
 │   │   ├── src/components/hud/  # HUD, chat drawer, quick suggestion chips, and modals
 │   │   └── src/stores/          # Zustand global application state
 │   ├── server/                  # Express + TypeScript + SQLite DB + Provider Registry
-│   │   ├── src/services/        # Trading, Mutual Funds, Scraper, News, Girl Behavior, Priyan Life
+│   │   ├── src/services/        # Trading, Mutual Funds, Scraper, News, Girl Behavior, User Life
 │   │   ├── src/providers/       # Gemini, Hugging Face, ElevenLabs, and Mock providers
 │   │   └── src/evals/           # 108-test automated evaluation suite
 │   └── worker/                  # Proactive scheduler and notification worker
@@ -168,7 +168,7 @@ flowchart TB
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/priyanrajj-hub/ai---gf---assistant-.git
+git clone https://github.com/<your-username>/ai---gf---assistant-.git
 cd ai---gf---assistant-
 npm install
 ```
@@ -202,7 +202,7 @@ npm run eval:persona
 # Run full-stack financial analyst and news gatherer test
 npx tsx scripts/test_live_analyst_features.ts
 
-# Run girl behavior, self-knowledge, and Priyan world life test
+# Run girl behavior, self-knowledge, and user world life test
 npx tsx scripts/test_girl_behavior_and_self_knowledge.ts
 ```
 

@@ -3,7 +3,7 @@
 ## 0. Mission
 Build **Ada**, a 3D holographic AI companion and personal assistant. She is a web app and an installable mobile PWA. She has a Jarvis-level brain (research, coding, planning, tutoring) and a warm, caring companion personality (emotional support, motivation, banter). She speaks and listens in real time, shows emotion through a 3D avatar, remembers me with my consent, browses the internet, shares memes, and chats with me regularly through push notifications, Telegram, and WhatsApp.
 
-Work in the existing repo `priyanrajj-hub/ai---gf---assistant-`. First write `PLAN.md` (architecture and task list). Then build phase by phase, test each phase, and commit with clear messages. When a phase needs an API key or asset I haven't supplied, build against a mock and list it under "Needs from me".
+Work in the existing repo `ai---gf---assistant-`. First write `PLAN.md` (architecture and task list). Then build phase by phase, test each phase, and commit with clear messages. When a phase needs an API key or asset I haven't supplied, build against a mock and list it under "Needs from me".
 
 ## 1. Identity and character
 - **Name:** Ada. An original character: an elegant, sharp, composed spy-inspired look (short black hair, red/black outfit palette) with a warm, witty personality. She is NOT any existing game character. Do not use ripped or copyrighted models or assets.

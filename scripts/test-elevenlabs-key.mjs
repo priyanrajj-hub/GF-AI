@@ -23,7 +23,7 @@ async function testKey() {
     // 2. Generate a quick speech sample
     console.log('Testing TTS generation with voiceId:', voiceId);
     const audioStream = await elevenlabs.textToSpeech.convert(voiceId, {
-      text: "Hello Priyanraj! I am Ada, your holographic companion.",
+      text: "Hello User! I am Ada, your holographic companion.",
       modelId: 'eleven_turbo_v2_5', // Quick test with turbo
     });
 

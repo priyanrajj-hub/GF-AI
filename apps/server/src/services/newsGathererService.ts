@@ -206,6 +206,6 @@ export class NewsGathererService {
     return `📰 LIVE REAL-TIME NEWS & INTELLIGENCE GATHERER (${categoryTitle}):
 ${formattedList}
 
-[NEWS GATHERER MANDATE: Deliver this update to Priyan with high energy, warmth, and intellectual clarity. Explain why each item matters to his career, learning, investments, and curiosity. Never deflect to websites—present the facts, breakthroughs, and actionable takeaways directly!]`
+[NEWS GATHERER MANDATE: Deliver this update to the user with high energy, warmth, and intellectual clarity. Explain why each item matters to their career, learning, investments, and curiosity. Never deflect to websites—present the facts, breakthroughs, and actionable takeaways directly!]`
   }
 }

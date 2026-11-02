@@ -477,7 +477,7 @@ export class WebSearchService {
       )}&format=json&utf8=1&srlimit=${maxResults}`
 
       const res = await fetch(endpoint, {
-        headers: { 'User-Agent': 'AdaHolographicAssistant/2.0 (mailto:priyan@example.com)' },
+        headers: { 'User-Agent': 'AdaHolographicAssistant/2.0 (mailto:assistant@example.com)' },
         signal: controller.signal,
       })
 
@@ -564,11 +564,11 @@ ${sections.join('\n\n')}
 
 CRITICAL MANDATORY INSTRUCTIONS FOR ADA:
 1. YOU HAVE LIVE ACCESS TO THE REAL-TIME DATA ABOVE.
-2. ABSOLUTE PROHIBITION ON DEFLECTING TO WEBSITES: NEVER tell Priyan to "check the official website", "visit a live tracker", or "check external links" to see prices, weather, scores, or information!
+2. ABSOLUTE PROHIBITION ON DEFLECTING TO WEBSITES: NEVER tell the user to "check the official website", "visit a live tracker", or "check external links" to see prices, weather, scores, or information!
 3. ALWAYS STATE THE EXACT NUMBERS, PRICES, RATES, AND FACTS DIRECTLY IN YOUR DISPLAY_TEXT AND SPEECH!
    - For example, if asked about gold or MCX: State the exact ₹ per gram, ₹ per 10g for 24K and 22K from the data above immediately!
-   - In speech: Speak the exact price warmly and concisely (e.g. "Priyan, today 24K gold in Chennai is ₹13,888 per gram, and 22K is ₹12,730 per gram!").
-4. Priyan is your partner and counts on you to give him the real data directly. Deliver the exact numbers with confidence and affection!`
+   - In speech: Speak the exact price warmly and concisely (e.g. "Today 24K gold in Chennai is ₹13,888 per gram, and 22K is ₹12,730 per gram!").
+4. The user is your partner and counts on you to give them the real data directly. Deliver the exact numbers with confidence and affection!`
   }
 
   /**

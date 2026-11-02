@@ -54,14 +54,14 @@ describe('Task A: Bulletproof Reply Pipeline & UI Guardrails', () => {
   it('3. should strip plain ``` code fences', () => {
     const raw = `\`\`\`
 {
-  "speech": "Good afternoon, Priyan.",
-  "display_text": "Good afternoon, Priyan.",
+  "speech": "Good afternoon, Alex.",
+  "display_text": "Good afternoon, Alex.",
   "emotion": "calm",
   "gesture": "idle"
 }
 \`\`\``
     const res = parseStructuredReply(raw)
-    assert.equal(res.display_text, 'Good afternoon, Priyan.')
+    assert.equal(res.display_text, 'Good afternoon, Alex.')
     assert.equal(UI_GUARDRAIL_REGEX.test(res.display_text), false)
   })
 
@@ -273,37 +273,37 @@ Process will conclude shortly.`
 
   // Test 24: sanitizeSpeechText removes emojis
   it('24. sanitizeSpeechText should strip emojis', () => {
-    const input = 'Good morning Priyan! ✨💖🚀 Ready to conquer today? 🎉'
+    const input = 'Good morning Alex! ✨💖🚀 Ready to conquer today? 🎉'
     const cleaned = sanitizeSpeechText(input)
-    assert.equal(cleaned, 'Good morning Priyan! Ready to conquer today?')
+    assert.equal(cleaned, 'Good morning Alex! Ready to conquer today?')
   })
 
-  // Test 25: Title replacement: replaces Operator with Priyan
-  it('25. should replace Operator with userName (Priyan)', () => {
+  // Test 25: Title replacement: replaces Operator with Alex
+  it('25. should replace Operator with userName (Alex)', () => {
     const raw = JSON.stringify({
       speech: 'Good morning, Operator.',
       display_text: 'Good morning, **Operator**.',
       emotion: 'calm',
       gesture: 'nod',
     })
-    const res = parseStructuredReply(raw, { userName: 'Priyan' })
-    assert.equal(res.speech, 'Good morning, Priyan.')
-    assert.equal(res.display_text, 'Good morning, **Priyan**.')
+    const res = parseStructuredReply(raw, { userName: 'Alex' })
+    assert.equal(res.speech, 'Good morning, Alex.')
+    assert.equal(res.display_text, 'Good morning, **Alex**.')
     assert.equal(res.speech.includes('Operator'), false)
     assert.equal(res.display_text.includes('Operator'), false)
   })
 
-  // Test 26: Title replacement: replaces Partner with Priyan
-  it('26. should replace Partner with userName (Priyan)', () => {
+  // Test 26: Title replacement: replaces Partner with Alex
+  it('26. should replace Partner with userName (Alex)', () => {
     const raw = JSON.stringify({
       speech: 'Why thank you, Partner.',
       display_text: 'Why thank you, Partner. Let us crush today!',
       emotion: 'playful',
       gesture: 'shy',
     })
-    const res = parseStructuredReply(raw, { userName: 'Priyan' })
-    assert.equal(res.speech, 'Why thank you, Priyan.')
-    assert.equal(res.display_text, 'Why thank you, Priyan. Let us crush today!')
+    const res = parseStructuredReply(raw, { userName: 'Alex' })
+    assert.equal(res.speech, 'Why thank you, Alex.')
+    assert.equal(res.display_text, 'Why thank you, Alex. Let us crush today!')
     assert.equal(res.speech.includes('Partner'), false)
     assert.equal(res.display_text.includes('Partner'), false)
   })
@@ -347,7 +347,7 @@ Process will conclude shortly.`
       'companion',
     ]
     for (const mode of modes) {
-      const g = getTimeAwareGreeting('Priyan', mode)
+      const g = getTimeAwareGreeting('Alex', mode)
       assert.equal(
         /operator|partner/i.test(g.content),
         false,
@@ -416,9 +416,9 @@ Process will conclude shortly.`
       emotion: 'thinking',
       gesture: 'thinking_pose',
     })
-    const res = parseStructuredReply(offlineReply, { userName: 'Priyan' })
+    const res = parseStructuredReply(offlineReply, { userName: 'Alex' })
     assert.match(res.display_text, /Live Internet Connection: ONLINE/)
-    assert.match(res.speech, /connected live to the internet, Priyan/)
+    assert.match(res.speech, /connected live to the internet, Alex/)
     assert.equal(res.display_text.includes("don't possess a live web-browsing"), false)
   })
 
@@ -430,8 +430,8 @@ Process will conclude shortly.`
       emotion: 'calm',
       gesture: 'nod',
     })
-    const res = parseStructuredReply(offlineReply, { userName: 'Priyan' })
+    const res = parseStructuredReply(offlineReply, { userName: 'Alex' })
     assert.match(res.display_text, /Live Internet Connection: ONLINE/)
-    assert.match(res.speech, /connected live to the internet, Priyan/)
+    assert.match(res.speech, /connected live to the internet, Alex/)
   })
 })

@@ -106,6 +106,7 @@ export interface MemoryItem {
   content: string
   importance: number // 1-5
   pinned: boolean
+  source?: string // e.g. 'conversation', 'portfolio', or target URL
   createdAt: number
   updatedAt: number
 }

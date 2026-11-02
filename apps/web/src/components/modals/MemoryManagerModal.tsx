@@ -9,6 +9,9 @@ import {
   AlertTriangle,
   Search,
   Check,
+  Edit2,
+  Globe,
+  Filter,
 } from 'lucide-react'
 import type { MemoryItem } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
@@ -29,6 +32,20 @@ export const MemoryManagerModal: React.FC = () => {
   const [newCategory, setNewCategory] = useState<MemoryItem['category']>('preference')
   const [showConfirmWipe, setShowConfirmWipe] = useState(false)
 
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
+
+  // Learn from link state (preview & consent gate)
+  const [showLinkLearn, setShowLinkLearn] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [isPreviewing, setIsPreviewing] = useState(false)
+  const [previewFacts, setPreviewFacts] = useState<string[]>([])
+  const [selectedFacts, setSelectedFacts] = useState<Record<number, boolean>>({})
+
+  // Forget source state
+  const [sourceToForget, setSourceToForget] = useState('')
+
   // Fetch memories from backend
   useEffect(() => {
     if (showMemoryModal) {
@@ -44,6 +61,9 @@ export const MemoryManagerModal: React.FC = () => {
   }, [showMemoryModal, settings.userId])
 
   if (!showMemoryModal) return null
+
+  // Distinct sources
+  const distinctSources = Array.from(new Set(memories.map((m) => m.source || 'conversation'))).filter(Boolean)
 
   const handleAddMemory = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,6 +82,7 @@ export const MemoryManagerModal: React.FC = () => {
           content: newContent.trim(),
           importance: 4,
           pinned: false,
+          source: 'manual_entry',
         }),
       })
       const data = await res.json()
@@ -83,6 +104,98 @@ export const MemoryManagerModal: React.FC = () => {
       setMemories(memories.filter((m) => m.id !== id))
     } catch (err) {
       console.error('[Delete Memory Error]', err)
+    }
+  }
+
+  const handleStartEdit = (m: MemoryItem) => {
+    setEditingId(m.id)
+    setEditContent(m.content)
+  }
+
+  const handleSaveEdit = async (id: string) => {
+    if (!editContent.trim()) return
+    try {
+      const res = await fetch(apiUrl(`/api/memory/${id}`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': settings.userId,
+        },
+        body: JSON.stringify({ content: editContent.trim() }),
+      })
+      const data = await res.json()
+      if (data.memory) {
+        setMemories(memories.map((m) => (m.id === id ? data.memory : m)))
+      }
+      setEditingId(null)
+      setEditContent('')
+    } catch (err) {
+      console.error('[Save Edit Error]', err)
+    }
+  }
+
+  const handleForgetSource = async () => {
+    if (!sourceToForget) return
+    try {
+      const res = await fetch(apiUrl(`/api/memory/source/${encodeURIComponent(sourceToForget)}`), {
+        method: 'DELETE',
+        headers: { 'x-user-id': settings.userId },
+      })
+      const data = await res.json()
+      if (data.success) {
+        setMemories(memories.filter((m) => (m.source || 'conversation') !== sourceToForget))
+        setSourceToForget('')
+      }
+    } catch (err) {
+      console.error('[Forget Source Error]', err)
+    }
+  }
+
+  const handlePreviewLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!linkUrl.trim()) return
+    setIsPreviewing(true)
+    try {
+      const res = await fetch(apiUrl('/api/memory/preview-link'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': settings.userId },
+        body: JSON.stringify({ url: linkUrl.trim() }),
+      })
+      const data = await res.json()
+      if (data.previewFacts) {
+        setPreviewFacts(data.previewFacts)
+        const initialSelected: Record<number, boolean> = {}
+        data.previewFacts.forEach((_: any, i: number) => {
+          initialSelected[i] = true
+        })
+        setSelectedFacts(initialSelected)
+      }
+    } catch (err) {
+      console.error('[Preview Link Error]', err)
+    } finally {
+      setIsPreviewing(false)
+    }
+  }
+
+  const handleApproveLinkFacts = async () => {
+    const factsToSave = previewFacts.filter((_, idx) => selectedFacts[idx])
+    if (factsToSave.length === 0) return
+
+    try {
+      const res = await fetch(apiUrl('/api/memory/approve-link-facts'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': settings.userId },
+        body: JSON.stringify({ url: linkUrl.trim(), facts: factsToSave }),
+      })
+      const data = await res.json()
+      if (data.memories) {
+        setMemories([...memories, ...data.memories])
+      }
+      setLinkUrl('')
+      setPreviewFacts([])
+      setShowLinkLearn(false)
+    } catch (err) {
+      console.error('[Approve Link Facts Error]', err)
     }
   }
 
@@ -130,7 +243,8 @@ export const MemoryManagerModal: React.FC = () => {
 
   const filteredMemories = memories.filter((m) =>
     m.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.category.toLowerCase().includes(searchQuery.toLowerCase())
+    m.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (m.source && m.source.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   return (
@@ -140,7 +254,7 @@ export const MemoryManagerModal: React.FC = () => {
         <div className="px-6 py-4 border-b border-cyan-500/20 flex items-center justify-between bg-slate-950/60">
           <div className="flex items-center gap-2.5 text-cyan-400 font-mono text-sm tracking-wider uppercase font-semibold">
             <Brain className="w-4 h-4" />
-            <span>Ada Long-Term Memory Manager (Consented)</span>
+            <span>Ada Long-Term Memory Manager (Consented & Privacy-Protected)</span>
           </div>
           <button
             onClick={() => setShowMemoryModal(false)}
@@ -151,15 +265,15 @@ export const MemoryManagerModal: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Consent Banner */}
           <div className="p-4 rounded-2xl glass-panel-subtle border border-cyan-500/20 flex items-center justify-between">
             <div>
               <div className="text-xs font-mono text-cyan-300 font-semibold uppercase">
-                Memory Storage Consent
+                Privacy & Memory Consent Controls
               </div>
               <div className="text-[11px] text-slate-400 mt-0.5">
-                Ada stores preferences and goals only with your active consent. Sensitive data (health, finances) is never stored without permission.
+                Ada stores preferences and goals only with your consent. Every fact has a transparent source, can be edited or deleted, and web ingestion requires your explicit approval.
               </div>
             </div>
             <input
@@ -170,27 +284,129 @@ export const MemoryManagerModal: React.FC = () => {
             />
           </div>
 
-          {/* Search & Actions Bar */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search memories by keyword..."
-                className="w-full bg-slate-900 border border-cyan-500/20 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
-              />
+          {/* Search, Forget-by-Source, & Export Bar */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search memories by keyword or source..."
+                  className="w-full bg-slate-900 border border-cyan-500/20 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+
+              <button
+                onClick={() => setShowLinkLearn(!showLinkLearn)}
+                className={`px-3 py-2 rounded-xl text-xs font-mono flex items-center gap-1.5 transition-colors border ${
+                  showLinkLearn
+                    ? 'bg-cyan-500/30 text-cyan-200 border-cyan-400'
+                    : 'glass-panel-subtle text-slate-300 hover:text-white border-cyan-500/20'
+                }`}
+                title="Learn from a link with preview & approval"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Learn from Link</span>
+              </button>
+
+              <button
+                onClick={handleExportJson}
+                className="px-3 py-2 rounded-xl glass-panel-subtle text-slate-300 hover:text-white border border-cyan-500/20 text-xs font-mono flex items-center gap-1.5 transition-colors"
+                title="Export all memories to JSON"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export</span>
+              </button>
             </div>
 
-            <button
-              onClick={handleExportJson}
-              className="px-3 py-2 rounded-xl glass-panel-subtle text-slate-300 hover:text-white border border-cyan-500/20 text-xs font-mono flex items-center gap-1.5 transition-colors"
-              title="Export all memories to JSON"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export JSON</span>
-            </button>
+            {/* Forget a Source Dropdown */}
+            {distinctSources.length > 0 && (
+              <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 text-slate-400 font-mono text-[11px]">
+                  <Filter className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Forget a source:</span>
+                </div>
+                <div className="flex items-center gap-2 flex-1 max-w-sm">
+                  <select
+                    value={sourceToForget}
+                    onChange={(e) => setSourceToForget(e.target.value)}
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-300 focus:outline-none"
+                  >
+                    <option value="">Select source to forget...</option>
+                    {distinctSources.map((s) => (
+                      <option key={s} value={s}>
+                        {s} ({memories.filter((m) => (m.source || 'conversation') === s).length} facts)
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleForgetSource}
+                    disabled={!sourceToForget}
+                    className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30 disabled:opacity-40 text-xs font-mono transition-colors"
+                  >
+                    Forget Source
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Learn from Link Form (Preview & Approval Gate) */}
+            {showLinkLearn && (
+              <div className="p-4 rounded-2xl bg-cyan-950/20 border border-cyan-500/30 space-y-3">
+                <div className="text-xs font-mono text-cyan-300 font-semibold flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-cyan-400" />
+                  <span>Learn from Link (Requires Your Preview & Approval)</span>
+                </div>
+                <form onSubmit={handlePreviewLink} className="flex gap-2">
+                  <input
+                    type="url"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    placeholder="https://example.com/portfolio-or-notes"
+                    className="flex-1 bg-slate-900 border border-cyan-500/20 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isPreviewing || !linkUrl.trim()}
+                    className="px-3 py-1.5 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 hover:bg-cyan-500/30 disabled:opacity-40 text-xs font-mono"
+                  >
+                    {isPreviewing ? 'Analyzing...' : 'Preview Facts'}
+                  </button>
+                </form>
+
+                {previewFacts.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-cyan-500/20">
+                    <div className="text-[11px] font-mono text-slate-300">
+                      Candidate facts discovered. Check the ones you approve saving:
+                    </div>
+                    {previewFacts.map((fact, idx) => (
+                      <label key={idx} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!selectedFacts[idx]}
+                          onChange={(e) =>
+                            setSelectedFacts({ ...selectedFacts, [idx]: e.target.checked })
+                          }
+                          className="w-3.5 h-3.5 accent-cyan-400"
+                        />
+                        <span>{fact}</span>
+                      </label>
+                    ))}
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        onClick={handleApproveLinkFacts}
+                        className="px-3 py-1 rounded-xl bg-emerald-500/30 text-emerald-200 border border-emerald-400/50 hover:bg-emerald-500/40 font-mono text-xs flex items-center gap-1.5"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Approve & Save Selected Facts</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Add New Memory Form */}
@@ -249,9 +465,12 @@ export const MemoryManagerModal: React.FC = () => {
                   }`}
                 >
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 uppercase">
                         {m.category}
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                        source: {m.source || 'conversation'}
                       </span>
                       {m.pinned && (
                         <span className="text-[10px] font-mono text-amber-400 flex items-center gap-1">
@@ -259,10 +478,43 @@ export const MemoryManagerModal: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-slate-200">{m.content}</div>
+
+                    {editingId === m.id ? (
+                      <div className="flex items-center gap-2 mt-1">
+                        <input
+                          type="text"
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="flex-1 bg-slate-900 border border-cyan-400 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none"
+                        />
+                        <button
+                          onClick={() => handleSaveEdit(m.id)}
+                          className="px-2 py-1 rounded bg-cyan-500/30 text-cyan-200 text-xs font-mono hover:bg-cyan-500/40"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="px-2 py-1 text-xs text-slate-400 hover:text-white"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-slate-200">{m.content}</div>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
+                    {editingId !== m.id && (
+                      <button
+                        onClick={() => handleStartEdit(m)}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-cyan-400 transition-colors"
+                        title="Edit memory"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleTogglePin(m.id, m.pinned)}
                       className={`p-1.5 rounded-lg transition-colors ${
