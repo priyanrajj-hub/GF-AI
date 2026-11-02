@@ -69,48 +69,76 @@ export class SongEngine {
     // If an original studio audio track is available (e.g. from iTunes API), stream & play it!
     if (song.audioUrl) {
       try {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-        if (AudioContextClass) {
-          this.audioCtx = new AudioContextClass()
-          if (this.audioCtx.state === 'suspended') {
-            this.audioCtx.resume()
+        this.audioElement = new Audio()
+        this.audioElement.src = song.audioUrl
+        this.audioElement.volume = 0.95
+        this.audioElement.preload = 'auto'
+
+        // Connect Web Audio Analyser if supported & not CORS-restricted
+        try {
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+          if (AudioContextClass) {
+            this.audioCtx = new AudioContextClass()
+            if (this.audioCtx.state === 'suspended') {
+              this.audioCtx.resume()
+            }
+            this.analyserNode = this.audioCtx.createAnalyser()
+            this.analyserNode.fftSize = 64
+            this.audioElement.crossOrigin = 'anonymous'
+
+            const source = this.audioCtx.createMediaElementSource(this.audioElement)
+            source.connect(this.analyserNode)
+            this.analyserNode.connect(this.audioCtx.destination)
+          }
+        } catch (corsErr) {
+          console.log('[SongEngine] Direct HTML5 playback active:', corsErr)
+          if (this.audioElement) {
+            this.audioElement.crossOrigin = null
+            this.audioElement.src = song.audioUrl
+          }
+        }
+
+        // Live Frequency Visualizer Loop for HUD & Lip-Sync
+        const freqData = new Uint8Array(32)
+        const updateFrequencies = () => {
+          if (!this.isPlaying) return
+          let hasRealFreqs = false
+
+          if (this.analyserNode) {
+            try {
+              this.analyserNode.getByteFrequencyData(freqData)
+              const avg = Array.from(freqData).reduce((a, b) => a + b, 0) / freqData.length
+              if (avg > 2) {
+                store.setAudioFrequencies(Array.from(freqData).map((v) => v / 255))
+                hasRealFreqs = true
+              }
+            } catch {}
           }
 
-          this.analyserNode = this.audioCtx.createAnalyser()
-          this.analyserNode.fftSize = 64
-
-          this.audioElement = new Audio()
-          this.audioElement.crossOrigin = 'anonymous'
-          this.audioElement.src = song.audioUrl
-          this.audioElement.volume = 0.9
-
-          const source = this.audioCtx.createMediaElementSource(this.audioElement)
-          source.connect(this.analyserNode)
-          this.analyserNode.connect(this.audioCtx.destination)
-
-          const freqData = new Uint8Array(this.analyserNode.frequencyBinCount)
-          const updateFrequencies = () => {
-            if (!this.isPlaying || !this.analyserNode) return
-            this.analyserNode.getByteFrequencyData(freqData)
-            const freqs = Array.from(freqData).map((v) => v / 255)
-            store.setAudioFrequencies(freqs)
-            this.animFrameId = requestAnimationFrame(updateFrequencies)
+          // If CORS restricts audio buffer access, synthesize rhythm beat frequencies matching song BPM!
+          if (!hasRealFreqs) {
+            const now = performance.now() / 1000
+            const bpm = song.bpm || 120
+            const beatPhase = Math.sin(now * (bpm / 60) * Math.PI * 2) * 0.5 + 0.5
+            const energy = 0.55 + beatPhase * 0.35 + Math.random() * 0.1
+            const simulated = Array.from({ length: 32 }, (_, idx) => {
+              const falloff = Math.max(0.2, 1.0 - idx / 32)
+              return Math.min(1.0, energy * falloff)
+            })
+            store.setAudioFrequencies(simulated)
           }
+
           this.animFrameId = requestAnimationFrame(updateFrequencies)
+        }
+        this.animFrameId = requestAnimationFrame(updateFrequencies)
 
-          this.audioElement.play().catch((playErr) => {
-            console.warn('[Original Audio Play Failed, falling back to synth]:', playErr)
-            this.startSynthesizerTrack(song, onProgress)
-          })
+        this.audioElement.play().catch((playErr) => {
+          console.warn('[Original Audio Play Failed, falling back to synth]:', playErr)
+          this.startSynthesizerTrack(song, onProgress)
+        })
 
-          this.audioElement.onended = () => {
-            this.stop()
-          }
-        } else {
-          this.audioElement = new Audio(song.audioUrl)
-          this.audioElement.volume = 0.9
-          this.audioElement.play().catch(() => {})
-          this.audioElement.onended = () => this.stop()
+        this.audioElement.onended = () => {
+          this.stop()
         }
       } catch (e) {
         console.warn('[Audio Pipeline Error]:', e)

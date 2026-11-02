@@ -47,6 +47,8 @@ export const ChatDrawer: React.FC = () => {
     setSystemState,
     setEmotionAndGesture,
     fullScreenHoloMode,
+    activeSong,
+    karaokeLine,
   } = useAppStore()
 
   const [input, setInput] = useState('')
@@ -186,6 +188,9 @@ export const ChatDrawer: React.FC = () => {
       globalCueScheduler.scheduleFromText(parsedReply.display_text, parsedReply.voice_style?.rate || 1.0)
 
       // Add assistant message with strictly guarded display_text
+      // Handle Singing & Dance or Standard Voice
+      const singAction = parsedReply.actions?.find((a) => a.name === 'sing')
+
       const assistantMsg: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,
         role: 'assistant',
@@ -195,12 +200,18 @@ export const ChatDrawer: React.FC = () => {
         gesture: parsedReply.gesture,
         meme: parsedReply.meme,
         sticker: parsedReply.sticker,
+        musicTrack: (singAction?.arguments as any)?.song || parsedReply.musicTrack || (singAction ? {
+          title: (singAction.arguments as any)?.title || 'Original Studio Track',
+          artist: (singAction.arguments as any)?.artist,
+          audioUrl: (singAction.arguments as any)?.audioUrl,
+          artworkUrl: (singAction.arguments as any)?.artworkUrl,
+          danceAction: (singAction.arguments as any)?.dance || 'dance_pop_groove',
+          bpm: (singAction.arguments as any)?.bpm || 120,
+          duration: (singAction.arguments as any)?.duration || 30,
+        } : undefined),
         timestamp: Date.now(),
       }
       addMessage(assistantMsg)
-
-      // Handle Singing & Dance or Standard Voice
-      const singAction = parsedReply.actions?.find((a) => a.name === 'sing')
       if (singAction) {
         const songObj = (singAction.arguments as any)?.song
         const songId = (singAction.arguments as any)?.songId || 'song-idol-spark'
@@ -396,6 +407,79 @@ export const ChatDrawer: React.FC = () => {
                     >
                       Open Full ↗
                     </a>
+                  </div>
+                </div>
+              )}
+
+              {/* Holographic Studio Music Player Card */}
+              {msg.musicTrack && (
+                <div className="my-2.5 p-3 rounded-2xl border border-cyan-400/40 bg-gradient-to-br from-slate-950/95 via-cyan-950/30 to-slate-900/90 shadow-2xl backdrop-blur-xl">
+                  <div className="flex items-center gap-3">
+                    {/* Album Artwork with Vinyl Record Spin */}
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden shadow-lg border border-cyan-500/30 flex-shrink-0 bg-slate-900">
+                      {msg.musicTrack.artworkUrl ? (
+                        <img
+                          src={msg.musicTrack.artworkUrl}
+                          alt={msg.musicTrack.title}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-cyan-950/60 text-cyan-400 text-xl font-bold">
+                          🎵
+                        </div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-3.5 h-3.5 rounded-full bg-slate-950 border border-cyan-400/60 shadow" />
+                      </div>
+                    </div>
+
+                    {/* Title, Artist & Equalizer */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30">
+                          💃 {msg.musicTrack.danceAction?.replace('dance_', '').replace('_', ' ').toUpperCase() || 'POP GROOVE'} • {msg.musicTrack.bpm || 120} BPM
+                        </span>
+                        {/* Bouncing Animated Neon Equalizer Bars */}
+                        <div className="flex items-end gap-0.5 h-3.5">
+                          <span className="w-1 bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.3s] h-3" />
+                          <span className="w-1 bg-pink-400 rounded-full animate-bounce [animation-delay:-0.15s] h-4" />
+                          <span className="w-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.45s] h-2.5" />
+                          <span className="w-1 bg-amber-400 rounded-full animate-bounce [animation-delay:-0.2s] h-3.5" />
+                        </div>
+                      </div>
+
+                      <h4 className="text-sm font-bold text-white truncate mt-1">
+                        {msg.musicTrack.title}
+                      </h4>
+                      <p className="text-xs text-cyan-300/80 truncate">
+                        {msg.musicTrack.artist ? `by ${msg.musicTrack.artist}` : 'Original Studio Master Preview'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Interactive Controls & Progress */}
+                  <div className="mt-2.5 pt-2 border-t border-cyan-500/20 flex items-center justify-between text-xs font-mono">
+                    <button
+                      onClick={() => {
+                        if (activeSong && activeSong.id === msg.musicTrack?.id && globalSongEngine.getIsPlaying()) {
+                          globalSongEngine.stop()
+                        } else {
+                          globalSongEngine.playSong(msg.musicTrack as any)
+                          performAction(msg.musicTrack.danceAction || 'dance_pop_groove', { duration: 32 })
+                        }
+                      }}
+                      className="px-3 py-1 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 flex items-center gap-1.5 font-bold cursor-pointer transition-all"
+                    >
+                      {activeSong?.id === msg.musicTrack.id && globalSongEngine.getIsPlaying() ? (
+                        <><span>⏸️</span> Pause Track</>
+                      ) : (
+                        <><span>▶️</span> Play & Dance</>
+                      )}
+                    </button>
+
+                    <span className="text-[10px] text-cyan-400/80 font-mono">
+                      {activeSong?.id === msg.musicTrack.id ? (karaokeLine || 'Singing & Dancing...') : 'Studio Master Preview'}
+                    </span>
                   </div>
                 </div>
               )}

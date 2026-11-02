@@ -88,6 +88,16 @@ export interface StructuredReply {
   }
   gif_query?: string
   reactions?: string[]
+  musicTrack?: {
+    id?: string
+    title: string
+    artist?: string
+    audioUrl?: string
+    artworkUrl?: string
+    danceAction?: string
+    bpm?: number
+    duration?: number
+  }
 }
 
 export interface ChatMessage {
@@ -109,6 +119,16 @@ export interface ChatMessage {
   gif_query?: string
   reactions?: string[]
   timestamp: number
+  musicTrack?: {
+    id?: string
+    title: string
+    artist?: string
+    audioUrl?: string
+    artworkUrl?: string
+    danceAction?: string
+    bpm?: number
+    duration?: number
+  }
   metadata?: {
     model?: string
     tokensPrompt?: number

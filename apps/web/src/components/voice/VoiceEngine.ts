@@ -11,6 +11,16 @@ class VoiceEngineManager {
   private currentAudioSource: AudioBufferSourceNode | null = null
   private isNeuralPlaying = false
 
+  getAudioContext(): AudioContext | null {
+    this.initAudioContext()
+    return this.audioContext
+  }
+
+  getAnalyser(): AnalyserNode | null {
+    this.initAudioContext()
+    return this.analyser
+  }
+
   initAudioContext(): void {
     if (!this.audioContext) {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
@@ -29,7 +39,8 @@ class VoiceEngineManager {
 
   private startFrequencyLoop(): void {
     const loop = () => {
-      if (this.analyser) {
+      const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
+      if (!isSinging && this.analyser) {
         this.analyser.getByteFrequencyData(this.dataArray as any)
         useAppStore.getState().setAudioFrequencies(this.dataArray)
       }
