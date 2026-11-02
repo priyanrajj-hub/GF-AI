@@ -19,6 +19,7 @@ import { AnimationTestPage } from './pages/AnimationTest.js'
 import { ReactionLab } from './pages/ReactionLab.js'
 import { VoiceEngine } from './components/voice/VoiceEngine.js'
 import { globalSongEngine } from './avatar/engine/singer.js'
+import { performAction } from './avatar/motion/performAction.js'
 import { globalReactionReconciler } from './avatar/reactions/index.js'
 import { globalCueScheduler } from './avatar/cues/CueScheduler.js'
 import { useAppStore } from './store/useAppStore.js'
@@ -174,7 +175,31 @@ export const App: React.FC = () => {
       }
       addMessage(assistantMsg)
 
-      if (parsedReply.speech) {
+      const singAction = parsedReply.actions?.find((a) => a.name === 'sing')
+      if (singAction) {
+        const songObj = (singAction.arguments as any)?.song
+        const songId = (singAction.arguments as any)?.songId || 'song-idol-spark'
+        const audioUrl = (singAction.arguments as any)?.audioUrl || songObj?.audioUrl
+        const artworkUrl = (singAction.arguments as any)?.artworkUrl || songObj?.artworkUrl
+        const dance = (singAction.arguments as any)?.dance || songObj?.danceAction || 'dance_pop_groove'
+
+        const finalSong = songObj
+          ? {
+              ...songObj,
+              audioUrl: audioUrl || songObj.audioUrl,
+              artworkUrl: artworkUrl || songObj.artworkUrl,
+              danceAction: dance,
+            }
+          : songId
+
+        performAction(dance as any, { emotion: 'excited', duration: (songObj?.duration || 32) + 2 })
+        globalSongEngine.playSong(finalSong)
+      } else if (/now playing|now singing/i.test(parsedReply.display_text || '')) {
+        const match = (parsedReply.display_text || '').match(/now (?:playing|singing)(?:\s*&[^\n:]*)?:\s*([^\n*(]+)/i)
+        const detectedTitle = match ? match[1].trim() : 'Starlight Sparkle'
+        performAction('dance_pop_groove', { emotion: 'excited', duration: 32 })
+        globalSongEngine.playSong(detectedTitle)
+      } else if (parsedReply.speech) {
         VoiceEngine.speak(parsedReply.speech, {
           rate: parsedReply.voice_style?.rate || 1.05,
           pitch: parsedReply.voice_style?.pitch || 1.0,

@@ -81,7 +81,7 @@ export const DebugHUD: React.FC = () => {
     ? 'Hugging Face (Kokoro Girl)'
     : settings.voice === 'Aoede'
     ? 'Gemini Neural (Aoede)'
-    : settings.elevenlabsApiKey && activeChar === 'mira'
+    : settings.elevenlabsApiKey && settings.elevenlabsApiKey !== '[PURGED_ELEVENLABS_KEY]' && activeChar === 'mira'
     ? 'ElevenLabs (Sarah Girl)'
     : activeChar === 'ada'
     ? 'MS Edge Neural (Jenny Coach)'
