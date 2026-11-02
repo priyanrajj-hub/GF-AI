@@ -530,7 +530,7 @@ export const ChatDrawer: React.FC = () => {
           e.preventDefault()
           handleSendMessage()
         }}
-        className="p-3 border-t border-cyan-500/20 bg-slate-950/50 flex items-center gap-2"
+        className="p-3 border-t border-cyan-500/20 bg-slate-950/80 flex items-center gap-2 shrink-0 z-10"
       >
         <input
           type="file"

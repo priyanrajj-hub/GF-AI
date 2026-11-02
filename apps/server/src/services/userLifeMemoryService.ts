@@ -183,5 +183,4 @@ ${factsFormatted}
   }
 }
 
-// Backwards-compatible alias for existing imports
-export const PriyanLifeMemoryService = UserLifeMemoryService
+

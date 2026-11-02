@@ -27,7 +27,6 @@ export interface AdaSelfProfile {
     webCapabilities: string
   }
   relationshipWithUser: string
-  relationshipWithPriyan?: string
 }
 
 export class AdaSelfKnowledgeService {

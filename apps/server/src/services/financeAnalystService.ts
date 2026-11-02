@@ -19,7 +19,6 @@ export interface HedgingStrategy {
   riskProfile: string
   implementation: string
   benefitForUser: string
-  benefitForPriyan?: string
 }
 
 export class FinanceAnalystService {
