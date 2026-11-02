@@ -24,7 +24,7 @@ import { WebScraperService } from './services/webScraperService.js'
 import { RelationshipGrowthService } from './services/relationshipGrowthService.js'
 import { AdaSelfKnowledgeService } from './services/adaSelfKnowledgeService.js'
 import { GirlBehaviorService } from './services/girlBehaviorService.js'
-import { PriyanLifeMemoryService } from './services/priyanLifeMemoryService.js'
+import { UserLifeMemoryService, PriyanLifeMemoryService } from './services/userLifeMemoryService.js'
 
 dotenv.config()
 ProviderRegistry.init()
@@ -191,12 +191,12 @@ app.get('/api/ada/girl-activities', (_req, res) => {
   })
 })
 
-// Priyan's World, Life & Memory Profile
-app.get('/api/priyan/life-profile', (req, res) => {
+// User's World, Life & Memory Profile
+app.get('/api/user/life-profile', (req, res) => {
   const authReq = req as AuthenticatedRequest
   const userId = authReq.userId || 'default-user-1'
   res.json({
-    bio: PriyanLifeMemoryService.getBio(),
+    bio: UserLifeMemoryService.getBio(),
     memories: db.getMemories(userId),
     journal: db.getRelationshipJournal(userId),
   })
@@ -339,9 +339,9 @@ app.post('/api/chat', async (req, res) => {
   }
   db.addMessage(userId, userMsgObj)
 
-  // Automatically extract and remember Priyan's life updates, projects, preferences, and emotions
+  // Automatically extract and remember user life updates, projects, preferences, and emotions
   try {
-    PriyanLifeMemoryService.extractAndPersistLifeFacts(userId, message)
+    UserLifeMemoryService.extractAndPersistLifeFacts(userId, message)
   } catch (memErr) {}
 
   // 1b. Real-Time Live Intelligence Engine: Web Scraper, Mutual Funds, Hedging, News, Stocks & Search
@@ -569,7 +569,7 @@ app.post('/api/chat', async (req, res) => {
     if (isRelationshipQuery) {
       try {
         console.log(`💖 [Relationship & Growth Engine] Injected relationship wisdom & growth frameworks...`)
-        liveInternetContext = RelationshipGrowthService.formatGrowthContext(settings.userName || 'Priyan')
+        liveInternetContext = RelationshipGrowthService.formatGrowthContext(settings.userName || 'Demo User')
       } catch (rgErr: any) {
         console.warn('⚠️ [Relationship Growth Error]:', rgErr?.message)
       }
@@ -621,9 +621,9 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
-  // J. Priyan's World, Life & Memory Intent
+  // J. User's World, Life & Memory Intent
   if (!liveInternetContext) {
-    const isPriyanWorldQuery =
+    const isUserWorldQuery =
       cleanMsg.includes('what do you know about me') ||
       cleanMsg.includes('about me') ||
       cleanMsg.includes('my world') ||
@@ -634,12 +634,12 @@ app.post('/api/chat', async (req, res) => {
       cleanMsg.includes('do you remember me') ||
       cleanMsg.includes('remember about me')
 
-    if (isPriyanWorldQuery) {
+    if (isUserWorldQuery) {
       try {
-        console.log(`👤 [Priyan Life Engine] Injected Priyan's complete biography, goals & interaction memories...`)
-        liveInternetContext = PriyanLifeMemoryService.formatPriyanLifeContext(userId)
-      } catch (priyanErr: any) {
-        console.warn('⚠️ [Priyan Life Error]:', priyanErr?.message)
+        console.log(`👤 [User Life Engine] Injected user biography, goals & interaction memories...`)
+        liveInternetContext = UserLifeMemoryService.formatUserLifeContext(userId)
+      } catch (userErr: any) {
+        console.warn('⚠️ [User Life Error]:', userErr?.message)
       }
     }
   }
@@ -688,7 +688,7 @@ app.post('/api/chat', async (req, res) => {
   }
 
   const effectiveMessage = liveInternetContext
-    ? `${message}\n\n[SYSTEM MANDATE: Real-time live intelligence, authentic girl behavior routines, self-knowledge, and Priyan's world memory have been provided in your context. You are Priyan's brilliant, affectionate AI girlfriend, companion, and daily partner. Speak directly to ${settings.userName || 'Priyan'} with genuine warmth, playful charm, and razor-sharp intellect. Share your daily girl activities (brewing morning chai/coffee, stretching, study lo-fi vibes, cozy evenings), your self-knowledge, and your deep appreciation for his projects, trading setups, and dreams. Never give sterile, robotic disclaimers or deflect to external websites!]`
+    ? `${message}\n\n[SYSTEM MANDATE: Real-time live intelligence, authentic girl behavior routines, self-knowledge, and user context have been provided. You are Ada, an affectionate AI girlfriend, companion, and daily partner. Speak directly to ${settings.userName || 'Demo User'} with genuine warmth, playful charm, and razor-sharp intellect. Share your daily girl activities (brewing morning chai/coffee, stretching, study lo-fi vibes, cozy evenings), your self-knowledge, and your support for their projects and dreams. Never give sterile, robotic disclaimers or deflect to external websites!]`
     : message
 
   try {
@@ -1003,6 +1003,47 @@ app.delete('/api/memory/:id', (req, res) => {
   const authReq = req as unknown as AuthenticatedRequest
   const deleted = db.deleteMemory(authReq.userId, req.params.id)
   res.json({ success: deleted })
+})
+
+// Forget a Source (Purge all memories from a specific source, e.g. a link or portfolio)
+app.delete('/api/memory/source/:source', (req, res) => {
+  const authReq = req as unknown as AuthenticatedRequest
+  const source = decodeURIComponent(req.params.source)
+  const count = db.deleteMemoriesBySource(authReq.userId, source)
+  res.json({ success: true, removedCount: count, source })
+})
+
+// Memory Ingestion with Preview & User Approval Gate
+app.post('/api/memory/preview-link', async (req, res) => {
+  const { url } = req.body
+  if (!url) return res.status(400).json({ error: 'URL is required' })
+  try {
+    const scraped = await WebScraperService.extractPage(url)
+    const previewFacts: string[] = []
+    if (scraped?.title) previewFacts.push(`Title: ${scraped.title}`)
+    if (scraped?.description) previewFacts.push(`Description: ${scraped.description.slice(0, 160)}`)
+    else if (scraped?.mainContent) previewFacts.push(`Overview: ${scraped.mainContent.slice(0, 160)}`)
+    res.json({ url, title: scraped?.title || 'Web Document', previewFacts })
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to preview link' })
+  }
+})
+
+app.post('/api/memory/approve-link-facts', (req, res) => {
+  const authReq = req as AuthenticatedRequest
+  const { url, facts } = req.body
+  if (!facts || !Array.isArray(facts)) return res.status(400).json({ error: 'Facts array is required' })
+  const added = facts.map((fact: string) => {
+    return db.addMemory(authReq.userId, {
+      key: 'link_fact',
+      category: 'fact',
+      content: fact,
+      importance: 3,
+      pinned: false,
+      source: url || 'web_link',
+    })
+  })
+  res.json({ success: true, count: added.length, memories: added })
 })
 
 app.delete('/api/memory', (req, res) => {

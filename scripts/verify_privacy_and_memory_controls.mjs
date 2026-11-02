@@ -3,10 +3,10 @@ import fs from 'fs';
 import path from 'path';
 
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const ARTIFACT_DIR = 'C:\\Users\\PRIYANRAJ J\\.gemini\\antigravity\\brain\\9dddffaa-28a4-45f4-9190-18cc1e11e741';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || path.join(process.env.USERPROFILE || '', '.gemini', 'antigravity', 'brain', '9dddffaa-28a4-45f4-9190-18cc1e11e741');
 
 async function run() {
-  console.log('🚀 Launching browser for Priyan Profile & Triple Degree Understanding verification...');
+  console.log('🚀 Launching browser for Privacy Cleanup & Memory Manager verification...');
   const browser = await chromium.launch({
     executablePath: CHROME_PATH,
     headless: true,
@@ -23,8 +23,9 @@ async function run() {
     await page.goto('http://localhost:5173/?debug=1', { waitUntil: 'networkidle', timeout: 25000 });
     await page.waitForTimeout(3000);
 
-    // Dismiss modals if open
+    // Dismiss first run / modals if open
     await page.evaluate(() => {
+      localStorage.clear();
       const buttons = Array.from(document.querySelectorAll('button'));
       const dismissBtn = buttons.find(b => /understand|accept|enter|start|agree/i.test(b.textContent || ''));
       if (dismissBtn) dismissBtn.click();
@@ -37,29 +38,23 @@ async function run() {
         state.setShowPermissionCenter(false);
         state.setShowWellbeingModal(false);
         state.setShowWardrobeDrawer(false);
+
+        // Fetch fresh memories from server
+        fetch('http://localhost:3001/api/memory')
+          .then(res => res.json())
+          .then(data => {
+            if (data.memories) state.setMemories(data.memories);
+          });
+
+        // Open the Memory Manager Modal
+        state.setShowMemoryModal(true);
       }
     });
 
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2500);
 
-    console.log('Locating "🎓 My Triple Degree" chip...');
-    const chip = page.locator('button:has-text("🎓 My Triple Degree")').first();
-    const isChipVisible = await chip.isVisible({ timeout: 2000 }).catch(() => false);
-
-    if (isChipVisible) {
-      console.log('Clicking "🎓 My Triple Degree" chip...');
-      await chip.click({ force: true });
-    } else {
-      console.log('Typing query into chat input...');
-      const chatInput = page.locator('input[type="text"]').first();
-      await chatInput.fill('Tell me what you know about my degrees at Amrita, IIT Madras, and IIT Guwahati!');
-      await chatInput.press('Enter');
-    }
-
-    console.log('Waiting for Ada reply with Priyan degree & profile details...');
-    await page.waitForTimeout(10000);
-
-    const screenshotPath = path.join(ARTIFACT_DIR, 'ada_priyan_profile_understanding_verified_1080p.png');
+    console.log('Capturing verified 1080p screenshot of Privacy & Memory Manager...');
+    const screenshotPath = path.join(ARTIFACT_DIR, 'ada_privacy_memory_controls_verified_1080p.png');
     await page.screenshot({ path: screenshotPath });
     console.log(`✅ Saved verified screenshot to: ${screenshotPath}`);
 

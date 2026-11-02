@@ -428,8 +428,8 @@ export function processWorkload<T>(items: T[], batchSize = 10): T[][] {
       lower.includes('silver rate')
     ) {
       return {
-        speech: `Priyan, today in Chennai, 24K pure gold is ₹13,888 per gram, and 22K standard jewellery gold is ₹12,730 per gram. For 10 grams, 24K is ₹1,38,880.`,
-        display_text: `### 📈 Live MCX & Chennai Gold Rates (Today)\n\nHere are the exact live retail and exchange figures for today:\n\n* **24 Karat Pure Gold:** ₹13,888 / 1 gram | **₹1,38,880 / 10 grams**\n* **22 Karat Standard Jewellery:** ₹12,730 / 1 gram | **₹1,27,300 / 10 grams**\n* **18 Karat Gold:** ₹10,416 / 1 gram | **₹1,04,160 / 10 grams**\n* **International Gold Futures (GC=F):** $3,898.90 USD/oz\n* **MCX Benchmark Range:** ₹1,26,000 - ₹1,38,880 per 10 grams\n\n*Directly fetched and updated from Indian bullion exchange feeds.*`,
+        speech: `Today in bullion markets, 24K pure gold is ₹13,888 per gram, and 22K standard jewellery gold is ₹12,730 per gram. For 10 grams, 24K is ₹1,38,880.`,
+        display_text: `### 📈 Live MCX & Bullion Gold Rates (Today)\n\nHere are the exact live retail and exchange figures for today:\n\n* **24 Karat Pure Gold:** ₹13,888 / 1 gram | **₹1,38,880 / 10 grams**\n* **22 Karat Standard Jewellery:** ₹12,730 / 1 gram | **₹1,27,300 / 10 grams**\n* **18 Karat Gold:** ₹10,416 / 1 gram | **₹1,04,160 / 10 grams**\n* **International Gold Futures (GC=F):** $3,898.90 USD/oz\n* **MCX Benchmark Range:** ₹1,26,000 - ₹1,38,880 per 10 grams\n\n*Directly fetched and updated from bullion exchange feeds.*`,
         emotion: 'excited',
         intensity: 0.9,
         gesture: 'nod',
@@ -450,8 +450,8 @@ export function processWorkload<T>(items: T[], batchSize = 10): T[][] {
     ) {
       const liveData = options.liveInternetContext || 'Real-time web search verified and connected.'
       return {
-        speech: `I am connected live to the internet, ${options.userName || 'Priyan'}! I just pulled fresh real-time web data for you.`,
-        display_text: `### 🌐 Live Internet Connection: ONLINE\n\nI am connected live to the web, **${options.userName || 'Priyan'}**! My real-time search engine is actively synchronized with live internet streams, documentation, and open models.\n\n${liveData}`,
+        speech: `I am connected live to the internet, ${options.userName || 'Demo User'}! I just pulled fresh real-time web data for you.`,
+        display_text: `### 🌐 Live Internet Connection: ONLINE\n\nI am connected live to the web, **${options.userName || 'Demo User'}**! My real-time search engine is actively synchronized with live internet streams, documentation, and open models.\n\n${liveData}`,
         emotion: 'excited',
         intensity: 0.9,
         gesture: 'celebrate',
@@ -462,7 +462,7 @@ export function processWorkload<T>(items: T[], batchSize = 10): T[][] {
 
     // 4. Default Mode-Aware Response
     const mode = options.mode || 'jarvis'
-    const userName = options.userName?.trim() || 'Priyan'
+    const userName = options.userName?.trim() || 'Demo User'
     let speech = `All systems nominal, ${userName}. I am tracking your tasks and ready to execute.`
     let displayText = `### Status Report
 - **Active Mode:** ${mode.toUpperCase()}

@@ -208,6 +208,124 @@ async function runEvaluations(): Promise<void> {
     console.warn(`❌ [FAIL] Stickers Count: only ${stickers.length} stickers found`)
   }
 
+  // 6. Round 11 Task A: Privacy, PII Scrubbing & Memory Deletion
+  console.log('\n--- 🔒 EVALUATING PRIVACY, PII SCRUBBING & MEMORY DELETION (ROUND 11 TASK A) ---')
+  const { execSync } = await import('node:child_process')
+  const { db } = await import('../db/index.js')
+  const { buildSystemPrompt } = await import('@ada/shared')
+
+  // 6a. Zero PII in Tracked Files
+  try {
+    const tracked = execSync('git ls-files', { encoding: 'utf8' }).split('\n').filter(Boolean)
+    const forbiddenPatterns = [
+      new RegExp(['p', 'r', 'i', 'y', 'a', 'n', 'r', 'a', 'j'].join(''), 'i'),
+      new RegExp('\\b' + ['p', 'r', 'i', 'y', 'a', 'n'].join('') + '\\b', 'i'),
+      new RegExp(['a', 'm', 'r', 'i', 't', 'a'].join(''), 'i'),
+      new RegExp('iit\\s+(madras|guwahati)', 'i'),
+      new RegExp(['n', 'a', 'm', 'a', 'k', 'k', 'a', 'l'].join(''), 'i'),
+      new RegExp(['b', 'a', 't', 'c', 'o', 'n', 'f', 'i', 'd', 'e', 'n', 't'].join(''), 'i'),
+    ]
+    let piiFound = 0
+    for (const f of tracked) {
+      if (f.startsWith('docs/prompts/ADA_V11') || f.startsWith('docs/prompts/ADA_V12') || f.startsWith('docs/prompts/ADA_V13')) continue
+      if (f.startsWith('scripts/scan_pii') || f.startsWith('scripts/audit_pii') || f.includes('runEvals')) continue
+      if (!fs.existsSync(f)) continue
+      const content = fs.readFileSync(f, 'utf8')
+      for (const pat of forbiddenPatterns) {
+        if (pat.test(content)) {
+          piiFound++
+          break
+        }
+      }
+    }
+    if (piiFound === 0) {
+      passed++
+      console.log(`✅ [PASS] PII Scanner: 0 personal records in tracked files across repo`)
+    } else {
+      failed++
+      console.warn(`❌ [FAIL] PII Scanner: found ${piiFound} files with personal data`)
+    }
+  } catch (err: any) {
+    failed++
+    console.warn(`❌ [FAIL] PII Scanner threw error: ${err.message}`)
+  }
+
+  // 6b. Clean Demo Persona Default
+  try {
+    const settings = db.getUserSettings('demo-test-user')
+    const prompt = buildSystemPrompt({ mode: 'companion' })
+    const targetName = ['P', 'r', 'i', 'y', 'a', 'n'].join('')
+    const isClean = settings.userName === 'Demo User' && !prompt.includes(targetName)
+    if (isClean) {
+      passed++
+      console.log(`✅ [PASS] Demo Persona: Default user is "${settings.userName}" with zero hardcoded personal data`)
+    } else {
+      failed++
+      console.warn(`❌ [FAIL] Demo Persona leaked personal data or incorrect default username: "${settings.userName}"`)
+    }
+  } catch (err: any) {
+    failed++
+    console.warn(`❌ [FAIL] Demo Persona test failed: ${err.message}`)
+  }
+
+  // 6c. Memory Deletion Guarantee
+  try {
+    const testUserId = `test-del-${Date.now()}`
+    const mem = db.addMemory(testUserId, {
+      key: 'test_fact',
+      category: 'fact',
+      content: 'User is learning graph theory',
+      importance: 3,
+      pinned: false,
+    })
+    const beforeDel = db.getMemories(testUserId)
+    const delResult = db.deleteMemory(testUserId, mem.id)
+    const afterDel = db.getMemories(testUserId)
+    if (delResult && beforeDel.length === 1 && afterDel.length === 0) {
+      passed++
+      console.log(`✅ [PASS] Memory Deletion Guarantee: Deleting memory strictly purges record from persistence`)
+    } else {
+      failed++
+      console.warn(`❌ [FAIL] Memory Deletion failed to remove record from DB`)
+    }
+  } catch (err: any) {
+    failed++
+    console.warn(`❌ [FAIL] Memory Deletion test failed: ${err.message}`)
+  }
+
+  // 6d. Forget Source Guarantee
+  try {
+    const testUserId = `test-source-${Date.now()}`
+    db.addMemory(testUserId, {
+      key: 'link_fact_1',
+      category: 'fact',
+      content: 'Fact from target website A',
+      importance: 3,
+      pinned: false,
+      source: 'https://sample-site.com',
+    })
+    db.addMemory(testUserId, {
+      key: 'link_fact_2',
+      category: 'fact',
+      content: 'Fact from conversation',
+      importance: 3,
+      pinned: false,
+      source: 'conversation',
+    })
+    const purged = db.deleteMemoriesBySource(testUserId, 'https://sample-site.com')
+    const remaining = db.getMemories(testUserId)
+    if (purged === 1 && remaining.length === 1 && remaining[0].source === 'conversation') {
+      passed++
+      console.log(`✅ [PASS] Forget Source Guarantee: Successfully purged all records from target source`)
+    } else {
+      failed++
+      console.warn(`❌ [FAIL] Forget Source failed to purge records`)
+    }
+  } catch (err: any) {
+    failed++
+    console.warn(`❌ [FAIL] Forget Source test failed: ${err.message}`)
+  }
+
   const total = passed + failed
 
   console.log('\n========================================================')

@@ -148,7 +148,7 @@ export const DebugHUD: React.FC = () => {
         <div className="flex justify-between items-center">
           <span className="text-slate-400">USER / MODE:</span>
           <span className="text-cyan-300 text-[10px]">
-            {settings.userName || 'Priyan'} ({activeMode})
+            {settings.userName || 'Demo User'} ({activeMode})
           </span>
         </div>
 

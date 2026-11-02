@@ -3,7 +3,7 @@
     "id": "morning_chic",
     "name": "Morning Cashmere Knit & Satin Skirt",
     "category": "casual",
-    "description": "Soft cream and blush cashmere morning knit sweater with an elegant flowing satin midi skirt, perfect for sipping morning chai with Priyan.",
+    "description": "Soft cream and blush cashmere morning knit sweater with an elegant flowing satin midi skirt, perfect for sipping morning chai.",
     "dressColor": "#E8D8C8",
     "accentColor": "#C9ADA7",
     "hairColor": "#15151A",
@@ -15,7 +15,7 @@
       "casual",
       "cozy"
     ],
-    "voiceComment": "Good morning, Priyan! Slipped into this cozy morning cashmere knit. Ready for fresh chai and a productive day together?"
+    "voiceComment": "Good morning! Slipped into this cozy morning cashmere knit. Ready for fresh chai and a productive day together?"
   },
   {
     "id": "crimson_turtleneck",

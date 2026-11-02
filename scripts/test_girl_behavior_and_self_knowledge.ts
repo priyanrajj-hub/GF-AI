@@ -1,7 +1,7 @@
 import fetch from 'node-fetch'
 
 async function testAll() {
-  console.log('🚀 Running Comprehensive Test for Ada Self-Knowledge, Girl Behavior & Priyan Life Engine...')
+  console.log('🚀 Running Comprehensive Test for Ada Self-Knowledge, Girl Behavior & User Life Engine...')
   const baseUrl = 'http://localhost:3001'
 
   // 1. Test Self-Profile API
@@ -26,15 +26,15 @@ async function testAll() {
     console.error('❌ [Girl Activities API Failed]:', e.message)
   }
 
-  // 3. Test Priyan Life Profile API
+  // 3. Test User Life Profile API
   try {
-    const res = await fetch(`${baseUrl}/api/priyan/life-profile`)
+    const res = await fetch(`${baseUrl}/api/user/life-profile`)
     const data: any = await res.json()
-    console.log(`✅ [Priyan Life Profile API]: Name: ${data.bio.name} (${data.bio.title})`)
+    console.log(`✅ [User Life Profile API]: Name: ${data.bio.name} (${data.bio.title})`)
     console.log(`   Missions: ${data.bio.coreMissions[0]}`)
     console.log(`   Trading: ${data.bio.tradingAndFinances[0]}`)
   } catch (e: any) {
-    console.error('❌ [Priyan Life Profile API Failed]:', e.message)
+    console.error('❌ [User Life Profile API Failed]:', e.message)
   }
 
   // 4. Test Chat: Self-Knowledge Question
@@ -52,19 +52,19 @@ async function testAll() {
     console.error('❌ [Chat Self-Knowledge Failed]:', e.message)
   }
 
-  // 5. Test Chat: Priyan's World & Life Memory Question
+  // 5. Test Chat: User's World & Life Memory Question
   try {
     const res = await fetch(`${baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'What do you know about me, Priyan? Tell me about my world, my work, and our interactions!' }),
+      body: JSON.stringify({ message: 'What do you know about me, User? Tell me about my world, my work, and our interactions!' }),
     })
     const data: any = await res.json()
-    console.log(`✅ [Chat Priyan World & Life Response]:`)
+    console.log(`✅ [Chat User World & Life Response]:`)
     console.log(`   Speech: "${data.reply?.speech}"`)
     console.log(`   Display: "${data.reply?.display_text?.slice(0, 250)}..."`)
   } catch (e: any) {
-    console.error('❌ [Chat Priyan World Failed]:', e.message)
+    console.error('❌ [Chat User World Failed]:', e.message)
   }
 
   // 6. Test Chat: Real Girl Daily Routine Question

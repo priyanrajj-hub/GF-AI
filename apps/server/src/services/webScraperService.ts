@@ -175,6 +175,6 @@ ${tableSection}
 ### MAIN EXTRACTED CONTENT:
 ${page.mainContent}
 
-[SCRAPER MANDATE: Analyze, synthesize, and extract all key data, numbers, insights, and answers requested by Priyan directly from this website content. Address him warmly and clearly!]`
+[SCRAPER MANDATE: Analyze, synthesize, and extract all key data, numbers, insights, and answers requested by the user directly from this website content. Address him warmly and clearly!]`
   }
 }

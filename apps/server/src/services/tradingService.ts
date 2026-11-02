@@ -390,8 +390,8 @@ ${formatted}
 
 CRITICAL MANDATORY INSTRUCTIONS FOR ADA:
 1. Present these live stock setups with exact numbers (Current Price, Entry Zone, Target 1, Target 2, Stop-Loss).
-2. DO NOT tell Priyan to visit an external website or broker tracker.
-3. In speech: Deliver a warm, confident girlfriend summary highlighting the top 1-2 picks, their targets, and remind Priyan to trade with strict risk management!
+2. DO NOT tell the user to visit an external website or broker tracker.
+3. In speech: Deliver a warm, confident girlfriend summary highlighting the top 1-2 picks, their targets, and remind them to trade with strict risk management!
 4. Include a clean markdown summary table or bullet breakdown in display_text.`
   }
 }

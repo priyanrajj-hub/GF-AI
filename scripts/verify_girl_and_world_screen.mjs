@@ -3,10 +3,10 @@ import fs from 'fs';
 import path from 'path';
 
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const ARTIFACT_DIR = 'C:\\Users\\PRIYANRAJ J\\.gemini\\antigravity\\brain\\9dddffaa-28a4-45f4-9190-18cc1e11e741';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || path.join(process.env.USERPROFILE || '', '.gemini', 'antigravity', 'brain', '9dddffaa-28a4-45f4-9190-18cc1e11e741');
 
 async function run() {
-  console.log('🚀 Launching browser for Girl Behavior & Priyan World verification...');
+  console.log('🚀 Launching browser for Girl Behavior & User World verification...');
   const browser = await chromium.launch({
     executablePath: CHROME_PATH,
     headless: true,

@@ -161,8 +161,8 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
   userId: 'default-user-1',
   userName:
     typeof window !== 'undefined'
-      ? localStorage.getItem('ada_user_name') || 'Priyan'
-      : 'Priyan',
+      ? localStorage.getItem('ada_user_name') || 'Demo User'
+      : 'Demo User',
   language: 'auto',
   mode: 'companion',
   sliders: {
