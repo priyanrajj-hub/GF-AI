@@ -11,6 +11,7 @@ import {
   type StructuredReply,
   MODEL_REGISTRY,
   PolicyEngine,
+  MemeService,
 } from '@ada/shared'
 import { db } from './db/index.js'
 import { authMiddleware, type AuthenticatedRequest } from './middleware/auth.js'
@@ -98,6 +99,13 @@ app.get('/api/health', (req, res) => {
 app.get('/api/internet/status', async (_req, res) => {
   const status = await WebSearchService.checkConnectivity()
   res.json(status)
+})
+
+// Visual Memes & Online Templates Catalog
+app.get('/api/memes', (_req, res) => {
+  res.json({
+    memes: MemeService.getAllMemes(),
+  })
 })
 
 // Real-Time Web Search Endpoint
@@ -347,6 +355,78 @@ app.post('/api/chat', async (req, res) => {
   // 1b. Real-Time Live Intelligence Engine: Web Scraper, Mutual Funds, Hedging, News, Stocks & Search
   let liveInternetContext: string | undefined
   const cleanMsg = message.toLowerCase().trim()
+
+  // 0. Meme Engine Intent: Live Visual Developer Memes & Stickers
+  const isMemeQuery =
+    /meme|funny dev|joke image|send meme|give me a meme|share a meme|meme me|show me a funny|make a meme/i.test(cleanMsg)
+
+  if (isMemeQuery) {
+    console.log(`🎭 [Meme Engine] Delivering real online developer meme for: "${message}"`)
+    let matchedMeme = MemeService.getRandomMeme()
+
+    // Contextual matching if specific template or topic requested
+    const all = MemeService.getAllMemes()
+    if (cleanMsg.includes('drake') || cleanMsg.includes('deploy') || cleanMsg.includes('git')) {
+      matchedMeme = all.find((m) => m.templateId === 'drake') || matchedMeme
+    } else if (cleanMsg.includes('framework') || cleanMsg.includes('distract') || cleanMsg.includes('new tech')) {
+      matchedMeme = all.find((m) => m.templateId === 'db') || matchedMeme
+    } else if (cleanMsg.includes('fine') || cleanMsg.includes('fire') || cleanMsg.includes('burn') || cleanMsg.includes('crash')) {
+      matchedMeme = all.find((m) => m.templateId === 'fine') || matchedMeme
+    } else if (cleanMsg.includes('pooh') || cleanMsg.includes('debug') || cleanMsg.includes('console.log')) {
+      matchedMeme = all.find((m) => m.templateId === 'pooh') || matchedMeme
+    } else if (cleanMsg.includes('roll') || cleanMsg.includes('safe') || cleanMsg.includes('smart') || cleanMsg.includes('brain')) {
+      matchedMeme = all.find((m) => m.templateId === 'rollsafe') || matchedMeme
+    } else if (cleanMsg.includes('fry') || cleanMsg.includes('test') || cleanMsg.includes('suspicio')) {
+      matchedMeme = all.find((m) => m.templateId === 'fry') || matchedMeme
+    } else if (cleanMsg.includes('typescript') || cleanMsg.includes('mind') || cleanMsg.includes('javascript') || cleanMsg.includes('ts')) {
+      matchedMeme = all.find((m) => m.templateId === 'cmm') || matchedMeme
+    } else if (cleanMsg.includes('doge') || cleanMsg.includes('ram') || cleanMsg.includes('memory') || cleanMsg.includes('moon')) {
+      matchedMeme = all.find((m) => m.templateId === 'doge') || matchedMeme
+    } else if (cleanMsg.includes('machine') || cleanMsg.includes('works on my') || cleanMsg.includes('spongebob')) {
+      matchedMeme = all.find((m) => m.templateId === 'spongebob') || matchedMeme
+    } else if (cleanMsg.includes('push') || cleanMsg.includes('debt') || cleanMsg.includes('patrick')) {
+      matchedMeme = all.find((m) => m.templateId === 'patrick') || matchedMeme
+    }
+
+    const reply: StructuredReply = {
+      speech: `Haha, check this one out! ${matchedMeme.title}. ${matchedMeme.punchline}`,
+      display_text: `Here's a classic developer meme for you! 😂\n\n**${matchedMeme.title}**\n*${matchedMeme.punchline}*`,
+      emotion: 'playful',
+      intensity: 0.9,
+      gesture: 'laugh',
+      voice_style: { rate: 1.05, pitch: 1.05, style: 'playful' },
+      meme: {
+        template: matchedMeme.templateId,
+        topText: matchedMeme.topText,
+        bottomText: matchedMeme.bottomText,
+        imageUrl: matchedMeme.imageUrl,
+        title: matchedMeme.title,
+        punchline: matchedMeme.punchline,
+      },
+    }
+
+    const assistantMsgObj: ChatMessage = {
+      id: `msg-${Date.now()}-assistant`,
+      role: 'assistant',
+      content: reply.display_text,
+      speech: reply.speech,
+      emotion: reply.emotion,
+      gesture: reply.gesture,
+      meme: reply.meme,
+      timestamp: Date.now(),
+    }
+    db.addMessage(userId, assistantMsgObj)
+
+    if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream')
+      res.setHeader('Cache-Control', 'no-cache')
+      res.setHeader('Connection', 'keep-alive')
+      res.write(`data: ${JSON.stringify({ complete: true, reply })}\n\n`)
+      return res.end()
+    } else {
+      return res.json({ reply })
+    }
+  }
 
   // A. Universal Website Scraper Intent (e.g. "https://...", "read bbc.com", "collect data from...")
   const scrapeIntent = WebScraperService.detectScrapeIntent(message)
@@ -724,6 +804,8 @@ app.post('/api/chat', async (req, res) => {
       speech: reply.speech,
       emotion: reply.emotion,
       gesture: reply.gesture,
+      meme: reply.meme,
+      sticker: reply.sticker,
       timestamp: Date.now(),
     }
     db.addMessage(userId, assistantMsgObj)

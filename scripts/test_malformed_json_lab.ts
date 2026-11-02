@@ -41,6 +41,11 @@ const testCases = [
     payload: `Good morning Operator! Ready to tackle today's engineering roadmap?`,
     expectedText: "Good morning Alex! Ready to tackle today's engineering roadmap?",
   },
+  {
+    name: 'Literal text\\n prefix and escaped newlines (Round 11 meme screenshot defect)',
+    payload: `text\\nThere are two hard things in Computer Science:\\n1. Cache invalidation\\n2. Naming things\\n3. Off-by-one errors\\n4. Explaining to non-tech people why code didn't compile on the first try.\\n`,
+    expectedText: "There are two hard things in Computer Science:\n1. Cache invalidation\n2. Naming things\n3. Off-by-one errors\n4. Explaining to non-tech people why code didn't compile on the first try.",
+  },
 ];
 
 let passed = 0;

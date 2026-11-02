@@ -31,6 +31,9 @@ export interface ParsedReplyCues {
     template: string
     topText?: string
     bottomText?: string
+    imageUrl?: string
+    title?: string
+    punchline?: string
   }
   gif_query?: string
   reactions?: string[]
@@ -306,6 +309,15 @@ export function sanitizeBubbleText(text: string, options?: { userName?: string }
 
   let cleaned = text.trim()
 
+  // 1. Strip raw "text\n", "text:\n", "text\\n", or "text: " prefixes from LLM parts
+  cleaned = cleaned.replace(/^text(?::|\s|\\n|\n|\r)+/i, '')
+
+  // 2. Unescape escaped literal newlines, carriage returns, and tabs
+  cleaned = cleaned.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\\t/g, '\t')
+
+  // 3. Strip any leftover "text\n" after unescaping
+  cleaned = cleaned.replace(/^text(?::|\s|\n|\r)+/i, '')
+
   // If text matches the forbidden UI guardrail regex, extract the human-readable payload
   if (UI_GUARDRAIL_REGEX.test(cleaned)) {
     // 1. Try to extract "display_text": "..."
@@ -338,6 +350,9 @@ export function sanitizeBubbleText(text: string, options?: { userName?: string }
   // Strip leading/trailing raw braces or brackets if still present
   cleaned = cleaned.replace(/^\s*[{}\[\]]+\s*/, '').replace(/\s*[{}\[\]]+\s*$/, '').trim()
 
+  // Clean any leading "text\n" if it was inside the braces
+  cleaned = cleaned.replace(/^text(?::|\s|\n|\r)+/i, '')
+
   // Replace "Operator" / "Partner" with user's name
   const userName = options?.userName?.trim() || 'Demo User'
   cleaned = cleaned.replace(/\bOperator\b/gi, userName)
@@ -353,7 +368,7 @@ export function sanitizeBubbleText(text: string, options?: { userName?: string }
       .trim()
   }
 
-  return cleaned
+  return cleaned.trim()
 }
 
 /**
