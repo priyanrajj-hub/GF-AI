@@ -119,22 +119,34 @@ app.get('/api/memes', (_req, res) => {
 async function searchRealSongTrack(query: string) {
   try {
     const clean = query
-      .replace(/^(?:ada,?\s*)?(?:please\s*)?(?:play|sing)\s+(?:a\s+)?(?:dancing\s+song|song|for\s+me)?/i, '')
-      .replace(/(?:and\s+dance|to\s+the\s+rhythm|track|music)/gi, '')
+      .replace(/^(?:ada|mira|atlas),?\s*/i, '')
+      .replace(/^(?:please\s*)?(?:play|sing|put on|listen to)\s+/i, '')
+      .replace(/(?:and\s+dance|to\s+the\s+rhythm|for\s+me)/gi, '')
       .trim() || 'dance pop'
-    const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(clean)}&entity=song&limit=1`
-    const res = await fetch(itunesUrl, { signal: AbortSignal.timeout(3500) })
-    if (res.ok) {
-      const data = (await res.json()) as any
-      if (data.results && data.results.length > 0) {
-        const item = data.results[0]
-        return {
-          title: item.trackName as string,
-          artist: item.artistName as string,
-          audioUrl: item.previewUrl as string,
-          artworkUrl: item.artworkUrl100 ? (item.artworkUrl100 as string).replace('100x100bb', '600x600bb') : undefined,
-          duration: Math.round(item.trackTimeMillis / 1000),
-        }
+    
+    // 1. Primary search with clean query
+    let itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(clean)}&entity=song&limit=1`
+    let res = await fetch(itunesUrl, { signal: AbortSignal.timeout(4000) })
+    let data = res.ok ? ((await res.json()) as any) : null
+
+    // 2. Fallback search without filler words if no direct hit
+    if (!data || !data.results || data.results.length === 0) {
+      const stripped = clean.replace(/theme|ost|anime|soundtrack|song|music|from/gi, ' ').replace(/\s+/g, ' ').trim()
+      if (stripped && stripped !== clean) {
+        itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(stripped)}&entity=song&limit=1`
+        res = await fetch(itunesUrl, { signal: AbortSignal.timeout(4000) })
+        data = res.ok ? ((await res.json()) as any) : null
+      }
+    }
+
+    if (data && data.results && data.results.length > 0) {
+      const item = data.results[0]
+      return {
+        title: item.trackName as string,
+        artist: item.artistName as string,
+        audioUrl: item.previewUrl as string,
+        artworkUrl: item.artworkUrl100 ? (item.artworkUrl100 as string).replace('100x100bb', '600x600bb') : undefined,
+        duration: Math.round(item.trackTimeMillis / 1000),
       }
     }
   } catch (e) {
@@ -472,13 +484,15 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
-  // 0b. Music, Singing & Dancing Song Intent (Plays ANY song requested by the user!)
+  // 0b. Music, Singing & Dancing Song Intent (Plays ANY song, OST, theme requested by the user!)
   const isSongDanceQuery =
-    /play (?:a )?(?:dancing|dance) song|sing (?:a )?song|sing me a song|let'?s dance|dance for me|sing ([a-z0-9\s'-]+)|play ([a-z0-9\s'-]+) (?:song|music|track)/i.test(
-      cleanMsg
-    ) ||
-    /^(?:sing|singing)\s+(.+)$/i.test(cleanMsg) ||
-    /^(?:play\s+the\s+song|play\s+song)\s+(.+)$/i.test(cleanMsg)
+    !/rock[- ]paper[- ]scissors|play (?:a )?game|play riddle|play trivia/i.test(cleanMsg) &&
+    (/^(?:ada,?\s*)?(?:mira,?\s*)?(?:atlas,?\s*)?(?:please\s*)?(?:play|sing|put on|listen to)\s+(.+)$/i.test(cleanMsg) ||
+      /play (?:a )?(?:dancing|dance) song|sing (?:a )?song|sing me a song|let'?s dance|dance for me|theme from|soundtrack from|ost from/i.test(
+        cleanMsg
+      ) ||
+      /^(?:sing|singing)\s+(.+)$/i.test(cleanMsg) ||
+      /^(?:play\s+the\s+song|play\s+song|play\s+theme)\s+(.+)$/i.test(cleanMsg))
 
   if (isSongDanceQuery) {
     console.log(`🎵 [Music Engine] Resolving requested song & performance for: "${message}"`)
@@ -532,12 +546,22 @@ app.post('/api/chat', async (req, res) => {
 
     const artistStr = song.artist ? ` *(by ${song.artist})*` : ''
     const reply: StructuredReply = {
-      speech: `Turn up the volume, ${settings.userName || 'sweetheart'}! Playing original studio song: ${song.title}${song.artist ? ` by ${song.artist}` : ''}. Watch the rhythm and dance along with me!`,
-      display_text: `🎶 **Now Playing & Singing: ${song.title}**${artistStr}\n\n*Synchronized ${song.danceAction} choreography, ${song.bpm} BPM rhythm, authentic vocal delivery, and active mouth lip-sync active!* ✨`,
+      speech: `Turn up the volume, ${settings.userName || 'sweetheart'}! Playing ${song.title}${song.artist ? ` by ${song.artist}` : ''}. Watch the rhythm and feel the vibe!`,
+      display_text: `🎶 **Now Playing: ${song.title}**${artistStr}\n\n*Synchronized ${song.danceAction} choreography, ${song.bpm} BPM rhythm, original audio, and active mouth lip-sync active!* ✨`,
       emotion: 'excited',
       intensity: 1.0,
       gesture: (song.danceAction as any) || 'celebrate',
       voice_style: { rate: 1.1, pitch: 1.15, style: 'cheerful' },
+      musicTrack: {
+        id: song.id,
+        title: song.title,
+        artist: song.artist,
+        audioUrl: song.audioUrl,
+        artworkUrl: song.artworkUrl,
+        danceAction: song.danceAction,
+        bpm: song.bpm,
+        duration: song.duration,
+      },
       actions: [
         {
           name: 'sing',
