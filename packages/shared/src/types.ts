@@ -34,6 +34,21 @@ export type PersonalityMode =
   | 'playful'
   | 'companion'
 
+export type CompanionCharacter = 'ada' | 'mira' | 'atlas'
+
+export interface CharacterProfile {
+  id: CompanionCharacter
+  name: string
+  title: string
+  role: string
+  tagline: string
+  skinId: string
+  defaultMode: PersonalityMode
+  voiceStyle: string
+  avatarDescription: string
+  systemPromptAddendum: string
+}
+
 export interface PersonalitySliders {
   humor: number // 0-100
   warmth: number // 0-100

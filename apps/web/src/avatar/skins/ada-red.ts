@@ -365,6 +365,189 @@ export const CrimsonJacketSkin: AvatarSkin = {
   },
 }
 
+/**
+ * Mira / Yor Forger-Inspired Off-The-Shoulder Crimson Red Sweater Dress Skin
+ * - Off-the-shoulder crimson red chunky ribbed sweater dress (#BA263B)
+ * - Deep ruby red eye tint (#C4273C)
+ * - Glossy midnight-raven hair with headband accent (#0C0D12)
+ * - Jet black thigh-high stockings (#141416)
+ * - Light cream/beige ankle boots (#D9CFC4)
+ */
+export const YorCrimsonSweaterSkin: AvatarSkin = {
+  id: 'yor-crimson-sweater',
+  name: 'Mira (Yor Style • Off-Shoulder Crimson Sweater)',
+  description: 'Signature off-the-shoulder red knit sweater dress, thigh-high stockings, headband, and ruby eyes.',
+  apply: (vrm: VRM) => {
+    AdaRedSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      // Allow hair side-strands & headband for Yor styling
+      if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
+        obj.visible = true
+        obj.scale.set(1.0, 1.0, 1.0)
+      }
+
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+
+          // Off-shoulder chunky crimson sweater dress
+          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+            if (mat.color) mat.color.set('#BA263B') // Yor Crimson Red
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#5E0E1B')
+            if ('shadeColor' in mat && mat.shadeColor) mat.shadeColor.set('#5E0E1B')
+            if (mat.roughness !== undefined) mat.roughness = 0.72 // soft chunky knit wool
+            if (mat.metalness !== undefined) mat.metalness = 0.05
+          }
+
+          // Glossy midnight black hair
+          if (/hair/i.test(matName)) {
+            if (mat.color) mat.color.set('#0C0D12')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#050508')
+            if (mat.roughness !== undefined) mat.roughness = 0.22 // silky sheen
+          }
+
+          // Golden/Pearl Headband accent
+          if (/hair_wear|ribbon|accessory/i.test(matName)) {
+            mat.visible = true
+            mat.opacity = 1.0
+            mat.transparent = false
+            if (mat.color) mat.color.set('#D4AF37') // Antique Gold / Pearl
+            if (mat.metalness !== undefined) mat.metalness = 0.65
+            if (mat.roughness !== undefined) mat.roughness = 0.25
+          }
+
+          // Thigh-high opaque black stockings
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            mat.visible = true
+            mat.opacity = 0.95
+            mat.transparent = true
+            if (mat.color) mat.color.set('#141418')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0A0A0C')
+            if (mat.roughness !== undefined) mat.roughness = 0.5
+          }
+
+          // Ruby/Crimson eyes
+          if (/eye|iris/i.test(matName)) {
+            if (mat.color) mat.color.set('#C4273C')
+            if (mat.emissive) mat.emissive.set('#4A0812')
+          }
+        })
+      }
+    })
+  },
+}
+
+/**
+ * Attaches glowing holographic Arc Reactor chest emblem for Atlas / Stark Tech
+ */
+function attachArcReactorEmblem(vrm: VRM): void {
+  const chest =
+    vrm.humanoid?.getNormalizedBoneNode('chest') ||
+    vrm.humanoid?.getNormalizedBoneNode('upperChest')
+  if (!chest) return
+
+  let emblem = chest.getObjectByName('__STARK_ARC_REACTOR__')
+  if (!emblem) {
+    const group = new THREE.Group()
+    group.name = '__STARK_ARC_REACTOR__'
+
+    // Outer titanium ring
+    const ringGeo = new THREE.TorusGeometry(0.045, 0.006, 16, 32)
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: 0x222630,
+      metalness: 0.9,
+      roughness: 0.15,
+    })
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat)
+    group.add(ringMesh)
+
+    // Inner glowing core
+    const coreGeo = new THREE.CircleGeometry(0.038, 32)
+    const coreMat = new THREE.MeshBasicMaterial({
+      color: 0x00f3ff,
+      transparent: true,
+      opacity: 0.92,
+    })
+    const coreMesh = new THREE.Mesh(coreGeo, coreMat)
+    coreMesh.position.z = 0.003
+    group.add(coreMesh)
+
+    // Triangular power nodes
+    const triangleGeo = new THREE.RingGeometry(0.015, 0.03, 3)
+    const triangleMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+    })
+    const triangleMesh = new THREE.Mesh(triangleGeo, triangleMat)
+    triangleMesh.position.z = 0.004
+    group.add(triangleMesh)
+
+    group.position.set(0, 0.06, 0.13)
+    group.rotation.x = 0.1
+    chest.add(group)
+  }
+}
+
+/**
+ * Atlas / Tony Stark-Inspired High-Tech Market Analyst Skin
+ * - Charcoal executive tailored blazer over carbon tech tee
+ * - Glowing Cyan Arc Reactor chest badge (#00F3FF, emissive glow)
+ * - Amber/Cyan gradient tech optics & sunglasses
+ * - Precision metallic watch & cuff accents
+ */
+export const StarkArcTraderSkin: AvatarSkin = {
+  id: 'stark-arc-trader',
+  name: 'Atlas (Stark Tech • Arc Reactor & Charcoal Suit)',
+  description: 'Charcoal executive blazer, glowing cyan arc reactor core, and tech optics.',
+  apply: (vrm: VRM) => {
+    AdaRedSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+
+          // Charcoal executive blazer & carbon tech shirt
+          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+            if (mat.color) mat.color.set('#1A1D24') // Charcoal tailored suit
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0D0F14')
+            if (mat.roughness !== undefined) mat.roughness = 0.38
+            if (mat.metalness !== undefined) mat.metalness = 0.22
+          }
+
+          // Dark textured espresso hair
+          if (/hair/i.test(matName)) {
+            if (mat.color) mat.color.set('#141318')
+            if (mat.roughness !== undefined) mat.roughness = 0.35
+          }
+
+          // High-tech accessories & metallic buckles
+          if (/body_wear|glove|strap/i.test(matName)) {
+            if (mat.color) mat.color.set('#0E1015')
+            if (mat.metalness !== undefined) mat.metalness = 0.55 // titanium tech finish
+          }
+
+          // Trousers
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            mat.visible = true
+            mat.opacity = 1.0
+            mat.transparent = false
+            if (mat.color) mat.color.set('#16181F') // Charcoal trousers
+          }
+        })
+      }
+    })
+
+    attachArcReactorEmblem(vrm)
+  },
+}
+
 export const AVATAR_SKINS: Record<string, AvatarSkin> = {
   'ada-red': AdaRedSkin,
   'crimson_turtleneck': CrimsonTurtleneckSkin,
@@ -372,6 +555,8 @@ export const AVATAR_SKINS: Record<string, AvatarSkin> = {
   'crimson_jacket': CrimsonJacketSkin,
   'cozy-night': CozyNightSkin,
   'original-pastel': OriginalPastelSkin,
+  'yor-crimson-sweater': YorCrimsonSweaterSkin,
+  'stark-arc-trader': StarkArcTraderSkin,
 }
 
 /**

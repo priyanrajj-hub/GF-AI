@@ -3,6 +3,7 @@ import {
   type ChatMessage,
   type PersonalityMode,
   type PersonalitySliders,
+  type CompanionCharacter,
 } from '@ada/shared'
 import { db } from '../db/index.js'
 import { AdaSelfKnowledgeService } from './adaSelfKnowledgeService.js'
@@ -54,12 +55,13 @@ export class ContextBuilder {
     sliders: PersonalitySliders
     language?: string
     liveInternetContext?: string
+    character?: CompanionCharacter
   }): {
     systemPrompt: string
     trimmedHistory: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>
     estimatedPromptTokens: number
   } {
-    const { userId, history, userMessage, mode, sliders, language = 'en', liveInternetContext } = options
+    const { userId, history, userMessage, mode, sliders, language = 'en', liveInternetContext, character = 'ada' } = options
 
     const settings = db.getUserSettings(userId)
     const memories = settings.memoryConsent ? db.getMemories(userId).map((m) => m.content) : []
@@ -81,6 +83,7 @@ export class ContextBuilder {
     // 1. Build Base System Persona
     const systemPrompt = buildSystemPrompt({
       mode,
+      character,
       sliders,
       userName: settings.userName,
       memories,

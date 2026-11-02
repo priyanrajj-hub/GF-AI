@@ -45,6 +45,7 @@ export const StageDrawer: React.FC = () => {
   >('dance')
 
   const [karaokeLine, setKaraokeLine] = useState<string>('')
+  const [customSongQuery, setCustomSongQuery] = useState<string>('')
 
   if (!showStageDrawer) return null
 
@@ -59,8 +60,23 @@ export const StageDrawer: React.FC = () => {
   const handlePlaySong = (songId: string) => {
     const song = songEngine.playSong(songId)
     setActiveSong(song)
-    performAction('dance_slow_sway', { duration: 60, emotion: 'singing' as any, fx: ['music_notes', 'sparkles'] })
+    const dance = song.danceAction || (song.bpm >= 120 ? 'dance_cute_idol' : 'dance_pop_groove')
+    performAction(dance, { duration: song.duration + 2, emotion: 'singing' as any, fx: ['music_notes', 'sparkles'] })
     setKaraokeLine(song.lyrics[0]?.text || '')
+  }
+
+  const handleSingCustomSong = (query: string) => {
+    const song = songEngine.generateSongFromQuery(query)
+    ORIGINAL_SONGS.unshift(song)
+    const started = songEngine.playSong(song.id)
+    setActiveSong(started)
+    performAction(started.danceAction || 'dance_cute_idol', {
+      duration: started.duration + 2,
+      emotion: 'singing' as any,
+      fx: ['music_notes', 'sparkles'],
+    })
+    setKaraokeLine(started.lyrics[0]?.text || '')
+    setCustomSongQuery('')
   }
 
   const handleStopAll = () => {
@@ -116,6 +132,7 @@ export const StageDrawer: React.FC = () => {
           return (
             <button
               key={t.id}
+              data-tab={t.id}
               onClick={() => setActiveTab(t.id as any)}
               className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-all ${
                 isActive
@@ -179,9 +196,58 @@ export const StageDrawer: React.FC = () => {
 
         {/* 2. SING TAB */}
         {activeTab === 'sing' && (
-          <div className="space-y-2.5">
+          <div className="space-y-3">
+            {/* Live Internet Song Search & Sing Bar */}
+            <div className="p-3 rounded-xl border border-cyan-500/30 bg-cyan-950/20 space-y-2">
+              <div className="text-xs font-mono font-bold text-cyan-200 flex items-center gap-1.5">
+                <span>🌐</span>
+                <span>Sing Any Song (Live Internet Music)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={customSongQuery}
+                  onChange={(e) => setCustomSongQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && customSongQuery.trim()) {
+                      handleSingCustomSong(customSongQuery.trim())
+                    }
+                  }}
+                  placeholder="Enter any song (e.g. Shape of You, Believer, Apt)..."
+                  className="flex-1 bg-slate-950/80 border border-cyan-500/30 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-cyan-400"
+                />
+                <button
+                  onClick={() => customSongQuery.trim() && handleSingCustomSong(customSongQuery.trim())}
+                  className="px-3 py-1.5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold font-mono text-xs rounded-lg cursor-pointer transition-colors shadow-lg"
+                >
+                  SING
+                </button>
+              </div>
+              {/* Quick Song / Dance Presets */}
+              <div className="flex items-center gap-1.5 overflow-x-auto text-[10px] font-mono scrollbar-none pt-0.5">
+                <button
+                  onClick={() => handlePlaySong('song-idol-spark')}
+                  className="whitespace-nowrap px-2 py-0.5 rounded-full bg-pink-950/60 border border-pink-400/40 text-pink-300 hover:bg-pink-900/60 transition-colors cursor-pointer"
+                >
+                  💃 Play Dancing Song (128 BPM)
+                </button>
+                <button
+                  onClick={() => handlePlaySong('song-dance-groove')}
+                  className="whitespace-nowrap px-2 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-400/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer"
+                >
+                  🎧 Club Dance (124 BPM)
+                </button>
+                <button
+                  onClick={() => handlePlaySong('song-desi-beats')}
+                  className="whitespace-nowrap px-2 py-0.5 rounded-full bg-amber-950/60 border border-amber-400/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer"
+                >
+                  ✨ Desi Swag Dance (130 BPM)
+                </button>
+              </div>
+            </div>
+
             <div className="text-[11px] text-slate-400 font-mono">
-              Ada writes original, copyright-safe lo-fi & anime songs with synced karaoke vocals:
+              Or pick an original song with synchronized karaoke vocals:
             </div>
             {ORIGINAL_SONGS.map((song) => (
               <div
@@ -200,6 +266,7 @@ export const StageDrawer: React.FC = () => {
                   </div>
                 </div>
                 <button
+                  data-testid={`sing-btn-${song.id}`}
                   onClick={() => handlePlaySong(song.id)}
                   className="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1 cursor-pointer transition-all shadow-md"
                 >

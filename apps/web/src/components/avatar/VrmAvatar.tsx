@@ -325,8 +325,17 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
       // E. Update Expression Engine (30+ expressions, natural blinking, lip-sync)
       if (expressionEngineRef.current) {
+        const isSinging =
+          (currentEmotion as string) === 'singing' ||
+          activeAction.includes('dance') ||
+          (typeof window !== 'undefined' && (window as any).__IS_SINGING__ === true)
+
+        expressionEngineRef.current.isSinging = isSinging
+        expressionEngineRef.current.singingBpm =
+          (typeof window !== 'undefined' && (window as any).__SONG_BPM__) || 120
+
         expressionEngineRef.current.setExpression(currentEmotion, emotionIntensity)
-        expressionEngineRef.current.setLipSync(avgAudio, systemState === 'speaking')
+        expressionEngineRef.current.setLipSync(avgAudio, systemState === 'speaking' || isSinging)
         expressionEngineRef.current.update(delta, time)
       }
 

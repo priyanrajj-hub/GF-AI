@@ -27,6 +27,8 @@ import { apiUrl } from '../../utils/api.js'
 
 export const TopBar: React.FC = () => {
   const {
+    activeCharacter,
+    setActiveCharacter,
     activeMode,
     setActiveMode,
     systemState,
@@ -112,6 +114,46 @@ export const TopBar: React.FC = () => {
           <span className="text-[10px] text-cyan-400/80 font-mono px-1 border border-cyan-400/20 rounded">
             v2.0 3D
           </span>
+        </div>
+
+        {/* Character Switcher: Ada (Coach) | Mira (Yor Style) | Atlas (Tony Stark) */}
+        <div className="flex items-center gap-1 p-1 rounded-2xl glass-panel border border-cyan-500/30">
+          <button
+            onClick={() => setActiveCharacter('ada')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-mono font-medium transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+              activeCharacter === 'ada'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow-[0_0_12px_rgba(0,243,255,0.4)]'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Ada: Code & Life Coach"
+          >
+            <span>👩‍💼</span>
+            <span className="hidden sm:inline">Ada</span>
+          </button>
+          <button
+            onClick={() => setActiveCharacter('mira')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-mono font-medium transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+              activeCharacter === 'mira'
+                ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                : 'text-slate-400 hover:text-rose-200'
+            }`}
+            title="Mira (Yor Style): Fun & Warm Companion"
+          >
+            <span>🌹</span>
+            <span className="hidden sm:inline">Mira (Yor)</span>
+          </button>
+          <button
+            onClick={() => setActiveCharacter('atlas')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-mono font-medium transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+              activeCharacter === 'atlas'
+                ? 'bg-gradient-to-r from-amber-600 to-cyan-600 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                : 'text-slate-400 hover:text-cyan-200'
+            }`}
+            title="Atlas (Tony Stark Style): Markets, Trading & Tech Vanguard"
+          >
+            <span>⚡</span>
+            <span className="hidden sm:inline">Atlas (Stark)</span>
+          </button>
         </div>
 
         {/* Persistent AI Disclosure Badge (CA SB 243 / NY Law) */}
