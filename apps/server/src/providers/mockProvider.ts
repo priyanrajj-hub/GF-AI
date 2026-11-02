@@ -79,6 +79,92 @@ Take a deep breath. Breathe in for 4 seconds... hold for 4... and exhale slowly.
       }
     }
 
+    // 2b. PURE TAMIL (தமிழ்) LANGUAGE GUARANTEE (100% Native Tamil Text & Speech)
+    const isTamilScript = /[\u0B80-\u0BFF]/.test(userMessage)
+    if (options.language === 'ta' || isTamilScript) {
+      if (lower.includes('mutual fund') || lower.includes('sip') || lower.includes('பண்ட்') || lower.includes('முதலீடு')) {
+        return {
+          speech: 'வணக்கம்! சிறந்த மியூச்சுவல் ஃபண்ட் மற்றும் சிப் முதலீட்டு விவரங்கள் இதோ. நீண்ட கால செல்வ உருவாக்கத்திற்கு பராக் பரிக் மற்றும் குவாண்ட் சிறந்தவை.',
+          display_text: `### 💼 மியூச்சுவல் ஃபண்ட் & சிப் (SIP) முதலீட்டு வழிகாட்டி 📈
+
+- **பராக் பரிக் ஃப்ளெக்ஸி கேப் ஃபண்ட் (PPFAS)**: 5 ஆண்டு சராசரி வளர்ச்சி 21.2% | நிலைத்தன்மை அதிகம்.
+- **குவாண்ட் ஸ்மால் கேப் ஃபண்ட் (Quant Small Cap)**: 5 ஆண்டு சராசரி வளர்ச்சி 28.5% | அதிக வருமானம் தரும் ஃபண்ட்.
+- **யுடிஐ நிஃப்டி 50 இண்டெக்ஸ் ஃபண்ட் (UTI Nifty 50 Index)**: குறைந்த கட்டணம் (0.18%) | இந்தியாவின் டாப் 50 நிறுவனங்கள்.
+
+💡 **சிப் (SIP) செல்வப் பெருக்கம்:**
+- மாதம் ₹5,000 வீதம் 5 ஆண்டுகளுக்கு 16% CAGR: ₹4,61,247
+- மாதம் ₹10,000 வீதம் 10 ஆண்டுகளுக்கு 18% CAGR: ₹33,62,575
+
+*தொடர்ந்து முதலீடு செய்து கூட்டு வட்டியின் (Compounding) முழு பயனைப் பெறுங்கள்!* ✨`,
+          emotion: 'motivated',
+          intensity: 0.9,
+          gesture: 'nod',
+          voice_style: { rate: 1.0, pitch: 1.02, style: 'cheerful' },
+          actions: [],
+        }
+      }
+
+      if (lower.includes('stock') || lower.includes('பங்கு') || lower.includes('share') || lower.includes('trading')) {
+        return {
+          speech: 'வணக்கம்! இன்றைய பங்குச் சந்தை பகுப்பாய்வுப்படி, டாடா மோட்டார்ஸ் மற்றும் ரிலையன்ஸ் நிறுவனங்கள் நல்ல தொழில்நுட்ப பிரேக்அவுட் நிலையில் உள்ளன.',
+          display_text: `### 📈 பங்குச் சந்தை பரிந்துரைகள் (Stock Recommendations) 🎯
+
+1. **டாடா மோட்டார்ஸ் (TATAMOTORS)**
+   - நுழைவு விலை (Entry): ₹980
+   - இலக்கு 1 (Target 1): ₹1,020 | இலக்கு 2: ₹1,050
+   - ஸ்டாப் லாஸ் (SL): ₹955
+
+2. **ரிலையன்ஸ் இண்டஸ்ட்ரீஸ் (RELIANCE)**
+   - நுழைவு விலை: ₹2,920
+   - இலக்கு 1: ₹3,020 | இலக்கு 2: ₹3,080
+   - ஸ்டாப் லாஸ்: ₹2,870
+
+*எப்போதும் ஸ்டாப் லாஸை கண்டிப்பாக பின்பற்றி உங்கள் முதலீட்டைப் பாதுகாத்துக் கொள்ளுங்கள்!* 🛡️`,
+          emotion: 'excited',
+          intensity: 0.9,
+          gesture: 'nod',
+          voice_style: { rate: 1.0, pitch: 1.02, style: 'cheerful' },
+          actions: [],
+        }
+      }
+
+      if (lower.includes('padikka') || lower.includes('study') || lower.includes('tutor') || lower.includes('படிப்பு') || lower.includes('கற்க')) {
+        return {
+          speech: 'வணக்கம்! உங்கள் படிப்பு மற்றும் சந்தேகங்களை தீர்க்க நான் தயாராக உள்ளேன். எந்த தலைப்பை எளிமையாக படிக்கலாம் என்று சொல்லுங்கள்.',
+          display_text: `### 🎓 படிப்பு & கல்வி வழிகாட்டி 📚
+
+கணினி அறிவியல், புரோகிராமிங், கணிதம் அல்லது தொழில்நுட்ப பாடங்களை மிக எளிய முறையில் நாம் படித்து முடிக்கலாம்!
+
+- 💡 **எளிமையான விளக்கங்கள்** (Real-world Analogies)
+- 📝 **படிப்படியான குறிப்புகள்** (Step-by-step Notes)
+- ⏱️ **பொமோடோரோ ஃபோகஸ் அமர்வு** (25 நிமிட ஆழ்ந்த படிப்பு)
+
+உங்கள் கேள்விகளை உடனே கேளுங்கள், நாம் ஒன்றாக சேர்ந்து படிப்போம்! ✨`,
+          emotion: 'happy',
+          intensity: 0.9,
+          gesture: 'wave',
+          voice_style: { rate: 1.0, pitch: 1.05, style: 'cheerful' },
+          actions: [],
+        }
+      }
+
+      // Default Pure Tamil reply
+      return {
+        speech: 'வணக்கம்! நான் உங்களுடன் இருக்கிறேன். உங்கள் பணிகள், படிப்பு அல்லது நிதி சார்ந்த திட்டங்களை வெற்றிகரமாக முடிக்க நாம் தொடங்குவோம்!',
+        display_text: `### வணக்கம்! 🌸
+
+நான் உங்கள் **3D ஹோலோகிராஃபிக் AI உதவியாளர்**.
+உங்களுக்கு தேவையான அனைத்து உதவிகளையும் (படிப்பு, கோடிங், பங்குச் சந்தை, தினசரி பணிகள்) மிகச் சிறந்த முறையில் செய்ய நான் தயாராக உள்ளேன்.
+
+இன்று நாம் என்ன செய்ய வேண்டும் என்று எனக்கு தெரிவியுங்கள்! ✨`,
+        emotion: 'happy',
+        intensity: 0.9,
+        gesture: 'wave',
+        voice_style: { rate: 1.0, pitch: 1.02, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
     // 3. Girlfriend Companion: Absence Without Guilt
     if (
       lower.includes('5 days without') ||

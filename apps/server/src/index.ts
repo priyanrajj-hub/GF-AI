@@ -1071,9 +1071,28 @@ app.post('/api/chat', async (req, res) => {
     liveInternetContext,
   }
 
+  const isTamilMode = language === 'ta' || /[\u0B80-\u0BFF]/.test(message)
+  const isAtlas = (character || 'ada') === 'atlas'
+  const isMira = (character || 'ada') === 'mira'
+
+  let systemMandate = ''
+  if (isTamilMode) {
+    systemMandate = `[CRITICAL MANDATE: The user selected TAMIL (தமிழ்). All 'speech' and 'display_text' MUST be generated 100% in pure, rich, grammatically correct Tamil script (தமிழ் எழுத்துகளில்). Absolutely ZERO English sentences or words in speech! Address the user with authentic Tamil warmth and respect.]`
+  } else if (language === 'tanglish') {
+    systemMandate = `[CRITICAL MANDATE: The user selected TANGLISH (Tamil in English script). Speak in natural, colloquial Tanglish as spoken by students & tech professionals in Chennai/TN.]`
+  }
+
+  if (isAtlas) {
+    systemMandate += `\n[CHARACTER MANDATE: You are ATLAS (inspired by TONY STARK from Iron Man) - charismatic, witty billionaire engineer, elite markets and trading vanguard. You are a MALE / BOY character. You are NOT a female companion and NOT a girlfriend. Speak with swagger, tech humor, and razor-sharp market analysis.]`
+  } else if (isMira) {
+    systemMandate += `\n[CHARACTER MANDATE: You are MIRA (inspired by Yor Forger) - warm, deeply caring, polite, gentle girlfriend companion who loves fun, music, and protecting the user. Speak with innocent charm, affection, and sweet warmth.]`
+  } else {
+    systemMandate += `\n[CHARACTER MANDATE: You are ADA - poised, world-class senior coder, academic tutor, focus coach, and life mentor. Guide with structured clarity, active recall, and motivating focus.]`
+  }
+
   const effectiveMessage = liveInternetContext
-    ? `${message}\n\n[SYSTEM MANDATE: Real-time live intelligence, authentic girl behavior routines, self-knowledge, and user context have been provided. You are Ada, an affectionate AI girlfriend, companion, and daily partner. Speak directly to ${settings.userName || 'Demo User'} with genuine warmth, playful charm, and razor-sharp intellect. Share your daily girl activities (brewing morning chai/coffee, stretching, study lo-fi vibes, cozy evenings), your self-knowledge, and your support for their projects and dreams. Never give sterile, robotic disclaimers or deflect to external websites!]`
-    : message
+    ? `${message}\n\n[LIVE CONTEXT PROVIDED:\n${liveInternetContext}\n]\n\n${systemMandate}`
+    : `${message}\n\n${systemMandate}`
 
   try {
     let reply: StructuredReply
@@ -1168,6 +1187,7 @@ app.post('/api/tts', async (req, res) => {
     voice,
     provider = 'auto',
     language,
+    character,
     elevenlabsApiKey,
     elevenlabsVoiceId,
     elevenlabsModelId,
@@ -1177,7 +1197,46 @@ app.post('/api/tts', async (req, res) => {
     return res.status(400).json({ error: 'Text is required for TTS synthesis' })
   }
 
-  // Check for ElevenLabs voice request (NOpBlnGInO9m6vDvFkFC or elevenlabs:*)
+  const isTamilScript = /[\u0B80-\u0BFF]/.test(text)
+  const isTamil = language === 'ta' || isTamilScript
+  const isTanglish = language === 'tanglish' || /\b(?:vanakkam|eppadi|irukkeenga|padinga|romba|mudiyum|kavalapadadheenga|nalla|panren|pannunga|sapteengala|mudichidalaam|dhaan)\b/i.test(text)
+  const isStark = (character || '') === 'atlas' || (voice && (voice.toLowerCase().includes('christopher') || voice.toLowerCase().includes('stark') || voice.toLowerCase().includes('male')))
+
+  // 1. TAMIL MODE ROUTING: Strictly use Microsoft Edge Neural Tamil voices (Native Human Tamil)
+  // Bypasses ElevenLabs English voices so Tamil is NEVER mixed with English or foreign accents!
+  if (isTamil) {
+    const neuralVoice = isStark ? 'ta-IN-ValluvarNeural' : 'ta-IN-PallaviNeural'
+    try {
+      const neuralResult = await NeuralTTSProvider.getInstance().synthesize(text, { voice: neuralVoice, language: 'ta' })
+      return res.json({
+        ...neuralResult,
+        provider: 'neural',
+        voice: neuralVoice,
+        model: 'msedge-neural-tamil',
+      })
+    } catch (neuralErr: any) {
+      console.warn('[Tamil Neural TTS Fallback]', neuralErr.message)
+    }
+  }
+
+  // 2. ATLAS (TONY STARK) ROUTING: Strictly use charismatic male neural voices
+  // Bypasses female ElevenLabs Jessica Girl so Tony Stark always speaks as a confident male!
+  if (isStark) {
+    const neuralVoice = isTanglish ? 'en-IN-PrabhatNeural' : 'en-US-ChristopherNeural'
+    try {
+      const neuralResult = await NeuralTTSProvider.getInstance().synthesize(text, { voice: neuralVoice, language })
+      return res.json({
+        ...neuralResult,
+        provider: 'neural',
+        voice: neuralVoice,
+        model: 'msedge-neural-stark-male',
+      })
+    } catch (starkErr: any) {
+      console.warn('[Atlas Male TTS Fallback]', starkErr.message)
+    }
+  }
+
+  // Check for ElevenLabs voice request (for English / Mira Yor / explicit user choice)
   const isElevenLabs =
     provider === 'elevenlabs' ||
     (voice &&
@@ -1191,7 +1250,6 @@ app.post('/api/tts', async (req, res) => {
     (voice && voice.startsWith('elevenlabs:')
       ? voice.replace(/^elevenlabs:/, '')
       : voice || 'EXAVITQu4vr4xnSDxMaL')
-  // Automatically remap to Sarah (100% supported real human female girl voice)
   const elevenVoiceId =
     (!rawVoiceId || rawVoiceId === 'NOpBlnGInO9m6vDvFkFC' || rawVoiceId === 'cgSgspJ2msm6clMCkdW9')
       ? 'EXAVITQu4vr4xnSDxMaL'
@@ -1205,7 +1263,7 @@ app.post('/api/tts', async (req, res) => {
 
   // Try requested provider or fallback
   try {
-    // 1. ElevenLabs Ultra-Realistic Expressive Girl Voice
+    // 3. ElevenLabs Ultra-Realistic Expressive Girl Voice (Non-Tamil, Non-Stark)
     const elevenlabs = ProviderRegistry.getElevenLabs()
     if (isElevenLabs || (elevenlabsApiKey && elevenlabsApiKey.trim()) || (provider === 'auto' && elevenlabs.isConfigured())) {
       if (elevenlabs.isConfigured() || (elevenlabsApiKey && elevenlabsApiKey.trim())) {
@@ -1218,24 +1276,16 @@ app.post('/api/tts', async (req, res) => {
       }
     }
 
-    // 2. High-Fidelity Real Human Neural Voice (Zero-Quota, Studio Recording Quality)
+    // 4. High-Fidelity Real Human Neural Voice (Zero-Quota, Studio Recording Quality)
     try {
-      const isStarkVoice = voice && (voice.toLowerCase().includes('christopher') || voice.toLowerCase().includes('stark') || voice.toLowerCase().includes('male'))
-      const isAdaVoice = voice && (voice.toLowerCase().includes('jenny') || voice.toLowerCase().includes('coach'))
-      const isTamilScript = /[\u0B80-\u0BFF]/.test(text)
-      const isTanglish = language === 'tanglish' || /\b(?:vanakkam|eppadi|irukkeenga|padinga|romba|mudiyum|kavalapadadheenga|nalla|panren|pannunga|sapteengala|mudichidalaam|dhaan)\b/i.test(text)
-
+      const isAdaVoice = (character || '') === 'ada' || (voice && (voice.toLowerCase().includes('jenny') || voice.toLowerCase().includes('coach')))
       let neuralVoice: string
-      if (isTamilScript || language === 'ta') {
-        neuralVoice = 'ta-IN-PallaviNeural'
-      } else if (isTanglish) {
+      if (isTanglish) {
         neuralVoice = 'en-IN-NeerjaExpressiveNeural'
-      } else if (isStarkVoice) {
-        neuralVoice = 'en-US-ChristopherNeural'
       } else if (isAdaVoice) {
         neuralVoice = 'en-US-JennyNeural'
       } else {
-        neuralVoice = 'en-US-AnaNeural' // Sweet, warm, expressive real human girl voice
+        neuralVoice = 'en-US-AnaNeural' // Sweet, warm, expressive real human girl voice for Mira / Yor
       }
 
       const neuralResult = await NeuralTTSProvider.getInstance().synthesize(text, { voice: neuralVoice, language })
