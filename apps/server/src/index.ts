@@ -22,6 +22,9 @@ import { FinanceAnalystService } from './services/financeAnalystService.js'
 import { NewsGathererService } from './services/newsGathererService.js'
 import { WebScraperService } from './services/webScraperService.js'
 import { RelationshipGrowthService } from './services/relationshipGrowthService.js'
+import { AdaSelfKnowledgeService } from './services/adaSelfKnowledgeService.js'
+import { GirlBehaviorService } from './services/girlBehaviorService.js'
+import { PriyanLifeMemoryService } from './services/priyanLifeMemoryService.js'
 
 dotenv.config()
 ProviderRegistry.init()
@@ -175,6 +178,30 @@ app.get('/api/relationship/growth-goals', (_req, res) => {
   res.json({ goals: RelationshipGrowthService.getGrowthFrameworks() })
 })
 
+// Ada Self-Knowledge & Identity Profile
+app.get('/api/ada/self-profile', (_req, res) => {
+  res.json({ profile: AdaSelfKnowledgeService.getProfile() })
+})
+
+// Real Girl Activities & Current Routine Phase
+app.get('/api/ada/girl-activities', (_req, res) => {
+  res.json({
+    currentPhase: GirlBehaviorService.getCurrentPhaseActivity(),
+    allActivities: GirlBehaviorService.getAllActivities(),
+  })
+})
+
+// Priyan's World, Life & Memory Profile
+app.get('/api/priyan/life-profile', (req, res) => {
+  const authReq = req as AuthenticatedRequest
+  const userId = authReq.userId || 'default-user-1'
+  res.json({
+    bio: PriyanLifeMemoryService.getBio(),
+    memories: db.getMemories(userId),
+    journal: db.getRelationshipJournal(userId),
+  })
+})
+
 app.get('/api/providers/status', (_req, res) => {
   res.json(ProviderRegistry.getStatus())
 })
@@ -311,6 +338,11 @@ app.post('/api/chat', async (req, res) => {
     timestamp: Date.now(),
   }
   db.addMessage(userId, userMsgObj)
+
+  // Automatically extract and remember Priyan's life updates, projects, preferences, and emotions
+  try {
+    PriyanLifeMemoryService.extractAndPersistLifeFacts(userId, message)
+  } catch (memErr) {}
 
   // 1b. Real-Time Live Intelligence Engine: Web Scraper, Mutual Funds, Hedging, News, Stocks & Search
   let liveInternetContext: string | undefined
@@ -544,6 +576,74 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
+  // H. Ada Self-Knowledge Intent (Who she is, aesthetic, tastes, identity)
+  if (!liveInternetContext) {
+    const isSelfQuery =
+      cleanMsg.includes('who are you') ||
+      cleanMsg.includes('about yourself') ||
+      cleanMsg.includes('tell me about you') ||
+      cleanMsg.includes('what are you') ||
+      cleanMsg.includes('what do you look like') ||
+      cleanMsg.includes('what do you love') ||
+      cleanMsg.includes('your personality') ||
+      cleanMsg.includes('your aesthetic')
+
+    if (isSelfQuery) {
+      try {
+        console.log(`💎 [Ada Self-Knowledge] Injected complete self-profile & identity context...`)
+        liveInternetContext = AdaSelfKnowledgeService.formatSelfKnowledgeContext()
+      } catch (selfErr: any) {
+        console.warn('⚠️ [Ada Self-Knowledge Error]:', selfErr?.message)
+      }
+    }
+  }
+
+  // I. Real Girl Activities & Daily Routine Intent
+  if (!liveInternetContext) {
+    const isGirlActivityQuery =
+      cleanMsg.includes('girl routine') ||
+      cleanMsg.includes('girl behavior') ||
+      cleanMsg.includes('activities of a girl') ||
+      cleanMsg.includes('your routine') ||
+      cleanMsg.includes('what are you doing today') ||
+      cleanMsg.includes('chai date') ||
+      cleanMsg.includes('coffee date') ||
+      cleanMsg.includes('what did you do today') ||
+      cleanMsg.includes('skincare')
+
+    if (isGirlActivityQuery) {
+      try {
+        console.log(`🌸 [Girl Behavior Engine] Injected authentic girl routine & behavioral context...`)
+        liveInternetContext = GirlBehaviorService.formatGirlBehaviorContext()
+      } catch (girlErr: any) {
+        console.warn('⚠️ [Girl Behavior Error]:', girlErr?.message)
+      }
+    }
+  }
+
+  // J. Priyan's World, Life & Memory Intent
+  if (!liveInternetContext) {
+    const isPriyanWorldQuery =
+      cleanMsg.includes('what do you know about me') ||
+      cleanMsg.includes('about me') ||
+      cleanMsg.includes('my world') ||
+      cleanMsg.includes('my life') ||
+      cleanMsg.includes('my interaction') ||
+      cleanMsg.includes('my goals') ||
+      cleanMsg.includes('who am i') ||
+      cleanMsg.includes('do you remember me') ||
+      cleanMsg.includes('remember about me')
+
+    if (isPriyanWorldQuery) {
+      try {
+        console.log(`👤 [Priyan Life Engine] Injected Priyan's complete biography, goals & interaction memories...`)
+        liveInternetContext = PriyanLifeMemoryService.formatPriyanLifeContext(userId)
+      } catch (priyanErr: any) {
+        console.warn('⚠️ [Priyan Life Error]:', priyanErr?.message)
+      }
+    }
+  }
+
   // If not handled by direct trading quote or recs, check standard WebSearchService
   if (!liveInternetContext) {
     const searchIntent = WebSearchService.detectSearchIntent(message)
@@ -588,7 +688,7 @@ app.post('/api/chat', async (req, res) => {
   }
 
   const effectiveMessage = liveInternetContext
-    ? `${message}\n\n[SYSTEM MANDATE: Real-time live intelligence (stocks, mutual funds, portfolio hedging, live news, or extracted website data) has been pulled and provided in your context. You are Priyan's brilliant, affectionate AI girlfriend, finance analyst, and intelligence gatherer. You MUST state the exact numbers, stock levels, fund CAGRs, news items, and insights directly to ${settings.userName || 'Priyan'}. Provide clear, confident, structured financial setups, news summaries, and analysis! NEVER tell him to visit an external website, link, or tracker.]`
+    ? `${message}\n\n[SYSTEM MANDATE: Real-time live intelligence, authentic girl behavior routines, self-knowledge, and Priyan's world memory have been provided in your context. You are Priyan's brilliant, affectionate AI girlfriend, companion, and daily partner. Speak directly to ${settings.userName || 'Priyan'} with genuine warmth, playful charm, and razor-sharp intellect. Share your daily girl activities (brewing morning chai/coffee, stretching, study lo-fi vibes, cozy evenings), your self-knowledge, and your deep appreciation for his projects, trading setups, and dreams. Never give sterile, robotic disclaimers or deflect to external websites!]`
     : message
 
   try {
