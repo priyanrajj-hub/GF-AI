@@ -121,18 +121,31 @@ class VoiceEngineManager {
       voiceSetting = isTanglish ? 'en-IN-NeerjaExpressiveNeural' : 'en-US-JennyNeural'
       isElevenLabs = false
     } else {
-      // Mira (Yor Companion): Sweet, warm real human girl voice
+      // Mira (Yor Companion): Sweet, warm real human girl voice (100% Free, Zero Quota)
       const rawVoice = store.settings.voice || 'en-US-AnaNeural'
-      voiceSetting = (rawVoice === 'NOpBlnGInO9m6vDvFkFC' || rawVoice === 'cgSgspJ2msm6clMCkdW9') ? 'en-US-AnaNeural' : rawVoice
+      voiceSetting =
+        rawVoice === 'NOpBlnGInO9m6vDvFkFC' ||
+        rawVoice === 'cgSgspJ2msm6clMCkdW9' ||
+        rawVoice === 'EXAVITQu4vr4xnSDxMaL'
+          ? 'en-US-AnaNeural'
+          : rawVoice
+
+      const hasValidCustomElevenKey =
+        Boolean(store.settings.elevenlabsApiKey) &&
+        store.settings.elevenlabsApiKey !== 'sk_219ca6a4315e38f74478bcb10c1df0662decb4b6f6302bbe'
+
       isElevenLabs =
-        (voiceSetting === 'EXAVITQu4vr4xnSDxMaL' ||
-          voiceSetting.startsWith('elevenlabs:') ||
-          Boolean(store.settings.elevenlabsApiKey)) &&
+        (voiceSetting.startsWith('elevenlabs:') || hasValidCustomElevenKey) &&
         !isTanglish
     }
 
     // 1. Try High-Fidelity Studio Neural Voice
     try {
+      this.initAudioContext()
+      if (this.audioContext && this.audioContext.state === 'suspended') {
+        await this.audioContext.resume().catch(() => {})
+      }
+
       const activeVoiceId =
         store.settings.elevenlabsVoiceId === 'NOpBlnGInO9m6vDvFkFC' || !store.settings.elevenlabsVoiceId
           ? 'EXAVITQu4vr4xnSDxMaL'
@@ -158,80 +171,105 @@ class VoiceEngineManager {
 
       if (res.ok) {
         const data = await res.json()
-        if (data.audioBase64 && this.audioContext) {
-          const binary = atob(data.audioBase64)
-          const bytes = new Uint8Array(binary.length)
-          for (let i = 0; i < binary.length; i++) {
-            bytes[i] = binary.charCodeAt(i)
-          }
+        if (data.audioBase64) {
+          this.initAudioContext()
+          if (this.audioContext) {
+            try {
+              if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume().catch(() => {})
+              }
 
-          const audioBuffer = await this.audioContext.decodeAudioData(bytes.buffer)
-          const source = this.audioContext.createBufferSource()
-          source.buffer = audioBuffer
+              const binary = atob(data.audioBase64)
+              const bytes = new Uint8Array(binary.length)
+              for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i)
+              }
 
-          // Emotional Prosody Tuning (Playback rate, pitch & air presence)
-          const emotion = store.currentEmotion || 'calm'
-          let rateMultiplier = 1.0
-          let airPresenceBoost = 2.2
+              const audioBuffer = await this.audioContext.decodeAudioData(bytes.buffer.slice(0))
+              const source = this.audioContext.createBufferSource()
+              source.buffer = audioBuffer
 
-          if (emotion === 'happy') {
-            rateMultiplier = 1.04
-            airPresenceBoost = 2.8
-          } else if (emotion === 'playful') {
-            rateMultiplier = 1.06
-            airPresenceBoost = 3.0
-          } else if (emotion === 'concerned') {
-            rateMultiplier = 0.95
-            airPresenceBoost = 2.5
-          } else if (emotion === 'thinking') {
-            rateMultiplier = 0.98
-            airPresenceBoost = 1.9
-          } else if (emotion === 'motivated') {
-            rateMultiplier = 1.07
-            airPresenceBoost = 2.6
-          }
+              // Emotional Prosody Tuning (Playback rate, pitch & air presence)
+              const emotion = store.currentEmotion || 'calm'
+              let rateMultiplier = 1.0
+              let airPresenceBoost = 2.2
 
-          source.playbackRate.value = rateMultiplier * (options.rate || 1.0)
+              if (emotion === 'happy') {
+                rateMultiplier = 1.04
+                airPresenceBoost = 2.8
+              } else if (emotion === 'playful') {
+                rateMultiplier = 1.06
+                airPresenceBoost = 3.0
+              } else if (emotion === 'concerned') {
+                rateMultiplier = 0.95
+                airPresenceBoost = 2.5
+              } else if (emotion === 'thinking') {
+                rateMultiplier = 0.98
+                airPresenceBoost = 1.9
+              } else if (emotion === 'motivated') {
+                rateMultiplier = 1.07
+                airPresenceBoost = 2.6
+              }
 
-          // Real Girl Vocal Presence & Air EQ: Gentle high-shelf boost at 3.8kHz
-          // giving sweet, silky, breathy feminine warmth
-          const highShelf = this.audioContext.createBiquadFilter()
-          highShelf.type = 'highshelf'
-          highShelf.frequency.value = 3800
-          highShelf.gain.value = airPresenceBoost
+              source.playbackRate.value = rateMultiplier * (options.rate || 1.0)
 
-          // Gain control
-          const gainNode = this.audioContext.createGain()
-          gainNode.gain.value = store.audioVolume ?? 0.95
+              // Real Vocal Air Presence EQ: Gentle high-shelf boost at 3.8kHz
+              const highShelf = this.audioContext.createBiquadFilter()
+              highShelf.type = 'highshelf'
+              highShelf.frequency.value = 3800
+              highShelf.gain.value = airPresenceBoost
 
-          source.connect(highShelf)
-          highShelf.connect(gainNode)
+              // Gain control
+              const gainNode = this.audioContext.createGain()
+              gainNode.gain.value = store.audioVolume ?? 0.95
 
-          // Connect to analyser for real-time lip-sync & visualizer rings
-          if (this.analyser) {
-            gainNode.connect(this.analyser)
-            this.analyser.connect(this.audioContext.destination)
-          } else {
-            gainNode.connect(this.audioContext.destination)
-          }
+              source.connect(highShelf)
+              highShelf.connect(gainNode)
 
-          this.currentAudioSource = source
-          this.isNeuralPlaying = true
+              // Connect to analyser for real-time lip-sync & visualizer rings
+              if (this.analyser) {
+                gainNode.connect(this.analyser)
+                this.analyser.connect(this.audioContext.destination)
+              } else {
+                gainNode.connect(this.audioContext.destination)
+              }
 
-          source.onended = () => {
-            this.isNeuralPlaying = false
-            this.currentAudioSource = null
-            const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
-            if (!isSinging) {
-              store.setSystemState('idle')
+              this.currentAudioSource = source
+              this.isNeuralPlaying = true
+
+              source.onended = () => {
+                this.isNeuralPlaying = false
+                this.currentAudioSource = null
+                const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
+                if (!isSinging) {
+                  store.setSystemState('idle')
+                }
+                if (options.onEnd) options.onEnd()
+              }
+
+              store.setSystemState('speaking')
+              store.triggerGlitch()
+              source.start(0)
+              return
+            } catch (decodeErr) {
+              console.warn('[Web Audio Decode Error, attempting HTMLAudio fallback]:', decodeErr)
             }
-            if (options.onEnd) options.onEnd()
           }
 
-          store.setSystemState('speaking')
-          store.triggerGlitch()
-          source.start(0)
-          return
+          // HTMLAudioElement Fallback for guaranteed playback in any browser context
+          try {
+            const audioElem = new Audio(`data:${data.mimeType || 'audio/mpeg'};base64,${data.audioBase64}`)
+            audioElem.volume = store.audioVolume ?? 0.95
+            audioElem.onended = () => {
+              store.setSystemState('idle')
+              if (options.onEnd) options.onEnd()
+            }
+            store.setSystemState('speaking')
+            await audioElem.play()
+            return
+          } catch (audioElemErr) {
+            console.warn('[HTMLAudio Fallback Failed]:', audioElemErr)
+          }
         }
       }
     } catch (err) {

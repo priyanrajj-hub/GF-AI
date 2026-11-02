@@ -97,10 +97,16 @@ export class SongEngine {
         this.audioElement.volume = store.audioVolume ?? 0.95
         this.audioElement.preload = 'auto'
 
+        this.audioElement.onerror = () => {
+          console.warn('[Online Audio Stream Failed, falling back to Web Audio Synth]')
+          this.startSynthesizerTrack(song, onProgress)
+        }
+
         const playPromise = this.audioElement.play()
         if (playPromise !== undefined) {
           playPromise.catch((err) => {
-            console.warn('[Online Audio Stream Autoplay Blocked]:', err)
+            console.warn('[Online Audio Stream Autoplay Blocked, falling back to Web Audio Synth]:', err)
+            this.startSynthesizerTrack(song, onProgress)
           })
         }
 
@@ -109,6 +115,7 @@ export class SongEngine {
         }
       } catch (err) {
         console.warn('[Online Audio Stream Error]:', err)
+        this.startSynthesizerTrack(song, onProgress)
       }
     }
 
@@ -124,10 +131,15 @@ export class SongEngine {
             song.artworkUrl = data.track.artworkUrl || song.artworkUrl
             store.setActiveSong({ ...song })
             playOnlineAudio(data.track.audioUrl)
+          } else if (this.isPlaying) {
+            this.startSynthesizerTrack(song, onProgress)
           }
         })
         .catch((fetchErr) => {
-          console.warn('[Online Audio Stream Lookup Failed]:', fetchErr)
+          console.warn('[Online Audio Stream Lookup Failed, using Web Audio Synth]:', fetchErr)
+          if (this.isPlaying) {
+            this.startSynthesizerTrack(song, onProgress)
+          }
         })
     }
 

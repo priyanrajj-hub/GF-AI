@@ -1265,13 +1265,15 @@ app.post('/api/tts', async (req, res) => {
   }
 
   // Check for ElevenLabs voice request (for English / Mira Yor / explicit user choice)
+  const isExhaustedDemoKey = (key?: string) => !key || key.trim() === 'sk_219ca6a4315e38f74478bcb10c1df0662decb4b6f6302bbe'
+  const hasValidElevenKey = Boolean(elevenlabsApiKey && !isExhaustedDemoKey(elevenlabsApiKey))
+
   const isElevenLabs =
-    provider === 'elevenlabs' ||
-    (voice &&
-      (voice.startsWith('elevenlabs:') ||
-        voice === 'NOpBlnGInO9m6vDvFkFC' ||
-        voice === 'cgSgspJ2msm6clMCkdW9' ||
-        voice.toLowerCase().includes('eleven')))
+    (provider === 'elevenlabs' ||
+      (voice &&
+        (voice.startsWith('elevenlabs:') ||
+          voice.toLowerCase().includes('eleven')))) &&
+    hasValidElevenKey
 
   const rawVoiceId =
     elevenlabsVoiceId ||
