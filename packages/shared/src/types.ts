@@ -67,6 +67,9 @@ export interface StructuredReply {
     template: string
     topText?: string
     bottomText?: string
+    imageUrl?: string
+    title?: string
+    punchline?: string
   }
   gif_query?: string
   reactions?: string[]
@@ -84,6 +87,9 @@ export interface ChatMessage {
     template: string
     topText?: string
     bottomText?: string
+    imageUrl?: string
+    title?: string
+    punchline?: string
   }
   gif_query?: string
   reactions?: string[]

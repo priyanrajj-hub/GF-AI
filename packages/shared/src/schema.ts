@@ -54,6 +54,9 @@ export const StructuredReplySchema = z.object({
       template: z.string(),
       topText: z.string().optional(),
       bottomText: z.string().optional(),
+      imageUrl: z.string().optional(),
+      title: z.string().optional(),
+      punchline: z.string().optional(),
     })
     .optional(),
   gif_query: z.string().optional(),

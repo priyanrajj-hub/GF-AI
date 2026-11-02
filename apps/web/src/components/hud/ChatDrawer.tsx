@@ -17,9 +17,11 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
   StickerProvider,
+  MemeService,
   type ChatMessage,
   type StructuredReply,
   type AdaSticker,
+  type DeveloperMeme,
   parseStructuredReply,
   sanitizeBubbleText,
 } from '@ada/shared'
@@ -47,6 +49,7 @@ export const ChatDrawer: React.FC = () => {
   const [isSending, setIsSending] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [showStickerTray, setShowStickerTray] = useState(false)
+  const [stickerTab, setStickerTab] = useState<'stickers' | 'memes'>('stickers')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -91,6 +94,40 @@ export const ChatDrawer: React.FC = () => {
       }
       addMessage(assistantMsg)
       VoiceEngine.speak(replySticker.caption)
+    }, 400)
+  }
+
+  const handleSendMeme = (meme: DeveloperMeme) => {
+    setShowStickerTray(false)
+    const userMsg: ChatMessage = {
+      id: `msg-${Date.now()}-user`,
+      role: 'user',
+      content: `Show me the "${meme.title}" meme!`,
+      timestamp: Date.now(),
+    }
+    addMessage(userMsg)
+
+    setEmotionAndGesture('playful', 1.0, 'laugh')
+    setTimeout(() => {
+      const assistantMsg: ChatMessage = {
+        id: `msg-${Date.now()}-assistant`,
+        role: 'assistant',
+        content: `Here is a classic for you! 😂\n\n**${meme.title}**\n*${meme.punchline}*`,
+        speech: `Haha, check this one out! ${meme.title}. ${meme.punchline}`,
+        emotion: 'playful',
+        gesture: 'laugh',
+        meme: {
+          template: meme.templateId,
+          topText: meme.topText,
+          bottomText: meme.bottomText,
+          imageUrl: meme.imageUrl,
+          title: meme.title,
+          punchline: meme.punchline,
+        },
+        timestamp: Date.now(),
+      }
+      addMessage(assistantMsg)
+      VoiceEngine.speak(`Haha, check this one out! ${meme.title}. ${meme.punchline}`)
     }, 400)
   }
 
@@ -151,6 +188,8 @@ export const ChatDrawer: React.FC = () => {
         speech: parsedReply.speech,
         emotion: parsedReply.emotion,
         gesture: parsedReply.gesture,
+        meme: parsedReply.meme,
+        sticker: parsedReply.sticker,
         timestamp: Date.now(),
       }
       addMessage(assistantMsg)
@@ -287,9 +326,49 @@ export const ChatDrawer: React.FC = () => {
                 )}
               </button>
 
+              {/* Visual Meme Card if present */}
+              {msg.meme?.imageUrl && (
+                <div className="my-2 rounded-xl overflow-hidden border border-cyan-400/40 bg-slate-950/90 shadow-xl group/meme">
+                  <div className="relative overflow-hidden bg-slate-950 flex items-center justify-center p-1 min-h-[160px]">
+                    <img
+                      src={msg.meme.imageUrl}
+                      alt={msg.meme.title || 'Developer Meme'}
+                      loading="lazy"
+                      className="w-full max-h-72 object-contain rounded-lg transition-transform duration-300 group-hover/meme:scale-[1.02]"
+                    />
+                  </div>
+                  <div className="px-3 py-1.5 bg-slate-900/90 border-t border-cyan-500/20 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-cyan-200 truncate">
+                      {msg.meme.title || 'Developer Meme'}
+                    </span>
+                    <a
+                      href={msg.meme.imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-cyan-400 hover:text-cyan-200 underline font-mono flex items-center gap-1"
+                    >
+                      Open Full ↗
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {/* Display text / Markdown */}
               <div className="prose prose-invert prose-xs max-w-none font-sans text-xs leading-relaxed break-words space-y-1.5 [&_p]:mb-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_code]:bg-slate-950 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-cyan-300 [&_pre]:bg-slate-950 [&_pre]:p-2 [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-cyan-500/20 [&_strong]:text-cyan-200">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    img: ({ node, ...props }) => (
+                      <div className="my-2 rounded-xl overflow-hidden border border-cyan-400/30 bg-slate-950 shadow-lg group/img">
+                        <img
+                          {...props}
+                          className="w-full max-h-72 object-contain rounded-lg transition-transform duration-300 group-hover/img:scale-[1.02]"
+                          loading="lazy"
+                        />
+                      </div>
+                    ),
+                  }}
+                >
                   {msg.role === 'assistant' ? sanitizeBubbleText(msg.content, { userName: settings.userName }) : msg.content}
                 </ReactMarkdown>
               </div>
@@ -346,33 +425,83 @@ export const ChatDrawer: React.FC = () => {
 
       {/* Sticker Tray Overlay */}
       {showStickerTray && (
-        <div className="p-3 border-t border-pink-500/30 bg-slate-950/90 backdrop-blur-md">
+        <div className="p-3 border-t border-pink-500/30 bg-slate-950/95 backdrop-blur-md">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-mono font-semibold text-pink-300">
-              Ada Stickers & Reaction GIFs (24+)
-            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setStickerTab('stickers')}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-medium transition-colors cursor-pointer ${
+                  stickerTab === 'stickers'
+                    ? 'bg-pink-600/40 text-pink-200 border border-pink-400/50'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                🥰 Stickers (24+)
+              </button>
+              <button
+                onClick={() => setStickerTab('memes')}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-medium transition-colors cursor-pointer ${
+                  stickerTab === 'memes'
+                    ? 'bg-cyan-600/40 text-cyan-200 border border-cyan-400/50'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                🎭 Memes (13+)
+              </button>
+            </div>
             <button
               onClick={() => setShowStickerTray(false)}
-              className="text-slate-400 hover:text-white cursor-pointer"
+              className="text-slate-400 hover:text-white cursor-pointer p-0.5"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="grid grid-cols-4 gap-1.5 max-h-36 overflow-y-auto scrollbar-none">
-            {stickers.map((st) => (
-              <button
-                key={st.id}
-                onClick={() => handleSendSticker(st)}
-                className="p-1.5 rounded-xl bg-slate-900/60 hover:bg-pink-950/40 border border-slate-800 hover:border-pink-500/50 flex flex-col items-center gap-0.5 text-center transition-all cursor-pointer"
-                title={st.caption}
-              >
-                <span className="text-xl">{st.emoji}</span>
-                <span className="text-[9px] font-mono text-slate-300 truncate w-full">
-                  {st.title}
-                </span>
-              </button>
-            ))}
-          </div>
+
+          {stickerTab === 'stickers' ? (
+            <div className="grid grid-cols-4 gap-1.5 max-h-36 overflow-y-auto scrollbar-none">
+              {stickers.map((st) => (
+                <button
+                  key={st.id}
+                  onClick={() => handleSendSticker(st)}
+                  className="p-1.5 rounded-xl bg-slate-900/60 hover:bg-pink-950/40 border border-slate-800 hover:border-pink-500/50 flex flex-col items-center gap-0.5 text-center transition-all cursor-pointer"
+                  title={st.caption}
+                >
+                  <span className="text-xl">{st.emoji}</span>
+                  <span className="text-[9px] font-mono text-slate-300 truncate w-full">
+                    {st.title}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto scrollbar-none">
+              {MemeService.getAllMemes().map((meme) => (
+                <button
+                  key={meme.id}
+                  onClick={() => handleSendMeme(meme)}
+                  className="p-1.5 rounded-xl bg-slate-900/70 hover:bg-cyan-950/50 border border-slate-800 hover:border-cyan-400/50 flex flex-col items-start gap-1 text-left transition-all cursor-pointer group"
+                >
+                  <div className="w-full h-16 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center border border-slate-800 group-hover:border-cyan-500/30 relative">
+                    <img
+                      src={meme.imageUrl}
+                      alt={meme.title}
+                      loading="eager"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-slate-950/80 text-[8px] font-mono text-cyan-300 border border-cyan-500/30">
+                      {meme.templateId.toUpperCase()}
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono font-medium text-cyan-200 truncate w-full flex items-center gap-1">
+                    <span>🎭</span> {meme.title}
+                  </span>
+                  <span className="text-[8px] text-slate-400 line-clamp-1 w-full">
+                    {meme.punchline}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
