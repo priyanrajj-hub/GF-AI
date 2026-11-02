@@ -43,29 +43,29 @@ export class ElevenLabsProvider {
       )
     }
 
-    // Strictly map any old grandpa/male voice IDs to Jessica (real human girl)
+    // Strictly map to valid premade human female girl voices (Sarah / Laura / Alice / Bella)
     let primaryVoice = voiceId
-    if (!primaryVoice || primaryVoice === 'NOpBlnGInO9m6vDvFkFC') {
-      primaryVoice = 'cgSgspJ2msm6clMCkdW9' // Jessica - young, cute, bright feminine girl
+    if (!primaryVoice || primaryVoice === 'NOpBlnGInO9m6vDvFkFC' || primaryVoice === 'cgSgspJ2msm6clMCkdW9') {
+      primaryVoice = 'EXAVITQu4vr4xnSDxMaL' // Sarah - young, mature, reassuring, 100% real human girl
     }
 
-    // 100% Real human female girl voices only
+    // 100% Real human female girl voices supported on free & paid tiers
     const candidateVoices = Array.from(
       new Set([
         primaryVoice,
-        'cgSgspJ2msm6clMCkdW9', // Jessica (young, cute, conversational girl)
-        'EXAVITQu4vr4xnSDxMaL', // Sarah (young reassuring girl)
-        'FGY2WhTYpPnrIDTdsKH5', // Laura (young sassy girl)
-        'hpp4J3VqNfWAUOO0d1Us', // Bella (warm bright girl)
+        'EXAVITQu4vr4xnSDxMaL', // Sarah (young, warm, real human female)
+        'FGY2WhTYpPnrIDTdsKH5', // Laura (young, expressive girl)
+        'Xb7hH8MSUJpSbSDYk0k2', // Alice (clear, engaging girl)
+        'hpp4J3VqNfWAUOO0d1Us', // Bella (warm, bright girl)
       ].filter(Boolean) as string[])
     )
 
     const candidateModels = Array.from(
       new Set([
+        'eleven_multilingual_v2', // Supported on free tier!
         'eleven_turbo_v2_5',
-        'eleven_multilingual_v2',
+        'eleven_turbo_v2',
         modelId,
-        'eleven_v4',
       ].filter(Boolean) as string[])
     )
 
