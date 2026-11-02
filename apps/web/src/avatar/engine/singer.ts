@@ -1,3 +1,4 @@
+import { apiUrl } from '../../utils/api.js'
 import { useAppStore } from '../../store/useAppStore.js'
 import { VoiceEngine } from '../../components/voice/VoiceEngine.js'
 import {
@@ -77,8 +78,11 @@ export class SongEngine {
       }
     } catch {}
 
-    // If an original studio audio track is available (e.g. from iTunes API), stream & play it!
-    if (song.audioUrl) {
+    // Stop any ongoing voice speech so the real online track plays with zero vocal clash
+    VoiceEngine.interruptSpeaking()
+
+    // Pure Online Audio Stream Playback
+    const playOnlineAudio = (url: string) => {
       try {
         if (this.audioElement) {
           try {
@@ -88,81 +92,63 @@ export class SongEngine {
           this.audioElement = null
         }
 
-        this.audioElement = new Audio(song.audioUrl)
+        // Direct hardware speaker stream from online URL (Zero CORS restrictions)
+        this.audioElement = new Audio(url)
         this.audioElement.volume = store.audioVolume ?? 0.95
         this.audioElement.preload = 'auto'
-        this.audioElement.crossOrigin = 'anonymous'
 
-        // Direct hardware speaker playback
-        // Also connect AnalyserNode for audio visualization if CORS permits
-        try {
-          if (this.audioCtx) {
-            this.analyserNode = this.audioCtx.createAnalyser()
-            this.analyserNode.fftSize = 64
-            const source = this.audioCtx.createMediaElementSource(this.audioElement)
-            source.connect(this.analyserNode)
-            this.analyserNode.connect(this.audioCtx.destination)
-          }
-        } catch (corsErr) {
-          console.log('[SongEngine] Direct HTML5 speaker output active:', corsErr)
-          // Fresh audio element without createMediaElementSource for guaranteed audible sound
-          this.audioElement = new Audio(song.audioUrl)
-          this.audioElement.volume = store.audioVolume ?? 0.95
+        const playPromise = this.audioElement.play()
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.warn('[Online Audio Stream Autoplay Blocked]:', err)
+          })
         }
-
-        // Live Frequency Visualizer Loop for HUD & Lip-Sync
-        const freqData = new Uint8Array(32)
-        const updateFrequencies = () => {
-          if (!this.isPlaying) return
-          let hasRealFreqs = false
-
-          if (this.analyserNode) {
-            try {
-              this.analyserNode.getByteFrequencyData(freqData)
-              const avg = Array.from(freqData).reduce((a, b) => a + b, 0) / freqData.length
-              if (avg > 2) {
-                store.setAudioFrequencies(new Uint8Array(freqData))
-                hasRealFreqs = true
-              }
-            } catch {}
-          }
-
-          // Generate synchronized rhythm beat frequencies matching song BPM!
-          if (!hasRealFreqs) {
-            const now = performance.now() / 1000
-            const bpm = song.bpm || 120
-            const beatPhase = Math.sin(now * (bpm / 60) * Math.PI * 2) * 0.5 + 0.5
-            const energy = 0.65 + beatPhase * 0.30 + Math.random() * 0.08
-            const simulated = new Uint8Array(32)
-            for (let i = 0; i < 32; i++) {
-              const falloff = Math.max(0.35, 1.0 - i / 32)
-              simulated[i] = Math.round(Math.min(255, energy * falloff * 255))
-            }
-            store.setAudioFrequencies(simulated)
-          }
-
-          this.animFrameId = requestAnimationFrame(updateFrequencies)
-        }
-        this.animFrameId = requestAnimationFrame(updateFrequencies)
-
-        this.audioElement.play().catch((playErr) => {
-          console.warn('[Original Audio Play Failed, falling back to synth]:', playErr)
-          this.startSynthesizerTrack(song, onProgress)
-        })
 
         this.audioElement.onended = () => {
           this.stop()
         }
-      } catch (e) {
-        console.warn('[Audio Pipeline Error]:', e)
-        this.startSynthesizerTrack(song, onProgress)
+      } catch (err) {
+        console.warn('[Online Audio Stream Error]:', err)
       }
-    } else {
-      // Procedural synthesizer fallback
-      this.startSynthesizerTrack(song, onProgress)
     }
 
-    // Schedule progress tracking & karaoke updates
+    if (song.audioUrl) {
+      playOnlineAudio(song.audioUrl)
+    } else {
+      // Fetch fresh online studio recording stream from backend
+      fetch(apiUrl(`/api/music/search?q=${encodeURIComponent(song.title)}`))
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.track && data.track.audioUrl && this.isPlaying) {
+            song.audioUrl = data.track.audioUrl
+            song.artworkUrl = data.track.artworkUrl || song.artworkUrl
+            store.setActiveSong({ ...song })
+            playOnlineAudio(data.track.audioUrl)
+          }
+        })
+        .catch((fetchErr) => {
+          console.warn('[Online Audio Stream Lookup Failed]:', fetchErr)
+        })
+    }
+
+    // Live Frequency Visualizer Loop for HUD & 3D Avatar Mouth Lip-Sync
+    const updateFrequencies = () => {
+      if (!this.isPlaying) return
+      const now = performance.now() / 1000
+      const bpm = song.bpm || 120
+      const beatPhase = Math.sin(now * (bpm / 60) * Math.PI * 2) * 0.5 + 0.5
+      const energy = 0.65 + beatPhase * 0.30 + Math.random() * 0.08
+      const simulated = new Uint8Array(32)
+      for (let i = 0; i < 32; i++) {
+        const falloff = Math.max(0.35, 1.0 - i / 32)
+        simulated[i] = Math.round(Math.min(255, energy * falloff * 255))
+      }
+      store.setAudioFrequencies(simulated)
+      this.animFrameId = requestAnimationFrame(updateFrequencies)
+    }
+    this.animFrameId = requestAnimationFrame(updateFrequencies)
+
+    // Schedule progress tracking & text karaoke updates (NO ROBOTIC TTS VOCAL NOISE!)
     const startPerf = performance.now()
     this.progressInterval = window.setInterval(() => {
       if (!this.isPlaying) return

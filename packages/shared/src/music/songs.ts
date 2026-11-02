@@ -22,6 +22,7 @@ export interface SongSpec {
 export const POPULAR_SONG_CATALOG: SongSpec[] = [
   {
     id: 'song-shape-of-you',
+    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/44/c7/4f/44c74f0d-72dc-6143-d4d0-ba14d661ca0d/mzaf_9566898362556366703.plus.aac.p.m4a',
     title: 'Shape of You',
     artist: 'Ed Sheeran',
     genre: 'Dancehall Pop',
@@ -40,6 +41,7 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-believer',
+    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/c0/3f/36/c03f367a-b66b-fd0a-a54c-30f8250c4410/mzaf_12768434238801682952.plus.aac.p.m4a',
     title: 'Believer',
     artist: 'Imagine Dragons',
     genre: 'Alternative Rock / Anthem',
@@ -267,6 +269,7 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-idol-spark',
+    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/68/1e/60/681e601f-e1f2-4ebb-37de-adf00bdf57b6/mzaf_8266263075137964740.plus.aac.p.m4a',
     title: 'Starlight Sparkle (Dancing Song)',
     artist: 'Ada',
     genre: 'Anime Dance Pop',
@@ -284,6 +287,7 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-treachery-aizen',
+    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/09/77/5e/09775ee7-f71e-6400-2911-1e8498ec231f/mzaf_9762617435103270357.plus.aac.p.m4a',
     title: "Treachery (Aizen's Theme - Bleach)",
     artist: 'Shiro SAGISU and Gabriele Motta',
     genre: 'Cinematic Anime OST / Epic Orchestral',
@@ -301,6 +305,7 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-vaathi-coming',
+    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/20/da/f1/20daf12c-4e8f-bc03-d548-c4968cb405fd/mzaf_11939350127905472767.plus.aac.p.m4a',
     title: 'Vaathi Coming (Master)',
     artist: 'Anirudh Ravichander and Gana Balachandar',
     genre: 'Tamil Kuthu Pop / High Energy Dance',
@@ -318,6 +323,7 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-jailer-theme',
+    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/20/4b/a5/204ba5f1-aa95-9204-049a-3af28613dfdb/mzaf_9848955577816183835.plus.aac.p.m4a',
     title: 'Jailer Theme (Hukum - Tiger Ka Hukum)',
     artist: 'Anirudh Ravichander',
     genre: 'Tamil Cinematic Anthem / Mass Groove',

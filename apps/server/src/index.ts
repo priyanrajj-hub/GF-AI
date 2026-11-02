@@ -130,8 +130,13 @@ async function searchRealSongTrack(query: string, language?: string) {
       language === 'ta' ||
       /\b(?:tamil|paatu|paattu|podu|paadu)\b/i.test(query)
 
-    if (!clean || clean.length < 2 || /^play\b|^sing\b|^dance\b|^song\b|^music\b/i.test(clean)) {
-      clean = isTamilRequest ? 'Vaathi Coming' : 'Starlight Sparkle Dance Pop'
+    if (
+      !clean ||
+      clean.length < 2 ||
+      /^play\b|^sing\b|^dance\b|^dancing\b|^song\b|^music\b/i.test(clean) ||
+      /\b(?:dancing song|dance song|dancing music|baby bum|nursery)\b/i.test(clean)
+    ) {
+      clean = isTamilRequest ? 'Vaathi Coming' : 'Wake Me Up Avicii'
     } else if (isTamilRequest && !clean.toLowerCase().includes('tamil')) {
       clean = `${clean} tamil`
     }
