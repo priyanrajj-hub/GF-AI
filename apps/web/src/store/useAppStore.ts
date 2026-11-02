@@ -11,10 +11,19 @@ import type {
   StructuredReply,
   UserSettings,
   CustomPersonality,
+  TimeOfDayPhase,
 } from '@ada/shared'
 import { getTimeAwareGreeting } from '@ada/shared'
 
 export type AppSystemState = 'idle' | 'listening' | 'thinking' | 'speaking'
+
+export function computeTimeOfDay(date = new Date()): TimeOfDayPhase {
+  const hour = date.getHours()
+  if (hour >= 5 && hour < 12) return 'morning'
+  if (hour >= 12 && hour < 17) return 'noon'
+  if (hour >= 17 && hour < 21) return 'evening'
+  return 'night'
+}
 
 interface AppState {
   // System State
@@ -93,6 +102,16 @@ interface AppState {
   setCutenessLevel: (level: number) => void
   skinId: string
   setSkinId: (id: string) => void
+
+  // Time-of-Day Dynamics & Auto-Wardrobe
+  timeOfDayPhase: TimeOfDayPhase
+  timeSyncMode: 'auto' | 'morning' | 'noon' | 'evening' | 'night'
+  setTimeSyncMode: (mode: 'auto' | 'morning' | 'noon' | 'evening' | 'night') => void
+  setTimeOfDayPhase: (phase: TimeOfDayPhase) => void
+  autoWardrobeSync: boolean
+  toggleAutoWardrobeSync: () => void
+  ambientAudioEnabled: boolean
+  toggleAmbientAudio: () => void
   roamConfig: {
     enabled: boolean
     range: 'home' | 'half' | 'full'
@@ -213,8 +232,41 @@ export const useAppStore = create<AppState>((set, get) => ({
   setActiveAction: (action) => set({ activeAction: action }),
   cutenessLevel: 60,
   setCutenessLevel: (cutenessLevel) => set({ cutenessLevel }),
-  skinId: 'ada-red',
+  skinId: computeTimeOfDay() === 'morning' ? 'morning_chic' : computeTimeOfDay() === 'noon' ? 'office-blazer' : computeTimeOfDay() === 'evening' ? 'saree-crimson' : 'cozy-pajamas',
   setSkinId: (skinId) => set({ skinId }),
+
+  // Time-of-Day Dynamics & Auto-Wardrobe
+  timeOfDayPhase: computeTimeOfDay(),
+  timeSyncMode: 'auto',
+  autoWardrobeSync: true,
+  ambientAudioEnabled: true,
+  toggleAmbientAudio: () => set((s) => ({ ambientAudioEnabled: !s.ambientAudioEnabled })),
+  toggleAutoWardrobeSync: () => set((s) => ({ autoWardrobeSync: !s.autoWardrobeSync })),
+  setTimeSyncMode: (mode) => {
+    const phase = mode === 'auto' ? computeTimeOfDay() : mode
+    set({ timeSyncMode: mode, timeOfDayPhase: phase })
+    if (get().autoWardrobeSync) {
+      const outfitMap: Record<TimeOfDayPhase, string> = {
+        morning: 'morning_chic',
+        noon: 'office-blazer',
+        evening: 'saree-crimson',
+        night: 'cozy-pajamas',
+      }
+      set({ skinId: outfitMap[phase] })
+    }
+  },
+  setTimeOfDayPhase: (phase) => {
+    set({ timeOfDayPhase: phase })
+    if (get().autoWardrobeSync) {
+      const outfitMap: Record<TimeOfDayPhase, string> = {
+        morning: 'morning_chic',
+        noon: 'office-blazer',
+        evening: 'saree-crimson',
+        night: 'cozy-pajamas',
+      }
+      set({ skinId: outfitMap[phase] })
+    }
+  },
   roamConfig: {
     enabled: false,
     range: 'half',

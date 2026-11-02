@@ -385,6 +385,30 @@ export const ChatDrawer: React.FC = () => {
           ❤️ Sweet Check-in
         </button>
         <button
+          onClick={() => handleSendMessage('Good morning, Ada sweetheart! How is your morning going and what are you wearing?')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-amber-950/50 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer"
+        >
+          🌅 Morning Vibe
+        </button>
+        <button
+          onClick={() => handleSendMessage('Ada, it is midday! Let us review our academic goals and trading focus.')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-sky-950/50 border border-sky-500/40 text-sky-300 hover:bg-sky-900/60 transition-colors cursor-pointer"
+        >
+          ☀️ Noon Focus
+        </button>
+        <button
+          onClick={() => handleSendMessage('Look at the golden sunset outside, Ada! Tell me how you are feeling.')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-rose-950/50 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer"
+        >
+          🌇 Sunset Vibe
+        </button>
+        <button
+          onClick={() => handleSendMessage('It is late night, Ada. Ready to get cozy and wind down together?')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-indigo-950/50 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors cursor-pointer"
+        >
+          🌙 Night Wind-Down
+        </button>
+        <button
           onClick={() => handleSendMessage('What does your daily girl routine look like today, Ada? Tell me about your day!')}
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-rose-950/50 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer"
         >

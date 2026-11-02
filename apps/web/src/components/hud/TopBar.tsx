@@ -198,6 +198,48 @@ export const TopBar: React.FC = () => {
 
       {/* Action Icons */}
       <div className="flex items-center gap-2 pointer-events-auto">
+        {/* Time of Day & Auto-Sync Pill */}
+        <button
+          onClick={() => {
+            const nextMode: Record<string, 'auto' | 'morning' | 'noon' | 'evening' | 'night'> = {
+              auto: 'morning',
+              morning: 'noon',
+              noon: 'evening',
+              evening: 'night',
+              night: 'auto',
+            }
+            const next = nextMode[useAppStore.getState().timeSyncMode] || 'auto'
+            useAppStore.getState().setTimeSyncMode(next)
+          }}
+          className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-xl glass-panel-subtle border border-amber-500/30 text-[11px] font-mono text-amber-300 hover:text-white hover:border-amber-400 transition-colors cursor-pointer"
+          title="Click to cycle time of day: Auto -> Morning -> Noon -> Evening -> Night. Synchronizes background, lighting, ambient sound & dress!"
+        >
+          {useAppStore.getState().timeOfDayPhase === 'morning' && '🌅 MORNING'}
+          {useAppStore.getState().timeOfDayPhase === 'noon' && '☀️ NOON'}
+          {useAppStore.getState().timeOfDayPhase === 'evening' && '🌇 SUNSET'}
+          {useAppStore.getState().timeOfDayPhase === 'night' && '🌙 NIGHT'}
+          <span className="text-[9px] text-amber-400/60 lowercase">
+            ({useAppStore.getState().timeSyncMode})
+          </span>
+        </button>
+
+        {/* Ambient Sound Toggle */}
+        <button
+          onClick={() => useAppStore.getState().toggleAmbientAudio()}
+          className={`p-2 rounded-xl glass-panel-subtle transition-all cursor-pointer ${
+            useAppStore.getState().ambientAudioEnabled
+              ? 'text-teal-300 border border-teal-400/50 bg-teal-500/20 shadow-[0_0_10px_rgba(20,184,166,0.3)]'
+              : 'text-slate-500 hover:text-slate-300'
+          }`}
+          title={
+            useAppStore.getState().ambientAudioEnabled
+              ? 'Ambient Background Sound: ON (Breeze, Lo-Fi, Waves, Hearth)'
+              : 'Ambient Background Sound: MUTED'
+          }
+        >
+          <Sparkles className="w-4 h-4" />
+        </button>
+
         {/* Close-Up Framing Toggle */}
         <button
           onClick={() => updateSettings({ closeUpView: !settings.closeUpView })}

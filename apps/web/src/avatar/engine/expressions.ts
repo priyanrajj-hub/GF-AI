@@ -16,12 +16,15 @@ export interface ExpressionValues {
 }
 
 export const EXPRESSION_PRESETS: Record<string, Partial<ExpressionValues>> = {
-  neutral: { joy: 0.10, fun: 0.35 },
-  happy: { joy: 0.22, fun: 0.88, lookUp: 0.05 }, // Bright open eyes, radiant smile
-  playful: { joy: 0.25, fun: 0.85, blinkR: 0.85 }, // Playful wink with happy smile
-  companion: { joy: 0.20, fun: 0.75 },
-  calm: { joy: 0.12, fun: 0.50 },
-  motivated: { joy: 0.25, fun: 0.78, angry: 0.12, lookUp: 0.08 },
+  neutral: { joy: 0.12, fun: 0.45, lookDown: 0.02 }, // Composed, poised, intelligent gaze
+  happy: { joy: 0.28, fun: 0.85, lookUp: 0.04 }, // Radiant mature feminine smile
+  playful: { joy: 0.26, fun: 0.82, blinkR: 0.85 }, // Witty, charming wink
+  companion: { joy: 0.24, fun: 0.72 }, // Attuned, loving, warm girlfriend connection
+  calm: { joy: 0.14, fun: 0.50 }, // Serene, grounded, quiet composure
+  motivated: { joy: 0.28, fun: 0.76, angry: 0.06, lookUp: 0.06 }, // Confident, high-energy, ambitious
+  concerned: { sorrow: 0.38, joy: 0.05, lookDown: 0.12 }, // Gentle compassionate tenderness
+  thinking: { fun: 0.42, lookUp: 0.22, lookDown: 0.04 }, // Analytical, contemplative focus
+  love: { joy: 0.32, fun: 0.80, blink: 0.08 }, // Soft romantic girlfriend tenderness
   big_smile: { joy: 0.30, fun: 0.95, lookUp: 0.08 },
   laughing: { joy: 0.38, fun: 1.0, blink: 0.25, aa: 0.35 },
   giggle: { joy: 0.30, fun: 0.90, blink: 0.15, aa: 0.2 },
@@ -37,11 +40,9 @@ export const EXPRESSION_PRESETS: Record<string, Partial<ExpressionValues>> = {
   scared: { sorrow: 0.75, blink: 0.2, lookDown: 0.25 },
   worried: { sorrow: 0.55, lookDown: 0.18 },
   confused: { fun: 0.35, sorrow: 0.25, lookUp: 0.2 },
-  thinking: { fun: 0.45, lookUp: 0.35 },
   smug: { joy: 0.25, fun: 0.85, lookDown: 0.08 },
   mischievous: { joy: 0.25, fun: 0.85, blinkR: 0.90 }, // Wink
   shy: { joy: 0.22, fun: 0.55, lookDown: 0.28, blink: 0.15 },
-  love: { joy: 0.28, fun: 0.85, blink: 0.1 },
   sparkle_eyes: { joy: 0.25, fun: 0.95, lookUp: 0.12 },
   sleepy: { blink: 0.55, lookDown: 0.25 },
   tired: { sorrow: 0.35, blink: 0.45, lookDown: 0.3 },

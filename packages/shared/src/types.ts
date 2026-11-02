@@ -132,6 +132,7 @@ export interface MoodJournalEntry {
 }
 
 export type AvatarRenderMode = 'solid' | 'holo-lite' | 'holo-full'
+export type TimeOfDayPhase = 'morning' | 'noon' | 'evening' | 'night'
 
 export interface UserSettings {
   userId: string
