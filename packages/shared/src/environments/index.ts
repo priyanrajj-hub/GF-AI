@@ -44,13 +44,14 @@ export class EnvironmentProvider {
 
     if (options.mode === 'coach') return this.getById('athletic-gym')
 
-    // Day/Night progression
-    if (hour >= 23 || hour < 6) return this.getById('cozy-bedroom')
-    if (hour >= 6 && hour < 10) return this.getById('beach-sunset')
-    if (hour >= 10 && hour < 17) return this.getById('cafe-lofi')
-    if (hour >= 17 && hour < 21) return this.getById('rooftop-night')
-    if (hour >= 21 && hour < 23) return this.getById('sakura-garden')
-
-    return this.getById('holo-lab')
+    // Day / Noon / Sunset / Night progression:
+    // Morning (05:00 - 11:59): Serene Sakura Garden with morning light
+    if (hour >= 5 && hour < 12) return this.getById('sakura-garden')
+    // Noon / Afternoon (12:00 - 16:59): Grand Classical Library sunlit focus
+    if (hour >= 12 && hour < 17) return this.getById('study-library')
+    // Evening / Golden Hour (17:00 - 20:59): Golden Hour Beach Sunset
+    if (hour >= 17 && hour < 21) return this.getById('beach-sunset')
+    // Night (21:00 - 04:59): Cozy Bedroom with Warm Amber Lamps
+    return this.getById('cozy-bedroom')
   }
 }

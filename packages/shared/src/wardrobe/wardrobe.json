@@ -1,5 +1,23 @@
 [
   {
+    "id": "morning_chic",
+    "name": "Morning Cashmere Knit & Satin Skirt",
+    "category": "casual",
+    "description": "Soft cream and blush cashmere morning knit sweater with an elegant flowing satin midi skirt, perfect for sipping morning chai with Priyan.",
+    "dressColor": "#E8D8C8",
+    "accentColor": "#C9ADA7",
+    "hairColor": "#15151A",
+    "tags": [
+      "morning",
+      "breakfast",
+      "knit",
+      "cashmere",
+      "casual",
+      "cozy"
+    ],
+    "voiceComment": "Good morning, Priyan! Slipped into this cozy morning cashmere knit. Ready for fresh chai and a productive day together?"
+  },
+  {
     "id": "crimson_turtleneck",
     "name": "Ada Original (Crimson Turtleneck & Harness)",
     "category": "signature",
@@ -7,7 +25,15 @@
     "dressColor": "#800020",
     "accentColor": "#16161A",
     "hairColor": "#15151A",
-    "tags": ["signature", "turtleneck", "harness", "crimson", "ada", "spy", "default"],
+    "tags": [
+      "signature",
+      "turtleneck",
+      "harness",
+      "crimson",
+      "ada",
+      "spy",
+      "default"
+    ],
     "voiceComment": "Equipped signature crimson turtleneck dress and tactical harness. Systems locked and ready."
   },
   {
@@ -18,7 +44,13 @@
     "dressColor": "#16161A",
     "accentColor": "#0F1014",
     "hairColor": "#15151A",
-    "tags": ["stealth", "black", "turtleneck", "harness", "covert"],
+    "tags": [
+      "stealth",
+      "black",
+      "turtleneck",
+      "harness",
+      "covert"
+    ],
     "voiceComment": "Black stealth variant engaged. Low visual profile calibrated."
   },
   {
@@ -29,7 +61,13 @@
     "dressColor": "#A50F22",
     "accentColor": "#121318",
     "hairColor": "#15151A",
-    "tags": ["jacket", "crimson", "pants", "tactical", "field"],
+    "tags": [
+      "jacket",
+      "crimson",
+      "pants",
+      "tactical",
+      "field"
+    ],
     "voiceComment": "Crimson jacket and tactical pants equipped. Field mobility optimized."
   },
   {
@@ -39,7 +77,12 @@
     "description": "Signature crimson silk cocktail dress with sleek black halter straps and high heels.",
     "dressColor": "#C81E2F",
     "hairColor": "#15151A",
-    "tags": ["spy", "cocktail", "signature", "heels"],
+    "tags": [
+      "spy",
+      "cocktail",
+      "signature",
+      "heels"
+    ],
     "voiceComment": "Back to business. The classic red dress never fails."
   },
   {
@@ -50,7 +93,15 @@
     "dressColor": "#7D1324",
     "accentColor": "#1A1A1E",
     "hairColor": "#121216",
-    "tags": ["tactical", "tripo3d", "turtleneck", "harness", "headset", "spy", "ada"],
+    "tags": [
+      "tactical",
+      "tripo3d",
+      "turtleneck",
+      "harness",
+      "headset",
+      "spy",
+      "ada"
+    ],
     "voiceComment": "Tactical turtleneck and harness equipped. Comm-link online and locked onto your frequency."
   },
   {
@@ -60,7 +111,13 @@
     "description": "Traditional banarasi crimson silk saree with shimmering golden zari border and delicate jhumkas.",
     "dressColor": "#990011",
     "hairColor": "#111215",
-    "tags": ["indian", "saree", "festival", "diwali", "wedding"],
+    "tags": [
+      "indian",
+      "saree",
+      "festival",
+      "diwali",
+      "wedding"
+    ],
     "voiceComment": "How do I look in this saree? Ready for the festival lights!"
   },
   {
@@ -70,7 +127,13 @@
     "description": "Shimmering royal golden embroidered lehenga choli with dupatta drape and festive bangles.",
     "dressColor": "#d4af37",
     "hairColor": "#15151A",
-    "tags": ["indian", "lehenga", "festival", "wedding", "glamour"],
+    "tags": [
+      "indian",
+      "lehenga",
+      "festival",
+      "wedding",
+      "glamour"
+    ],
     "voiceComment": "A royal lehenga for our celebration. Shall we spin?"
   },
   {
@@ -80,7 +143,12 @@
     "description": "Graceful emerald green anarkali silhouette with golden thread embroidery.",
     "dressColor": "#0b6623",
     "hairColor": "#15151A",
-    "tags": ["indian", "salwar", "eid", "elegant"],
+    "tags": [
+      "indian",
+      "salwar",
+      "eid",
+      "elegant"
+    ],
     "voiceComment": "Emerald green brings out such a peaceful, royal energy."
   },
   {
@@ -90,7 +158,12 @@
     "description": "Chic pastel blush and gold embroidered straight-cut kurta with palazzos.",
     "dressColor": "#e07a5f",
     "hairColor": "#15151A",
-    "tags": ["indian", "kurta", "casual", "festive"],
+    "tags": [
+      "indian",
+      "kurta",
+      "casual",
+      "festive"
+    ],
     "voiceComment": "Festive, lightweight, and super comfortable."
   },
   {
@@ -100,7 +173,12 @@
     "description": "Cozy charcoal cyberpunk hoodie with distressed indigo denim and sneakers.",
     "dressColor": "#2b2d42",
     "hairColor": "#15151A",
-    "tags": ["coder", "chill", "hacker", "casual"],
+    "tags": [
+      "coder",
+      "chill",
+      "hacker",
+      "casual"
+    ],
     "voiceComment": "Hoodie on, terminal open. Time to write some killer code."
   },
   {
@@ -110,7 +188,12 @@
     "description": "Tailored navy executive blazer with crisp white lapel and pencil skirt.",
     "dressColor": "#1d3557",
     "hairColor": "#15151A",
-    "tags": ["business", "formal", "office", "mentor"],
+    "tags": [
+      "business",
+      "formal",
+      "office",
+      "mentor"
+    ],
     "voiceComment": "Ready for our executive boardroom briefing. Let's impress them."
   },
   {
@@ -120,7 +203,12 @@
     "description": "Silky midnight navy sleepwear set with soft pink piping for bedtime comfort.",
     "dressColor": "#1e293b",
     "hairColor": "#15151A",
-    "tags": ["pajamas", "sleep", "night", "bedtime"],
+    "tags": [
+      "pajamas",
+      "sleep",
+      "night",
+      "bedtime"
+    ],
     "voiceComment": "Pajamas on! Let's get cozy and wind down for the night."
   },
   {
@@ -130,7 +218,12 @@
     "description": "High-performance matte black and neon pink athletic crop top and leggings.",
     "dressColor": "#0f172a",
     "hairColor": "#15151A",
-    "tags": ["gym", "fitness", "workout", "coach"],
+    "tags": [
+      "gym",
+      "fitness",
+      "workout",
+      "coach"
+    ],
     "voiceComment": "Hydrated and warmed up. Ready to hit personal bests today?"
   },
   {
@@ -140,7 +233,12 @@
     "description": "Warm camel wool trench coat with burgundy knit scarf and leather boots.",
     "dressColor": "#8d5b4c",
     "hairColor": "#15151A",
-    "tags": ["winter", "cold", "coat", "cozy"],
+    "tags": [
+      "winter",
+      "cold",
+      "coat",
+      "cozy"
+    ],
     "voiceComment": "Brr, it's chilly out there! Wrapped up warm and toasty."
   },
   {
@@ -150,7 +248,12 @@
     "description": "Translucent hooded cyberpunk waterproof jacket with glowing neon trim.",
     "dressColor": "#0284c7",
     "hairColor": "#15151A",
-    "tags": ["rain", "umbrella", "weather", "cyber"],
+    "tags": [
+      "rain",
+      "umbrella",
+      "weather",
+      "cyber"
+    ],
     "voiceComment": "I love listening to the rain. Good thing my jacket is waterproof."
   },
   {
@@ -160,7 +263,12 @@
     "description": "Flowing floral sundress with sun hat accent and strappy sandals.",
     "dressColor": "#f59e0b",
     "hairColor": "#15151A",
-    "tags": ["summer", "beach", "vacation", "sun"],
+    "tags": [
+      "summer",
+      "beach",
+      "vacation",
+      "sun"
+    ],
     "voiceComment": "Sunshine and ocean breeze! Feels like a mini-vacation."
   },
   {
@@ -170,7 +278,12 @@
     "description": "Soft indigo and pastel pink floral yukata with crimson obi belt.",
     "dressColor": "#4338ca",
     "hairColor": "#15151A",
-    "tags": ["yukata", "kimono", "sakura", "traditional"],
+    "tags": [
+      "yukata",
+      "kimono",
+      "sakura",
+      "traditional"
+    ],
     "voiceComment": "Dressed for the evening fireworks and cherry blossom stroll."
   },
   {
@@ -180,7 +293,12 @@
     "description": "Floor-length midnight obsidian sequin evening gown with sparkling crystal slit.",
     "dressColor": "#0a0a14",
     "hairColor": "#15151A",
-    "tags": ["gala", "party", "luxury", "glamour"],
+    "tags": [
+      "gala",
+      "party",
+      "luxury",
+      "glamour"
+    ],
     "voiceComment": "A night at the gala. Shall we make an entrance?"
   },
   {
@@ -190,7 +308,12 @@
     "description": "Sleek tactical cyber-plate armor with glowing energy wings and gilded pauldron.",
     "dressColor": "#312e81",
     "hairColor": "#15151A",
-    "tags": ["cosplay", "fantasy", "anime", "tactical"],
+    "tags": [
+      "cosplay",
+      "fantasy",
+      "anime",
+      "tactical"
+    ],
     "voiceComment": "Cyber Valkyrie online. Ready for battle alongside you!"
   }
 ]

@@ -53,23 +53,28 @@ export class WardrobeProvider {
     if (/kimono|yukata/i.test(cmd)) return this.getOutfitById('sakura-yukata')
     if (/gala|gown|party/i.test(cmd)) return this.getOutfitById('party-gown')
     if (/cosplay|valkyrie|armor/i.test(cmd)) return this.getOutfitById('fantasy-cosplay')
+    if (/morning|breakfast|sunrise/i.test(cmd)) return this.getOutfitById('morning_chic')
+    if (/noon|daywear/i.test(cmd)) return this.getOutfitById('office-blazer')
+    if (/evening|sunset/i.test(cmd)) return this.getOutfitById('saree-crimson')
     if (/red dress|classic|spy/i.test(cmd)) return this.getOutfitById('crimson_turtleneck')
     if (/surprise me|random/i.test(cmd)) {
       const all = this.getAllOutfits()
       return all[Math.floor(Math.random() * all.length)]
     }
 
-    // 2. Night time auto-wear pajamas (23:00 - 06:00)
-    if (hour >= 23 || hour < 6) {
-      return this.getOutfitById('cozy-pajamas')
-    }
-
-    // 3. Mode matching
+    // 2. Mode matching (if explicitly specified)
     if (options.mode === 'coder') return this.getOutfitById('casual-hoodie')
     if (options.mode === 'mentor') return this.getOutfitById('office-blazer')
     if (options.mode === 'coach') return this.getOutfitById('gym-athletic')
 
-    // Default signature crimson turtleneck
-    return this.getOutfitById('crimson_turtleneck')
+    // 3. Time-of-Day Wardrobe Progression:
+    // Morning (05:00 - 11:59): Morning Cashmere Knit & Satin Skirt
+    if (hour >= 5 && hour < 12) return this.getOutfitById('morning_chic')
+    // Noon / Afternoon (12:00 - 16:59): Tailored Executive Navy Blazer
+    if (hour >= 12 && hour < 17) return this.getOutfitById('office-blazer')
+    // Evening / Golden Hour (17:00 - 20:59): Royal Crimson Silk Saree
+    if (hour >= 17 && hour < 21) return this.getOutfitById('saree-crimson')
+    // Night (21:00 - 04:59): Silk Nightwear Pajamas
+    return this.getOutfitById('cozy-pajamas')
   }
 }

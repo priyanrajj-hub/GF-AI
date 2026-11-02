@@ -144,45 +144,62 @@ export const AdaRedSkin: AvatarSkin = {
                   if (ctx) {
                     ctx.drawImage(img, 0, 0, 1024, 1024)
 
-                    // 1. Soft Rosy Cheek Blush
-                    const gradL = ctx.createRadialGradient(380, 460, 4, 380, 460, 45)
-                    gradL.addColorStop(0, 'rgba(238, 90, 110, 0.40)')
-                    gradL.addColorStop(1, 'rgba(238, 90, 110, 0)')
+                    // 1. Mature Sculpted Cheekbone Contour & Rosy-Peach Blush
+                    const gradL = ctx.createRadialGradient(380, 460, 4, 380, 460, 50)
+                    gradL.addColorStop(0, 'rgba(235, 95, 115, 0.42)')
+                    gradL.addColorStop(0.6, 'rgba(215, 80, 100, 0.18)')
+                    gradL.addColorStop(1, 'rgba(215, 80, 100, 0)')
                     ctx.fillStyle = gradL
                     ctx.beginPath()
-                    ctx.arc(380, 460, 45, 0, Math.PI * 2)
+                    ctx.arc(380, 460, 50, 0, Math.PI * 2)
                     ctx.fill()
 
-                    const gradR = ctx.createRadialGradient(644, 460, 4, 644, 460, 45)
-                    gradR.addColorStop(0, 'rgba(238, 90, 110, 0.40)')
-                    gradR.addColorStop(1, 'rgba(238, 90, 110, 0)')
+                    const gradR = ctx.createRadialGradient(644, 460, 4, 644, 460, 50)
+                    gradR.addColorStop(0, 'rgba(235, 95, 115, 0.42)')
+                    gradR.addColorStop(0.6, 'rgba(215, 80, 100, 0.18)')
+                    gradR.addColorStop(1, 'rgba(215, 80, 100, 0)')
                     ctx.fillStyle = gradR
                     ctx.beginPath()
-                    ctx.arc(644, 460, 45, 0, Math.PI * 2)
+                    ctx.arc(644, 460, 50, 0, Math.PI * 2)
                     ctx.fill()
 
-                    // 2. Ada Wong's Signature Ruby Lips (Cupid's bow + fullness)
-                    ctx.fillStyle = 'rgba(185, 12, 30, 0.92)'
+                    // 2. Mature Cat-Eye Eyeliner & Winged Depth (Above Upper Lash Line)
+                    ctx.fillStyle = 'rgba(15, 15, 20, 0.88)'
+                    // Left Eye Upper Wing
+                    ctx.beginPath()
+                    ctx.moveTo(330, 395)
+                    ctx.quadraticCurveTo(365, 375, 415, 390)
+                    ctx.quadraticCurveTo(365, 380, 330, 395)
+                    ctx.fill()
+                    // Right Eye Upper Wing
+                    ctx.beginPath()
+                    ctx.moveTo(694, 395)
+                    ctx.quadraticCurveTo(659, 375, 609, 390)
+                    ctx.quadraticCurveTo(659, 380, 694, 395)
+                    ctx.fill()
+
+                    // 3. Sophisticated Mature Ruby-Velvet Lips (Fuller Cupid's Bow & Satin Depth)
+                    ctx.fillStyle = 'rgba(175, 10, 28, 0.95)'
                     ctx.beginPath()
                     ctx.moveTo(476, 594)
-                    ctx.quadraticCurveTo(494, 582, 505, 587)
-                    ctx.quadraticCurveTo(512, 591, 519, 587)
-                    ctx.quadraticCurveTo(530, 582, 548, 594)
-                    ctx.quadraticCurveTo(534, 612, 512, 613)
-                    ctx.quadraticCurveTo(490, 612, 476, 594)
+                    ctx.quadraticCurveTo(494, 580, 505, 586)
+                    ctx.quadraticCurveTo(512, 590, 519, 586)
+                    ctx.quadraticCurveTo(530, 580, 548, 594)
+                    ctx.quadraticCurveTo(534, 614, 512, 615)
+                    ctx.quadraticCurveTo(490, 614, 476, 594)
                     ctx.closePath()
                     ctx.fill()
 
                     // Inner velvet depth
-                    ctx.fillStyle = 'rgba(110, 5, 15, 0.85)'
+                    ctx.fillStyle = 'rgba(105, 5, 15, 0.90)'
                     ctx.beginPath()
-                    ctx.ellipse(512, 597, 24, 5, 0, 0, Math.PI * 2)
+                    ctx.ellipse(512, 597, 25, 5.5, 0, 0, Math.PI * 2)
                     ctx.fill()
 
-                    // Glossy lower-lip highlight
-                    ctx.fillStyle = 'rgba(255, 220, 230, 0.55)'
+                    // Elegant lower-lip satin gloss highlight
+                    ctx.fillStyle = 'rgba(255, 230, 240, 0.65)'
                     ctx.beginPath()
-                    ctx.ellipse(512, 604, 11, 3, 0, 0, Math.PI * 2)
+                    ctx.ellipse(512, 605, 12, 3.5, 0, 0, Math.PI * 2)
                     ctx.fill()
 
                     const newTex = new THREE.CanvasTexture(canvas)
@@ -529,6 +546,38 @@ export function applyAvatarSkin(vrm: VRM, skinId: string = 'crimson_turtleneck')
           }
           if (skinId === 'tripo-tactical-turtleneck' || skinId === 'crimson_turtleneck') {
             if (mat.roughness !== undefined) mat.roughness = 0.55 // ribbed wool texture
+          }
+        }
+
+        // Specific Time-of-Day & Special Outfit Treatments:
+        if (skinId === 'morning_chic') {
+          if (/wear|cloth|dress/i.test(matName)) {
+            if (mat.roughness !== undefined) mat.roughness = 0.65 // soft cashmere knit
+          }
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            if (mat.color) mat.color.set('#F5EBE0')
+            mat.opacity = 0.60
+          }
+        } else if (skinId === 'office-blazer') {
+          if (/wear|cloth|dress/i.test(matName)) {
+            if (mat.roughness !== undefined) mat.roughness = 0.35 // structured executive wool
+          }
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            if (mat.color) mat.color.set('#111216')
+            mat.opacity = 0.88
+          }
+        } else if (skinId === 'saree-crimson') {
+          if (/wear|cloth|dress/i.test(matName)) {
+            if (mat.roughness !== undefined) mat.roughness = 0.30 // rich banarasi silk
+            if (mat.metalness !== undefined) mat.metalness = 0.18 // golden zari shimmer
+          }
+        } else if (skinId === 'cozy-pajamas' || skinId === 'cozy-night') {
+          if (/wear|cloth|dress/i.test(matName)) {
+            if (mat.roughness !== undefined) mat.roughness = 0.48 // comfortable bedtime silk
+          }
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            if (mat.color) mat.color.set('#1E293B')
+            mat.opacity = 0.70
           }
         }
 

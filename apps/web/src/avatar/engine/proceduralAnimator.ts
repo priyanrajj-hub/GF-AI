@@ -186,10 +186,29 @@ export class ProceduralAnimator {
       neck.rotation.y = THREE.MathUtils.lerp(neck.rotation.y, targetHeadY * 0.25, delta * 3.0)
     }
 
-    // 3. Natural Breathing Motion
-    const breath = Math.sin(time * 2.2) * 0.016 * liveRatio
-    if (spine) spine.rotation.x = breath * 0.5
-    if (chest) chest.rotation.x = breath
+    // 3. Multi-Stage Anatomical Living Breathing Motion (Thoracic + Diaphragm + Clavicle)
+    const breathCycle = Math.sin(time * 1.6) // ~15.2 breaths per minute
+    const breathInhale = Math.max(0, breathCycle) // Inhale peak
+    const breath = breathCycle * 0.020 * liveRatio
+
+    if (spine) {
+      spine.rotation.x = THREE.MathUtils.lerp(spine.rotation.x, breath * 0.45, delta * 3.5)
+    }
+    if (chest) {
+      chest.rotation.x = THREE.MathUtils.lerp(chest.rotation.x, breath * 0.85, delta * 3.5)
+      // Subtle thoracic 3D volume expansion
+      const chestExp = 1.0 + breathInhale * 0.012 * liveRatio
+      chest.scale.set(chestExp, 1.0, chestExp)
+    }
+
+    const leftShoulder = humanoid.getNormalizedBoneNode('leftShoulder')
+    const rightShoulder = humanoid.getNormalizedBoneNode('rightShoulder')
+    if (leftShoulder) {
+      leftShoulder.rotation.z = THREE.MathUtils.lerp(leftShoulder.rotation.z, breathInhale * 0.010 * liveRatio, delta * 3.0)
+    }
+    if (rightShoulder) {
+      rightShoulder.rotation.z = THREE.MathUtils.lerp(rightShoulder.rotation.z, -breathInhale * 0.010 * liveRatio, delta * 3.0)
+    }
 
     // 4. Locomotion & Action Routing
     const effectiveAction = this.state.isMoving
@@ -297,11 +316,11 @@ export class ProceduralAnimator {
       // 8 Interactive Dance Choreographies
       this.applyDanceMotion(effectiveAction, time, delta, humanoid, cuteRatio)
     } else {
-      // Living Feminine Contrapposto: graceful weight shift & S-Curve posture
-      const weightPhase = Math.sin(time * 0.45) // Smooth 4.5s weight shift cycle
-      const hipShiftX = weightPhase * (0.035 + cuteRatio * 0.02)
-      const hipTiltZ = -weightPhase * (0.045 + cuteRatio * 0.022)
-      const hipRotY = Math.cos(time * 0.35) * 0.035
+      // Living Feminine Contrapposto: graceful 6.5s weight shift & mature S-Curve poise
+      const weightPhase = Math.sin(time * 0.32)
+      const hipShiftX = weightPhase * 0.038
+      const hipTiltZ = -weightPhase * 0.045
+      const hipRotY = Math.cos(time * 0.26) * 0.035
 
       if (hips) {
         // Overlay twirl or hop if active

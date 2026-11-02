@@ -142,12 +142,36 @@ class VoiceEngineManager {
           const source = this.audioContext.createBufferSource()
           source.buffer = audioBuffer
 
-          // Real Girl Vocal Presence & Air EQ: Gentle high-shelf boost at 3.8kHz (+2.2dB)
+          // Emotional Prosody Tuning (Playback rate, pitch & air presence)
+          const emotion = store.currentEmotion || 'calm'
+          let rateMultiplier = 1.0
+          let airPresenceBoost = 2.2
+
+          if (emotion === 'happy') {
+            rateMultiplier = 1.04
+            airPresenceBoost = 2.8
+          } else if (emotion === 'playful') {
+            rateMultiplier = 1.06
+            airPresenceBoost = 3.0
+          } else if (emotion === 'concerned') {
+            rateMultiplier = 0.95
+            airPresenceBoost = 2.5
+          } else if (emotion === 'thinking') {
+            rateMultiplier = 0.98
+            airPresenceBoost = 1.9
+          } else if (emotion === 'motivated') {
+            rateMultiplier = 1.07
+            airPresenceBoost = 2.6
+          }
+
+          source.playbackRate.value = rateMultiplier * (options.rate || 1.0)
+
+          // Real Girl Vocal Presence & Air EQ: Gentle high-shelf boost at 3.8kHz
           // giving sweet, silky, breathy feminine warmth
           const highShelf = this.audioContext.createBiquadFilter()
           highShelf.type = 'highshelf'
           highShelf.frequency.value = 3800
-          highShelf.gain.value = 2.2
+          highShelf.gain.value = airPresenceBoost
 
           // Gain control
           const gainNode = this.audioContext.createGain()
