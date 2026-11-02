@@ -48,72 +48,38 @@ function CameraRig() {
   return null
 }
 
+import { SolarTimeService } from '../../services/solarTimeService.js'
+
 /**
  * Dynamically blends 3D Key, Fill, Rim, and Ambient lights to match
- * the Time of Day (Morning, Noon, Evening, Night) plus the girl's active Emotion.
+ * the continuous Solar Time calculation (Real Sun & Twilight) plus the girl's active Emotion.
  */
 function DynamicLightingRig() {
-  const { timeOfDayPhase, currentEmotion } = useAppStore()
+  const { solarHour, currentEmotion } = useAppStore()
 
   const ambRef = useRef<THREE.AmbientLight>(null)
   const keyRef = useRef<THREE.DirectionalLight>(null)
   const rimRef = useRef<THREE.DirectionalLight>(null)
   const fillRef = useRef<THREE.DirectionalLight>(null)
 
-  // Lighting presets based on Time of Day
+  // Real astronomical solar calculation
+  const solar = useMemo(() => {
+    return SolarTimeService.calculate(solarHour)
+  }, [solarHour])
+
   const lightingPreset = useMemo(() => {
-    switch (timeOfDayPhase) {
-      case 'morning':
-        return {
-          ambColor: new THREE.Color('#221a35'),
-          ambIntensity: 0.38,
-          keyColor: new THREE.Color('#fff0db'), // Warm golden sunrise
-          keyIntensity: 1.15,
-          keyPos: [2.2, 2.8, 2.0] as [number, number, number],
-          rimColor: new THREE.Color('#fb7185'), // Soft morning rose rim
-          rimIntensity: 0.85,
-          fillColor: new THREE.Color('#93c5fd'), // Sky blue fill
-          fillIntensity: 0.45,
-        }
-      case 'noon':
-        return {
-          ambColor: new THREE.Color('#0c2f4a'),
-          ambIntensity: 0.42,
-          keyColor: new THREE.Color('#ffffff'), // High brilliant daylight
-          keyIntensity: 1.25,
-          keyPos: [1.2, 3.8, 2.0] as [number, number, number],
-          rimColor: new THREE.Color('#38bdf8'), // Azure cyan rim
-          rimIntensity: 0.80,
-          fillColor: new THREE.Color('#e0f2fe'),
-          fillIntensity: 0.50,
-        }
-      case 'evening':
-        return {
-          ambColor: new THREE.Color('#281133'),
-          ambIntensity: 0.36,
-          keyColor: new THREE.Color('#fbbf24'), // Blazing sunset amber
-          keyIntensity: 1.10,
-          keyPos: [2.8, 1.8, 1.8] as [number, number, number],
-          rimColor: new THREE.Color('#f43f5e'), // Fiery crimson-magenta dusk
-          rimIntensity: 1.15,
-          fillColor: new THREE.Color('#a855f7'), // Twilight violet fill
-          fillIntensity: 0.40,
-        }
-      case 'night':
-      default:
-        return {
-          ambColor: new THREE.Color('#080d1c'),
-          ambIntensity: 0.28,
-          keyColor: new THREE.Color('#ffe4cc'), // Warm cozy bedside lamp
-          keyIntensity: 0.85,
-          keyPos: [1.8, 2.2, 1.8] as [number, number, number],
-          rimColor: new THREE.Color('#00f3ff'), // Cyber neon / moon cyan rim
-          rimIntensity: 0.95,
-          fillColor: new THREE.Color('#312e81'), // Midnight indigo fill
-          fillIntensity: 0.32,
-        }
+    return {
+      ambColor: new THREE.Color(solar.ambientColor),
+      ambIntensity: solar.ambientIntensity,
+      keyColor: new THREE.Color(solar.sunColor),
+      keyIntensity: solar.sunIntensity,
+      keyPos: solar.sunPosition,
+      rimColor: new THREE.Color(solar.rimColor),
+      rimIntensity: solar.rimIntensity,
+      fillColor: new THREE.Color(solar.skyMid),
+      fillIntensity: Math.max(0.25, solar.ambientIntensity * 1.1),
     }
-  }, [timeOfDayPhase])
+  }, [solar])
 
   // Emotion-reactive color highlights
   const emotionColor = useMemo(() => {

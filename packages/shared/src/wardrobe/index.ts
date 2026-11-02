@@ -4,12 +4,18 @@ import type { PersonalityMode } from '../types.js'
 export interface WardrobeOutfit {
   id: string
   name: string
-  category: 'signature' | 'indian' | 'casual' | 'formal' | 'night' | 'sport' | 'seasonal' | 'weather' | 'summer' | 'traditional' | 'glamour' | 'cosplay'
+  category: 'signature' | 'indian' | 'casual' | 'formal' | 'night' | 'sport' | 'seasonal' | 'weather' | 'summer' | 'traditional' | 'glamour' | 'cosplay' | 'tactical'
   description: string
   dressColor: string
+  accentColor?: string
   hairColor: string
   tags: string[]
   voiceComment: string
+}
+
+export interface WardrobeHistoryEntry {
+  skinId: string
+  timestamp: number
 }
 
 export class WardrobeProvider {
@@ -24,18 +30,34 @@ export class WardrobeProvider {
   }
 
   /**
-   * Auto-selects outfit based on mode, time of day, weather, and voice commands
+   * Pools defined per time-of-day phase for varied, non-repeating daily wear
+   */
+  static readonly POOLS = {
+    morning: ['morning_chic', 'kurta-festive', 'gym-athletic', 'beach-sundress'],
+    noon: ['office-blazer', 'casual-hoodie', 'black_stealth', 'crimson_jacket'],
+    evening: ['saree-crimson', 'lehenga-gold', 'party-gown', 'salwar-emerald', 'ada-red'],
+    night: ['cozy-pajamas', 'casual-hoodie', 'morning_chic'],
+  } as const
+
+  /**
+   * Auto-selects intelligent outfit based on time pools, weather, mode, calendar and 3-day anti-repeat history.
    */
   static selectIntelligentOutfit(options: {
     command?: string
     mode?: PersonalityMode
     hour?: number
+    phase?: 'morning' | 'noon' | 'evening' | 'night'
     weather?: string
+    isExamWeek?: boolean
+    history?: WardrobeHistoryEntry[]
   }): WardrobeOutfit {
     const cmd = (options.command || '').toLowerCase()
     const hour = options.hour ?? new Date().getHours()
+    const history = options.history || []
+    const now = Date.now()
+    const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000
 
-    // 1. Voice command detection
+    // 1. Direct Voice / Text Command matching (explicit override)
     if (/turtleneck|harness|ada original/i.test(cmd)) return this.getOutfitById('crimson_turtleneck')
     if (/stealth|black stealth/i.test(cmd)) return this.getOutfitById('black_stealth')
     if (/jacket|crimson jacket|field jacket/i.test(cmd)) return this.getOutfitById('crimson_jacket')
@@ -53,28 +75,46 @@ export class WardrobeProvider {
     if (/kimono|yukata/i.test(cmd)) return this.getOutfitById('sakura-yukata')
     if (/gala|gown|party/i.test(cmd)) return this.getOutfitById('party-gown')
     if (/cosplay|valkyrie|armor/i.test(cmd)) return this.getOutfitById('fantasy-cosplay')
-    if (/morning|breakfast|sunrise/i.test(cmd)) return this.getOutfitById('morning_chic')
-    if (/noon|daywear/i.test(cmd)) return this.getOutfitById('office-blazer')
-    if (/evening|sunset/i.test(cmd)) return this.getOutfitById('saree-crimson')
-    if (/red dress|classic|spy/i.test(cmd)) return this.getOutfitById('crimson_turtleneck')
-    if (/surprise me|random/i.test(cmd)) {
-      const all = this.getAllOutfits()
-      return all[Math.floor(Math.random() * all.length)]
+
+    // 2. Weather & Seasonal Context Overrides
+    const weather = (options.weather || '').toLowerCase()
+    if (weather.includes('rain') || weather.includes('monsoon')) {
+      return this.getOutfitById('rain-jacket')
+    }
+    if (weather.includes('winter') || weather.includes('snow') || weather.includes('freezing')) {
+      return this.getOutfitById('winter-coat')
     }
 
-    // 2. Mode matching (if explicitly specified)
-    if (options.mode === 'coder') return this.getOutfitById('casual-hoodie')
-    if (options.mode === 'mentor') return this.getOutfitById('office-blazer')
-    if (options.mode === 'coach') return this.getOutfitById('gym-athletic')
+    // 3. Calendar Context Override (e.g. Exam week -> study hoodie)
+    if (options.isExamWeek) {
+      return this.getOutfitById('casual-hoodie')
+    }
 
-    // 3. Time-of-Day Wardrobe Progression:
-    // Morning (05:00 - 11:59): Morning Cashmere Knit & Satin Skirt
-    if (hour >= 5 && hour < 12) return this.getOutfitById('morning_chic')
-    // Noon / Afternoon (12:00 - 16:59): Tailored Executive Navy Blazer
-    if (hour >= 12 && hour < 17) return this.getOutfitById('office-blazer')
-    // Evening / Golden Hour (17:00 - 20:59): Royal Crimson Silk Saree
-    if (hour >= 17 && hour < 21) return this.getOutfitById('saree-crimson')
-    // Night (21:00 - 04:59): Silk Nightwear Pajamas
-    return this.getOutfitById('cozy-pajamas')
+    // 4. Personality Mode Affinity Override
+    if (options.mode === 'coach') return this.getOutfitById('gym-athletic')
+    if (options.mode === 'mentor') return this.getOutfitById('office-blazer')
+
+    // 5. Time-of-Day Pool Selection with 3-Day Anti-Repeat Protection
+    let phase: 'morning' | 'noon' | 'evening' | 'night' = options.phase || 'morning'
+    if (!options.phase) {
+      if (hour >= 5 && hour < 12) phase = 'morning'
+      else if (hour >= 12 && hour < 17) phase = 'noon'
+      else if (hour >= 17 && hour < 21) phase = 'evening'
+      else phase = 'night'
+    }
+
+    const pool = this.POOLS[phase] || this.POOLS.morning
+
+    // Filter out outfits worn within the last 3 days
+    const recentIds = new Set(
+      history
+        .filter((entry) => now - entry.timestamp < THREE_DAYS_MS)
+        .map((entry) => entry.skinId)
+    )
+
+    const candidates = pool.filter((id) => !recentIds.has(id))
+    const selectedId = candidates.length > 0 ? candidates[0] : pool[0]
+
+    return this.getOutfitById(selectedId)
   }
 }

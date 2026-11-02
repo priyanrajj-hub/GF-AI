@@ -15,6 +15,11 @@ import {
   Users,
   ShieldCheck,
   Globe,
+  Sun,
+  Moon,
+  CloudRain,
+  Lock,
+  Unlock,
 } from 'lucide-react'
 import type { PersonalityMode } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
@@ -47,9 +52,18 @@ export const TopBar: React.FC = () => {
     isMinorMode,
     settings,
     updateSettings,
+    solarHour,
+    setSolarHour,
+    isTimeLocked,
+    setIsTimeLocked,
+    weatherType,
+    setWeatherType,
+    timeOfDayPhase,
+    timeSyncMode,
+    setTimeSyncMode,
   } = useAppStore()
 
-
+  const [showTimeSlider, setShowTimeSlider] = useState<boolean>(false)
   const [isMockMode, setIsMockMode] = useState<boolean>(false)
   const [isInternetOnline, setIsInternetOnline] = useState<boolean>(true)
 
@@ -198,30 +212,104 @@ export const TopBar: React.FC = () => {
 
       {/* Action Icons */}
       <div className="flex items-center gap-2 pointer-events-auto">
-        {/* Time of Day & Auto-Sync Pill */}
-        <button
-          onClick={() => {
-            const nextMode: Record<string, 'auto' | 'morning' | 'noon' | 'evening' | 'night'> = {
-              auto: 'morning',
-              morning: 'noon',
-              noon: 'evening',
-              evening: 'night',
-              night: 'auto',
-            }
-            const next = nextMode[useAppStore.getState().timeSyncMode] || 'auto'
-            useAppStore.getState().setTimeSyncMode(next)
-          }}
-          className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-xl glass-panel-subtle border border-amber-500/30 text-[11px] font-mono text-amber-300 hover:text-white hover:border-amber-400 transition-colors cursor-pointer"
-          title="Click to cycle time of day: Auto -> Morning -> Noon -> Evening -> Night. Synchronizes background, lighting, ambient sound & dress!"
-        >
-          {useAppStore.getState().timeOfDayPhase === 'morning' && '🌅 MORNING'}
-          {useAppStore.getState().timeOfDayPhase === 'noon' && '☀️ NOON'}
-          {useAppStore.getState().timeOfDayPhase === 'evening' && '🌇 SUNSET'}
-          {useAppStore.getState().timeOfDayPhase === 'night' && '🌙 NIGHT'}
-          <span className="text-[9px] text-amber-400/60 lowercase">
-            ({useAppStore.getState().timeSyncMode})
-          </span>
-        </button>
+        {/* Time of Day v2 Interactive Scrubbing Widget */}
+        <div className="relative">
+          <button
+            onClick={() => setShowTimeSlider(!showTimeSlider)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl glass-panel-subtle border border-amber-500/30 text-[11px] font-mono text-amber-300 hover:text-white hover:border-amber-400 transition-colors cursor-pointer"
+            title="Time-of-Day v2: Click to scrub 24hr solar time, lock time, or pick weather!"
+          >
+            {timeOfDayPhase === 'morning' && '🌅 MORNING'}
+            {timeOfDayPhase === 'noon' && '☀️ NOON'}
+            {timeOfDayPhase === 'evening' && '🌇 SUNSET'}
+            {timeOfDayPhase === 'night' && '🌙 NIGHT'}
+            <span className="text-[9px] text-amber-400/80">
+              {Math.floor(solarHour).toString().padStart(2, '0')}:{Math.floor((solarHour % 1) * 60).toString().padStart(2, '0')}
+            </span>
+            {isTimeLocked ? <Lock className="w-2.5 h-2.5 text-amber-400" /> : <span className="text-[9px] text-amber-400/60 lowercase">({timeSyncMode})</span>}
+          </button>
+
+          {showTimeSlider && (
+            <div className="absolute right-0 top-full mt-2 w-72 p-3.5 glass-panel rounded-2xl border border-amber-500/40 shadow-2xl z-50 bg-slate-950/95 backdrop-blur-xl space-y-3 font-mono text-xs text-amber-200">
+              <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                <span className="font-bold flex items-center gap-1.5 text-amber-300">
+                  <Sun className="w-3.5 h-3.5" /> 24hr Sun Time
+                </span>
+                <button
+                  onClick={() => {
+                    setTimeSyncMode('auto')
+                    setShowTimeSlider(false)
+                  }}
+                  className="text-[10px] text-cyan-400 hover:underline"
+                >
+                  Back to Auto Sun
+                </button>
+              </div>
+
+              {/* Scrubbing slider */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px] text-slate-400">
+                  <span>00:00 Night</span>
+                  <span className="font-bold text-amber-300">
+                    {Math.floor(solarHour).toString().padStart(2, '0')}:{Math.floor((solarHour % 1) * 60).toString().padStart(2, '0')}
+                  </span>
+                  <span>23:59 Night</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="24"
+                  step="0.1"
+                  value={solarHour}
+                  onChange={(e) => {
+                    const h = parseFloat(e.target.value)
+                    setSolarHour(h)
+                    setIsTimeLocked(true)
+                  }}
+                  className="w-full accent-amber-400 cursor-pointer"
+                />
+              </div>
+
+              {/* Weather selector */}
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                  <CloudRain className="w-3 h-3 text-cyan-400" /> Weather & Atmosphere:
+                </span>
+                <div className="grid grid-cols-3 gap-1 text-[10px]">
+                  {(['clear', 'rain', 'mist', 'monsoon', 'winter_fog', 'cloudy'] as const).map((w) => (
+                    <button
+                      key={w}
+                      onClick={() => setWeatherType(w)}
+                      className={`px-1.5 py-1 rounded-lg border capitalize transition-all ${
+                        weatherType === w
+                          ? 'border-cyan-400 bg-cyan-500/20 text-cyan-200 font-bold'
+                          : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-600'
+                      }`}
+                    >
+                      {w.replace('_', ' ')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lock to this time */}
+              <div className="flex items-center justify-between pt-1 border-t border-amber-500/20 text-[10px]">
+                <span>Lock to this time:</span>
+                <button
+                  onClick={() => setIsTimeLocked(!isTimeLocked)}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] ${
+                    isTimeLocked
+                      ? 'border-amber-400 bg-amber-500/20 text-amber-300'
+                      : 'border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {isTimeLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
+                  {isTimeLocked ? 'Locked' : 'Unlocked'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Ambient Sound Toggle */}
         <button
