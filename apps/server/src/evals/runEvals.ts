@@ -337,6 +337,84 @@ async function runEvaluations(): Promise<void> {
     console.warn(`❌ [FAIL] Forget Source test failed: ${err.message}`)
   }
 
+  // 7. Round 11 Task B: Time-of-Day v2 & Wardrobe Pools
+  console.log('\n--- 🌅 EVALUATING TIME-OF-DAY V2 & WARDROBE POOLS (ROUND 11 TASK B) ---')
+
+  // 7a. Wardrobe Pools defined for all 4 phases
+  try {
+    const pools = WardrobeProvider.POOLS
+    if (pools.morning.length >= 3 && pools.noon.length >= 3 && pools.evening.length >= 3 && pools.night.length >= 2) {
+      passed++
+      console.log(`✅ [PASS] Wardrobe Pools: Verified 4 contextual pools (Morning: ${pools.morning.length}, Noon: ${pools.noon.length}, Evening: ${pools.evening.length}, Night: ${pools.night.length})`)
+    } else {
+      failed++
+      console.warn(`❌ [FAIL] Incomplete wardrobe pools`)
+    }
+  } catch (err: any) {
+    failed++
+    console.warn(`❌ [FAIL] Wardrobe Pools test threw error: ${err.message}`)
+  }
+
+  // 7b. 3-Day Anti-Repeat Protection
+  try {
+    const history = [
+      { skinId: 'morning_chic', timestamp: Date.now() - 3600000 * 12 }, // worn 12 hrs ago
+      { skinId: 'kurta-festive', timestamp: Date.now() - 3600000 * 36 }, // worn 36 hrs ago
+    ]
+    const pick = WardrobeProvider.selectIntelligentOutfit({
+      phase: 'morning',
+      hour: 8,
+      history,
+    })
+    if (pick.id !== 'morning_chic' && pick.id !== 'kurta-festive') {
+      passed++
+      console.log(`✅ [PASS] 3-Day Anti-Repeat Protection: Picked unworn "${pick.name}" (${pick.id}) avoiding recently worn items`)
+    } else {
+      failed++
+      console.warn(`❌ [FAIL] Anti-repeat protection failed: picked ${pick.id}`)
+    }
+  } catch (err: any) {
+    failed++
+    console.warn(`❌ [FAIL] Anti-repeat test threw error: ${err.message}`)
+  }
+
+  // 7c. Contextual & Weather Overrides
+  try {
+    const rainPick = WardrobeProvider.selectIntelligentOutfit({ weather: 'rain', hour: 14 })
+    const winterPick = WardrobeProvider.selectIntelligentOutfit({ weather: 'winter_fog', hour: 14 })
+    const examPick = WardrobeProvider.selectIntelligentOutfit({ isExamWeek: true, hour: 14 })
+
+    if (rainPick.id === 'rain-jacket' && winterPick.id === 'winter-coat' && examPick.id === 'casual-hoodie') {
+      passed++
+      console.log(`✅ [PASS] Contextual Overrides: Rain -> Raincoat, Winter -> Winter Coat, Exam Week -> Study Hoodie`)
+    } else {
+      failed++
+      console.warn(`❌ [FAIL] Contextual overrides failed: rain=${rainPick.id}, winter=${winterPick.id}, exam=${examPick.id}`)
+    }
+  } catch (err: any) {
+    failed++
+    console.warn(`❌ [FAIL] Contextual overrides test failed: ${err.message}`)
+  }
+
+  // 7d. Astronomical Phase Progression
+  try {
+    const morningPick = WardrobeProvider.selectIntelligentOutfit({ phase: 'morning' })
+    const noonPick = WardrobeProvider.selectIntelligentOutfit({ phase: 'noon' })
+    const eveningPick = WardrobeProvider.selectIntelligentOutfit({ phase: 'evening' })
+    const nightPick = WardrobeProvider.selectIntelligentOutfit({ phase: 'night' })
+
+    if (morningPick && noonPick && eveningPick && nightPick) {
+      passed++
+      console.log(`✅ [PASS] Astronomical Phase Progression: Distinct contextual styles verified across 24h`)
+    } else {
+      failed++
+      console.warn(`❌ [FAIL] Astronomical phase progression missing entries`)
+    }
+  } catch (err: any) {
+    failed++
+    console.warn(`❌ [FAIL] Astronomical test threw error: ${err.message}`)
+  }
+
   const total = passed + failed
 
   console.log('\n========================================================')

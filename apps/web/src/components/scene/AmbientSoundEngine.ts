@@ -41,6 +41,13 @@ class AmbientSoundManager {
     this.startForPhase(phase)
   }
 
+  setWeather(weather: string): void {
+    if (!this.isRunning) return
+    if (weather === 'rain' || weather === 'monsoon') {
+      this.createNightRainAndHearth()
+    }
+  }
+
   start(): void {
     this.init()
     if (!this.ctx || this.isRunning) return

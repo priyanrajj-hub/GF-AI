@@ -735,6 +735,29 @@ export class ProceduralAnimator {
         break
       }
 
+      case 'yawn':
+      case 'sleepy_stretch': {
+        // Graceful night yawning gesture: hand to mouth with relaxed spine stretch
+        if (leftArm && leftForeArm) {
+          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.45, delta * 3.5)
+          leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, -0.75, delta * 3.5)
+          leftForeArm.rotation.y = THREE.MathUtils.lerp(leftForeArm.rotation.y, -1.15, delta * 4.0)
+          leftForeArm.rotation.z = THREE.MathUtils.lerp(leftForeArm.rotation.z, 0.55, delta * 4.0)
+        }
+        if (rightArm) {
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -1.15, delta * 3.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, 0.05, delta * 3.0)
+        }
+        if (spine) {
+          spine.rotation.x = THREE.MathUtils.lerp(spine.rotation.x, -0.06, delta * 3.0)
+        }
+        if (head) {
+          head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -0.12, delta * 3.0)
+          head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, 0.08, delta * 3.0)
+        }
+        break
+      }
+
       case 'bow': {
         if (spine && chest) {
           spine.rotation.x = THREE.MathUtils.lerp(spine.rotation.x, 0.35, delta * 4.0)

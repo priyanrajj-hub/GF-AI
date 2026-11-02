@@ -1,4 +1,8 @@
 import { create } from 'zustand'
+import {
+  WardrobeProvider,
+  getTimeAwareGreeting,
+} from '@ada/shared'
 import type {
   ChatMessage,
   EmotionType,
@@ -12,8 +16,9 @@ import type {
   UserSettings,
   CustomPersonality,
   TimeOfDayPhase,
+  WardrobeHistoryEntry,
 } from '@ada/shared'
-import { getTimeAwareGreeting } from '@ada/shared'
+import { SolarTimeService, type WeatherType } from '../services/solarTimeService.js'
 
 export type AppSystemState = 'idle' | 'listening' | 'thinking' | 'speaking'
 
@@ -103,13 +108,23 @@ interface AppState {
   skinId: string
   setSkinId: (id: string) => void
 
-  // Time-of-Day Dynamics & Auto-Wardrobe
+  // Time-of-Day Dynamics & Auto-Wardrobe v2
   timeOfDayPhase: TimeOfDayPhase
+  solarHour: number
+  isTimeLocked: boolean
+  weatherType: WeatherType
   timeSyncMode: 'auto' | 'morning' | 'noon' | 'evening' | 'night'
   setTimeSyncMode: (mode: 'auto' | 'morning' | 'noon' | 'evening' | 'night') => void
   setTimeOfDayPhase: (phase: TimeOfDayPhase) => void
+  setSolarHour: (hour: number) => void
+  setIsTimeLocked: (locked: boolean) => void
+  setWeatherType: (weather: WeatherType) => void
   autoWardrobeSync: boolean
   toggleAutoWardrobeSync: () => void
+  wardrobeHistory: WardrobeHistoryEntry[]
+  isManualOutfit: boolean
+  setIsManualOutfit: (manual: boolean) => void
+  syncContextualWardrobe: (triggerComment?: boolean) => void
   ambientAudioEnabled: boolean
   toggleAmbientAudio: () => void
   roamConfig: {
@@ -235,36 +250,100 @@ export const useAppStore = create<AppState>((set, get) => ({
   skinId: computeTimeOfDay() === 'morning' ? 'morning_chic' : computeTimeOfDay() === 'noon' ? 'office-blazer' : computeTimeOfDay() === 'evening' ? 'saree-crimson' : 'cozy-pajamas',
   setSkinId: (skinId) => set({ skinId }),
 
-  // Time-of-Day Dynamics & Auto-Wardrobe
+  // Time-of-Day Dynamics & Auto-Wardrobe v2
   timeOfDayPhase: computeTimeOfDay(),
+  solarHour: new Date().getHours() + new Date().getMinutes() / 60,
+  isTimeLocked: false,
+  weatherType: 'clear',
   timeSyncMode: 'auto',
   autoWardrobeSync: true,
+  isManualOutfit: false,
+  wardrobeHistory: [],
   ambientAudioEnabled: true,
   toggleAmbientAudio: () => set((s) => ({ ambientAudioEnabled: !s.ambientAudioEnabled })),
   toggleAutoWardrobeSync: () => set((s) => ({ autoWardrobeSync: !s.autoWardrobeSync })),
+  setIsManualOutfit: (isManualOutfit) => set({ isManualOutfit }),
+  setIsTimeLocked: (isTimeLocked) => set({ isTimeLocked }),
+  setWeatherType: (weatherType) => {
+    set({ weatherType })
+    get().syncContextualWardrobe(true)
+  },
+  setSolarHour: (solarHour) => {
+    const calc = SolarTimeService.calculate(solarHour)
+    let phase: TimeOfDayPhase = 'noon'
+    if (calc.phase === 'dawn' || calc.phase === 'morning') phase = 'morning'
+    else if (calc.phase === 'golden_hour' || calc.phase === 'sunset' || calc.phase === 'evening') phase = 'evening'
+    else if (calc.phase === 'night' || calc.phase === 'dusk') phase = 'night'
+    else phase = 'noon'
+
+    set({ solarHour, timeOfDayPhase: phase })
+    if (get().autoWardrobeSync && !get().isManualOutfit) {
+      get().syncContextualWardrobe(false)
+    }
+  },
   setTimeSyncMode: (mode) => {
     const phase = mode === 'auto' ? computeTimeOfDay() : mode
-    set({ timeSyncMode: mode, timeOfDayPhase: phase })
-    if (get().autoWardrobeSync) {
-      const outfitMap: Record<TimeOfDayPhase, string> = {
-        morning: 'morning_chic',
-        noon: 'office-blazer',
-        evening: 'saree-crimson',
-        night: 'cozy-pajamas',
-      }
-      set({ skinId: outfitMap[phase] })
+    const defaultHours: Record<TimeOfDayPhase, number> = {
+      morning: 8.0,
+      noon: 13.0,
+      evening: 18.5,
+      night: 22.5,
+    }
+    const hour = mode === 'auto' ? new Date().getHours() + new Date().getMinutes() / 60 : defaultHours[phase]
+    set({ timeSyncMode: mode, timeOfDayPhase: phase, solarHour: hour, isTimeLocked: mode !== 'auto' })
+    if (get().autoWardrobeSync && !get().isManualOutfit) {
+      get().syncContextualWardrobe(true)
     }
   },
   setTimeOfDayPhase: (phase) => {
-    set({ timeOfDayPhase: phase })
-    if (get().autoWardrobeSync) {
-      const outfitMap: Record<TimeOfDayPhase, string> = {
-        morning: 'morning_chic',
-        noon: 'office-blazer',
-        evening: 'saree-crimson',
-        night: 'cozy-pajamas',
+    const defaultHours: Record<TimeOfDayPhase, number> = {
+      morning: 8.0,
+      noon: 13.0,
+      evening: 18.5,
+      night: 22.5,
+    }
+    set({ timeOfDayPhase: phase, solarHour: defaultHours[phase] })
+    if (get().autoWardrobeSync && !get().isManualOutfit) {
+      get().syncContextualWardrobe(true)
+    }
+  },
+  syncContextualWardrobe: (triggerComment = false) => {
+    const state = get()
+    if (!state.autoWardrobeSync || state.isManualOutfit) return
+
+    const selected = WardrobeProvider.selectIntelligentOutfit({
+      mode: state.activeMode,
+      hour: state.solarHour,
+      phase: state.timeOfDayPhase,
+      weather: state.weatherType,
+      history: state.wardrobeHistory,
+    })
+
+    if (selected.id !== state.skinId) {
+      // Trigger short, tasteful transformation animation
+      set((s) => ({
+        skinId: selected.id,
+        wardrobeHistory: [{ skinId: selected.id, timestamp: Date.now() }, ...s.wardrobeHistory.slice(0, 15)],
+      }))
+
+      state.setActiveAction('sassy_hip_pop')
+      state.setActiveFX(['sparkles', 'confetti'])
+      setTimeout(() => {
+        state.setActiveFX([])
+        state.setActiveAction('idle')
+      }, 2500)
+
+      if (triggerComment && selected.voiceComment) {
+        state.addMessage({
+          id: `msg-wardrobe-${Date.now()}`,
+          role: 'assistant',
+          content: selected.voiceComment,
+          speech: selected.voiceComment,
+          emotion: 'happy',
+          gesture: 'idle',
+          timestamp: Date.now(),
+        })
       }
-      set({ skinId: outfitMap[phase] })
     }
   },
   roamConfig: {
