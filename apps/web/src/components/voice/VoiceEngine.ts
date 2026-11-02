@@ -131,6 +131,7 @@ class VoiceEngineManager {
           text: cleanSpeech,
           voice: voiceSetting,
           provider: isElevenLabs ? 'elevenlabs' : 'auto',
+          language: options.language || store.settings.language,
           elevenlabsApiKey: store.settings.elevenlabsApiKey,
           elevenlabsVoiceId: activeVoiceId,
           elevenlabsModelId: store.settings.elevenlabsModelId || 'eleven_multilingual_v2',
@@ -243,7 +244,14 @@ class VoiceEngineManager {
     utterance.volume = store.audioVolume ?? 0.95
 
     const lang = options.language || store.settings.language
-    utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US'
+    const isTamilScript = /[\u0B80-\u0BFF]/.test(cleanSpeech)
+    if (isTamilScript || lang === 'ta') {
+      utterance.lang = 'ta-IN'
+    } else if (lang === 'tanglish' || lang === 'hi') {
+      utterance.lang = 'en-IN'
+    } else {
+      utterance.lang = 'en-US'
+    }
 
     // Explicitly filter for FEMALE / GIRL voices, strictly avoiding male voices
     const voices = window.speechSynthesis.getVoices()
@@ -253,6 +261,8 @@ class VoiceEngineManager {
     )
 
     const preferredVoice =
+      ((isTamilScript || lang === 'ta') && femaleCandidates.find((v) => v.lang.startsWith('ta'))) ||
+      (lang === 'tanglish' && femaleCandidates.find((v) => v.lang === 'en-IN')) ||
       femaleCandidates.find(
         (v) =>
           v.name.includes('Jenny') ||

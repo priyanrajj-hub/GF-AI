@@ -94,6 +94,7 @@ export const TopBar: React.FC = () => {
 
   const modes: Array<{ id: PersonalityMode; label: string }> = [
     { id: 'companion', label: 'Companion' },
+    { id: 'tutor', label: 'Tutor' },
     { id: 'playful', label: 'Playful' },
     { id: 'jarvis', label: 'Jarvis' },
     { id: 'coder', label: 'Coder' },
@@ -153,6 +154,43 @@ export const TopBar: React.FC = () => {
           >
             <span>⚡</span>
             <span className="hidden sm:inline">Atlas (Stark)</span>
+          </button>
+        </div>
+
+        {/* Language Switcher Pill: EN | தமிழ் | Tanglish */}
+        <div className="flex items-center gap-1 p-1 rounded-2xl glass-panel border border-cyan-500/30">
+          <button
+            onClick={() => updateSettings({ language: 'en' })}
+            className={`px-2 py-0.5 rounded-xl text-[11px] font-mono transition-all duration-200 cursor-pointer ${
+              settings.language === 'en' || !settings.language || settings.language === 'auto'
+                ? 'bg-cyan-500/30 text-cyan-200 font-bold border border-cyan-400/40 shadow-[0_0_8px_rgba(0,243,255,0.3)]'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="English"
+          >
+            EN
+          </button>
+          <button
+            onClick={() => updateSettings({ language: 'ta' })}
+            className={`px-2 py-0.5 rounded-xl text-[11px] font-mono transition-all duration-200 cursor-pointer ${
+              settings.language === 'ta'
+                ? 'bg-purple-500/30 text-purple-200 font-bold border border-purple-400/40 shadow-[0_0_8px_rgba(168,85,247,0.3)]'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="தமிழ் (Tamil)"
+          >
+            தமிழ்
+          </button>
+          <button
+            onClick={() => updateSettings({ language: 'tanglish' })}
+            className={`px-2 py-0.5 rounded-xl text-[11px] font-mono transition-all duration-200 cursor-pointer ${
+              settings.language === 'tanglish'
+                ? 'bg-amber-500/30 text-amber-200 font-bold border border-amber-400/40 shadow-[0_0_8px_rgba(245,158,11,0.3)]'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Tanglish (Tamil + English)"
+          >
+            Tanglish
           </button>
         </div>
 

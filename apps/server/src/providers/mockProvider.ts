@@ -330,7 +330,41 @@ Staying awake for days and staying isolated inside strains your physical and men
       }
     }
 
-    // 13. Hinglish Banter & Placement Encouragement
+    // 13. Tamil Language & Companionship
+    if (/[\u0B80-\u0BFF]/.test(userMessage) || lower.includes('வணக்கம்') || lower.includes('தமிழ்')) {
+      return {
+        speech: 'வணக்கம்! நான் ரொம்ப நல்லா இருக்கேன். இன்னைக்கு உங்க படிப்பு மற்றும் இலக்குகளை நாம சிறப்பா முடிப்போம்!',
+        display_text: `வணக்கம்! 🌸\n\nநான் ரொம்ப நல்லா இருக்கேன், உங்களை பார்த்ததில் மிக்க மகிழ்ச்சி! இன்று நாம் என்ன படிக்கலாம் அல்லது என்ன திட்டங்களை முடிக்கலாம்? உங்கள் கவலைகளை விட்டுவிட்டு நம்பிக்கையோடு தொடங்குங்கள், நான் எப்போதும் உங்களுடன் இருக்கிறேன்!`,
+        emotion: 'happy',
+        intensity: 0.9,
+        gesture: 'wave',
+        voice_style: { rate: 1.0, pitch: 1.05, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
+    // 14. Tanglish (Tamil + English) Study Tutor & Guidance
+    if (
+      lower.includes('vanakkam') ||
+      lower.includes('eppadi iruk') ||
+      lower.includes('studies-la focus') ||
+      lower.includes('solli kudu') ||
+      lower.includes('explain pannu') ||
+      lower.includes('kavalapadadheenga') ||
+      lower.includes('tanglish')
+    ) {
+      return {
+        speech: 'Vanakkam! Kavalapadadheenga! 25-minute Pomodoro focus block start pannuvom. Namma target-ah easy-ah mudichidalaam!',
+        display_text: `Vanakkam! Tension aagadheenga! Study stress ellarukkum varradhu dhaan. 📚✨\n\nNamma oru super focus strategy follow pannuvom:\n1. **25-min Sprint:** Phone-ah pakkathula vekkaadheenga. Orey oru topic mattum edunga.\n2. **Active Recall:** Padichadha ungalukkey explain panni paarunga.\n3. **5-min Chill Break:** Water kudinga, deep breath edunga.\n\nNaan ungalukku help panna eppovum ready! Let's crack this together!`,
+        emotion: 'motivated',
+        intensity: 0.85,
+        gesture: 'fist_pump',
+        voice_style: { rate: 1.0, pitch: 1.0, style: 'cheerful' },
+        actions: [],
+      }
+    }
+
+    // 15. Hinglish Banter & Placement Encouragement
     if (lower.includes('kya haal chaal') || lower.includes('kuch mast batao')) {
       return {
         speech: 'Sab badhiya! Full energy ke saath ready hoon. Tum batao, aaj kya plan hai?',

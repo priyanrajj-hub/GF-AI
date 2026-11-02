@@ -12,6 +12,8 @@ export interface LanguageMix {
   english: number // percentage 0-100
   hinglish: number // percentage 0-100
   hindi: number // percentage 0-100
+  tamil?: number // percentage 0-100
+  tanglish?: number // percentage 0-100
 }
 
 export interface StyleAxes {

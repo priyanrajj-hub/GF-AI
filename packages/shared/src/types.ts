@@ -33,6 +33,7 @@ export type PersonalityMode =
   | 'listener'
   | 'playful'
   | 'companion'
+  | 'tutor'
 
 export type CompanionCharacter = 'ada' | 'mira' | 'atlas'
 
@@ -98,6 +99,19 @@ export interface StructuredReply {
     bpm?: number
     duration?: number
   }
+  studyFocus?: {
+    goal: string
+    durationMinutes: number
+    remainingSeconds: number
+    isActive: boolean
+    mode: 'pomodoro' | 'deep_study' | 'short_break'
+  }
+  todoCard?: {
+    action: 'list' | 'added' | 'completed' | 'deleted'
+    item?: { id: string; title: string; completed: boolean; dueDate?: number }
+    items?: Array<{ id: string; title: string; completed: boolean; dueDate?: number }>
+    pendingCount: number
+  }
 }
 
 export interface ChatMessage {
@@ -128,6 +142,19 @@ export interface ChatMessage {
     danceAction?: string
     bpm?: number
     duration?: number
+  }
+  studyFocus?: {
+    goal: string
+    durationMinutes: number
+    remainingSeconds: number
+    isActive: boolean
+    mode: 'pomodoro' | 'deep_study' | 'short_break'
+  }
+  todoCard?: {
+    action: 'list' | 'added' | 'completed' | 'deleted'
+    item?: { id: string; title: string; completed: boolean; dueDate?: number }
+    items?: Array<{ id: string; title: string; completed: boolean; dueDate?: number }>
+    pendingCount: number
   }
   metadata?: {
     model?: string
@@ -179,7 +206,7 @@ export type TimeOfDayPhase = 'morning' | 'noon' | 'evening' | 'night'
 export interface UserSettings {
   userId: string
   userName: string
-  language: 'en' | 'hi' | 'hinglish' | 'auto'
+  language: 'en' | 'hi' | 'hinglish' | 'ta' | 'tanglish' | 'auto'
   mode: PersonalityMode
   sliders: PersonalitySliders
   hologramColor: string
