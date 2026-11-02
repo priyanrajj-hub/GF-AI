@@ -22,6 +22,13 @@ export const AdaRedSkin: AvatarSkin = {
   name: 'Ada Spy-Chic (Red & Black)',
   description: 'Signature crimson red dress, black hair, and hidden ribbon accessories.',
   apply: (vrm: VRM) => {
+    attachStarkTechGlassesAndBeard(vrm, false)
+    attachYorHeadbandRose(vrm, false)
+    const chest = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
+    if (chest) {
+      const emblem = chest.getObjectByName('__STARK_ARC_REACTOR__')
+      if (emblem) emblem.visible = false
+    }
     const scene = vrm.scene
 
     scene.traverse((obj) => {
@@ -437,6 +444,13 @@ export const YorCrimsonSweaterSkin: AvatarSkin = {
         })
       }
     })
+    attachYorHeadbandRose(vrm, true)
+    attachStarkTechGlassesAndBeard(vrm, false)
+    const chestBone = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
+    if (chestBone) {
+      const emblem = chestBone.getObjectByName('__STARK_ARC_REACTOR__')
+      if (emblem) emblem.visible = false
+    }
   },
 }
 
@@ -493,6 +507,168 @@ function attachArcReactorEmblem(vrm: VRM): void {
 }
 
 /**
+ * Attaches or updates Tony Stark's signature Tinted Aviator Sunglasses and Goatee Beard
+ */
+export function attachStarkTechGlassesAndBeard(vrm: VRM, visible: boolean = true): void {
+  const headBone = vrm.humanoid?.getNormalizedBoneNode('head')
+  if (!headBone) return
+
+  let glassesGroup = headBone.getObjectByName('__STARK_TECH_SUNGLASSES__') as THREE.Group | undefined
+  if (!glassesGroup) {
+    glassesGroup = new THREE.Group()
+    glassesGroup.name = '__STARK_TECH_SUNGLASSES__'
+
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x181a20,
+      metalness: 0.95,
+      roughness: 0.15,
+    })
+
+    // Orange/Amber tinted aviator lenses (matching Tony Stark's iconic shades in Avengers/Iron Man)
+    const lensMat = new THREE.MeshPhysicalMaterial({
+      color: 0xee4b2b,
+      emissive: 0x551105,
+      emissiveIntensity: 0.35,
+      transparent: true,
+      opacity: 0.72,
+      roughness: 0.08,
+      metalness: 0.25,
+      transmission: 0.45,
+    })
+
+    // Left Rim & Lens
+    const leftRimGeo = new THREE.TorusGeometry(0.024, 0.0022, 12, 32)
+    const leftRim = new THREE.Mesh(leftRimGeo, frameMat)
+    leftRim.position.set(-0.038, 0.024, 0.122)
+    leftRim.scale.set(1.15, 0.95, 1.0)
+    glassesGroup.add(leftRim)
+
+    const leftLensGeo = new THREE.CircleGeometry(0.023, 24)
+    const leftLens = new THREE.Mesh(leftLensGeo, lensMat)
+    leftLens.position.set(-0.038, 0.024, 0.122)
+    leftLens.scale.set(1.12, 0.92, 1.0)
+    glassesGroup.add(leftLens)
+
+    // Right Rim & Lens
+    const rightRimGeo = new THREE.TorusGeometry(0.024, 0.0022, 12, 32)
+    const rightRim = new THREE.Mesh(rightRimGeo, frameMat)
+    rightRim.position.set(0.038, 0.024, 0.122)
+    rightRim.scale.set(1.15, 0.95, 1.0)
+    glassesGroup.add(rightRim)
+
+    const rightLensGeo = new THREE.CircleGeometry(0.023, 24)
+    const rightLens = new THREE.Mesh(rightLensGeo, lensMat)
+    rightLens.position.set(0.038, 0.024, 0.122)
+    rightLens.scale.set(1.12, 0.92, 1.0)
+    glassesGroup.add(rightLens)
+
+    // Nose Bridge Wire
+    const bridgeGeo = new THREE.CylinderGeometry(0.0016, 0.0016, 0.026, 8)
+    const bridge = new THREE.Mesh(bridgeGeo, frameMat)
+    bridge.rotation.z = Math.PI / 2
+    bridge.position.set(0, 0.025, 0.123)
+    glassesGroup.add(bridge)
+
+    // Aviator Top Brow Bar
+    const browGeo = new THREE.CylinderGeometry(0.0014, 0.0014, 0.068, 8)
+    const brow = new THREE.Mesh(browGeo, frameMat)
+    brow.rotation.z = Math.PI / 2
+    brow.position.set(0, 0.042, 0.120)
+    glassesGroup.add(brow)
+
+    // Left and Right Temple Arms extending back to ears
+    const leftArmGeo = new THREE.CylinderGeometry(0.0015, 0.0015, 0.12, 8)
+    const leftArm = new THREE.Mesh(leftArmGeo, frameMat)
+    leftArm.rotation.x = Math.PI / 2
+    leftArm.position.set(-0.068, 0.032, 0.065)
+    glassesGroup.add(leftArm)
+
+    const rightArmGeo = new THREE.CylinderGeometry(0.0015, 0.0015, 0.12, 8)
+    const rightArm = new THREE.Mesh(rightArmGeo, frameMat)
+    rightArm.rotation.x = Math.PI / 2
+    rightArm.position.set(0.068, 0.032, 0.065)
+    glassesGroup.add(rightArm)
+
+    headBone.add(glassesGroup)
+  }
+  glassesGroup.visible = visible
+
+  // 2. Signature Tony Stark Goatee Beard & Mustache
+  let goateeGroup = headBone.getObjectByName('__STARK_GOATEE_BEARD__') as THREE.Group | undefined
+  if (!goateeGroup) {
+    goateeGroup = new THREE.Group()
+    goateeGroup.name = '__STARK_GOATEE_BEARD__'
+
+    const beardMat = new THREE.MeshStandardMaterial({
+      color: 0x141216,
+      roughness: 0.65,
+      metalness: 0.1,
+    })
+
+    // Upper Mustache Wings
+    const mustacheGeo = new THREE.TorusGeometry(0.022, 0.0035, 8, 16, Math.PI * 0.75)
+    const mustacheMesh = new THREE.Mesh(mustacheGeo, beardMat)
+    mustacheMesh.rotation.z = -Math.PI * 0.88
+    mustacheMesh.position.set(0, -0.046, 0.118)
+    goateeGroup.add(mustacheMesh)
+
+    // Soul Patch vertical tuft
+    const soulGeo = new THREE.BoxGeometry(0.006, 0.012, 0.004)
+    const soulMesh = new THREE.Mesh(soulGeo, beardMat)
+    soulMesh.position.set(0, -0.065, 0.116)
+    goateeGroup.add(soulMesh)
+
+    // Chin Pointed Goatee Outline
+    const chinGeo = new THREE.TorusGeometry(0.025, 0.004, 8, 16, Math.PI * 0.65)
+    const chinMesh = new THREE.Mesh(chinGeo, beardMat)
+    chinMesh.rotation.z = Math.PI * 0.18
+    chinMesh.position.set(0, -0.082, 0.110)
+    goateeGroup.add(chinMesh)
+
+    headBone.add(goateeGroup)
+  }
+  goateeGroup.visible = visible
+}
+
+/**
+ * Attaches or updates Yor Forger's iconic Golden Rose Headband ornament
+ */
+export function attachYorHeadbandRose(vrm: VRM, visible: boolean = true): void {
+  const headBone = vrm.humanoid?.getNormalizedBoneNode('head')
+  if (!headBone) return
+
+  let roseGroup = headBone.getObjectByName('__YOR_HEADBAND_ROSE__') as THREE.Group | undefined
+  if (!roseGroup) {
+    roseGroup = new THREE.Group()
+    roseGroup.name = '__YOR_HEADBAND_ROSE__'
+
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      metalness: 0.75,
+      roughness: 0.22,
+    })
+
+    // Stylized golden rose petals on the left temple
+    const centerGeo = new THREE.SphereGeometry(0.012, 12, 12)
+    const centerMesh = new THREE.Mesh(centerGeo, goldMat)
+    roseGroup.add(centerMesh)
+
+    for (let i = 0; i < 5; i++) {
+      const angle = (i / 5) * Math.PI * 2
+      const petalGeo = new THREE.CylinderGeometry(0.008, 0.004, 0.016, 8)
+      const petalMesh = new THREE.Mesh(petalGeo, goldMat)
+      petalMesh.position.set(Math.cos(angle) * 0.012, Math.sin(angle) * 0.012, 0)
+      petalMesh.rotation.z = angle
+      roseGroup.add(petalMesh)
+    }
+
+    roseGroup.position.set(0.098, 0.048, 0.038)
+    headBone.add(roseGroup)
+  }
+  roseGroup.visible = visible
+}
+
+/**
  * Atlas / Tony Stark-Inspired High-Tech Market Analyst Skin
  * - Charcoal executive tailored blazer over carbon tech tee
  * - Glowing Cyan Arc Reactor chest badge (#00F3FF, emissive glow)
@@ -545,6 +721,8 @@ export const StarkArcTraderSkin: AvatarSkin = {
     })
 
     attachArcReactorEmblem(vrm)
+    attachStarkTechGlassesAndBeard(vrm, true)
+    attachYorHeadbandRose(vrm, false)
   },
 }
 
