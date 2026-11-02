@@ -5,6 +5,9 @@ import {
   type PersonalitySliders,
 } from '@ada/shared'
 import { db } from '../db/index.js'
+import { AdaSelfKnowledgeService } from './adaSelfKnowledgeService.js'
+import { GirlBehaviorService } from './girlBehaviorService.js'
+import { PriyanLifeMemoryService } from './priyanLifeMemoryService.js'
 
 export interface BudgetStatus {
   warning: boolean
@@ -61,7 +64,21 @@ export class ContextBuilder {
     const settings = db.getUserSettings(userId)
     const memories = settings.memoryConsent ? db.getMemories(userId).map((m) => m.content) : []
 
-    // 1. Build Base System Persona (~800-1000 tokens)
+    // Deep context layers: Ada Self-Knowledge, Girl Behavior & Activities, Priyan's World & Memories
+    const selfKnowledgeStr = AdaSelfKnowledgeService.formatSelfKnowledgeContext()
+    const girlBehaviorStr = GirlBehaviorService.formatGirlBehaviorContext()
+    const priyanLifeStr = PriyanLifeMemoryService.formatPriyanLifeContext(userId)
+
+    const augmentedContext = [
+      liveInternetContext,
+      selfKnowledgeStr,
+      girlBehaviorStr,
+      priyanLifeStr,
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+
+    // 1. Build Base System Persona
     const systemPrompt = buildSystemPrompt({
       mode,
       sliders,
@@ -69,7 +86,7 @@ export class ContextBuilder {
       memories,
       language,
       currentDateStr: new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
-      liveInternetContext,
+      liveInternetContext: augmentedContext,
     })
 
     // 2. Trim chat history to stay under ~2,000 tokens

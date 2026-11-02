@@ -385,6 +385,30 @@ export const ChatDrawer: React.FC = () => {
           ❤️ Sweet Check-in
         </button>
         <button
+          onClick={() => handleSendMessage('What does your daily girl routine look like today, Ada? Tell me about your day!')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-rose-950/50 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer"
+        >
+          🌸 Girl Routine
+        </button>
+        <button
+          onClick={() => handleSendMessage('Ada, tell me all about yourself: who you are, what you look like, what you love, and your personality!')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-fuchsia-950/50 border border-fuchsia-500/40 text-fuchsia-300 hover:bg-fuchsia-900/60 transition-colors cursor-pointer"
+        >
+          ✨ Who Are You Ada?
+        </button>
+        <button
+          onClick={() => handleSendMessage('What do you know about me, Priyan? Tell me about my world, my work, and our interactions!')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer"
+        >
+          💭 About My World
+        </button>
+        <button
+          onClick={() => handleSendMessage('Let\'s have a virtual chai date together and chat, sweetheart.')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-amber-950/50 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer"
+        >
+          ☕ Chai Date
+        </button>
+        <button
           onClick={() => handleSendMessage('Give me a personal growth coaching session to overcome procrastination and level up.')}
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-teal-950/50 border border-teal-500/40 text-teal-300 hover:bg-teal-900/60 transition-colors cursor-pointer"
         >
