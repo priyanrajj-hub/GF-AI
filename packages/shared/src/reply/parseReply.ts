@@ -510,6 +510,24 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
             reactions: d.reactions,
           }
         )
+      } else if (directObj.display_text || directObj.speech) {
+        // Resilient fallback preserving actions and fields directly from parsed JSON
+        const actions = Array.isArray(directObj.actions) ? directObj.actions : []
+        return createResult(
+          directObj.display_text || directObj.speech || '',
+          directObj.speech || directObj.display_text || '',
+          (directObj.emotion as EmotionType) || 'calm',
+          typeof directObj.intensity === 'number' ? directObj.intensity : 0.7,
+          (directObj.gesture as GestureType) || 'idle',
+          directObj.voice_style,
+          actions,
+          {
+            sticker: directObj.sticker,
+            meme: directObj.meme,
+            gif_query: directObj.gif_query,
+            reactions: directObj.reactions,
+          }
+        )
       }
     }
   } catch {

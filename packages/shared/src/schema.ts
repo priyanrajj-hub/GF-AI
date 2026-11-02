@@ -39,7 +39,7 @@ export const StructuredReplySchema = z.object({
   display_text: z.string().describe('Formatted display text for the chat UI'),
   emotion: EmotionEnum.default('calm'),
   intensity: z.number().min(0).max(1).default(0.7),
-  gesture: GestureEnum.default('idle'),
+  gesture: z.string().default('idle'),
   voice_style: z
     .object({
       pitch: z.number().optional(),

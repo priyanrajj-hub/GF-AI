@@ -13,5 +13,6 @@ export * from './permissions/index.js'
 export * from './models.config.js'
 export * from './ml/index.js'
 export * from './reply/parseReply.js'
+export * from './music/songs.js'
 
 
