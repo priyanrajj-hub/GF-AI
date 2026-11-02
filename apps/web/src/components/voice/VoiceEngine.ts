@@ -75,39 +75,39 @@ class VoiceEngineManager {
       return
     }
 
-    // Ensure voice is 100% real human female girl voice
-    const rawVoice = store.settings.voice || 'cgSgspJ2msm6clMCkdW9'
-    const voiceSetting = rawVoice === 'NOpBlnGInO9m6vDvFkFC' ? 'cgSgspJ2msm6clMCkdW9' : rawVoice
+    // Map active character to authentic neural studio voice
+    const activeChar = store.activeCharacter || 'mira'
+    const defaultVoiceForChar =
+      activeChar === 'atlas'
+        ? 'en-US-ChristopherNeural'
+        : activeChar === 'ada'
+        ? 'en-US-JennyNeural'
+        : 'en-US-AnaNeural' // 100% natural, sweet real human girl voice for Mira / Yor
+
+    const rawVoice = store.settings.voice || defaultVoiceForChar
+    const voiceSetting = (rawVoice === 'NOpBlnGInO9m6vDvFkFC' || rawVoice === 'cgSgspJ2msm6clMCkdW9') ? defaultVoiceForChar : rawVoice
     const isElevenLabs =
-      voiceSetting === 'cgSgspJ2msm6clMCkdW9' ||
       voiceSetting === 'EXAVITQu4vr4xnSDxMaL' ||
-      voiceSetting === 'FGY2WhTYpPnrIDTdsKH5' ||
       voiceSetting.startsWith('elevenlabs:') ||
       Boolean(store.settings.elevenlabsApiKey)
 
-    // Clean text: For ElevenLabs keep acting cues like [giggles], [whispers], [sarcastically]
-    const cleanSpeech = isElevenLabs
-      ? text
-          .replace(/https?:\/\/\S+/gi, '')
-          .replace(/```[\s\S]*?```/gi, '')
-          .replace(/[*_#`]/g, '')
-          .trim()
-      : text
-          .replace(/https?:\/\/\S+/gi, '')
-          .replace(/```[\s\S]*?```/gi, '')
-          .replace(/[*_#`[\]]/g, '')
-          .trim()
+    // Clean text
+    const cleanSpeech = text
+      .replace(/https?:\/\/\S+/gi, '')
+      .replace(/```[\s\S]*?```/gi, '')
+      .replace(/[*_#`[\]]/g, '')
+      .trim()
 
     if (!cleanSpeech) {
       if (options.onEnd) options.onEnd()
       return
     }
 
-    // 1. Try High-Fidelity Real Girl Voice (ElevenLabs Jessica / Gemini Kore / Hugging Face)
+    // 1. Try High-Fidelity Studio Neural Voice
     try {
       const activeVoiceId =
         store.settings.elevenlabsVoiceId === 'NOpBlnGInO9m6vDvFkFC' || !store.settings.elevenlabsVoiceId
-          ? 'cgSgspJ2msm6clMCkdW9'
+          ? 'EXAVITQu4vr4xnSDxMaL'
           : store.settings.elevenlabsVoiceId
 
       const res = await fetch(apiUrl('/api/tts'), {
@@ -119,14 +119,10 @@ class VoiceEngineManager {
         body: JSON.stringify({
           text: cleanSpeech,
           voice: voiceSetting,
-          provider: isElevenLabs
-            ? 'elevenlabs'
-            : voiceSetting.startsWith('hf:')
-            ? 'huggingface'
-            : 'auto',
+          provider: isElevenLabs ? 'elevenlabs' : 'auto',
           elevenlabsApiKey: store.settings.elevenlabsApiKey,
           elevenlabsVoiceId: activeVoiceId,
-          elevenlabsModelId: store.settings.elevenlabsModelId || 'eleven_turbo_v2_5',
+          elevenlabsModelId: store.settings.elevenlabsModelId || 'eleven_multilingual_v2',
         }),
       })
 

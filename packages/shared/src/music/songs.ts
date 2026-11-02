@@ -15,6 +15,8 @@ export interface SongSpec {
   duration: number
   danceAction: string
   lyrics: SongLyricLine[]
+  audioUrl?: string
+  artworkUrl?: string
 }
 
 export const POPULAR_SONG_CATALOG: SongSpec[] = [

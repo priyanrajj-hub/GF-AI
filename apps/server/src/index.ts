@@ -28,6 +28,8 @@ import { RelationshipGrowthService } from './services/relationshipGrowthService.
 import { AdaSelfKnowledgeService } from './services/adaSelfKnowledgeService.js'
 import { GirlBehaviorService } from './services/girlBehaviorService.js'
 import { UserLifeMemoryService } from './services/userLifeMemoryService.js'
+// Neural TTS Provider for high-fidelity human girl voice (zero robotic fallback - v3)
+import { NeuralTTSProvider } from './providers/neuralTtsProvider.js'
 
 dotenv.config()
 ProviderRegistry.init()
@@ -108,6 +110,46 @@ app.get('/api/memes', (_req, res) => {
   res.json({
     memes: MemeService.getAllMemes(),
   })
+})
+
+/**
+ * Real-Time Music & Original Audio Search
+ * Fetches original studio song previews and album artwork via public iTunes API
+ */
+async function searchRealSongTrack(query: string) {
+  try {
+    const clean = query
+      .replace(/^(?:ada,?\s*)?(?:please\s*)?(?:play|sing)\s+(?:a\s+)?(?:dancing\s+song|song|for\s+me)?/i, '')
+      .replace(/(?:and\s+dance|to\s+the\s+rhythm|track|music)/gi, '')
+      .trim() || 'dance pop'
+    const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(clean)}&entity=song&limit=1`
+    const res = await fetch(itunesUrl, { signal: AbortSignal.timeout(3500) })
+    if (res.ok) {
+      const data = (await res.json()) as any
+      if (data.results && data.results.length > 0) {
+        const item = data.results[0]
+        return {
+          title: item.trackName as string,
+          artist: item.artistName as string,
+          audioUrl: item.previewUrl as string,
+          artworkUrl: item.artworkUrl100 ? (item.artworkUrl100 as string).replace('100x100bb', '600x600bb') : undefined,
+          duration: Math.round(item.trackTimeMillis / 1000),
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[iTunes Search Failed]', e)
+  }
+  return null
+}
+
+app.get('/api/music/search', async (req, res) => {
+  const q = (req.query.q as string) || 'dance'
+  const track = await searchRealSongTrack(q)
+  if (track) {
+    return res.json({ success: true, track })
+  }
+  return res.json({ success: false, track: null })
 })
 
 // Real-Time Web Search Endpoint
@@ -442,6 +484,24 @@ app.post('/api/chat', async (req, res) => {
     console.log(`🎵 [Music Engine] Resolving requested song & performance for: "${message}"`)
     let song = resolveSong(message)
 
+    // Fetch original studio recording preview and artwork from public iTunes API
+    try {
+      const realTrack = await searchRealSongTrack(message)
+      if (realTrack && realTrack.audioUrl) {
+        song = {
+          ...song,
+          title: realTrack.title || song.title,
+          artist: realTrack.artist || song.artist,
+          audioUrl: realTrack.audioUrl,
+          artworkUrl: realTrack.artworkUrl,
+          duration: realTrack.duration || song.duration,
+        }
+        console.log(`🎵 [Music Engine] Attached original studio track for "${song.title}" (${realTrack.audioUrl})`)
+      }
+    } catch (trackErr) {
+      console.warn('[Music Track Search Fallback]', trackErr)
+    }
+
     // If it's a dynamic custom song query not already in the instant catalog, fetch real lyrics online via DuckDuckGo
     if (song.id.startsWith('custom-song-')) {
       try {
@@ -472,7 +532,7 @@ app.post('/api/chat', async (req, res) => {
 
     const artistStr = song.artist ? ` *(by ${song.artist})*` : ''
     const reply: StructuredReply = {
-      speech: `Turn up the volume, ${settings.userName || 'sweetheart'}! Queueing up ${song.title}${song.artist ? ` by ${song.artist}` : ''}. Watch the rhythm and sing along with me!`,
+      speech: `Turn up the volume, ${settings.userName || 'sweetheart'}! Playing original studio song: ${song.title}${song.artist ? ` by ${song.artist}` : ''}. Watch the rhythm and dance along with me!`,
       display_text: `🎶 **Now Playing & Singing: ${song.title}**${artistStr}\n\n*Synchronized ${song.danceAction} choreography, ${song.bpm} BPM rhythm, authentic vocal delivery, and active mouth lip-sync active!* ✨`,
       emotion: 'excited',
       intensity: 1.0,
@@ -485,6 +545,8 @@ app.post('/api/chat', async (req, res) => {
             songId: song.id,
             dance: song.danceAction,
             title: song.title,
+            audioUrl: song.audioUrl,
+            artworkUrl: song.artworkUrl,
             song,
           },
         },
@@ -971,10 +1033,13 @@ app.post('/api/tts', async (req, res) => {
     elevenlabsVoiceId ||
     (voice && voice.startsWith('elevenlabs:')
       ? voice.replace(/^elevenlabs:/, '')
-      : voice || 'cgSgspJ2msm6clMCkdW9')
-  // Automatically remap Grandpa Spuds Oxley to Jessica (real human girl)
-  const elevenVoiceId = rawVoiceId === 'NOpBlnGInO9m6vDvFkFC' ? 'cgSgspJ2msm6clMCkdW9' : rawVoiceId
-  const elevenModel = elevenlabsModelId || 'eleven_turbo_v2_5'
+      : voice || 'EXAVITQu4vr4xnSDxMaL')
+  // Automatically remap to Sarah (100% supported real human female girl voice)
+  const elevenVoiceId =
+    (!rawVoiceId || rawVoiceId === 'NOpBlnGInO9m6vDvFkFC' || rawVoiceId === 'cgSgspJ2msm6clMCkdW9')
+      ? 'EXAVITQu4vr4xnSDxMaL'
+      : rawVoiceId
+  const elevenModel = elevenlabsModelId || 'eleven_multilingual_v2'
 
   // Prebuilt female voices: 'Kore' (sweet, gentle, young girlfriend voice) as default
   const isHFVoice = voice && (voice.startsWith('hf:') || voice.includes('/') || voice.toLowerCase().includes('kokoro'))
@@ -991,15 +1056,32 @@ app.post('/api/tts', async (req, res) => {
           const result = await elevenlabs.generateTTS(text, elevenVoiceId, elevenModel, elevenlabsApiKey)
           return res.json({ ...result, provider: 'elevenlabs', voice: elevenVoiceId, model: elevenModel })
         } catch (elErr: any) {
-          console.warn('[ElevenLabs TTS Failed, falling back to Gemini]:', elErr.message)
-          if (provider === 'elevenlabs') {
-            return res.status(502).json({ error: elErr.message || 'ElevenLabs synthesis failed' })
-          }
+          console.warn('[ElevenLabs TTS Failed, falling back to High-Fidelity Neural Voice]:', elErr.message)
         }
       }
     }
 
-    // 2. Hugging Face
+    // 2. High-Fidelity Real Human Neural Voice (Zero-Quota, Studio Recording Quality)
+    try {
+      const isStarkVoice = voice && (voice.toLowerCase().includes('christopher') || voice.toLowerCase().includes('stark') || voice.toLowerCase().includes('male'))
+      const isAdaVoice = voice && (voice.toLowerCase().includes('jenny') || voice.toLowerCase().includes('coach'))
+      const neuralVoice = isStarkVoice
+        ? 'en-US-ChristopherNeural'
+        : isAdaVoice
+        ? 'en-US-JennyNeural'
+        : 'en-US-AnaNeural' // Sweet, warm, expressive real human girl voice
+
+      const neuralResult = await NeuralTTSProvider.getInstance().synthesize(text, { voice: neuralVoice })
+      return res.json({
+        ...neuralResult,
+        provider: 'neural',
+        model: 'msedge-neural-v2',
+      })
+    } catch (neuralErr: any) {
+      console.warn('[NeuralTTSProvider Fallback]', neuralErr.message)
+    }
+
+    // 3. Hugging Face
     if (provider === 'huggingface' || isHFVoice) {
       const hf = ProviderRegistry.getHuggingFace()
       if (hf.isConfigured()) {
@@ -1008,14 +1090,14 @@ app.post('/api/tts', async (req, res) => {
       }
     }
 
-    // 3. Google Gemini Aoede/Kore neural voice
+    // 4. Google Gemini Aoede/Kore neural voice
     const gemini = ProviderRegistry.getGemini()
     if (gemini.isConfigured()) {
       const result = await gemini.generateTTS(text, geminiVoice)
       return res.json({ ...result, provider: 'gemini', voice: geminiVoice })
     }
 
-    // 4. Secondary fallback to Hugging Face
+    // 5. Secondary fallback to Hugging Face
     const hf = ProviderRegistry.getHuggingFace()
     if (hf.isConfigured()) {
       const result = await hf.generateTTS(text, cleanHFModel)

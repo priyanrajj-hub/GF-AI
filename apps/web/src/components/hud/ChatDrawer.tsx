@@ -204,26 +204,31 @@ export const ChatDrawer: React.FC = () => {
       if (singAction) {
         const songObj = (singAction.arguments as any)?.song
         const songId = (singAction.arguments as any)?.songId || 'song-idol-spark'
-        const dance = (singAction.arguments as any)?.dance || songObj?.danceAction || 'dance_cute_idol'
-        performAction(dance as any, { emotion: 'excited', duration: (songObj?.duration || 24) + 2 })
+        const audioUrl = (singAction.arguments as any)?.audioUrl || songObj?.audioUrl
+        const artworkUrl = (singAction.arguments as any)?.artworkUrl || songObj?.artworkUrl
+        const dance = (singAction.arguments as any)?.dance || songObj?.danceAction || 'dance_pop_groove'
 
-        // Announce queue first, then begin song vocals and backing track
+        const finalSong = songObj
+          ? {
+              ...songObj,
+              audioUrl: audioUrl || songObj.audioUrl,
+              artworkUrl: artworkUrl || songObj.artworkUrl,
+              danceAction: dance,
+            }
+          : songId
+
+        performAction(dance as any, { emotion: 'excited', duration: (songObj?.duration || 32) + 2 })
+
+        // Play authentic original studio recording and synchronized choreography immediately
+        globalSongEngine.playSong(finalSong)
+
+        // Announce with natural neural voice
         if (parsedReply.speech) {
           VoiceEngine.speak(parsedReply.speech, {
             rate: parsedReply.voice_style?.rate || 1.1,
             pitch: parsedReply.voice_style?.pitch || 1.1,
             language: settings.language,
-            onEnd: () => {
-              globalSongEngine.playSong(songObj || songId)
-            },
           })
-          setTimeout(() => {
-            if (!globalSongEngine.getIsPlaying()) {
-              globalSongEngine.playSong(songObj || songId)
-            }
-          }, 3200)
-        } else {
-          globalSongEngine.playSong(songObj || songId)
         }
       } else {
         if (parsedReply.actions && Array.isArray(parsedReply.actions)) {

@@ -49,8 +49,8 @@ export class BackchannelController {
 
   private fireBackchannel() {
     const store = useAppStore.getState()
-    // Do not interrupt speaking state
-    if (store.systemState === 'speaking') return
+    // Do not interrupt speaking or singing state
+    if (store.systemState === 'speaking' || (typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__))) return
 
     this.lastBackchannelTime = Date.now()
     const rx = ReactionClassifier.classify({

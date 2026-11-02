@@ -114,7 +114,8 @@ export function performAction(
   // 6. Schedule auto-idle reset if duration is bounded
   if (duration > 0) {
     activeActionTimeout = setTimeout(() => {
-      if (useAppStore.getState().activeAction === targetId) {
+      const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
+      if (!isSinging && useAppStore.getState().activeAction === targetId) {
         useAppStore.getState().setActiveAction('idle')
         useAppStore.getState().setActiveFX([])
       }
