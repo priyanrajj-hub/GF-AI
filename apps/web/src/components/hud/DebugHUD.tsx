@@ -13,6 +13,7 @@ export const DebugHUD: React.FC = () => {
     updateSettings,
     audioFrequencies,
     activeMode,
+    activeCharacter,
   } = useAppStore()
 
   const [fps, setFps] = useState<number>(60)
@@ -64,12 +65,25 @@ export const DebugHUD: React.FC = () => {
     avgAudio = Math.round((audioFrequencies[4] / 255) * 100)
   }
 
-  const voiceProvider =
-    settings.elevenlabsApiKey || settings.voice === 'cgSgspJ2msm6clMCkdW9' || settings.voice === 'EXAVITQu4vr4xnSDxMaL' || settings.voice === 'FGY2WhTYpPnrIDTdsKH5' || settings.voice === 'NOpBlnGInO9m6vDvFkFC'
-      ? 'ElevenLabs (Jessica Girl)'
-      : settings.voice?.startsWith('hf:')
-      ? 'Hugging Face (Kokoro Girl)'
-      : 'Gemini Neural (Kore Girl)'
+  const isTamil = settings.language === 'ta'
+  const isTanglish = settings.language === 'tanglish'
+  const activeChar = activeCharacter || 'ada'
+
+  const voiceProvider = isTamil
+    ? `MS Edge Neural (${activeChar === 'atlas' ? 'Valluvar' : 'Pallavi'} Tamil)`
+    : activeChar === 'atlas'
+    ? `MS Edge Neural (${isTanglish ? 'Prabhat Tanglish' : 'Christopher Male'})`
+    : isTanglish
+    ? 'MS Edge Neural (Neerja Tanglish)'
+    : settings.voice?.startsWith('hf:')
+    ? 'Hugging Face (Kokoro Girl)'
+    : settings.voice === 'Aoede'
+    ? 'Gemini Neural (Aoede)'
+    : settings.elevenlabsApiKey && activeChar === 'mira'
+    ? 'ElevenLabs (Sarah Girl)'
+    : activeChar === 'ada'
+    ? 'MS Edge Neural (Jenny Coach)'
+    : 'MS Edge Neural (Ana Girl)'
 
   const llmProvider = settings.llmProvider || 'HuggingFace / Gemini'
 

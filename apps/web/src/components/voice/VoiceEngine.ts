@@ -81,26 +81,11 @@ class VoiceEngineManager {
     this.interruptSpeaking()
 
     const store = useAppStore.getState()
+    const activeChar = store.activeCharacter || 'ada'
     if (store.isMuted) {
       if (options.onEnd) options.onEnd()
       return
     }
-
-    // Map active character to authentic neural studio voice
-    const activeChar = store.activeCharacter || 'mira'
-    const defaultVoiceForChar =
-      activeChar === 'atlas'
-        ? 'en-US-ChristopherNeural'
-        : activeChar === 'ada'
-        ? 'en-US-JennyNeural'
-        : 'en-US-AnaNeural' // 100% natural, sweet real human girl voice for Mira / Yor
-
-    const rawVoice = store.settings.voice || defaultVoiceForChar
-    const voiceSetting = (rawVoice === 'NOpBlnGInO9m6vDvFkFC' || rawVoice === 'cgSgspJ2msm6clMCkdW9') ? defaultVoiceForChar : rawVoice
-    const isElevenLabs =
-      voiceSetting === 'EXAVITQu4vr4xnSDxMaL' ||
-      voiceSetting.startsWith('elevenlabs:') ||
-      Boolean(store.settings.elevenlabsApiKey)
 
     // Clean text
     const cleanSpeech = text
@@ -112,6 +97,38 @@ class VoiceEngineManager {
     if (!cleanSpeech) {
       if (options.onEnd) options.onEnd()
       return
+    }
+
+    const isTamil = (options.language || store.settings.language) === 'ta' || /[\u0B80-\u0BFF]/.test(cleanSpeech)
+    const isTanglish = (options.language || store.settings.language) === 'tanglish'
+    const isAtlas = activeChar === 'atlas'
+
+    // Map active character & language to authentic neural studio voice
+    let voiceSetting: string
+    let isElevenLabs = false
+
+    if (isTamil) {
+      // Pure Tamil: Strictly use Microsoft Edge Neural Tamil voices
+      // Absolutely bypass ElevenLabs English girl voices so Tamil sounds 100% native!
+      voiceSetting = isAtlas ? 'ta-IN-ValluvarNeural' : 'ta-IN-PallaviNeural'
+      isElevenLabs = false
+    } else if (isAtlas) {
+      // Atlas / Tony Stark: Strictly use charismatic male neural voices
+      voiceSetting = isTanglish ? 'en-IN-PrabhatNeural' : 'en-US-ChristopherNeural'
+      isElevenLabs = false
+    } else if (activeChar === 'ada') {
+      // Ada Coach/Tutor: Clear, articulate educator voice
+      voiceSetting = isTanglish ? 'en-IN-NeerjaExpressiveNeural' : 'en-US-JennyNeural'
+      isElevenLabs = false
+    } else {
+      // Mira (Yor Companion): Sweet, warm real human girl voice
+      const rawVoice = store.settings.voice || 'en-US-AnaNeural'
+      voiceSetting = (rawVoice === 'NOpBlnGInO9m6vDvFkFC' || rawVoice === 'cgSgspJ2msm6clMCkdW9') ? 'en-US-AnaNeural' : rawVoice
+      isElevenLabs =
+        (voiceSetting === 'EXAVITQu4vr4xnSDxMaL' ||
+          voiceSetting.startsWith('elevenlabs:') ||
+          Boolean(store.settings.elevenlabsApiKey)) &&
+        !isTanglish
     }
 
     // 1. Try High-Fidelity Studio Neural Voice
@@ -132,6 +149,7 @@ class VoiceEngineManager {
           voice: voiceSetting,
           provider: isElevenLabs ? 'elevenlabs' : 'auto',
           language: options.language || store.settings.language,
+          character: activeChar,
           elevenlabsApiKey: store.settings.elevenlabsApiKey,
           elevenlabsVoiceId: activeVoiceId,
           elevenlabsModelId: store.settings.elevenlabsModelId || 'eleven_multilingual_v2',

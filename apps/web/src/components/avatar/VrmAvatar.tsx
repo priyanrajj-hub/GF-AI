@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import * as THREE from 'three'
 import { useAppStore } from '../../store/useAppStore.js'
-import { applyAvatarSkin, applyAvatarAccessories } from '../../avatar/skins/ada-red.js'
+import { applyAvatarSkin, applyAvatarAccessories, applyCharacterPhysicalTransformation } from '../../avatar/skins/ada-red.js'
 import { ProceduralAnimator } from '../../avatar/engine/proceduralAnimator.js'
 import { ExpressionEngine } from '../../avatar/engine/expressions.js'
 import { RoamNavigator } from '../../avatar/roam/navigator.js'
@@ -38,6 +38,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     setActiveAction,
     audioFrequencies,
     settings,
+    activeCharacter,
     skinId,
     accessories,
     cutenessLevel,
@@ -147,8 +148,8 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
             }
           })
 
-          // Apply Ada Spy-Chic Red & Black Signature Skin (Task A)
-          applyAvatarSkin(loadedVrm, skinId || 'ada-red')
+          // Apply Character Physical Transformation (Stark boy vs Yor vs Ada)
+          applyCharacterPhysicalTransformation(loadedVrm, activeCharacter || 'ada')
 
           // Initialize Procedural Kinematic Animator & Expression Engine
           animatorRef.current = new ProceduralAnimator(loadedVrm, activeAction || 'idle')
@@ -202,6 +203,13 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       }
     }
   }, [modelUrl, renderMode, hologramColor])
+
+  // Instant real-time character transformation: Athletic Boy Stark vs Yor vs Ada
+  useEffect(() => {
+    if (vrm) {
+      applyCharacterPhysicalTransformation(vrm, activeCharacter || 'ada')
+    }
+  }, [activeCharacter, vrm])
 
   // Instant real-time wardrobe skin updates without re-loading the model
   useEffect(() => {

@@ -500,10 +500,12 @@ function attachArcReactorEmblem(vrm: VRM): void {
     triangleMesh.position.z = 0.004
     group.add(triangleMesh)
 
-    group.position.set(0, 0.06, 0.13)
-    group.rotation.x = 0.1
+    group.position.set(0, 0.05, 0.115)
+    group.rotation.x = 0.08
     chest.add(group)
+    emblem = group
   }
+  emblem.visible = true
 }
 
 /**
@@ -528,66 +530,53 @@ export function attachStarkTechGlassesAndBeard(vrm: VRM, visible: boolean = true
     const lensMat = new THREE.MeshPhysicalMaterial({
       color: 0xee4b2b,
       emissive: 0x551105,
-      emissiveIntensity: 0.35,
+      emissiveIntensity: 0.45,
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.75,
       roughness: 0.08,
       metalness: 0.25,
       transmission: 0.45,
     })
 
-    // Left Rim & Lens
-    const leftRimGeo = new THREE.TorusGeometry(0.024, 0.0022, 12, 32)
+    // Left Rim & Lens (at eye level y = 0.046, z = 0.075)
+    const leftRimGeo = new THREE.TorusGeometry(0.024, 0.0024, 12, 32)
     const leftRim = new THREE.Mesh(leftRimGeo, frameMat)
-    leftRim.position.set(-0.038, 0.024, 0.122)
+    leftRim.position.set(-0.038, 0.046, 0.075)
     leftRim.scale.set(1.15, 0.95, 1.0)
     glassesGroup.add(leftRim)
 
     const leftLensGeo = new THREE.CircleGeometry(0.023, 24)
     const leftLens = new THREE.Mesh(leftLensGeo, lensMat)
-    leftLens.position.set(-0.038, 0.024, 0.122)
+    leftLens.position.set(-0.038, 0.046, 0.075)
     leftLens.scale.set(1.12, 0.92, 1.0)
     glassesGroup.add(leftLens)
 
     // Right Rim & Lens
-    const rightRimGeo = new THREE.TorusGeometry(0.024, 0.0022, 12, 32)
+    const rightRimGeo = new THREE.TorusGeometry(0.024, 0.0024, 12, 32)
     const rightRim = new THREE.Mesh(rightRimGeo, frameMat)
-    rightRim.position.set(0.038, 0.024, 0.122)
+    rightRim.position.set(0.038, 0.046, 0.075)
     rightRim.scale.set(1.15, 0.95, 1.0)
     glassesGroup.add(rightRim)
 
     const rightLensGeo = new THREE.CircleGeometry(0.023, 24)
     const rightLens = new THREE.Mesh(rightLensGeo, lensMat)
-    rightLens.position.set(0.038, 0.024, 0.122)
+    rightLens.position.set(0.038, 0.046, 0.075)
     rightLens.scale.set(1.12, 0.92, 1.0)
     glassesGroup.add(rightLens)
 
     // Nose Bridge Wire
-    const bridgeGeo = new THREE.CylinderGeometry(0.0016, 0.0016, 0.026, 8)
+    const bridgeGeo = new THREE.CylinderGeometry(0.0018, 0.0018, 0.026, 8)
     const bridge = new THREE.Mesh(bridgeGeo, frameMat)
     bridge.rotation.z = Math.PI / 2
-    bridge.position.set(0, 0.025, 0.123)
+    bridge.position.set(0, 0.046, 0.076)
     glassesGroup.add(bridge)
 
     // Aviator Top Brow Bar
-    const browGeo = new THREE.CylinderGeometry(0.0014, 0.0014, 0.068, 8)
+    const browGeo = new THREE.CylinderGeometry(0.0015, 0.0015, 0.068, 8)
     const brow = new THREE.Mesh(browGeo, frameMat)
     brow.rotation.z = Math.PI / 2
-    brow.position.set(0, 0.042, 0.120)
+    brow.position.set(0, 0.062, 0.074)
     glassesGroup.add(brow)
-
-    // Left and Right Temple Arms extending back to ears
-    const leftArmGeo = new THREE.CylinderGeometry(0.0015, 0.0015, 0.12, 8)
-    const leftArm = new THREE.Mesh(leftArmGeo, frameMat)
-    leftArm.rotation.x = Math.PI / 2
-    leftArm.position.set(-0.068, 0.032, 0.065)
-    glassesGroup.add(leftArm)
-
-    const rightArmGeo = new THREE.CylinderGeometry(0.0015, 0.0015, 0.12, 8)
-    const rightArm = new THREE.Mesh(rightArmGeo, frameMat)
-    rightArm.rotation.x = Math.PI / 2
-    rightArm.position.set(0.068, 0.032, 0.065)
-    glassesGroup.add(rightArm)
 
     headBone.add(glassesGroup)
   }
@@ -605,24 +594,24 @@ export function attachStarkTechGlassesAndBeard(vrm: VRM, visible: boolean = true
       metalness: 0.1,
     })
 
-    // Upper Mustache Wings
+    // Upper Mustache Wings (centered above lips y = -0.022, z = 0.076)
     const mustacheGeo = new THREE.TorusGeometry(0.022, 0.0035, 8, 16, Math.PI * 0.75)
     const mustacheMesh = new THREE.Mesh(mustacheGeo, beardMat)
     mustacheMesh.rotation.z = -Math.PI * 0.88
-    mustacheMesh.position.set(0, -0.046, 0.118)
+    mustacheMesh.position.set(0, -0.022, 0.076)
     goateeGroup.add(mustacheMesh)
 
     // Soul Patch vertical tuft
     const soulGeo = new THREE.BoxGeometry(0.006, 0.012, 0.004)
     const soulMesh = new THREE.Mesh(soulGeo, beardMat)
-    soulMesh.position.set(0, -0.065, 0.116)
+    soulMesh.position.set(0, -0.040, 0.074)
     goateeGroup.add(soulMesh)
 
     // Chin Pointed Goatee Outline
     const chinGeo = new THREE.TorusGeometry(0.025, 0.004, 8, 16, Math.PI * 0.65)
     const chinMesh = new THREE.Mesh(chinGeo, beardMat)
     chinMesh.rotation.z = Math.PI * 0.18
-    chinMesh.position.set(0, -0.082, 0.110)
+    chinMesh.position.set(0, -0.058, 0.070)
     goateeGroup.add(chinMesh)
 
     headBone.add(goateeGroup)
@@ -953,5 +942,160 @@ export function applyAvatarSkin(vrm: VRM, skinId: string = 'crimson_turtleneck')
       })
     }
   })
+}
+
+/**
+ * Applies character-specific 3D humanoid skeletal transformations, physical silhouettes,
+ * and wardrobe signatures:
+ * - Atlas (Tony Stark): Broad masculine athletic male physique (wide shoulders 1.28, broad chest 1.25,
+ *   narrow hips 0.85, muscular arms 1.18, taller legs 1.14), charcoal suit, aviator glasses, goatee beard, arc reactor.
+ * - Mira (Yor Forger): Feminine hourglass silhouette (curvy hips 1.16, cinched waist 0.94, bust 1.10),
+ *   golden rose headband, crimson off-shoulder sweater dress, black thigh-highs.
+ * - Ada (Coach/Tutor): Standard spy-chic athletic female proportions (1.0 baseline), crimson turtleneck dress.
+ */
+export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mira' | 'atlas'): void {
+  if (!vrm || !vrm.humanoid) return
+
+  const humanoid = vrm.humanoid
+
+  const leftShoulder = humanoid.getNormalizedBoneNode('leftShoulder')
+  const rightShoulder = humanoid.getNormalizedBoneNode('rightShoulder')
+  const chest = humanoid.getNormalizedBoneNode('chest')
+  const upperChest = humanoid.getNormalizedBoneNode('upperChest')
+  const hips = humanoid.getNormalizedBoneNode('hips')
+  const spine = humanoid.getNormalizedBoneNode('spine')
+  const leftUpperArm = humanoid.getNormalizedBoneNode('leftUpperArm')
+  const rightUpperArm = humanoid.getNormalizedBoneNode('rightUpperArm')
+  const leftLowerArm = humanoid.getNormalizedBoneNode('leftLowerArm')
+  const rightLowerArm = humanoid.getNormalizedBoneNode('rightLowerArm')
+  const leftUpperLeg = humanoid.getNormalizedBoneNode('leftUpperLeg')
+  const rightUpperLeg = humanoid.getNormalizedBoneNode('rightUpperLeg')
+  const leftLowerLeg = humanoid.getNormalizedBoneNode('leftLowerLeg')
+  const rightLowerLeg = humanoid.getNormalizedBoneNode('rightLowerLeg')
+
+  if (char === 'atlas') {
+    // ⚡ ATLAS (TONY STARK): Athletic Masculine Boy Frame
+    // 1. Broad masculine athletic shoulders (+28% width)
+    if (leftShoulder) leftShoulder.scale.set(1.28, 1.15, 1.25)
+    if (rightShoulder) rightShoulder.scale.set(1.28, 1.15, 1.25)
+
+    // 2. Wide male chest & upper chest V-taper
+    if (chest) chest.scale.set(1.25, 1.12, 1.18)
+    if (upperChest) upperChest.scale.set(1.25, 1.12, 1.18)
+    if (spine) spine.scale.set(1.08, 1.02, 1.10)
+
+    // 3. Narrow masculine hips (neutralizes female curved waistline)
+    if (hips) hips.scale.set(0.85, 1.02, 0.86)
+
+    // 4. Athletic male arms (muscular bicep & forearm structure)
+    if (leftUpperArm) leftUpperArm.scale.set(1.18, 1.06, 1.18)
+    if (rightUpperArm) rightUpperArm.scale.set(1.18, 1.06, 1.18)
+    if (leftLowerArm) leftLowerArm.scale.set(1.12, 1.04, 1.12)
+    if (rightLowerArm) rightLowerArm.scale.set(1.12, 1.04, 1.12)
+
+    // 5. Straight, taller male legs (+14% leg length & masculine stance)
+    if (leftUpperLeg) leftUpperLeg.scale.set(1.14, 1.06, 1.14)
+    if (rightUpperLeg) rightUpperLeg.scale.set(1.14, 1.06, 1.14)
+    if (leftLowerLeg) leftLowerLeg.scale.set(1.10, 1.06, 1.10)
+    if (rightLowerLeg) rightLowerLeg.scale.set(1.10, 1.06, 1.10)
+
+    // Hide feminine hair ribbons, hair bows, and collapse skirt into male suit trousers
+    vrm.scene.traverse((obj) => {
+      if (/hair[2-4]_[LR]|mituami|ribbon|accessory/i.test(obj.name)) {
+        obj.visible = false
+        obj.scale.set(0, 0, 0)
+      }
+      if (/skirt_\d+_\d+/i.test(obj.name)) {
+        obj.scale.set(0.001, 0.001, 0.001)
+      }
+      if (/cloth1|cloth2/i.test(obj.name)) {
+        obj.visible = false
+        obj.scale.set(0.001, 0.001, 0.001)
+      }
+    })
+
+    // Attach Stark Tech Glasses, Goatee Beard, and Arc Reactor
+    attachStarkTechGlassesAndBeard(vrm, true)
+    attachArcReactorEmblem(vrm)
+    attachYorHeadbandRose(vrm, false)
+
+    // Apply Stark Suit textures & charcoal materials
+    StarkArcTraderSkin.apply(vrm)
+
+  } else if (char === 'mira') {
+    // 🌹 MIRA (YOR FORGER): Feminine Hourglass Silhouette & Knit Sweater
+    if (leftShoulder) leftShoulder.scale.set(0.96, 0.98, 0.98)
+    if (rightShoulder) rightShoulder.scale.set(0.96, 0.98, 0.98)
+    if (chest) chest.scale.set(1.10, 1.08, 1.12)
+    if (upperChest) upperChest.scale.set(1.10, 1.08, 1.12)
+    if (spine) spine.scale.set(0.94, 1.00, 0.95) // slender waist
+    if (hips) hips.scale.set(1.16, 1.02, 1.14) // curvy feminine hourglass hips
+    if (leftUpperArm) leftUpperArm.scale.set(0.95, 1.00, 0.95)
+    if (rightUpperArm) rightUpperArm.scale.set(0.95, 1.00, 0.95)
+    if (leftLowerArm) leftLowerArm.scale.set(0.95, 1.00, 0.95)
+    if (rightLowerArm) rightLowerArm.scale.set(0.95, 1.00, 0.95)
+    if (leftUpperLeg) leftUpperLeg.scale.set(1.05, 1.02, 1.05)
+    if (rightUpperLeg) rightUpperLeg.scale.set(1.05, 1.02, 1.05)
+
+    // Allow feminine hair ribbons/side strands and restore dress skirt
+    vrm.scene.traverse((obj) => {
+      if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
+        obj.visible = true
+        obj.scale.set(1.0, 1.0, 1.0)
+      }
+      if (/skirt_\d+_\d+/i.test(obj.name)) {
+        obj.scale.set(0.72, 1.0, 0.72)
+      }
+      if (/cloth1|cloth2/i.test(obj.name)) {
+        obj.visible = true
+        obj.scale.set(1.0, 1.0, 1.0)
+      }
+    })
+
+    attachStarkTechGlassesAndBeard(vrm, false)
+    attachYorHeadbandRose(vrm, true)
+    const chestBone = humanoid.getNormalizedBoneNode('chest') || humanoid.getNormalizedBoneNode('upperChest')
+    if (chestBone) {
+      const emblem = chestBone.getObjectByName('__STARK_ARC_REACTOR__')
+      if (emblem) emblem.visible = false
+    }
+
+    YorCrimsonSweaterSkin.apply(vrm)
+
+  } else {
+    // 👩‍💼 ADA (COACH & TUTOR): Spy-Chic Athletic Female Proportions (Standard 1.0)
+    const bones = [
+      leftShoulder, rightShoulder, chest, upperChest, spine, hips,
+      leftUpperArm, rightUpperArm, leftLowerArm, rightLowerArm,
+      leftUpperLeg, rightUpperLeg, leftLowerLeg, rightLowerLeg,
+    ]
+    bones.forEach((b) => {
+      if (b) b.scale.set(1.0, 1.0, 1.0)
+    })
+
+    vrm.scene.traverse((obj) => {
+      if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
+        obj.visible = true
+        obj.scale.set(1.0, 1.0, 1.0)
+      }
+      if (/skirt_\d+_\d+/i.test(obj.name)) {
+        obj.scale.set(0.72, 1.0, 0.72)
+      }
+      if (/cloth1|cloth2/i.test(obj.name)) {
+        obj.visible = true
+        obj.scale.set(1.0, 1.0, 1.0)
+      }
+    })
+
+    attachStarkTechGlassesAndBeard(vrm, false)
+    attachYorHeadbandRose(vrm, false)
+    const chestBone = humanoid.getNormalizedBoneNode('chest') || humanoid.getNormalizedBoneNode('upperChest')
+    if (chestBone) {
+      const emblem = chestBone.getObjectByName('__STARK_ARC_REACTOR__')
+      if (emblem) emblem.visible = false
+    }
+
+    AdaRedSkin.apply(vrm)
+  }
 }
 

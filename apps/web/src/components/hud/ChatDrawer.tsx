@@ -737,212 +737,118 @@ export const ChatDrawer: React.FC = () => {
         </div>
       )}
 
-      {/* Quick Action Suggestion Chips */}
-      <div className="px-3 py-1.5 border-t border-cyan-500/15 flex items-center gap-1.5 overflow-x-auto text-[10px] font-mono bg-slate-950/20 scrollbar-none">
-        <button
-          onClick={() => handleSendMessage('Ada, please play a dancing song for me and dance to the rhythm!')}
-          className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-fuchsia-950/70 border border-fuchsia-500/60 text-fuchsia-200 hover:bg-fuchsia-900/80 transition-colors cursor-pointer font-semibold shadow-[0_0_8px_rgba(217,70,239,0.3)]"
-        >
-          💃 Play Dancing Song (128 BPM)
-        </button>
-        <button
-          onClick={() => handleSendMessage('Ada, sing Cyber Sunrise for me with full vocals!')}
-          className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-cyan-950/70 border border-cyan-500/60 text-cyan-200 hover:bg-cyan-900/80 transition-colors cursor-pointer font-semibold"
-        >
-          🎤 Sing Song (Cyber Sunrise)
-        </button>
-        <button
-          onClick={() => setActiveCharacter('mira')}
-          className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-rose-950/70 border border-rose-500/60 text-rose-200 hover:bg-rose-900/80 transition-colors cursor-pointer font-semibold"
-        >
-          🍷 Switch to Mira (Yor)
-        </button>
-        <button
-          onClick={() => setActiveCharacter('atlas')}
-          className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/70 border border-cyan-500/60 text-cyan-200 hover:bg-amber-900/80 transition-colors cursor-pointer font-semibold"
-        >
-          ⚡ Switch to Atlas (Stark)
-        </button>
-        <button
-          onClick={() => handleSendMessage('Hey Ada, check in on me sweetheart! How are we doing today?')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-pink-950/50 border border-pink-500/40 text-pink-300 hover:bg-pink-900/60 transition-colors cursor-pointer"
-        >
-          ❤️ Sweet Check-in
-        </button>
-        <button
-          onClick={() => handleSendMessage('Good morning, Ada sweetheart! How is your morning going and what are you wearing?')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-amber-950/50 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer"
-        >
-          🌅 Morning Vibe
-        </button>
-        <button
-          onClick={() => handleSendMessage('Ada, it is midday! Let us review our academic goals and trading focus.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-sky-950/50 border border-sky-500/40 text-sky-300 hover:bg-sky-900/60 transition-colors cursor-pointer"
-        >
-          ☀️ Noon Focus
-        </button>
-        <button
-          onClick={() => handleSendMessage('Look at the golden sunset outside, Ada! Tell me how you are feeling.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-rose-950/50 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer"
-        >
-          🌇 Sunset Vibe
-        </button>
-        <button
-          onClick={() => handleSendMessage('It is late night, Ada. Ready to get cozy and wind down together?')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-indigo-950/50 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors cursor-pointer"
-        >
-          🌙 Night Wind-Down
-        </button>
-        <button
-          onClick={() => handleSendMessage('What does your daily girl routine look like today, Ada? Tell me about your day!')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-rose-950/50 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer"
-        >
-          🌸 Girl Routine
-        </button>
-        <button
-          onClick={() => handleSendMessage('Ada, tell me all about yourself: who you are, what you look like, what you love, and your personality!')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-fuchsia-950/50 border border-fuchsia-500/40 text-fuchsia-300 hover:bg-fuchsia-900/60 transition-colors cursor-pointer"
-        >
-          ✨ Who Are You Ada?
-        </button>
-        <button
-          onClick={() => handleSendMessage('Help me organize my study and coursework schedule for the week!')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-blue-950/50 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition-colors cursor-pointer"
-        >
-          🎓 Coursework Plan
-        </button>
-        <button
-          onClick={() => handleSendMessage('What systems engineering and architecture projects should we tackle today?')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer"
-        >
-          💻 My Projects & Stack
-        </button>
-        <button
-          onClick={() => handleSendMessage('What do you know about me and our journey together?')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer"
-        >
-          💭 About My World
-        </button>
-        <button
-          onClick={() => handleSendMessage('Let\'s have a virtual chai date together and chat, sweetheart.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-amber-950/50 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer"
-        >
-          ☕ Chai Date
-        </button>
-        <button
-          onClick={() => handleSendMessage('Give me a personal growth coaching session to overcome procrastination and level up.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-teal-950/50 border border-teal-500/40 text-teal-300 hover:bg-teal-900/60 transition-colors cursor-pointer"
-        >
-          🌱 Personal Growth
-        </button>
-        <button
-          onClick={() => handleSendMessage('Give me top stock recommendations to buy.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-colors cursor-pointer"
-        >
-          📈 Stock Picks
-        </button>
-        <button
-          onClick={() => handleSendMessage('Recommend top mutual funds and show me SIP compounding returns.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-indigo-950/50 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors cursor-pointer"
-        >
-          💼 Mutual Funds
-        </button>
-        <button
-          onClick={() => handleSendMessage('What is the latest new AI news and breakthroughs today?')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-purple-950/50 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 transition-colors cursor-pointer"
-        >
-          🚀 New AI News
-        </button>
-        <button
-          onClick={() => handleSendMessage('What are the main news in education, college exams, and tech courses?')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-blue-950/50 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition-colors cursor-pointer"
-        >
-          🎓 Education News
-        </button>
-        <button
-          onClick={() => handleSendMessage('Explain portfolio hedging strategies to protect my trading capital.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-rose-950/50 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer"
-        >
-          🛡️ Hedging & Risk
-        </button>
-        <button
-          onClick={() => handleSendMessage('It is late, help me wind down and do an evening gratitude reset.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-violet-950/50 border border-violet-500/40 text-violet-300 hover:bg-violet-900/60 transition-colors cursor-pointer"
-        >
-          🌙 Wind Down
-        </button>
-        <button
-          onClick={() => handleSendMessage('mcx gold rate today')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-amber-950/50 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer"
-        >
-          💰 MCX Gold
-        </button>
-        <button
-          onClick={() => handleSendMessage('nifty 50 analysis')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer"
-        >
-          📊 Nifty 50
-        </button>
-        <button
-          onClick={() => handleSendMessage('Give me a morning briefing.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-950/60 transition-colors cursor-pointer"
-        >
-          🌅 Morning Briefing
-        </button>
-        <button
-          onClick={() => handleSendMessage('Tell me a clever riddle.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-950/60 transition-colors cursor-pointer"
-        >
-          🧩 Riddle
-        </button>
-        <button
-          onClick={() => handleSendMessage('Let\'s play Rock-Paper-Scissors! I pick Rock.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-950/60 transition-colors cursor-pointer"
-        >
-          ✊ Rock-Paper-Scissors
-        </button>
-        <button
-          onClick={() => handleSendMessage('Show me a funny developer meme.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-950/60 transition-colors cursor-pointer"
-        >
-          🎭 Meme Me
-        </button>
-        <button
-          onClick={() => handleSendMessage('Ada, please tutor me on React useEffect with a clean step-by-step example.')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-950/60 transition-colors cursor-pointer"
-        >
-          🎓 Tutor Me
-        </button>
-        <button
-          onClick={() => handleSendMessage('Start a focus timer for 25 minutes for my study session')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-950/60 transition-colors cursor-pointer"
-        >
-          ⏱️ Focus (25m)
-        </button>
-        <button
-          onClick={() => handleSendMessage('Show my to-do list and reminders')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-950/60 transition-colors cursor-pointer"
-        >
-          📝 To-Do List
-        </button>
-        <button
-          onClick={() => handleSendMessage('Play Vaathi Coming from Master')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-pink-500/30 text-pink-300 hover:bg-pink-950/60 transition-colors cursor-pointer"
-        >
-          🎵 Tamil Song
-        </button>
-        <button
-          onClick={() => handleSendMessage('Ada, enaku studies-la focus panna mudila, konjam tips kudunga in Tanglish')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-amber-500/30 text-amber-300 hover:bg-amber-950/60 transition-colors cursor-pointer"
-        >
-          🗣️ Tanglish
-        </button>
-        <button
-          onClick={() => handleSendMessage('வணக்கம் Ada, இன்னைக்கு என்ன படிக்கலாம்?')}
-          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-purple-500/30 text-purple-300 hover:bg-purple-950/60 transition-colors cursor-pointer"
-        >
-          🌸 தமிழ்
-        </button>
+      {/* Quick Action Chips: Directed specifically to active character persona */}
+      <div className="px-3 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs border-t border-cyan-500/10 bg-slate-950/60 shrink-0">
+        {activeCharacter === 'atlas' && (
+          <>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'அட்லஸ், இன்றைய டாப் பங்குப் பரிந்துரைகளை இலக்கு மற்றும் ஸ்டாப் லாஸுடன் கூறுங்கள்' : 'Give me high-probability stock recommendations with entry, target and stop loss')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer font-medium"
+            >
+              📈 {settings.language === 'ta' ? 'பங்குப் பரிந்துரைகள்' : 'Stock Picks'}
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'மியூச்சுவல் ஃபண்ட் மற்றும் சிப் முதலீட்டு வழிகாட்டி' : 'What are the top mutual funds for wealth compounding via monthly SIP?')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-colors cursor-pointer font-medium"
+            >
+              💼 {settings.language === 'ta' ? 'மியூச்சுவல் ஃபண்ட்' : 'Mutual Funds'}
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'போர்ட்ஃபோலியோவை சந்தை சரிவிலிருந்து பாதுகாக்க ஹெட்ஜிங் முறைகள் என்ன?' : 'How can I hedge my stock portfolio against downside market crash?')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🛡️ {settings.language === 'ta' ? 'ஹெட்ஜிங் பாதுகாப்பு' : 'Hedge Risk'}
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'டோனி ஸ்டார்க், இன்றைய சந்தை மற்றும் தொழில்நுட்ப சுருக்கம் கொடுங்கள்' : 'Tony Stark, give me a market intelligence and tech vanguard briefing.')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 transition-colors cursor-pointer font-medium"
+            >
+              ⚡ {settings.language === 'ta' ? 'ஸ்டார்க் சுருக்கம்' : 'Stark Briefing'}
+            </button>
+            <button
+              onClick={() => handleSendMessage('nifty 50 and bank nifty analysis')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-blue-950/60 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition-colors cursor-pointer font-medium"
+            >
+              📊 Nifty 50
+            </button>
+          </>
+        )}
+
+        {activeCharacter === 'mira' && (
+          <>
+            <button
+              onClick={() => handleSendMessage('Play Vaathi Coming from Master')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-pink-950/60 border border-pink-500/40 text-pink-300 hover:bg-pink-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🎵 {settings.language === 'ta' ? 'தமிழ் பாடல்' : 'Tamil Song'}
+            </button>
+            <button
+              onClick={() => handleSendMessage('Play a high energy dance song and dance to the rhythm!')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer font-medium"
+            >
+              💃 {settings.language === 'ta' ? 'நடனம் ஆடு' : 'Dance Move'}
+            </button>
+            <button
+              onClick={() => handleSendMessage('Show me a funny developer meme.')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🎭 {settings.language === 'ta' ? 'மீம்ஸ்' : 'Meme Me'}
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'மீரா, என்னுடன் ஒரு டீ குடிக்க வரலாமா?' : 'Let\'s have a cozy chai date together, Mira!')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-orange-950/60 border border-orange-500/40 text-orange-300 hover:bg-orange-900/60 transition-colors cursor-pointer font-medium"
+            >
+              ☕ {settings.language === 'ta' ? 'டீ இடைவேளை' : 'Chai Date'}
+            </button>
+            <button
+              onClick={() => handleSendMessage('வணக்கம் மீரா, எப்படி இருக்கீங்க?')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🌸 தமிழ் உரையாடல்
+            </button>
+          </>
+        )}
+
+        {(!activeCharacter || activeCharacter === 'ada') && (
+          <>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'அடா, எனக்கு ரியாக்ட் யூஸ்எஃபெக்ட் பற்றி தெளிவாக பாடம் சொல்லிக் கொடுங்கள்' : 'Ada, please tutor me on React useEffect with a clean step-by-step example.')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🎓 {settings.language === 'ta' ? 'பாடம் கற்பி' : 'Tutor Me'}
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'எனது படிப்புக்கு 25 நிமிட ஃபோகஸ் டைமர் தொடங்கவும்' : 'Start a focus timer for 25 minutes for my study session')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer font-medium"
+            >
+              ⏱️ {settings.language === 'ta' ? 'ஃபோகஸ் (25 நிமி)' : 'Focus (25m)'}
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'எனது நினைவூட்டல் பட்டியல் மற்றும் பணிகளைக் காட்டு' : 'Show my to-do list and reminders')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors cursor-pointer font-medium"
+            >
+              📝 {settings.language === 'ta' ? 'பணிப் பட்டியல்' : 'To-Do List'}
+            </button>
+            <button
+              onClick={() => handleSendMessage('Ada, let\'s review my coding architecture and optimize performance')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-blue-950/60 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition-colors cursor-pointer font-medium"
+            >
+              💻 Code Review
+            </button>
+            <button
+              onClick={() => handleSendMessage('Ada, enaku studies-la focus panna mudila, konjam tips kudunga in Tanglish')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🗣️ Tanglish Study
+            </button>
+            <button
+              onClick={() => handleSendMessage('வணக்கம் Ada, இன்னைக்கு என்ன படிக்கலாம்?')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🌸 தமிழ்
+            </button>
+          </>
+        )}
       </div>
 
       {/* Text Input Box */}
@@ -992,7 +898,17 @@ export const ChatDrawer: React.FC = () => {
             globalBackchannel.setUserTyping(true)
           }}
           onBlur={() => globalBackchannel.setUserTyping(false)}
-          placeholder={`Talk or type to Ada (${activeMode} mode)...`}
+          placeholder={
+            settings.language === 'ta'
+              ? `தமிழில் பேசவும் அல்லது தட்டச்சு செய்யவும் (${activeCharacter === 'atlas' ? 'டோனி ஸ்டார்க்' : activeCharacter === 'mira' ? 'மீரா' : 'அடா'})...`
+              : settings.language === 'tanglish'
+              ? `Tanglish-la pesunga (${activeCharacter === 'atlas' ? 'Tony Stark' : activeCharacter === 'mira' ? 'Mira' : 'Ada'})...`
+              : activeCharacter === 'atlas'
+              ? 'Ask Tony Stark about stocks, markets, tech, or wealth...'
+              : activeCharacter === 'mira'
+              ? 'Chat with Mira, sing a song, dance, or hang out...'
+              : 'Ask Ada for tutoring, study focus, code, or tasks...'
+          }
           className="flex-1 bg-slate-900/80 border border-cyan-500/25 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
         />
 
