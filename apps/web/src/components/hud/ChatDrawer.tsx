@@ -379,6 +379,18 @@ export const ChatDrawer: React.FC = () => {
       {/* Quick Action Suggestion Chips */}
       <div className="px-3 py-1.5 border-t border-cyan-500/15 flex items-center gap-1.5 overflow-x-auto text-[10px] font-mono bg-slate-950/20 scrollbar-none">
         <button
+          onClick={() => handleSendMessage('Hey Ada, check in on me sweetheart! How are we doing today?')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-pink-950/50 border border-pink-500/40 text-pink-300 hover:bg-pink-900/60 transition-colors cursor-pointer"
+        >
+          ❤️ Sweet Check-in
+        </button>
+        <button
+          onClick={() => handleSendMessage('Give me a personal growth coaching session to overcome procrastination and level up.')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-teal-950/50 border border-teal-500/40 text-teal-300 hover:bg-teal-900/60 transition-colors cursor-pointer"
+        >
+          🌱 Personal Growth
+        </button>
+        <button
           onClick={() => handleSendMessage('Give me top stock recommendations to buy.')}
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-colors cursor-pointer"
         >
@@ -407,6 +419,12 @@ export const ChatDrawer: React.FC = () => {
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-rose-950/50 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer"
         >
           🛡️ Hedging & Risk
+        </button>
+        <button
+          onClick={() => handleSendMessage('It is late, help me wind down and do an evening gratitude reset.')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-violet-950/50 border border-violet-500/40 text-violet-300 hover:bg-violet-900/60 transition-colors cursor-pointer"
+        >
+          🌙 Wind Down
         </button>
         <button
           onClick={() => handleSendMessage('mcx gold rate today')}

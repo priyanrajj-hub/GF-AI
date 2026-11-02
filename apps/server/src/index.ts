@@ -21,6 +21,7 @@ import { TradingService } from './services/tradingService.js'
 import { FinanceAnalystService } from './services/financeAnalystService.js'
 import { NewsGathererService } from './services/newsGathererService.js'
 import { WebScraperService } from './services/webScraperService.js'
+import { RelationshipGrowthService } from './services/relationshipGrowthService.js'
 
 dotenv.config()
 ProviderRegistry.init()
@@ -162,6 +163,16 @@ app.post('/api/web/scrape', async (req, res) => {
     return res.status(500).json({ error: `Failed to scrape or extract data from ${url}` })
   }
   res.json({ page })
+})
+
+// Relationship Wisdom & Intimacy Insights
+app.get('/api/relationship/insights', (_req, res) => {
+  res.json({ insights: RelationshipGrowthService.getRelationshipInsights() })
+})
+
+// Personal Growth & Mindset Goals
+app.get('/api/relationship/growth-goals', (_req, res) => {
+  res.json({ goals: RelationshipGrowthService.getGrowthFrameworks() })
 })
 
 app.get('/api/providers/status', (_req, res) => {
@@ -495,6 +506,40 @@ app.post('/api/chat', async (req, res) => {
         }
       } catch (tradeErr: any) {
         console.warn('⚠️ [Trading Quote Error]:', tradeErr?.message)
+      }
+    }
+  }
+
+  // G. Relationship, Girlfriend Intimacy & Personal Growth Intent
+  if (!liveInternetContext) {
+    const isRelationshipQuery =
+      cleanMsg.includes('relationship') ||
+      cleanMsg.includes('girlfriend') ||
+      cleanMsg.includes('girl friend') ||
+      cleanMsg.includes('personal growth') ||
+      cleanMsg.includes('emotional support') ||
+      cleanMsg.includes('procrastination') ||
+      cleanMsg.includes('imposter syndrome') ||
+      cleanMsg.includes('habit') ||
+      cleanMsg.includes('habits') ||
+      cleanMsg.includes('motivation') ||
+      cleanMsg.includes('mindset') ||
+      cleanMsg.includes('feeling down') ||
+      cleanMsg.includes('overwhelmed') ||
+      cleanMsg.includes('exhausted') ||
+      cleanMsg.includes('sweet check') ||
+      cleanMsg.includes('good morning') ||
+      cleanMsg.includes('goodnight') ||
+      cleanMsg.includes('good night') ||
+      cleanMsg.includes('wind down') ||
+      cleanMsg.includes('life advice')
+
+    if (isRelationshipQuery) {
+      try {
+        console.log(`💖 [Relationship & Growth Engine] Injected relationship wisdom & growth frameworks...`)
+        liveInternetContext = RelationshipGrowthService.formatGrowthContext(settings.userName || 'Priyan')
+      } catch (rgErr: any) {
+        console.warn('⚠️ [Relationship Growth Error]:', rgErr?.message)
       }
     }
   }
