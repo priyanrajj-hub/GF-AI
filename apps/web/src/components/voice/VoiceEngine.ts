@@ -55,7 +55,8 @@ class VoiceEngineManager {
       window.speechSynthesis.cancel()
     }
     const store = useAppStore.getState()
-    if (store.systemState === 'speaking') {
+    const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
+    if (!isSinging && store.systemState === 'speaking') {
       store.setSystemState('idle')
     }
   }
@@ -194,7 +195,10 @@ class VoiceEngineManager {
           source.onended = () => {
             this.isNeuralPlaying = false
             this.currentAudioSource = null
-            store.setSystemState('idle')
+            const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
+            if (!isSinging) {
+              store.setSystemState('idle')
+            }
             if (options.onEnd) options.onEnd()
           }
 
@@ -266,13 +270,19 @@ class VoiceEngineManager {
     }
 
     utterance.onend = () => {
-      store.setSystemState('idle')
+      const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
+      if (!isSinging) {
+        store.setSystemState('idle')
+      }
       if (options.onEnd) options.onEnd()
     }
 
     utterance.onerror = (e) => {
       console.warn('[WebSpeech Error]', e)
-      store.setSystemState('idle')
+      const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
+      if (!isSinging) {
+        store.setSystemState('idle')
+      }
       if (options.onEnd) options.onEnd()
     }
 

@@ -1,101 +1,14 @@
 import { useAppStore } from '../../store/useAppStore.js'
 import { VoiceEngine } from '../../components/voice/VoiceEngine.js'
+import {
+  type SongLyricLine,
+  type SongSpec,
+  POPULAR_SONG_CATALOG,
+  resolveSong,
+} from '@ada/shared'
 
-export interface SongLyricLine {
-  time: number
-  text: string
-}
-
-export interface SongSpec {
-  id: string
-  title: string
-  genre: string
-  mood: string
-  bpm: number
-  duration: number
-  danceAction: string
-  lyrics: SongLyricLine[]
-}
-
-export const ORIGINAL_SONGS: SongSpec[] = [
-  {
-    id: 'song-idol-spark',
-    title: 'Starlight Sparkle (Dancing Song)',
-    genre: 'Anime Dance Pop',
-    mood: 'High-Energy & Upbeat',
-    bpm: 128,
-    duration: 22,
-    danceAction: 'dance_cute_idol',
-    lyrics: [
-      { time: 0.5, text: 'One, two, three, jump into the light!' },
-      { time: 4.5, text: 'Feel the rhythm moving, shining so bright!' },
-      { time: 8.8, text: 'Together on the stage, we reach for the stars!' },
-      { time: 13.2, text: 'Dancing through the cosmos, this rhythm is ours!' },
-      { time: 17.5, text: 'Yeah! Feel the beat drop and dance with me!' },
-    ],
-  },
-  {
-    id: 'song-cyber-sunrise',
-    title: 'Cyber Sunrise',
-    genre: 'Lo-Fi Electro Pop',
-    mood: 'Warm & Encouraging',
-    bpm: 96,
-    duration: 24,
-    danceAction: 'dance_pop_groove',
-    lyrics: [
-      { time: 0.5, text: 'Neon lights fade into morning skies...' },
-      { time: 5.0, text: 'Lines of code dancing right before our eyes...' },
-      { time: 9.8, text: 'Take a breath, sweetheart, we will find the way...' },
-      { time: 14.5, text: 'Another milestone conquered day by day!' },
-      { time: 19.0, text: 'I am right here with you all the way!' },
-    ],
-  },
-  {
-    id: 'song-dance-groove',
-    title: 'Neon Nightclub Groove',
-    genre: 'Upbeat Club Dance',
-    mood: 'Hypnotic & Energetic',
-    bpm: 124,
-    duration: 20,
-    danceAction: 'dance_pop_groove',
-    lyrics: [
-      { time: 0.5, text: 'Bassline pumping through the holographic floor...' },
-      { time: 4.8, text: 'Moving to the beat and asking for more!' },
-      { time: 9.2, text: 'Hands in the air, let the music take flight!' },
-      { time: 14.0, text: 'We own the rhythm in the neon tonight!' },
-    ],
-  },
-  {
-    id: 'song-lofi-study',
-    title: 'Focus in the Rain',
-    genre: 'Lo-Fi Chill',
-    mood: 'Relaxing',
-    bpm: 76,
-    duration: 20,
-    danceAction: 'dance_slow_sway',
-    lyrics: [
-      { time: 0.5, text: 'Soft gentle raindrops upon the glass...' },
-      { time: 5.0, text: 'Let the noise and the heavy worries pass...' },
-      { time: 9.5, text: 'Step by step, the puzzle comes in view...' },
-      { time: 14.5, text: 'Believing in everything you do.' },
-    ],
-  },
-  {
-    id: 'song-desi-beats',
-    title: 'Desi Swag & Celebration',
-    genre: 'Bhangra Dance Pop',
-    mood: 'Festive & Cheerful',
-    bpm: 130,
-    duration: 22,
-    danceAction: 'dance_hiphop_bounce',
-    lyrics: [
-      { time: 0.5, text: 'Dholak beats ringing, celebration starts now!' },
-      { time: 4.8, text: 'Hands up high, feel the rhythm and bow!' },
-      { time: 9.2, text: 'Chai in the evening, happiness in the air!' },
-      { time: 14.0, text: 'Shining with glory everywhere!' },
-    ],
-  },
-]
+export type { SongLyricLine, SongSpec }
+export const ORIGINAL_SONGS: SongSpec[] = POPULAR_SONG_CATALOG
 
 export class SongEngine {
   private audioCtx: AudioContext | null = null
@@ -108,12 +21,25 @@ export class SongEngine {
   private masterGain: GainNode | null = null
 
   playSong(
-    songId?: string,
+    songOrId?: string | SongSpec,
     onProgress?: (currentLine: string, progressRatio: number) => void
   ): SongSpec {
     this.stop()
 
-    const song = ORIGINAL_SONGS.find((s) => s.id === songId) || ORIGINAL_SONGS[0]
+    let song: SongSpec
+    if (typeof songOrId === 'object' && songOrId && 'lyrics' in songOrId) {
+      song = songOrId
+    } else if (typeof songOrId === 'string' && songOrId) {
+      const existing = ORIGINAL_SONGS.find((s) => s.id === songOrId)
+      if (existing) {
+        song = existing
+      } else {
+        song = resolveSong(songOrId)
+      }
+    } else {
+      song = ORIGINAL_SONGS[0]
+    }
+
     this.currentSong = song
     this.isPlaying = true
 
@@ -317,27 +243,7 @@ export class SongEngine {
    * Generates a custom song from any user query or web song title.
    */
   generateSongFromQuery(query: string): SongSpec {
-    const cleanTitle = query
-      .replace(/^sing\s+/i, '')
-      .replace(/^play\s+(?:dancing\s+)?song\s*/i, '')
-      .replace(/[^\w\s]/g, '')
-      .trim() || 'Cosmic Melody'
-
-    return {
-      id: `custom-song-${Date.now()}`,
-      title: `${cleanTitle.toUpperCase()} (Live Performance)`,
-      genre: 'Global Upbeat Pop',
-      mood: 'Celebratory & Electrifying',
-      bpm: 124,
-      duration: 20,
-      danceAction: 'dance_cute_idol',
-      lyrics: [
-        { time: 0.5, text: `Singing ${cleanTitle} live for you, sweetheart!` },
-        { time: 4.8, text: 'Feel the rhythm building as we dance through the light!' },
-        { time: 9.2, text: 'Every note shining bright under the stars tonight!' },
-        { time: 14.0, text: 'Yeah! We are unstoppable together!' },
-      ],
-    }
+    return resolveSong(query)
   }
 
   stop(): void {

@@ -12,6 +12,8 @@ import {
   MODEL_REGISTRY,
   PolicyEngine,
   MemeService,
+  resolveSong,
+  POPULAR_SONG_CATALOG,
 } from '@ada/shared'
 import { db } from './db/index.js'
 import { authMiddleware, type AuthenticatedRequest } from './middleware/auth.js'
@@ -428,31 +430,62 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
-  // 0b. Music, Singing & Dancing Song Intent
+  // 0b. Music, Singing & Dancing Song Intent (Plays ANY song requested by the user!)
   const isSongDanceQuery =
-    /play (?:a )?(?:dancing|dance) song|sing (?:a )?song|sing me a song|let'?s dance|dance for me|sing ([a-z0-9\s]+)/i.test(cleanMsg)
+    /play (?:a )?(?:dancing|dance) song|sing (?:a )?song|sing me a song|let'?s dance|dance for me|sing ([a-z0-9\s'-]+)|play ([a-z0-9\s'-]+) (?:song|music|track)/i.test(
+      cleanMsg
+    ) ||
+    /^(?:sing|singing)\s+(.+)$/i.test(cleanMsg) ||
+    /^(?:play\s+the\s+song|play\s+song)\s+(.+)$/i.test(cleanMsg)
 
   if (isSongDanceQuery) {
-    console.log(`🎵 [Music Engine] Delivering dancing song & singing performance for: "${message}"`)
-    const isUpbeatDance = /dancing|dance|upbeat|fast/i.test(cleanMsg)
-    const songTitle = isUpbeatDance ? 'Starlight Sparkle (Anime Dance Pop - 128 BPM)' : 'Cyber Sunrise (Lo-Fi Pop - 96 BPM)'
-    const danceAction = isUpbeatDance ? 'dance_cute_idol' : 'dance_pop_groove'
-    const songId = isUpbeatDance ? 'song-idol-spark' : 'song-cyber-sunrise'
+    console.log(`🎵 [Music Engine] Resolving requested song & performance for: "${message}"`)
+    let song = resolveSong(message)
 
+    // If it's a dynamic custom song query not already in the instant catalog, fetch real lyrics online via DuckDuckGo
+    if (song.id.startsWith('custom-song-')) {
+      try {
+        const searchResults = await WebSearchService.search(`${song.title} song lyrics`, 2)
+        if (searchResults && searchResults.length > 0) {
+          const combined = searchResults.map((r) => r.snippet).join('\n')
+          const candidateLines = combined
+            .split(/[\n.;!]/)
+            .map((s) => s.trim())
+            .filter(
+              (s) =>
+                s.length >= 15 &&
+                s.length <= 100 &&
+                !/duckduckgo|cookie|privacy|policy|all rights|lyrics|youtube|subscribe/i.test(s)
+            )
+          if (candidateLines.length >= 3) {
+            song.lyrics = candidateLines.slice(0, 5).map((lineText, idx) => ({
+              time: 0.5 + idx * 4.5,
+              text: lineText,
+            }))
+            console.log(`🌐 [Music Engine] Fetched real online lyrics for: "${song.title}" (${candidateLines.length} lines)`)
+          }
+        }
+      } catch (err) {
+        console.warn(`[Music Search Fallback] Could not fetch live lyrics:`, err)
+      }
+    }
+
+    const artistStr = song.artist ? ` *(by ${song.artist})*` : ''
     const reply: StructuredReply = {
-      speech: `Turn up the volume, ${settings.userName || 'sweetheart'}! Queueing up ${songTitle}. Watch the rhythm and dance with me!`,
-      display_text: `🎶 **Now Playing & Singing: ${songTitle}**\n\n*Synchronized beat-quantized choreography (${danceAction}), energetic singing vocals, and active lip-sync active!* ✨`,
+      speech: `Turn up the volume, ${settings.userName || 'sweetheart'}! Queueing up ${song.title}${song.artist ? ` by ${song.artist}` : ''}. Watch the rhythm and sing along with me!`,
+      display_text: `🎶 **Now Playing & Singing: ${song.title}**${artistStr}\n\n*Synchronized ${song.danceAction} choreography, ${song.bpm} BPM rhythm, authentic vocal delivery, and active mouth lip-sync active!* ✨`,
       emotion: 'excited',
       intensity: 1.0,
-      gesture: 'celebrate',
+      gesture: (song.danceAction as any) || 'celebrate',
       voice_style: { rate: 1.1, pitch: 1.15, style: 'cheerful' },
       actions: [
         {
           name: 'sing',
           arguments: {
-            songId,
-            dance: danceAction,
-            title: songTitle,
+            songId: song.id,
+            dance: song.danceAction,
+            title: song.title,
+            song,
           },
         },
       ],

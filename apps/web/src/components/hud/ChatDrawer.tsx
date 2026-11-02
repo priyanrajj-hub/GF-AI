@@ -140,7 +140,7 @@ export const ChatDrawer: React.FC = () => {
     if (!text || isSending) return
 
     setInput('')
-    setIsSending(false)
+    setIsSending(true)
     setSystemState('thinking')
 
     // Add user message to UI
@@ -185,21 +185,6 @@ export const ChatDrawer: React.FC = () => {
       // 3. Schedule streaming inline cues along speech timeline
       globalCueScheduler.scheduleFromText(parsedReply.display_text, parsedReply.voice_style?.rate || 1.0)
 
-      // Trigger actions (e.g. singing, dancing, choreography)
-      if (parsedReply.actions && Array.isArray(parsedReply.actions)) {
-        for (const act of parsedReply.actions) {
-          if (act.name === 'sing') {
-            const songId = (act.arguments as any)?.songId || 'song-idol-spark'
-            const dance = (act.arguments as any)?.dance || 'dance_cute_idol'
-            performAction(dance as any, { emotion: 'excited' })
-            globalSongEngine.playSong(songId)
-          } else if (act.name === 'dance') {
-            const dance = (act.arguments as any)?.name || 'dance_cute_idol'
-            performAction(dance as any)
-          }
-        }
-      }
-
       // Add assistant message with strictly guarded display_text
       const assistantMsg: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,
@@ -214,15 +199,52 @@ export const ChatDrawer: React.FC = () => {
       }
       addMessage(assistantMsg)
 
-      // Trigger Voice
-      if (parsedReply.speech) {
-        VoiceEngine.speak(parsedReply.speech, {
-          rate: parsedReply.voice_style?.rate || 1.05,
-          pitch: parsedReply.voice_style?.pitch || 1.0,
-          language: settings.language,
-        })
+      // Handle Singing & Dance or Standard Voice
+      const singAction = parsedReply.actions?.find((a) => a.name === 'sing')
+      if (singAction) {
+        const songObj = (singAction.arguments as any)?.song
+        const songId = (singAction.arguments as any)?.songId || 'song-idol-spark'
+        const dance = (singAction.arguments as any)?.dance || songObj?.danceAction || 'dance_cute_idol'
+        performAction(dance as any, { emotion: 'excited', duration: (songObj?.duration || 24) + 2 })
+
+        // Announce queue first, then begin song vocals and backing track
+        if (parsedReply.speech) {
+          VoiceEngine.speak(parsedReply.speech, {
+            rate: parsedReply.voice_style?.rate || 1.1,
+            pitch: parsedReply.voice_style?.pitch || 1.1,
+            language: settings.language,
+            onEnd: () => {
+              globalSongEngine.playSong(songObj || songId)
+            },
+          })
+          setTimeout(() => {
+            if (!globalSongEngine.getIsPlaying()) {
+              globalSongEngine.playSong(songObj || songId)
+            }
+          }, 3200)
+        } else {
+          globalSongEngine.playSong(songObj || songId)
+        }
       } else {
-        setSystemState('idle')
+        if (parsedReply.actions && Array.isArray(parsedReply.actions)) {
+          for (const act of parsedReply.actions) {
+            if (act.name === 'dance') {
+              const dance = (act.arguments as any)?.name || 'dance_cute_idol'
+              performAction(dance as any)
+            }
+          }
+        }
+
+        // Trigger Standard Voice
+        if (parsedReply.speech) {
+          VoiceEngine.speak(parsedReply.speech, {
+            rate: parsedReply.voice_style?.rate || 1.05,
+            pitch: parsedReply.voice_style?.pitch || 1.0,
+            language: settings.language,
+          })
+        } else {
+          setSystemState('idle')
+        }
       }
     } catch (err) {
       console.error('[Chat Send Error]', err)
