@@ -28,6 +28,7 @@ import { RelationshipGrowthService } from './services/relationshipGrowthService.
 import { AdaSelfKnowledgeService } from './services/adaSelfKnowledgeService.js'
 import { GirlBehaviorService } from './services/girlBehaviorService.js'
 import { UserLifeMemoryService } from './services/userLifeMemoryService.js'
+import { TutorStudyService } from './services/tutorStudyService.js'
 // Neural TTS Provider for high-fidelity human girl voice (zero robotic fallback - v3)
 import { NeuralTTSProvider } from './providers/neuralTtsProvider.js'
 
@@ -120,8 +121,8 @@ async function searchRealSongTrack(query: string) {
   try {
     const clean = query
       .replace(/^(?:ada|mira|atlas),?\s*/i, '')
-      .replace(/^(?:please\s*)?(?:play|sing|put on|listen to)\s+/i, '')
-      .replace(/(?:and\s+dance|to\s+the\s+rhythm|for\s+me)/gi, '')
+      .replace(/^(?:please\s*)?(?:play|sing|put on|listen to|oru\s+paattu\s+paadu|paatu\s+podu|tamil\s+song\s+podu)\s+/i, '')
+      .replace(/(?:and\s+dance|to\s+the\s+rhythm|for\s+me|play\s+pannu|podu|paadu)/gi, '')
       .trim() || 'dance pop'
     
     // 1. Primary search with clean query
@@ -491,6 +492,7 @@ app.post('/api/chat', async (req, res) => {
       /play (?:a )?(?:dancing|dance) song|sing (?:a )?song|sing me a song|let'?s dance|dance for me|theme from|soundtrack from|ost from/i.test(
         cleanMsg
       ) ||
+      /(?:oru\s+)?paat(?:u|tu)\s+(?:paadu|podu)|(?:tamil|hindi|english|malayalam|telugu|korean)\s+song\s+(?:play|sing|podu)/i.test(cleanMsg) ||
       /^(?:sing|singing)\s+(.+)$/i.test(cleanMsg) ||
       /^(?:play\s+the\s+song|play\s+song|play\s+theme)\s+(.+)$/i.test(cleanMsg))
 
@@ -584,6 +586,136 @@ app.post('/api/chat', async (req, res) => {
       speech: reply.speech,
       emotion: reply.emotion,
       gesture: reply.gesture,
+      timestamp: Date.now(),
+    }
+    db.addMessage(userId, assistantMsgObj)
+
+    if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream')
+      res.setHeader('Cache-Control', 'no-cache')
+      res.setHeader('Connection', 'keep-alive')
+      res.write(`data: ${JSON.stringify({ complete: true, reply })}\n\n`)
+      return res.end()
+    } else {
+      return res.json({ reply })
+    }
+  }
+
+  // 0c. Study, Focus & Pomodoro Intent
+  const focusIntent = TutorStudyService.detectFocusIntent(message)
+  if (focusIntent.isFocus) {
+    console.log(`⏱️ [Focus Engine] Launching ${focusIntent.minutes}m focus session: "${focusIntent.goal}"`)
+    const isTanglish = language === 'tanglish' || /padikka|focus pannuvom|stress/i.test(cleanMsg)
+    const isTamil = language === 'ta' || /[\u0B80-\u0BFF]/.test(message)
+
+    const speech = isTamil
+      ? `${focusIntent.minutes} நிமிட ஃபோகஸ் நேரத்தை தொடங்குகிறேன். உங்கள் கவனத்தை செலுத்துங்கள், நான் உங்களுடன் இருக்கிறேன்!`
+      : isTanglish
+        ? `${focusIntent.minutes} minutes Pomodoro focus timer set pannitten! Phone-ah silent-la pottutu, namma ${focusIntent.goal}-ah super-ah mudichidalaam!`
+        : `Setting a ${focusIntent.minutes}-minute focus timer for ${focusIntent.goal}. Minimize all distractions, breathe, and let us conquer this deep work block together!`
+
+    const displayText = isTamil
+      ? `⏱️ **${focusIntent.minutes} நிமிட ஃபோகஸ் அமர்வு தொடங்கியது** 🎯\n\n- **இலக்கு:** ${focusIntent.goal}\n- **முறை:** பொமோடோரோ (Pomodoro Focus)\n- **அறிவுரை:** அனைத்து கவனச்சிதறல்களையும் தவிர்க்கவும்.\n\n*உங்கள் இலக்கை முடிக்க நான் முழுமையாக உங்களுடன் இருக்கிறேன்!* ✨`
+      : isTanglish
+        ? `⏱️ **${focusIntent.minutes}-Minute Pomodoro Study Sprint Active** 🎯\n\n- **Goal:** ${focusIntent.goal}\n- **Strategy:** 25m Focus + 5m Chill Break\n- **Tip:** Notifications mute pannunga, single task mattum execute pannuvom.\n\n*Kalakunga, namma finish pannidalaam!* ✨`
+        : `⏱️ **${focusIntent.minutes}-Minute Deep Focus Sprint Active** 🎯\n\n- **Goal:** ${focusIntent.goal}\n- **Interval:** Pomodoro Block (${focusIntent.minutes}m deep work + 5m rest)\n- **Protocol:** Screen perimeter secured, zero multitasking.\n\n*You have got this, sweetheart. Let us build momentum!* 🚀`
+
+    const reply: StructuredReply = {
+      speech,
+      display_text: displayText,
+      emotion: 'motivated',
+      intensity: 0.9,
+      gesture: 'fist_pump',
+      voice_style: { rate: 1.05, pitch: 1.05, style: 'authoritative' },
+      studyFocus: {
+        goal: focusIntent.goal,
+        durationMinutes: focusIntent.minutes,
+        remainingSeconds: focusIntent.minutes * 60,
+        isActive: true,
+        mode: 'pomodoro',
+      },
+      actions: [
+        {
+          name: 'pomodoro',
+          arguments: {
+            minutes: focusIntent.minutes,
+            goal: focusIntent.goal,
+          },
+        },
+      ],
+    }
+
+    const assistantMsgObj: ChatMessage = {
+      id: `msg-${Date.now()}-assistant`,
+      role: 'assistant',
+      content: reply.display_text,
+      speech: reply.speech,
+      emotion: reply.emotion,
+      gesture: reply.gesture,
+      studyFocus: reply.studyFocus,
+      timestamp: Date.now(),
+    }
+    db.addMessage(userId, assistantMsgObj)
+
+    if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream')
+      res.setHeader('Cache-Control', 'no-cache')
+      res.setHeader('Connection', 'keep-alive')
+      res.write(`data: ${JSON.stringify({ complete: true, reply })}\n\n`)
+      return res.end()
+    } else {
+      return res.json({ reply })
+    }
+  }
+
+  // 0d. To-Do List & Reminder Intent
+  const todoIntent = TutorStudyService.detectTodoIntent(message)
+  if (todoIntent.isTodo) {
+    console.log(`📝 [To-Do Engine] Processing task operation: ${todoIntent.action}`)
+    const todoRes = TutorStudyService.handleTodoOperation(userId, todoIntent)
+
+    const isTanglish = language === 'tanglish' || /add pannu|enna tasks|remind pannu/i.test(cleanMsg)
+    const isTamil = language === 'ta' || /[\u0B80-\u0BFF]/.test(message)
+
+    let speech = todoRes.speech
+    let displayText = todoRes.display_text
+
+    if (isTamil && todoIntent.action === 'add') {
+      speech = `உங்கள் நினைவூட்டல் பட்டியலில் சேர்த்துள்ளேன்: ${todoIntent.taskTitle}. நான் உங்களுக்கு நினைவூட்டுகிறேன்!`
+      displayText = `📝 **நினைவூட்டல் சேர்க்கப்பட்டது:**\n- [ ] **${todoIntent.taskTitle}**\n\n*பட்டியலில் வெற்றிகரமாகப் பதிவு செய்யப்பட்டது.*`
+    } else if (isTanglish && todoIntent.action === 'add') {
+      speech = `To-do list-la add pannitten: ${todoIntent.taskTitle}! Correct time-ku ungalukku remind panren.`
+      displayText = `📝 **To-Do & Reminder Added:**\n- [ ] **${todoIntent.taskTitle}**\n\n*Database-la save aayiduchi. Total active tasks: ${todoRes.cardData.pendingCount}.* ✨`
+    }
+
+    const reply: StructuredReply = {
+      speech,
+      display_text: displayText,
+      emotion: 'happy',
+      intensity: 0.85,
+      gesture: 'nod',
+      voice_style: { rate: 1.0, pitch: 1.02, style: 'cheerful' },
+      todoCard: todoRes.cardData,
+      actions: [
+        {
+          name: 'todo',
+          arguments: {
+            action: todoIntent.action,
+            taskTitle: todoIntent.taskTitle,
+            pendingCount: todoRes.cardData.pendingCount,
+          },
+        },
+      ],
+    }
+
+    const assistantMsgObj: ChatMessage = {
+      id: `msg-${Date.now()}-assistant`,
+      role: 'assistant',
+      content: reply.display_text,
+      speech: reply.speech,
+      emotion: reply.emotion,
+      gesture: reply.gesture,
+      todoCard: reply.todoCard,
       timestamp: Date.now(),
     }
     db.addMessage(userId, assistantMsgObj)
@@ -1035,6 +1167,7 @@ app.post('/api/tts', async (req, res) => {
     text,
     voice,
     provider = 'auto',
+    language,
     elevenlabsApiKey,
     elevenlabsVoiceId,
     elevenlabsModelId,
@@ -1089,13 +1222,23 @@ app.post('/api/tts', async (req, res) => {
     try {
       const isStarkVoice = voice && (voice.toLowerCase().includes('christopher') || voice.toLowerCase().includes('stark') || voice.toLowerCase().includes('male'))
       const isAdaVoice = voice && (voice.toLowerCase().includes('jenny') || voice.toLowerCase().includes('coach'))
-      const neuralVoice = isStarkVoice
-        ? 'en-US-ChristopherNeural'
-        : isAdaVoice
-        ? 'en-US-JennyNeural'
-        : 'en-US-AnaNeural' // Sweet, warm, expressive real human girl voice
+      const isTamilScript = /[\u0B80-\u0BFF]/.test(text)
+      const isTanglish = language === 'tanglish' || /\b(?:vanakkam|eppadi|irukkeenga|padinga|romba|mudiyum|kavalapadadheenga|nalla|panren|pannunga|sapteengala|mudichidalaam|dhaan)\b/i.test(text)
 
-      const neuralResult = await NeuralTTSProvider.getInstance().synthesize(text, { voice: neuralVoice })
+      let neuralVoice: string
+      if (isTamilScript || language === 'ta') {
+        neuralVoice = 'ta-IN-PallaviNeural'
+      } else if (isTanglish) {
+        neuralVoice = 'en-IN-NeerjaExpressiveNeural'
+      } else if (isStarkVoice) {
+        neuralVoice = 'en-US-ChristopherNeural'
+      } else if (isAdaVoice) {
+        neuralVoice = 'en-US-JennyNeural'
+      } else {
+        neuralVoice = 'en-US-AnaNeural' // Sweet, warm, expressive real human girl voice
+      }
+
+      const neuralResult = await NeuralTTSProvider.getInstance().synthesize(text, { voice: neuralVoice, language })
       return res.json({
         ...neuralResult,
         provider: 'neural',

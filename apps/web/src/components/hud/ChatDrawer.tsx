@@ -200,6 +200,8 @@ export const ChatDrawer: React.FC = () => {
         gesture: parsedReply.gesture,
         meme: parsedReply.meme,
         sticker: parsedReply.sticker,
+        studyFocus: parsedReply.studyFocus,
+        todoCard: parsedReply.todoCard,
         musicTrack: (singAction?.arguments as any)?.song || parsedReply.musicTrack || (singAction ? {
           title: (singAction.arguments as any)?.title || 'Original Studio Track',
           artist: (singAction.arguments as any)?.artist,
@@ -480,6 +482,105 @@ export const ChatDrawer: React.FC = () => {
                     <span className="text-[10px] text-cyan-400/80 font-mono">
                       {activeSong?.id === msg.musicTrack.id ? (karaokeLine || 'Singing & Dancing...') : 'Studio Master Preview'}
                     </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Holographic Interactive Pomodoro Focus Card */}
+              {msg.studyFocus && (
+                <div className="my-2.5 p-3 rounded-2xl border border-emerald-400/50 bg-gradient-to-br from-slate-950 via-emerald-950/20 to-slate-900 shadow-xl backdrop-blur-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 text-base shadow">
+                        ⏱️
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                            Pomodoro Focus Sprint
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                            {msg.studyFocus.durationMinutes} MIN
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-bold text-white truncate">
+                          {msg.studyFocus.goal}
+                        </h4>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono text-sm font-black text-emerald-300">
+                        {msg.studyFocus.durationMinutes}:00
+                      </span>
+                      <p className="text-[9px] text-emerald-400/70 font-mono">Deep Work Mode</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 pt-2 border-t border-emerald-500/20 flex items-center justify-between text-xs">
+                    <span className="text-[10px] text-slate-300 font-sans italic">
+                      💡 Zero multitasking • Screen perimeter secured
+                    </span>
+                    <button
+                      onClick={() => handleSendMessage('Let us review what we studied in this focus session!')}
+                      className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 text-[10px] font-mono font-bold transition-all cursor-pointer"
+                    >
+                      Check-In 🎯
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Holographic Interactive To-Do List & Reminders Card */}
+              {msg.todoCard && (
+                <div className="my-2.5 p-3 rounded-2xl border border-indigo-400/40 bg-gradient-to-br from-slate-950 via-indigo-950/25 to-slate-900 shadow-xl backdrop-blur-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300 text-sm">
+                        📝
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white">Active To-Dos & Reminders</h4>
+                        <p className="text-[9px] text-indigo-300/80 font-mono">
+                          {msg.todoCard.pendingCount} pending task{msg.todoCard.pendingCount === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                      {msg.todoCard.action.toUpperCase()}
+                    </span>
+                  </div>
+
+                  {msg.todoCard.items && msg.todoCard.items.length > 0 && (
+                    <div className="space-y-1.5 my-1.5 max-h-36 overflow-y-auto pr-1">
+                      {msg.todoCard.items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-indigo-500/20 text-xs"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="text-xs">{item.completed ? '✅' : '⬜'}</span>
+                            <span className={`truncate text-xs ${item.completed ? 'line-through text-slate-500' : 'text-slate-200 font-medium'}`}>
+                              {item.title}
+                            </span>
+                          </div>
+                          {item.dueDate && (
+                            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-900/40 text-indigo-300 border border-indigo-500/30 flex-shrink-0">
+                              ⏰ Scheduled
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-2 pt-1.5 border-t border-indigo-500/20 flex items-center justify-between text-[10px] font-mono">
+                    <span className="text-slate-400">Say &quot;Add to-do: [goal]&quot; to schedule</span>
+                    <button
+                      onClick={() => handleSendMessage('Show my complete to-do list')}
+                      className="text-indigo-300 hover:text-indigo-200 underline cursor-pointer"
+                    >
+                      View All →
+                    </button>
                   </div>
                 </div>
               )}
@@ -805,6 +906,42 @@ export const ChatDrawer: React.FC = () => {
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-950/60 transition-colors cursor-pointer"
         >
           🎭 Meme Me
+        </button>
+        <button
+          onClick={() => handleSendMessage('Ada, please tutor me on React useEffect with a clean step-by-step example.')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-950/60 transition-colors cursor-pointer"
+        >
+          🎓 Tutor Me
+        </button>
+        <button
+          onClick={() => handleSendMessage('Start a focus timer for 25 minutes for my study session')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-950/60 transition-colors cursor-pointer"
+        >
+          ⏱️ Focus (25m)
+        </button>
+        <button
+          onClick={() => handleSendMessage('Show my to-do list and reminders')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-950/60 transition-colors cursor-pointer"
+        >
+          📝 To-Do List
+        </button>
+        <button
+          onClick={() => handleSendMessage('Play Vaathi Coming from Master')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-pink-500/30 text-pink-300 hover:bg-pink-950/60 transition-colors cursor-pointer"
+        >
+          🎵 Tamil Song
+        </button>
+        <button
+          onClick={() => handleSendMessage('Ada, enaku studies-la focus panna mudila, konjam tips kudunga in Tanglish')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-amber-500/30 text-amber-300 hover:bg-amber-950/60 transition-colors cursor-pointer"
+        >
+          🗣️ Tanglish
+        </button>
+        <button
+          onClick={() => handleSendMessage('வணக்கம் Ada, இன்னைக்கு என்ன படிக்கலாம்?')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-slate-900/60 border border-purple-500/30 text-purple-300 hover:bg-purple-950/60 transition-colors cursor-pointer"
+        >
+          🌸 தமிழ்
         </button>
       </div>
 

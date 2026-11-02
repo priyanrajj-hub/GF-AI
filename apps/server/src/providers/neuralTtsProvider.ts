@@ -7,6 +7,7 @@ export interface NeuralTTSOptions {
   voice?: string
   rate?: number // e.g. 1.0
   pitch?: number // e.g. 1.0
+  language?: string
 }
 
 /**
@@ -14,9 +15,10 @@ export interface NeuralTTSOptions {
  * Uses Microsoft Edge Neural Voice API for 100% natural, human-sounding studio speech.
  * 
  * Recommended Voices:
+ * - 'ta-IN-PallaviNeural' (Authentic, natural female Tamil voice)
+ * - 'en-IN-NeerjaExpressiveNeural' (Expressive Indian English / Tanglish voice)
  * - 'en-US-AnaNeural' (Sweet, warm, young human girl voice - ideal for Mira / Yor companion)
- * - 'en-US-JennyNeural' (Friendly, warm, expressive tutor - ideal for Ada Coach)
- * - 'en-US-AriaNeural' (Conversational, natural, realistic feminine voice)
+ * - 'en-US-JennyNeural' (Friendly, warm, expressive tutor - ideal for Ada Coach & Tutor)
  * - 'en-US-ChristopherNeural' (Charismatic, confident male voice - ideal for Atlas / Tony Stark)
  */
 export class NeuralTTSProvider {
@@ -45,7 +47,24 @@ export class NeuralTTSProvider {
       throw new Error('No text to synthesize')
     }
 
-    const voice = options.voice || 'en-US-AnaNeural'
+    // Dynamic Voice Selection: Tamil, Tanglish, or English
+    let voice = options.voice
+    if (!voice) {
+      const isTamilScript = /[\u0B80-\u0BFF]/.test(cleanText)
+      const isTanglishOrIndian =
+        options.language === 'tanglish' ||
+        options.language === 'ta' ||
+        /\b(?:vanakkam|eppadi|irukkeenga|padinga|romba|mudiyum|kavalapadadheenga|nalla|panren|pannunga|sapteengala|mudichidalaam|dhaan)\b/i.test(cleanText)
+
+      if (isTamilScript || options.language === 'ta') {
+        voice = 'ta-IN-PallaviNeural'
+      } else if (isTanglishOrIndian) {
+        voice = 'en-IN-NeerjaExpressiveNeural'
+      } else {
+        voice = 'en-US-AnaNeural'
+      }
+    }
+
     const tts = new MsEdgeTTS()
     await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3)
 
