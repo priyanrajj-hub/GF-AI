@@ -326,7 +326,7 @@ app.get('/api/permissions/audit', (_req, res) => {
 app.post('/api/chat', async (req, res) => {
   const authReq = req as AuthenticatedRequest
   const userId = authReq.userId
-  const { message, mode, sliders, language, stream, llmProvider, huggingfaceApiKey } = req.body
+  const { message, mode, character, sliders, language, stream, llmProvider, huggingfaceApiKey } = req.body
 
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Message is required' })
@@ -413,6 +413,58 @@ app.post('/api/chat', async (req, res) => {
       emotion: reply.emotion,
       gesture: reply.gesture,
       meme: reply.meme,
+      timestamp: Date.now(),
+    }
+    db.addMessage(userId, assistantMsgObj)
+
+    if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream')
+      res.setHeader('Cache-Control', 'no-cache')
+      res.setHeader('Connection', 'keep-alive')
+      res.write(`data: ${JSON.stringify({ complete: true, reply })}\n\n`)
+      return res.end()
+    } else {
+      return res.json({ reply })
+    }
+  }
+
+  // 0b. Music, Singing & Dancing Song Intent
+  const isSongDanceQuery =
+    /play (?:a )?(?:dancing|dance) song|sing (?:a )?song|sing me a song|let'?s dance|dance for me|sing ([a-z0-9\s]+)/i.test(cleanMsg)
+
+  if (isSongDanceQuery) {
+    console.log(`🎵 [Music Engine] Delivering dancing song & singing performance for: "${message}"`)
+    const isUpbeatDance = /dancing|dance|upbeat|fast/i.test(cleanMsg)
+    const songTitle = isUpbeatDance ? 'Starlight Sparkle (Anime Dance Pop - 128 BPM)' : 'Cyber Sunrise (Lo-Fi Pop - 96 BPM)'
+    const danceAction = isUpbeatDance ? 'dance_cute_idol' : 'dance_pop_groove'
+    const songId = isUpbeatDance ? 'song-idol-spark' : 'song-cyber-sunrise'
+
+    const reply: StructuredReply = {
+      speech: `Turn up the volume, ${settings.userName || 'sweetheart'}! Queueing up ${songTitle}. Watch the rhythm and dance with me!`,
+      display_text: `🎶 **Now Playing & Singing: ${songTitle}**\n\n*Synchronized beat-quantized choreography (${danceAction}), energetic singing vocals, and active lip-sync active!* ✨`,
+      emotion: 'excited',
+      intensity: 1.0,
+      gesture: 'celebrate',
+      voice_style: { rate: 1.1, pitch: 1.15, style: 'cheerful' },
+      actions: [
+        {
+          name: 'sing',
+          arguments: {
+            songId,
+            dance: danceAction,
+            title: songTitle,
+          },
+        },
+      ],
+    }
+
+    const assistantMsgObj: ChatMessage = {
+      id: `msg-${Date.now()}-assistant`,
+      role: 'assistant',
+      content: reply.display_text,
+      speech: reply.speech,
+      emotion: reply.emotion,
+      gesture: reply.gesture,
       timestamp: Date.now(),
     }
     db.addMessage(userId, assistantMsgObj)
@@ -759,6 +811,7 @@ app.post('/api/chat', async (req, res) => {
   const llm = ProviderRegistry.getLLM()
   const genOptions = {
     mode: activeMode,
+    character: character || 'ada',
     sliders: activeSliders,
     userName: settings.userName,
     language,

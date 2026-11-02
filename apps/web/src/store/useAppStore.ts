@@ -36,6 +36,8 @@ interface AppState {
   setSystemState: (state: AppSystemState) => void
 
   // Persona & Emotion
+  activeCharacter: 'ada' | 'mira' | 'atlas'
+  setActiveCharacter: (char: 'ada' | 'mira' | 'atlas') => void
   activeMode: PersonalityMode
   setActiveMode: (mode: PersonalityMode) => void
   currentEmotion: EmotionType
@@ -136,6 +138,8 @@ interface AppState {
   setRoamConfig: (partial: Partial<AppState['roamConfig']>) => void
   activeSong: any
   setActiveSong: (song: any) => void
+  karaokeLine: string
+  setKaraokeLine: (line: string) => void
   activeFX: string[]
   setActiveFX: (fx: string[]) => void
   avatarPosition: [number, number, number]
@@ -221,6 +225,47 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
 export const useAppStore = create<AppState>((set, get) => ({
   systemState: 'idle',
   setSystemState: (state) => set({ systemState: state }),
+
+  activeCharacter: (typeof window !== 'undefined' ? (localStorage.getItem('ada_active_character') as any) : null) || 'ada',
+  setActiveCharacter: (char: 'ada' | 'mira' | 'atlas') => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ada_active_character', char)
+    }
+    if (char === 'mira') {
+      set({
+        activeCharacter: 'mira',
+        skinId: 'yor-crimson-sweater',
+        activeMode: 'companion',
+        currentEmotion: 'playful',
+        isManualOutfit: true,
+      })
+      import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
+        VoiceEngine.speak("Hello sweetheart! Mira is here with you. Ready to have some fun today?", { pitch: 1.25, rate: 1.05 })
+      }).catch(() => {})
+    } else if (char === 'atlas') {
+      set({
+        activeCharacter: 'atlas',
+        skinId: 'stark-arc-trader',
+        activeMode: 'jarvis',
+        currentEmotion: 'motivated',
+        isManualOutfit: true,
+      })
+      import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
+        VoiceEngine.speak("Stark systems online. Ready to analyze markets, track setups, and conquer the day.", { pitch: 0.95, rate: 1.08 })
+      }).catch(() => {})
+    } else {
+      set({
+        activeCharacter: 'ada',
+        skinId: 'crimson_turtleneck',
+        activeMode: 'mentor',
+        currentEmotion: 'calm',
+        isManualOutfit: false,
+      })
+      import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
+        VoiceEngine.speak("Ada ready. What are we studying and building next?", { pitch: 1.05, rate: 1.0 })
+      }).catch(() => {})
+    }
+  },
 
   activeMode: 'companion',
   setActiveMode: (mode) => set({ activeMode: mode }),
@@ -358,6 +403,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setShowStageDrawer: (showStageDrawer) => set({ showStageDrawer }),
   activeSong: null,
   setActiveSong: (activeSong) => set({ activeSong }),
+  karaokeLine: '',
+  setKaraokeLine: (karaokeLine) => set({ karaokeLine }),
   activeFX: [],
   setActiveFX: (activeFX) => set({ activeFX }),
   avatarPosition: [0, -0.72, 0],

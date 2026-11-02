@@ -29,6 +29,8 @@ import { useAppStore } from '../../store/useAppStore.js'
 import { VoiceEngine } from '../voice/VoiceEngine.js'
 import { globalReactionReconciler, globalBackchannel } from '../../avatar/reactions/index.js'
 import { globalCueScheduler } from '../../avatar/cues/CueScheduler.js'
+import { performAction } from '../../avatar/motion/performAction.js'
+import { globalSongEngine } from '../../avatar/engine/singer.js'
 import { apiUrl } from '../../utils/api.js'
 
 export const ChatDrawer: React.FC = () => {
@@ -39,6 +41,8 @@ export const ChatDrawer: React.FC = () => {
     addMessage,
     clearMessages,
     activeMode,
+    activeCharacter,
+    setActiveCharacter,
     settings,
     setSystemState,
     setEmotionAndGesture,
@@ -161,6 +165,7 @@ export const ChatDrawer: React.FC = () => {
         body: JSON.stringify({
           message: text,
           mode: activeMode,
+          character: activeCharacter,
           sliders: settings.sliders,
           language: settings.language,
           llmProvider: settings.llmProvider,
@@ -179,6 +184,21 @@ export const ChatDrawer: React.FC = () => {
 
       // 3. Schedule streaming inline cues along speech timeline
       globalCueScheduler.scheduleFromText(parsedReply.display_text, parsedReply.voice_style?.rate || 1.0)
+
+      // Trigger actions (e.g. singing, dancing, choreography)
+      if (parsedReply.actions && Array.isArray(parsedReply.actions)) {
+        for (const act of parsedReply.actions) {
+          if (act.name === 'sing') {
+            const songId = (act.arguments as any)?.songId || 'song-idol-spark'
+            const dance = (act.arguments as any)?.dance || 'dance_cute_idol'
+            performAction(dance as any, { emotion: 'excited' })
+            globalSongEngine.playSong(songId)
+          } else if (act.name === 'dance') {
+            const dance = (act.arguments as any)?.name || 'dance_cute_idol'
+            performAction(dance as any)
+          }
+        }
+      }
 
       // Add assistant message with strictly guarded display_text
       const assistantMsg: ChatMessage = {
@@ -507,6 +527,30 @@ export const ChatDrawer: React.FC = () => {
 
       {/* Quick Action Suggestion Chips */}
       <div className="px-3 py-1.5 border-t border-cyan-500/15 flex items-center gap-1.5 overflow-x-auto text-[10px] font-mono bg-slate-950/20 scrollbar-none">
+        <button
+          onClick={() => handleSendMessage('Ada, please play a dancing song for me and dance to the rhythm!')}
+          className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-fuchsia-950/70 border border-fuchsia-500/60 text-fuchsia-200 hover:bg-fuchsia-900/80 transition-colors cursor-pointer font-semibold shadow-[0_0_8px_rgba(217,70,239,0.3)]"
+        >
+          💃 Play Dancing Song (128 BPM)
+        </button>
+        <button
+          onClick={() => handleSendMessage('Ada, sing Cyber Sunrise for me with full vocals!')}
+          className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-cyan-950/70 border border-cyan-500/60 text-cyan-200 hover:bg-cyan-900/80 transition-colors cursor-pointer font-semibold"
+        >
+          🎤 Sing Song (Cyber Sunrise)
+        </button>
+        <button
+          onClick={() => setActiveCharacter('mira')}
+          className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-rose-950/70 border border-rose-500/60 text-rose-200 hover:bg-rose-900/80 transition-colors cursor-pointer font-semibold"
+        >
+          🍷 Switch to Mira (Yor)
+        </button>
+        <button
+          onClick={() => setActiveCharacter('atlas')}
+          className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/70 border border-cyan-500/60 text-cyan-200 hover:bg-amber-900/80 transition-colors cursor-pointer font-semibold"
+        >
+          ⚡ Switch to Atlas (Stark)
+        </button>
         <button
           onClick={() => handleSendMessage('Hey Ada, check in on me sweetheart! How are we doing today?')}
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-pink-950/50 border border-pink-500/40 text-pink-300 hover:bg-pink-900/60 transition-colors cursor-pointer"

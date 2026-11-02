@@ -71,6 +71,8 @@ export class ExpressionEngine {
   private eyeDartOffset = { x: 0, y: 0 }
   public availableExpressions: string[] = []
   public missingExpressions: string[] = []
+  public isSinging: boolean = false
+  public singingBpm: number = 120
 
   constructor(vrm: VRM) {
     this.vrm = vrm
@@ -122,6 +124,19 @@ export class ExpressionEngine {
   }
 
   setLipSync(audioLevel: number, isSpeaking: boolean): void {
+    if (this.isSinging || (typeof window !== 'undefined' && (window as any).__IS_SINGING__)) {
+      const bpm = (typeof window !== 'undefined' && (window as any).__SONG_BPM__) || this.singingBpm || 120
+      const now = performance.now() / 1000
+      const beatCycle = Math.sin(now * (bpm / 60) * Math.PI * 2) * 0.5 + 0.5
+      const syllable = (Math.sin(now * 11.5) + 1) * 0.5
+      const open = Math.max(0.40, Math.min(1.0, (beatCycle * 0.5 + 0.5) * (syllable * 0.7 + 0.3) + audioLevel * 1.5))
+      this.targetValues.aa = open * 0.95
+      this.targetValues.oh = (1.0 - open) * 0.45
+      this.targetValues.joy = Math.max(this.targetValues.joy, 0.35)
+      this.targetValues.fun = Math.max(this.targetValues.fun, 0.85)
+      return
+    }
+
     if (!isSpeaking || audioLevel < 0.04) {
       this.targetValues.aa = 0
       this.targetValues.oh = 0
@@ -191,6 +206,16 @@ export class ExpressionEngine {
 
     // Combine natural blink with target blink
     const effectiveBlink = Math.max(naturalBlink, this.currentValues.blink)
+
+    // Singing mouth dynamic override
+    if (this.isSinging || (typeof window !== 'undefined' && (window as any).__IS_SINGING__)) {
+      const bpm = (typeof window !== 'undefined' && (window as any).__SONG_BPM__) || this.singingBpm || 120
+      const beatCycle = (Math.sin(time * (bpm / 60) * Math.PI * 2) + 1) * 0.5
+      const syllable = (Math.sin(time * 12.0) + 1) * 0.5
+      const open = Math.max(0.40, Math.min(1.0, (beatCycle * 0.45 + 0.55) * (syllable * 0.65 + 0.35)))
+      this.currentValues.aa = open * 0.95
+      this.currentValues.oh = (1.0 - open) * 0.40
+    }
 
     // 5. Apply to VRM expression presets (VRM 0.x / 1.0 compatible)
     mgr.setValue('happy', Math.min(1.0, this.currentValues.joy))
