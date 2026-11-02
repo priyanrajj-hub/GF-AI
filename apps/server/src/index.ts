@@ -117,13 +117,24 @@ app.get('/api/memes', (_req, res) => {
  * Real-Time Music & Original Audio Search
  * Fetches original studio song previews and album artwork via public iTunes API
  */
-async function searchRealSongTrack(query: string) {
+async function searchRealSongTrack(query: string, language?: string) {
   try {
-    const clean = query
+    let clean = query
       .replace(/^(?:ada|mira|atlas),?\s*/i, '')
-      .replace(/^(?:please\s*)?(?:play|sing|put on|listen to|oru\s+paattu\s+paadu|paatu\s+podu|tamil\s+song\s+podu)\s+/i, '')
+      .replace(/^(?:please\s*)?(?:play|sing|put on|listen to|perform|oru\s+paattu\s+paadu|paatu\s+podu|tamil\s+song\s+podu)\b\s*/i, '')
       .replace(/(?:and\s+dance|to\s+the\s+rhythm|for\s+me|play\s+pannu|podu|paadu)/gi, '')
-      .trim() || 'dance pop'
+      .replace(/[?!.]/g, '')
+      .trim()
+
+    const isTamilRequest =
+      language === 'ta' ||
+      /\b(?:tamil|paatu|paattu|podu|paadu)\b/i.test(query)
+
+    if (!clean || clean.length < 2 || /^play\b|^sing\b|^dance\b|^song\b|^music\b/i.test(clean)) {
+      clean = isTamilRequest ? 'Vaathi Coming' : 'Starlight Sparkle Dance Pop'
+    } else if (isTamilRequest && !clean.toLowerCase().includes('tamil')) {
+      clean = `${clean} tamil`
+    }
     
     // 1. Primary search with clean query
     let itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(clean)}&entity=song&limit=1`
@@ -488,13 +499,20 @@ app.post('/api/chat', async (req, res) => {
   // 0b. Music, Singing & Dancing Song Intent (Plays ANY song, OST, theme requested by the user!)
   const isSongDanceQuery =
     !/rock[- ]paper[- ]scissors|play (?:a )?game|play riddle|play trivia/i.test(cleanMsg) &&
-    (/^(?:ada,?\s*)?(?:mira,?\s*)?(?:atlas,?\s*)?(?:please\s*)?(?:play|sing|put on|listen to)\s+(.+)$/i.test(cleanMsg) ||
-      /play (?:a )?(?:dancing|dance) song|sing (?:a )?song|sing me a song|let'?s dance|dance for me|theme from|soundtrack from|ost from/i.test(
+    (
+      // 1. Single word or short commands: "play", "sing", "dance", "music", "song", "paatu", "paadu", "podu"
+      /^(?:ada,?\s*)?(?:mira,?\s*)?(?:atlas,?\s*)?(?:please\s*)?(?:play|sing|dance|music|song|paatu|paadu|podu)$/i.test(cleanMsg) ||
+      // 2. Commands starting with play, sing, put on, listen to, perform
+      /^(?:ada,?\s*)?(?:mira,?\s*)?(?:atlas,?\s*)?(?:please\s*)?(?:play|sing|put on|listen to|perform)\b/i.test(cleanMsg) ||
+      // 3. Any query mentioning dancing song, music, soundtrack, OST, theme, BGM, karaoke
+      /\b(?:dancing song|dance song|sing a song|sing song|play song|play music|sing me a song|let'?s dance|dance for me|theme from|soundtrack from|ost from|aizen theme|bleach theme|anime theme|bgm|karaoke|singing)\b/i.test(
         cleanMsg
       ) ||
-      /(?:oru\s+)?paat(?:u|tu)\s+(?:paadu|podu)|(?:tamil|hindi|english|malayalam|telugu|korean)\s+song\s+(?:play|sing|podu)/i.test(cleanMsg) ||
-      /^(?:sing|singing)\s+(.+)$/i.test(cleanMsg) ||
-      /^(?:play\s+the\s+song|play\s+song|play\s+theme)\s+(.+)$/i.test(cleanMsg))
+      // 4. Tamil / regional song phrases
+      /(?:oru\s+)?paat(?:u|tu)\s+(?:paadu|podu)|(?:tamil|hindi|english|malayalam|telugu|korean|japanese)\s+song|(?:paatu|paadu|podu)\b/i.test(cleanMsg) ||
+      // 5. Popular song titles or themes directly mentioned
+      /\b(?:vaathi coming|shape of you|believer|levitating|kesariya|badass|arabic kuthu|aizen|treachery|jailer|starlight sparkle|cyber sunrise|focus in the rain)\b/i.test(cleanMsg)
+    )
 
   if (isSongDanceQuery) {
     console.log(`🎵 [Music Engine] Resolving requested song & performance for: "${message}"`)
@@ -502,7 +520,7 @@ app.post('/api/chat', async (req, res) => {
 
     // Fetch original studio recording preview and artwork from public iTunes API
     try {
-      const realTrack = await searchRealSongTrack(message)
+      const realTrack = await searchRealSongTrack(message, settings.language)
       if (realTrack && realTrack.audioUrl) {
         song = {
           ...song,
@@ -546,13 +564,18 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
+    const isTamil = settings.language === 'ta' || /[\u0B80-\u0BFF]/.test(message)
     const artistStr = song.artist ? ` *(by ${song.artist})*` : ''
+    const speechText = isTamil
+      ? `இசை ஒலிக்கிறது, ${settings.userName || 'அன்பே'}! ${song.title} பாடலை கேட்டு என்னுடன் நடனமாடுங்கள்!`
+      : `Turn up the volume, ${settings.userName || 'sweetheart'}! Playing ${song.title}${song.artist ? ` by ${song.artist}` : ''}. Watch the rhythm and feel the vibe!`
+
     const reply: StructuredReply = {
-      speech: `Turn up the volume, ${settings.userName || 'sweetheart'}! Playing ${song.title}${song.artist ? ` by ${song.artist}` : ''}. Watch the rhythm and feel the vibe!`,
+      speech: speechText,
       display_text: `🎶 **Now Playing: ${song.title}**${artistStr}\n\n*Synchronized ${song.danceAction} choreography, ${song.bpm} BPM rhythm, original audio, and active mouth lip-sync active!* ✨`,
       emotion: 'excited',
       intensity: 1.0,
-      gesture: (song.danceAction as any) || 'celebrate',
+      gesture: (song.danceAction as any) || 'dance_cute_idol',
       voice_style: { rate: 1.1, pitch: 1.15, style: 'cheerful' },
       musicTrack: {
         id: song.id,

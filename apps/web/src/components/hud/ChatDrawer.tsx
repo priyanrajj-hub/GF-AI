@@ -243,6 +243,19 @@ export const ChatDrawer: React.FC = () => {
             language: settings.language,
           })
         }
+      } else if (/now playing|now singing/i.test(parsedReply.display_text || '')) {
+        // Fallback: If LLM output text mentions "Now Playing" or "Now Singing", immediately trigger music & dance!
+        const match = (parsedReply.display_text || '').match(/now (?:playing|singing)(?:\s*&[^\n:]*)?:\s*([^\n*(]+)/i)
+        const detectedTitle = match ? match[1].trim() : 'Starlight Sparkle'
+        performAction('dance_pop_groove', { emotion: 'excited', duration: 32 })
+        globalSongEngine.playSong(detectedTitle)
+        if (parsedReply.speech) {
+          VoiceEngine.speak(parsedReply.speech, {
+            rate: parsedReply.voice_style?.rate || 1.1,
+            pitch: parsedReply.voice_style?.pitch || 1.1,
+            language: settings.language,
+          })
+        }
       } else {
         if (parsedReply.actions && Array.isArray(parsedReply.actions)) {
           for (const act of parsedReply.actions) {
