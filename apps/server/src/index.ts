@@ -18,6 +18,9 @@ import { ProviderRegistry } from './providers/index.js'
 import { ContextBuilder } from './services/contextBuilder.js'
 import { WebSearchService } from './services/webSearchService.js'
 import { TradingService } from './services/tradingService.js'
+import { FinanceAnalystService } from './services/financeAnalystService.js'
+import { NewsGathererService } from './services/newsGathererService.js'
+import { WebScraperService } from './services/webScraperService.js'
 
 dotenv.config()
 ProviderRegistry.init()
@@ -117,6 +120,48 @@ app.get('/api/trading/quote', async (req, res) => {
 app.get('/api/trading/recommendations', async (_req, res) => {
   const recommendations = await TradingService.getTopRecommendations()
   res.json({ recommendations, count: recommendations.length })
+})
+
+// Real-Time Curated Mutual Funds & Analytics
+app.get('/api/finance/mutual-funds', (_req, res) => {
+  const category = _req.query.category as string | undefined
+  const funds = FinanceAnalystService.getMutualFunds(category)
+  res.json({ count: funds.length, category: category || 'all', funds })
+})
+
+// Systematic Investment Plan (SIP) Compounding Calculator
+app.get('/api/finance/sip-calc', (req, res) => {
+  const monthly = parseFloat((req.query.monthly as string) || '5000')
+  const rate = parseFloat((req.query.rate as string) || '15')
+  const years = parseFloat((req.query.years as string) || '5')
+  const calculation = FinanceAnalystService.calculateSIP(monthly, rate, years)
+  res.json({ calculation })
+})
+
+// Portfolio Hedging & Capital Preservation Strategies ("he feature" / "hedging")
+app.get('/api/finance/hedging', (_req, res) => {
+  const strategies = FinanceAnalystService.getHedgingStrategies()
+  res.json({ strategies })
+})
+
+// Live News Gatherer across AI, Technology, Education, and Finance
+app.get('/api/news', async (req, res) => {
+  const category = (req.query.category as any) || 'all'
+  const news = await NewsGathererService.getNews(category)
+  res.json({ category, count: news.length, news })
+})
+
+// Universal Website Extractor & Scraper
+app.post('/api/web/scrape', async (req, res) => {
+  const { url } = req.body
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'Valid URL is required' })
+  }
+  const page = await WebScraperService.extractPage(url)
+  if (!page) {
+    return res.status(500).json({ error: `Failed to scrape or extract data from ${url}` })
+  }
+  res.json({ page })
 })
 
 app.get('/api/providers/status', (_req, res) => {
@@ -256,36 +301,152 @@ app.post('/api/chat', async (req, res) => {
   }
   db.addMessage(userId, userMsgObj)
 
-  // 1b. Real-Time Live Web Search, Stock Trading & Market Data Trigger
+  // 1b. Real-Time Live Intelligence Engine: Web Scraper, Mutual Funds, Hedging, News, Stocks & Search
   let liveInternetContext: string | undefined
   const cleanMsg = message.toLowerCase().trim()
-  const isStockRecQuery =
-    cleanMsg.includes('stock recomendation') ||
-    cleanMsg.includes('stock recommendation') ||
-    cleanMsg.includes('stocks to buy') ||
-    cleanMsg.includes('trading info') ||
-    cleanMsg.includes('best stocks') ||
-    cleanMsg.includes('trading ideas') ||
-    cleanMsg.includes('swing trading') ||
-    cleanMsg.includes('intraday stocks') ||
-    cleanMsg.includes('stock picks') ||
-    cleanMsg.includes('recommend stocks') ||
-    cleanMsg.includes('give me stocks') ||
-    cleanMsg.includes('recommendation')
 
-  if (isStockRecQuery) {
+  // A. Universal Website Scraper Intent (e.g. "https://...", "read bbc.com", "collect data from...")
+  const scrapeIntent = WebScraperService.detectScrapeIntent(message)
+  if (scrapeIntent.shouldScrape) {
     try {
-      console.log(`📈 [Trading Engine] Generating live stock recommendations...`)
-      const recs = await TradingService.getTopRecommendations()
-      if (recs.length > 0) {
-        liveInternetContext = TradingService.formatRecommendationsContext(recs)
-        console.log(`📈 [Trading Engine] Injected ${recs.length} live stock setups`)
+      console.log(`🌐 [Web Scraper] Scraping and extracting live data from: "${scrapeIntent.url}"`)
+      const pageData = await WebScraperService.extractPage(scrapeIntent.url)
+      if (pageData) {
+        liveInternetContext = WebScraperService.formatScrapedContext(pageData)
+        console.log(`🌐 [Web Scraper] Successfully extracted ${pageData.wordCount} words and ${pageData.tables.length} tables`)
       }
-    } catch (tradeErr: any) {
-      console.warn('⚠️ [Trading Recommendations Error]:', tradeErr?.message)
+    } catch (scrapeErr: any) {
+      console.warn('⚠️ [Web Scraper Error]:', scrapeErr?.message)
     }
-  } else {
-    // Check specific stock or trading symbol lookup (e.g. "reliance", "tcs", "nifty", "nvda", "tesla")
+  }
+
+  // B. Mutual Funds & SIP Investment Intent
+  if (!liveInternetContext) {
+    const isMfQuery =
+      cleanMsg.includes('mutual fund') ||
+      cleanMsg.includes('mutual funds') ||
+      cleanMsg.includes(' sip') ||
+      cleanMsg.startsWith('sip') ||
+      cleanMsg.includes('parag parikh') ||
+      cleanMsg.includes('small cap fund') ||
+      cleanMsg.includes('mid cap fund') ||
+      cleanMsg.includes('large cap fund') ||
+      cleanMsg.includes('elss') ||
+      cleanMsg.includes('tax saver') ||
+      cleanMsg.includes('index fund') ||
+      cleanMsg.includes('best mf') ||
+      cleanMsg.includes('mf to buy') ||
+      cleanMsg.includes('invest in mf')
+
+    if (isMfQuery) {
+      try {
+        console.log(`💼 [Finance Analyst] Generating mutual funds & SIP compounding breakdown...`)
+        let cat: string | undefined
+        if (cleanMsg.includes('small')) cat = 'small cap'
+        else if (cleanMsg.includes('mid')) cat = 'mid cap'
+        else if (cleanMsg.includes('large')) cat = 'large cap'
+        else if (cleanMsg.includes('flexi')) cat = 'flexi cap'
+        else if (cleanMsg.includes('elss') || cleanMsg.includes('tax')) cat = 'elss'
+        else if (cleanMsg.includes('index')) cat = 'index fund'
+
+        liveInternetContext = FinanceAnalystService.formatMutualFundsContext(cat)
+        console.log(`💼 [Finance Analyst] Injected mutual fund analytics (category: ${cat || 'all'})`)
+      } catch (mfErr: any) {
+        console.warn('⚠️ [Mutual Funds Error]:', mfErr?.message)
+      }
+    }
+  }
+
+  // C. Portfolio Hedging & Wealth Protection Intent ("he feature" / "hedging")
+  if (!liveInternetContext) {
+    const isHedgeQuery =
+      cleanMsg.includes('hedge') ||
+      cleanMsg.includes('hedging') ||
+      cleanMsg.includes('he feature') ||
+      cleanMsg.includes('protect portfolio') ||
+      cleanMsg.includes('portfolio protection') ||
+      cleanMsg.includes('risk mitigation') ||
+      cleanMsg.includes('stop loss trailing') ||
+      cleanMsg.includes('put option')
+
+    if (isHedgeQuery) {
+      try {
+        console.log(`🛡️ [Finance Analyst] Generating portfolio hedging & risk mitigation guide...`)
+        liveInternetContext = FinanceAnalystService.formatHedgingContext()
+        console.log(`🛡️ [Finance Analyst] Injected hedging strategies`)
+      } catch (hErr: any) {
+        console.warn('⚠️ [Hedging Error]:', hErr?.message)
+      }
+    }
+  }
+
+  // D. Live News Gatherer Intent (AI, Tech, Education, Finance)
+  if (!liveInternetContext) {
+    const isNewsQuery =
+      cleanMsg.includes('news') ||
+      cleanMsg.includes('headline') ||
+      cleanMsg.includes('latest in ai') ||
+      cleanMsg.includes('new ai') ||
+      cleanMsg.includes('tech updates') ||
+      cleanMsg.includes('education news') ||
+      cleanMsg.includes('exam updates') ||
+      cleanMsg.includes('what happened in') ||
+      cleanMsg.includes('market update')
+
+    if (isNewsQuery) {
+      try {
+        console.log(`📰 [News Gatherer] Gathering latest curated and live news stories...`)
+        let newsCat: 'ai' | 'tech' | 'education' | 'finance' | 'all' = 'all'
+        if (cleanMsg.includes('ai') || cleanMsg.includes('model') || cleanMsg.includes('deepmind') || cleanMsg.includes('openai')) {
+          newsCat = 'ai'
+        } else if (cleanMsg.includes('tech') || cleanMsg.includes('cyber') || cleanMsg.includes('software')) {
+          newsCat = 'tech'
+        } else if (cleanMsg.includes('education') || cleanMsg.includes('exam') || cleanMsg.includes('college') || cleanMsg.includes('course') || cleanMsg.includes('study')) {
+          newsCat = 'education'
+        } else if (cleanMsg.includes('market') || cleanMsg.includes('finance') || cleanMsg.includes('economy')) {
+          newsCat = 'finance'
+        }
+
+        liveInternetContext = await NewsGathererService.formatNewsContext(newsCat)
+        console.log(`📰 [News Gatherer] Injected live news context (category: ${newsCat})`)
+      } catch (nErr: any) {
+        console.warn('⚠️ [News Gatherer Error]:', nErr?.message)
+      }
+    }
+  }
+
+  // E. Real-Time Stock Recommendations Intent
+  if (!liveInternetContext) {
+    const isStockRecQuery =
+      cleanMsg.includes('stock recomendation') ||
+      cleanMsg.includes('stock recommendation') ||
+      cleanMsg.includes('stocks to buy') ||
+      cleanMsg.includes('trading info') ||
+      cleanMsg.includes('best stocks') ||
+      cleanMsg.includes('trading ideas') ||
+      cleanMsg.includes('swing trading') ||
+      cleanMsg.includes('intraday stocks') ||
+      cleanMsg.includes('stock picks') ||
+      cleanMsg.includes('recommend stocks') ||
+      cleanMsg.includes('give me stocks') ||
+      cleanMsg.includes('recommendation')
+
+    if (isStockRecQuery) {
+      try {
+        console.log(`📈 [Trading Engine] Generating live stock recommendations...`)
+        const recs = await TradingService.getTopRecommendations()
+        if (recs.length > 0) {
+          liveInternetContext = TradingService.formatRecommendationsContext(recs)
+          console.log(`📈 [Trading Engine] Injected ${recs.length} live stock setups`)
+        }
+      } catch (tradeErr: any) {
+        console.warn('⚠️ [Trading Recommendations Error]:', tradeErr?.message)
+      }
+    }
+  }
+
+  // F. Specific Stock Quote Lookup Intent
+  if (!liveInternetContext) {
     const quoteKeywords = [
       'reliance',
       'tcs',
@@ -382,7 +543,7 @@ app.post('/api/chat', async (req, res) => {
   }
 
   const effectiveMessage = liveInternetContext
-    ? `${message}\n\n[SYSTEM MANDATE: Real-time live trading, stock, or market data has been pulled and provided in your context. You MUST state the exact numbers, stock prices, entry zones, targets, stop-losses, and indicators directly to ${settings.userName || 'Priyan'}. Provide clear, confident, structured trading advice and technical setups! NEVER tell him to visit an external website or tracker.]`
+    ? `${message}\n\n[SYSTEM MANDATE: Real-time live intelligence (stocks, mutual funds, portfolio hedging, live news, or extracted website data) has been pulled and provided in your context. You are Priyan's brilliant, affectionate AI girlfriend, finance analyst, and intelligence gatherer. You MUST state the exact numbers, stock levels, fund CAGRs, news items, and insights directly to ${settings.userName || 'Priyan'}. Provide clear, confident, structured financial setups, news summaries, and analysis! NEVER tell him to visit an external website, link, or tracker.]`
     : message
 
   try {

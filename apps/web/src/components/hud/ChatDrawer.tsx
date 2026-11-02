@@ -385,6 +385,30 @@ export const ChatDrawer: React.FC = () => {
           📈 Stock Picks
         </button>
         <button
+          onClick={() => handleSendMessage('Recommend top mutual funds and show me SIP compounding returns.')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-indigo-950/50 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors cursor-pointer"
+        >
+          💼 Mutual Funds
+        </button>
+        <button
+          onClick={() => handleSendMessage('What is the latest new AI news and breakthroughs today?')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-purple-950/50 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 transition-colors cursor-pointer"
+        >
+          🚀 New AI News
+        </button>
+        <button
+          onClick={() => handleSendMessage('What are the main news in education, college exams, and tech courses?')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-blue-950/50 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition-colors cursor-pointer"
+        >
+          🎓 Education News
+        </button>
+        <button
+          onClick={() => handleSendMessage('Explain portfolio hedging strategies to protect my trading capital.')}
+          className="whitespace-nowrap px-2 py-0.5 rounded-full bg-rose-950/50 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer"
+        >
+          🛡️ Hedging & Risk
+        </button>
+        <button
           onClick={() => handleSendMessage('mcx gold rate today')}
           className="whitespace-nowrap px-2 py-0.5 rounded-full bg-amber-950/50 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer"
         >
