@@ -61,6 +61,14 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     setIsLoading(true)
     setLoadError(null)
 
+    // Hard character boundary: Tony Stark NEVER renders VRM anime girl mesh
+    const isAtlas = activeCharacter === 'atlas' || (modelUrl || '').includes('ironman')
+    if (isAtlas) {
+      setVrm(null)
+    } else {
+      setGlbScene(null)
+    }
+
     const loader = new GLTFLoader()
     loader.setMeshoptDecoder(MeshoptDecoder)
     loader.register((parser) => new VRMLoaderPlugin(parser))
@@ -508,8 +516,8 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
   return (
     <group onPointerDown={handlePointerDown}>
-      {/* 1. VRM Character Scene */}
-      {vrm && <primitive object={vrm.scene} />}
+      {/* 1. VRM Character Scene (Strictly only for Ada and Yor - NEVER Tony Stark) */}
+      {vrm && activeCharacter !== 'atlas' && <primitive object={vrm.scene} />}
 
       {/* 2. Standard GLB Scene */}
       {glbScene && <primitive object={glbScene} />}
