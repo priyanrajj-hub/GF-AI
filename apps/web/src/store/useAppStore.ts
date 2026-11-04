@@ -243,15 +243,19 @@ export const useAppStore = create<AppState>((set, get) => ({
         VoiceEngine.speak("Hello sweetheart! Mira is here with you. Ready to have some fun today?", { pitch: 1.25, rate: 1.05 })
       }).catch(() => {})
     } else if (char === 'atlas') {
-      set({
+      set((state) => ({
         activeCharacter: 'atlas',
         skinId: 'stark-arc-trader',
         activeMode: 'jarvis',
         currentEmotion: 'motivated',
         isManualOutfit: true,
-      })
+        settings: {
+          ...state.settings,
+          renderMode: 'solid',
+        },
+      }))
       import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-        VoiceEngine.speak("Stark systems online. Ready to analyze markets, track setups, and conquer the day.", { pitch: 0.95, rate: 1.08 })
+        VoiceEngine.speak("Stark systems online. Ready to analyze markets, track setups, and conquer the day.", { pitch: 0.94, rate: 1.05 })
       }).catch(() => {})
     } else {
       set({

@@ -680,12 +680,10 @@ export const StarkArcTraderSkin: AvatarSkin = {
         obj.visible = false
         obj.scale.set(0, 0, 0)
       }
+      // Keep executive suit jacket and trousers fully visible - NEVER strip to underwear
       if (/cloth1|cloth2/i.test(obj.name)) {
-        obj.visible = false
-        obj.scale.set(0.001, 0.001, 0.001)
-      }
-      if (/skirt_\d+_\d+/i.test(obj.name)) {
-        obj.scale.set(0.001, 0.001, 0.001)
+        obj.visible = true
+        obj.scale.set(1.0, 1.0, 1.0)
       }
 
       if ((obj as THREE.Mesh).isMesh) {
@@ -1042,12 +1040,10 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
         obj.visible = false
         obj.scale.set(0, 0, 0)
       }
-      if (/skirt_\d+_\d+/i.test(obj.name)) {
-        obj.scale.set(0.001, 0.001, 0.001)
-      }
+      // Keep suit garment meshes fully visible
       if (/cloth1|cloth2/i.test(obj.name)) {
-        obj.visible = false
-        obj.scale.set(0.001, 0.001, 0.001)
+        obj.visible = true
+        obj.scale.set(1.0, 1.0, 1.0)
       }
     })
 
