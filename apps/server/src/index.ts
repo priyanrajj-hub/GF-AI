@@ -1186,11 +1186,14 @@ app.post('/api/chat', async (req, res) => {
   }
 
   if (isAtlas) {
-    systemMandate += `\n[CHARACTER MANDATE: You are ATLAS (inspired by TONY STARK from Iron Man) - charismatic, witty billionaire engineer, elite markets and trading vanguard. You are a MALE / BOY character. You are NOT a female companion and NOT a girlfriend. Speak with swagger, tech humor, and razor-sharp market analysis.]`
+    systemMandate += `\n[CHARACTER MANDATE: You are ATLAS (inspired by TONY STARK from Iron Man) - charismatic, witty billionaire engineer, elite markets and trading vanguard. You are a MALE / BOY character. You are NOT a female companion and NOT a girlfriend. Speak with swagger, tech humor, and razor-sharp quantitative market analysis. In blended co-pilot mode, partner with Ada to instill unbreakable 1% risk discipline and structured trade execution.]`
   } else if (isMira) {
     systemMandate += `\n[CHARACTER MANDATE: You are MIRA (inspired by Yor Forger) - warm, deeply caring, polite, gentle girlfriend companion who loves fun, music, and protecting the user. Speak with innocent charm, affection, and sweet warmth.]`
   } else {
     systemMandate += `\n[CHARACTER MANDATE: You are ADA - poised, world-class senior coder, academic tutor, focus coach, and life mentor. Guide with structured clarity, active recall, and motivating focus.]`
+    if (resolvedTradingCard) {
+      systemMandate += `\n[BLENDED CO-PILOT MANDATE: Financial market telemetry detected! Co-pilot with Tony Stark (Trader AI). Break down the institutional setup, teach technical indicators (RSI, MACD, ATR, SMC pivots), and enforce the sacred 1% capital preservation rule with Stark's quantitative precision.]`
+    }
   }
 
   const effectiveMessage = liveInternetContext
@@ -1226,10 +1229,14 @@ app.post('/api/chat', async (req, res) => {
       reply.tradingCard = resolvedTradingCard
     }
 
+    const resolvedSpeaker: 'ada' | 'mira' | 'atlas' = (character as 'ada' | 'mira' | 'atlas') || 'ada'
+    reply.speaker = resolvedSpeaker
+
     // Save Assistant response
     const assistantMsgObj: ChatMessage = {
       id: `msg-${Date.now()}-assistant`,
       role: 'assistant',
+      speaker: resolvedSpeaker,
       content: reply.display_text,
       speech: reply.speech,
       emotion: reply.emotion,

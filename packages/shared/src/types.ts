@@ -113,6 +113,7 @@ export interface StructuredReply {
     pendingCount: number
   }
   tradingCard?: TradingCardData
+  speaker?: 'ada' | 'mira' | 'atlas'
 }
 
 export interface TradingCardData {
@@ -211,6 +212,7 @@ export interface ChatMessage {
     pendingCount: number
   }
   tradingCard?: TradingCardData
+  speaker?: 'ada' | 'mira' | 'atlas'
   metadata?: {
     model?: string
     tokensPrompt?: number
