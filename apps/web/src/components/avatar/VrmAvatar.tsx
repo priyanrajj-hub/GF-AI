@@ -159,20 +159,27 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           ;(window as any).__ADA_VRM__ = loadedVrm
           setGlbScene(null)
         } else if (gltf.scene) {
-          // Standard GLB Model (e.g. Tripo3D Full-Body Ada or Michelle)
+          // Standard GLB Model (e.g. Iron Man Mark Armor / Tripo3D Ada / Michelle)
           const container = new THREE.Group()
           const scene = gltf.scene
+          const isIronman = activeUrl.includes('ironman')
           const isTripo = activeUrl.includes('tripo')
+
+          // Rotate to face camera front
+          if (isIronman) {
+            scene.rotation.y = 0
+          }
+
           const box = new THREE.Box3().setFromObject(scene)
           const size = box.getSize(new THREE.Vector3())
           const center = box.getCenter(new THREE.Vector3())
 
           if (size.y > 0) {
-            // Tripo diorama model includes pedestal base; scale to 1.48 to fit framing
-            const targetHeight = isTripo ? 1.48 : 1.65
+            // Target height: 1.62m frame for clean framing from head to toe
+            const targetHeight = isIronman ? 1.62 : (isTripo ? 1.48 : 1.62)
             const scale = targetHeight / size.y
             scene.scale.set(scale, scale, scale)
-            // Center scene horizontally and set base at y = 0
+            // Center horizontally and rest feet flat on home pad base
             scene.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale)
           }
 
@@ -182,11 +189,35 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
               mesh.frustumCulled = false
               mesh.castShadow = true
               mesh.receiveShadow = true
+
+              // Give Iron Man suit rich metallic reflections and solid finish
+              if (isIronman && mesh.material) {
+                const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+                mats.forEach((m: any) => {
+                  if (m) {
+                    m.transparent = false
+                    m.opacity = 1.0
+                    m.depthWrite = true
+                    if (m.metalness !== undefined) m.metalness = Math.max(0.65, m.metalness || 0.7)
+                    if (m.roughness !== undefined) m.roughness = Math.min(0.35, m.roughness || 0.3)
+                  }
+                })
+              }
             }
           })
+
+          if (isIronman) {
+            // Add luminous chest Arc Reactor light & dynamic pulse
+            const arcLight = new THREE.PointLight(0x00f3ff, 2.6, 4.0)
+            arcLight.position.set(0, 0.95, 0.25)
+            arcLight.name = '__IRONMAN_ARC_LIGHT__'
+            container.add(arcLight)
+          }
+
           container.add(scene)
           setGlbScene(container)
           setVrm(null)
+          ;(window as any).__GLB_MODEL__ = container
         }
       },
       undefined,
@@ -359,10 +390,20 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     if (glbScene) {
       glbScene.position.set(currentPos.x, -0.72 + currentPos.y, currentPos.z)
       const isTripo = (modelUrl || '').includes('tripo')
-      const baseRotation = isTripo ? 0 : Math.PI
+      const isIronman = (modelUrl || '').includes('ironman')
+      const baseRotation = isTripo || isIronman ? 0 : Math.PI
       glbScene.rotation.y = baseRotation + navigatorRef.currentRotationY
-      // Subtle ambient breathing float
-      glbScene.position.y += Math.sin(time * 2.0) * 0.003
+
+      // Repulsor hover pulse for Iron Man
+      if (isIronman) {
+        glbScene.position.y += Math.sin(time * 2.5) * 0.005
+        const arcLight = glbScene.getObjectByName('__IRONMAN_ARC_LIGHT__') as THREE.PointLight | undefined
+        if (arcLight) {
+          arcLight.intensity = 2.4 + Math.sin(time * 4.0) * 0.4
+        }
+      } else {
+        glbScene.position.y += Math.sin(time * 2.0) * 0.003
+      }
 
       setAvatarWorldPos([currentPos.x, -0.72 + currentPos.y, currentPos.z])
       useAppStore.getState().setAvatarPosition([currentPos.x, -0.72 + currentPos.y, currentPos.z])
