@@ -434,28 +434,28 @@ export class ProceduralAnimator {
           if (leftHand) leftHand.rotation.x = THREE.MathUtils.lerp(leftHand.rotation.x, armSwing * 0.20, delta * 5.0)
           if (rightHand) rightHand.rotation.x = THREE.MathUtils.lerp(rightHand.rotation.x, -armSwing * 0.20, delta * 5.0)
         } else {
-          // Standing Idle: graceful feminine resting posture (upper arms down ~70 deg, relaxed elbows & wrists)
-          const rRestZ = weightPhase > 0.1 ? -1.22 : -1.26
-          const rRestX = weightPhase > 0.1 ? -0.06 : -0.02
-          const rForeZ = weightPhase > 0.1 ? -0.34 : -0.22
-          const rForeY = weightPhase > 0.1 ? 0.18 : 0.06
+          // Standing Idle: natural elegant human resting posture (arms hanging naturally along torso, zero awkward chicken-wing bend)
+          const rRestZ = weightPhase > 0.1 ? -1.38 : -1.41
+          const rRestX = weightPhase > 0.1 ? -0.04 : -0.02
+          const rForeZ = -0.04
+          const rForeY = 0.02
 
-          const lRestZ = weightPhase < -0.1 ? 1.22 : 1.26
-          const lRestX = weightPhase < -0.1 ? -0.06 : -0.02
-          const lForeZ = weightPhase < -0.1 ? 0.34 : 0.22
-          const lForeY = weightPhase < -0.1 ? -0.18 : -0.06
+          const lRestZ = weightPhase < -0.1 ? 1.38 : 1.41
+          const lRestX = weightPhase < -0.1 ? -0.04 : -0.02
+          const lForeZ = 0.04
+          const lForeY = -0.02
 
-          rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, rRestZ, delta * 3.0)
-          rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, rRestX, delta * 3.0)
-          rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, 0, delta * 3.0)
-          rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, rForeZ, delta * 3.0)
-          rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, rForeY, delta * 3.0)
+          rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, rRestZ, delta * 3.5)
+          rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, rRestX, delta * 3.5)
+          rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, 0, delta * 3.5)
+          rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, rForeZ, delta * 3.5)
+          rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, rForeY, delta * 3.5)
 
-          leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, lRestZ, delta * 3.0)
-          leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, lRestX, delta * 3.0)
-          leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, 0, delta * 3.0)
-          leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, lForeZ, delta * 3.0)
-          leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, lForeY, delta * 3.0)
+          leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, lRestZ, delta * 3.5)
+          leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, lRestX, delta * 3.5)
+          leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, 0, delta * 3.5)
+          leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, lForeZ, delta * 3.5)
+          leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, lForeY, delta * 3.5)
         }
       }
     }
@@ -597,6 +597,7 @@ export class ProceduralAnimator {
         break
       }
 
+      case 'spin_twirl':
       case 'playful_twirl': {
         // Arms flared gracefully during spin
         if (leftArm && rightArm) {
@@ -608,6 +609,7 @@ export class ProceduralAnimator {
         break
       }
 
+      case 'laugh':
       case 'shy_giggle': {
         const giggleBounce = Math.sin(time * 12.0) * 0.012
         if (rightArm && rightForeArm) {
@@ -762,6 +764,7 @@ export class ProceduralAnimator {
       }
 
       case 'yawn':
+      case 'stretch':
       case 'sleepy_stretch': {
         // Graceful night yawning gesture: hand to mouth with relaxed spine stretch
         if (leftArm && leftForeArm) {
@@ -907,6 +910,102 @@ export class ProceduralAnimator {
         if (head) {
           head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, -0.08, delta * 4.0)
           head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, 0.10, delta * 4.0)
+        }
+        break
+      }
+
+      case 'sassy_hair_flip': {
+        // Confident hair flip with hand sweeping near ear and sassy head roll
+        const flipT = Math.sin(time * 4.0)
+        if (rightArm && rightForeArm) {
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.52, delta * 5.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.92, delta * 5.0)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 1.45 + flipT * 0.2, delta * 5.0)
+          rightForeArm.rotation.z = THREE.MathUtils.lerp(rightForeArm.rotation.z, -0.65, delta * 5.0)
+        }
+        if (head) {
+          head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, 0.22, delta * 4.5)
+          head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, -0.18, delta * 4.5)
+        }
+        if (spine) spine.rotation.z = THREE.MathUtils.lerp(spine.rotation.z, -0.05, delta * 3.5)
+        break
+      }
+
+      case 'salute': {
+        if (rightArm && rightForeArm) {
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.75, delta * 5.5)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.95, delta * 5.5)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 1.65, delta * 6.0)
+          rightForeArm.rotation.z = THREE.MathUtils.lerp(rightForeArm.rotation.z, -0.45, delta * 6.0)
+        }
+        if (leftArm) leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 1.40, delta * 4.0)
+        if (head) head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -0.06, delta * 4.0)
+        break
+      }
+
+      case 'nod': {
+        const nod = Math.sin(time * 6.0) * 0.18
+        if (head) head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, nod, delta * 6.0)
+        break
+      }
+
+      case 'shake': {
+        const shake = Math.sin(time * 7.0) * 0.22
+        if (head) head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, shake, delta * 6.0)
+        break
+      }
+
+      case 'facepalm': {
+        if (rightArm && rightForeArm) {
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.22, delta * 5.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -1.05, delta * 5.0)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 1.45, delta * 5.5)
+          rightForeArm.rotation.z = THREE.MathUtils.lerp(rightForeArm.rotation.z, -0.35, delta * 5.5)
+        }
+        if (head) head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, 0.22, delta * 4.5)
+        break
+      }
+
+      case 'sip_tea': {
+        if (rightArm && rightForeArm) {
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.38, delta * 4.5)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.75, delta * 4.5)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 1.20, delta * 4.5)
+        }
+        if (head) head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, 0.12, delta * 4.0)
+        break
+      }
+
+      case 'type_holo': {
+        const typeL = Math.sin(time * 8.0) * 0.08
+        const typeR = Math.cos(time * 8.0) * 0.08
+        if (leftArm && rightArm && leftForeArm && rightForeArm) {
+          leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, -0.55, delta * 5.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.55, delta * 5.0)
+          leftForeArm.rotation.z = THREE.MathUtils.lerp(leftForeArm.rotation.z, 0.70 + typeL, delta * 6.0)
+          rightForeArm.rotation.z = THREE.MathUtils.lerp(rightForeArm.rotation.z, -0.70 + typeR, delta * 6.0)
+        }
+        break
+      }
+
+      case 'point_present': {
+        if (rightArm && rightForeArm) {
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.55, delta * 5.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.75, delta * 5.0)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 0.45, delta * 5.0)
+        }
+        if (head) head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, 0.20, delta * 4.0)
+        break
+      }
+
+      case 'pout': {
+        if (head) {
+          head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -0.15, delta * 4.0)
+          head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, 0.15, delta * 4.0)
+        }
+        if (leftArm && rightArm) {
+          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.85, delta * 4.0)
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.85, delta * 4.0)
         }
         break
       }
