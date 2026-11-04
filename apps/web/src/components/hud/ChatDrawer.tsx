@@ -195,6 +195,7 @@ export const ChatDrawer: React.FC = () => {
       const assistantMsg: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,
         role: 'assistant',
+        speaker: parsedReply.speaker || (parsedReply.tradingCard ? 'atlas' : (activeCharacter as 'ada' | 'mira' | 'atlas') || 'ada'),
         content: sanitizeBubbleText(parsedReply.display_text, { userName: settings.userName }),
         speech: parsedReply.speech,
         emotion: parsedReply.emotion,
@@ -335,29 +336,76 @@ export const ChatDrawer: React.FC = () => {
   return (
     <aside className="fixed inset-x-2 bottom-18 h-[52vh] md:h-auto md:top-16 md:right-4 md:left-auto md:w-96 md:max-h-[calc(100dvh-100px)] z-30 flex flex-col glass-panel rounded-2xl border border-cyan-500/25 overflow-hidden shadow-2xl backdrop-blur-xl">
       {/* Drawer Header */}
-      <div className="px-4 py-3 border-b border-cyan-500/20 flex items-center justify-between bg-slate-950/40">
-        <div className="flex items-center gap-2">
-          <Bot className="w-4 h-4 text-cyan-400" />
-          <span className="font-mono text-xs font-semibold tracking-wider text-slate-200 uppercase">
-            Holo-Transcript Link
-          </span>
+      <div className="px-3 py-2.5 border-b border-cyan-500/20 flex flex-col gap-2 bg-slate-950/60">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-cyan-400" />
+            <span className="font-mono text-xs font-semibold tracking-wider text-slate-200 uppercase">
+              Holo-Transcript Link
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={clearMessages}
+              className="p-1 rounded text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+              title="Clear Chat History"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={toggleChatDrawer}
+              className="p-1 rounded text-slate-400 hover:text-white transition-colors cursor-pointer"
+              title="Close Drawer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        {/* Blended Co-Pilot Switcher: Ada (Tutor) | Mira (Companion) | Atlas (Stark Trader) */}
+        <div className="flex items-center justify-between gap-1 p-1 rounded-xl bg-slate-900/80 border border-cyan-500/30 text-[10px] font-mono">
           <button
-            onClick={clearMessages}
-            className="p-1 rounded text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
-            title="Clear Chat History"
+            onClick={() => setActiveCharacter('ada')}
+            className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 ${
+              activeCharacter === 'ada' || !activeCharacter
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_8px_rgba(0,243,255,0.4)]'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Ada: Code Tutor & Focus Mentor"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <span>👩‍💼</span> Ada
           </button>
           <button
-            onClick={toggleChatDrawer}
-            className="p-1 rounded text-slate-400 hover:text-white transition-colors cursor-pointer"
-            title="Close Drawer"
+            onClick={() => setActiveCharacter('mira')}
+            className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 ${
+              activeCharacter === 'mira'
+                ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-[0_0_8px_rgba(244,63,94,0.4)]'
+                : 'text-slate-400 hover:text-rose-200'
+            }`}
+            title="Mira: Fun & Caring Companion"
           >
-            <X className="w-4 h-4" />
+            <span>🌹</span> Mira
           </button>
+          <button
+            onClick={() => setActiveCharacter('atlas')}
+            className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 ${
+              activeCharacter === 'atlas'
+                ? 'bg-gradient-to-r from-amber-600 to-cyan-600 text-white shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                : 'text-slate-400 hover:text-cyan-200'
+            }`}
+            title="Atlas (Tony Stark): Quant Trader AI"
+          >
+            <span>⚡</span> Stark (Trader)
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between px-1 text-[9px] font-mono text-cyan-400/80">
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            Co-Pilot: {activeCharacter === 'atlas' ? '⚡ Stark Trader AI' : activeCharacter === 'mira' ? '🌹 Mira Companion' : '👩‍💼 Ada Study Mentor'}
+          </span>
+          <span className="text-slate-400">Blended Mode Active</span>
         </div>
       </div>
 
@@ -387,6 +435,38 @@ export const ChatDrawer: React.FC = () => {
                   <Copy className="w-3 h-3" />
                 )}
               </button>
+
+              {/* Speaker Persona Tag for Assistant Messages */}
+              {msg.role === 'assistant' && (
+                <div className="flex items-center gap-1.5 mb-1.5 pb-1 border-b border-cyan-500/10 text-[10px] font-mono">
+                  {msg.tradingCard ? (
+                    <span className="flex items-center gap-1 text-amber-300 font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_6px_#f59e0b]" />
+                      ⚡ Tony Stark & 👩‍💼 Ada (Quant Co-Pilot)
+                    </span>
+                  ) : msg.speaker === 'atlas' || (!msg.speaker && activeCharacter === 'atlas') ? (
+                    <span className="flex items-center gap-1 text-amber-300 font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_6px_#f59e0b]" />
+                      ⚡ Tony Stark (Trader AI)
+                    </span>
+                  ) : msg.speaker === 'mira' || (!msg.speaker && activeCharacter === 'mira') ? (
+                    <span className="flex items-center gap-1 text-rose-300 font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse shadow-[0_0_6px_#f43f5e]" />
+                      🌹 Mira (Companion)
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-cyan-300 font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f3ff]" />
+                      👩‍💼 Ada (Tutor & Coach)
+                    </span>
+                  )}
+                  {msg.tradingCard && (
+                    <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] border border-amber-400/30">
+                      QUANT RADAR ACTIVE
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Visual Meme Card if present */}
               {msg.meme?.imageUrl && (
@@ -747,7 +827,7 @@ export const ChatDrawer: React.FC = () => {
         </div>
       )}
 
-      {/* Quick Action Chips: Directed specifically to active character persona */}
+      {/* Blended Quick Action Chips: Unified across Ada Tutor & Stark Trader AI */}
       <div className="px-3 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs border-t border-cyan-500/10 bg-slate-950/60 shrink-0">
         {activeCharacter === 'atlas' && (
           <>
@@ -758,22 +838,10 @@ export const ChatDrawer: React.FC = () => {
               📈 {settings.language === 'ta' ? 'பங்குப் பரிந்துரைகள்' : 'Stock Picks'}
             </button>
             <button
-              onClick={() => handleSendMessage(settings.language === 'ta' ? 'மியூச்சுவல் ஃபண்ட் மற்றும் சிப் முதலீட்டு வழிகாட்டி' : 'What are the top mutual funds for wealth compounding via monthly SIP?')}
-              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-colors cursor-pointer font-medium"
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'ஸ்டார்க் மற்றும் அடா, 1% மூலதன இடர் மேலாண்மை மற்றும் பொசிஷன் அளவை கணக்கிடுங்கள்' : 'Calculate 1% capital risk position sizing and setup for Nifty and top stocks')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-900/40 border border-amber-400/50 text-amber-200 hover:bg-amber-800/50 transition-colors cursor-pointer font-bold shadow-[0_0_8px_rgba(245,158,11,0.25)]"
             >
-              💼 {settings.language === 'ta' ? 'மியூச்சுவல் ஃபண்ட்' : 'Mutual Funds'}
-            </button>
-            <button
-              onClick={() => handleSendMessage(settings.language === 'ta' ? 'போர்ட்ஃபோலியோவை சந்தை சரிவிலிருந்து பாதுகாக்க ஹெட்ஜிங் முறைகள் என்ன?' : 'How can I hedge my stock portfolio against downside market crash?')}
-              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer font-medium"
-            >
-              🛡️ {settings.language === 'ta' ? 'ஹெட்ஜிங் பாதுகாப்பு' : 'Hedge Risk'}
-            </button>
-            <button
-              onClick={() => handleSendMessage(settings.language === 'ta' ? 'டோனி ஸ்டார்க், இன்றைய சந்தை மற்றும் தொழில்நுட்ப சுருக்கம் கொடுங்கள்' : 'Tony Stark, give me a market intelligence and tech vanguard briefing.')}
-              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 transition-colors cursor-pointer font-medium"
-            >
-              ⚡ {settings.language === 'ta' ? 'ஸ்டார்க் சுருக்கம்' : 'Stark Briefing'}
+              💰 1% Risk Sizer
             </button>
             <button
               onClick={() => handleSendMessage('nifty 50 and bank nifty analysis')}
@@ -782,10 +850,10 @@ export const ChatDrawer: React.FC = () => {
               📊 Nifty 50
             </button>
             <button
-              onClick={() => handleSendMessage('Analyze World Markets: US S&P 500, Nasdaq, India Nifty, Crypto, and Gold')}
-              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-teal-950/60 border border-teal-500/40 text-teal-300 hover:bg-teal-900/60 transition-colors cursor-pointer font-medium"
+              onClick={() => handleSendMessage('Bitcoin (BTC) and Solana (SOL) live technical setup and price action analysis')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-yellow-950/60 border border-yellow-500/40 text-yellow-300 hover:bg-yellow-900/60 transition-colors cursor-pointer font-medium"
             >
-              🌐 World Markets Radar
+              💎 Crypto Radar
             </button>
             <button
               onClick={() => handleSendMessage('Give me a full technical indicator breakdown for NVIDIA (NVDA) with RSI, MACD, Bollinger Bands, and Supertrend')}
@@ -794,16 +862,28 @@ export const ChatDrawer: React.FC = () => {
               🔬 All Indicators
             </button>
             <button
-              onClick={() => handleSendMessage('Bitcoin (BTC) and Solana (SOL) live technical setup and price action analysis')}
-              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer font-medium"
+              onClick={() => handleSendMessage('Analyze World Markets: US S&P 500, Nasdaq, India Nifty, Crypto, and Gold')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-teal-950/60 border border-teal-500/40 text-teal-300 hover:bg-teal-900/60 transition-colors cursor-pointer font-medium"
             >
-              💎 Crypto Radar
+              🌐 World Markets Radar
             </button>
             <button
               onClick={() => handleSendMessage(settings.language === 'ta' ? 'அடா/அட்லஸ், பங்குச்சந்தையில் ஆர்.எஸ்.ஐ மற்றும் மேக்டி இண்டிகேட்டர்களை எப்படி பயன்படுத்த வேண்டும் என்று கற்றுக் கொடுங்கள்' : 'Teach me how to use RSI, MACD, and Smart Money Concepts with a 1:3 risk reward ratio')}
               className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-colors cursor-pointer font-medium"
             >
               🎓 Trading Academy
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'அடா, எனக்கு ரியாக்ட் யூஸ்எஃபெக்ட் பற்றி தெளிவாக பாடம் சொல்லிக் கொடுங்கள்' : 'Ada, please tutor me on React useEffect with a clean step-by-step example.')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer font-medium"
+            >
+              👩‍💼 Ada Tutor
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'எனது படிப்புக்கு 25 நிமிட ஃபோகஸ் டைமர் தொடங்கவும்' : 'Start a focus timer for 25 minutes for my study session')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 transition-colors cursor-pointer font-medium"
+            >
+              ⏱️ Focus (25m)
             </button>
           </>
         )}
@@ -840,6 +920,18 @@ export const ChatDrawer: React.FC = () => {
             >
               🌸 தமிழ் உரையாடல்
             </button>
+            <button
+              onClick={() => handleSendMessage('Give me high-probability stock recommendations with entry, target and stop loss')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer font-medium"
+            >
+              ⚡ Stark Radar
+            </button>
+            <button
+              onClick={() => handleSendMessage('Ada, please tutor me on React useEffect with a clean step-by-step example.')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer font-medium"
+            >
+              👩‍💼 Ada Tutor
+            </button>
           </>
         )}
 
@@ -856,6 +948,36 @@ export const ChatDrawer: React.FC = () => {
               className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer font-medium"
             >
               ⏱️ {settings.language === 'ta' ? 'ஃபோகஸ் (25 நிமி)' : 'Focus (25m)'}
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'அடா மற்றும் ஸ்டார்க், 1% மூலதன இடர் மேலாண்மை மற்றும் பொசிஷன் அளவை கணக்கிடுங்கள்' : 'Calculate 1% capital risk position sizing and setup with Stark and Ada')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-900/40 border border-amber-400/50 text-amber-200 hover:bg-amber-800/50 transition-colors cursor-pointer font-bold shadow-[0_0_8px_rgba(245,158,11,0.25)]"
+            >
+              💰 1% Risk Sizer
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'அட்லஸ், இன்றைய டாப் பங்குப் பரிந்துரைகளை இலக்கு மற்றும் ஸ்டாப் லாஸுடன் கூறுங்கள்' : 'Give me high-probability stock recommendations with entry, target and stop loss')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer font-medium"
+            >
+              📈 {settings.language === 'ta' ? 'பங்குப் பரிந்துரைகள்' : 'Stark Stocks'}
+            </button>
+            <button
+              onClick={() => handleSendMessage('nifty 50 and bank nifty analysis')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-blue-950/60 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition-colors cursor-pointer font-medium"
+            >
+              📊 Nifty 50
+            </button>
+            <button
+              onClick={() => handleSendMessage('Bitcoin (BTC) and Solana (SOL) live technical setup and price action analysis')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-yellow-950/60 border border-yellow-500/40 text-yellow-300 hover:bg-yellow-900/60 transition-colors cursor-pointer font-medium"
+            >
+              💎 Crypto Radar
+            </button>
+            <button
+              onClick={() => handleSendMessage('Give me a full technical indicator breakdown for NVIDIA (NVDA) with RSI, MACD, Bollinger Bands, and Supertrend')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🔬 All Indicators
             </button>
             <button
               onClick={() => handleSendMessage(settings.language === 'ta' ? 'எனது நினைவூட்டல் பட்டியல் மற்றும் பணிகளைக் காட்டு' : 'Show my to-do list and reminders')}
