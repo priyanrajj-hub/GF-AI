@@ -31,6 +31,7 @@ import { globalReactionReconciler, globalBackchannel } from '../../avatar/reacti
 import { globalCueScheduler } from '../../avatar/cues/CueScheduler.js'
 import { performAction } from '../../avatar/motion/performAction.js'
 import { globalSongEngine } from '../../avatar/engine/singer.js'
+import { TradingCard } from '../trading/TradingCard.js'
 import { apiUrl } from '../../utils/api.js'
 
 export const ChatDrawer: React.FC = () => {
@@ -202,6 +203,7 @@ export const ChatDrawer: React.FC = () => {
         sticker: parsedReply.sticker,
         studyFocus: parsedReply.studyFocus,
         todoCard: parsedReply.todoCard,
+        tradingCard: parsedReply.tradingCard,
         musicTrack: (singAction?.arguments as any)?.song || parsedReply.musicTrack || (singAction ? {
           title: (singAction.arguments as any)?.title || 'Original Studio Track',
           artist: (singAction.arguments as any)?.artist,
@@ -585,6 +587,14 @@ export const ChatDrawer: React.FC = () => {
                 </div>
               )}
 
+              {/* Holographic Interactive Trading & World Market Radar Card */}
+              {msg.tradingCard && (
+                <TradingCard
+                  card={msg.tradingCard}
+                  onActionClick={(prompt) => handleSendMessage(prompt)}
+                />
+              )}
+
               {/* Display text / Markdown */}
               <div className="prose prose-invert prose-xs max-w-none font-sans text-xs leading-relaxed break-words space-y-1.5 [&_p]:mb-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_code]:bg-slate-950 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-cyan-300 [&_pre]:bg-slate-950 [&_pre]:p-2 [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-cyan-500/20 [&_strong]:text-cyan-200">
                 <ReactMarkdown
@@ -770,6 +780,30 @@ export const ChatDrawer: React.FC = () => {
               className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-blue-950/60 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition-colors cursor-pointer font-medium"
             >
               📊 Nifty 50
+            </button>
+            <button
+              onClick={() => handleSendMessage('Analyze World Markets: US S&P 500, Nasdaq, India Nifty, Crypto, and Gold')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-teal-950/60 border border-teal-500/40 text-teal-300 hover:bg-teal-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🌐 World Markets Radar
+            </button>
+            <button
+              onClick={() => handleSendMessage('Give me a full technical indicator breakdown for NVIDIA (NVDA) with RSI, MACD, Bollinger Bands, and Supertrend')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🔬 All Indicators
+            </button>
+            <button
+              onClick={() => handleSendMessage('Bitcoin (BTC) and Solana (SOL) live technical setup and price action analysis')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer font-medium"
+            >
+              💎 Crypto Radar
+            </button>
+            <button
+              onClick={() => handleSendMessage(settings.language === 'ta' ? 'அடா/அட்லஸ், பங்குச்சந்தையில் ஆர்.எஸ்.ஐ மற்றும் மேக்டி இண்டிகேட்டர்களை எப்படி பயன்படுத்த வேண்டும் என்று கற்றுக் கொடுங்கள்' : 'Teach me how to use RSI, MACD, and Smart Money Concepts with a 1:3 risk reward ratio')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🎓 Trading Academy
             </button>
           </>
         )}

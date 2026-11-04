@@ -396,7 +396,16 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
     gesture: GestureType = defGesture,
     voiceStyle: VoiceStyle = defaultVoiceStyle,
     actions: ActionCall[] = [],
-    extra?: { sticker?: string; meme?: any; gif_query?: string; reactions?: string[] }
+    extra?: {
+      sticker?: string
+      meme?: any
+      gif_query?: string
+      reactions?: string[]
+      musicTrack?: any
+      studyFocus?: any
+      todoCard?: any
+      tradingCard?: any
+    }
   ): ParsedReply => {
     let finalDisplay = sanitizeBubbleText(displayText, { userName })
     let finalSpeech = sanitizeSpeechText(speechText || finalDisplay, { userName })
@@ -461,6 +470,10 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
       meme: cues.meme,
       gif_query: cues.gif_query,
       reactions: cues.reactions,
+      musicTrack: extra?.musicTrack,
+      studyFocus: extra?.studyFocus,
+      todoCard: extra?.todoCard,
+      tradingCard: extra?.tradingCard,
     }
   }
 
@@ -508,6 +521,10 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
             meme: d.meme,
             gif_query: d.gif_query,
             reactions: d.reactions,
+            tradingCard: (d as any).tradingCard || directObj.tradingCard,
+            todoCard: (d as any).todoCard || directObj.todoCard,
+            studyFocus: (d as any).studyFocus || directObj.studyFocus,
+            musicTrack: (d as any).musicTrack || directObj.musicTrack,
           }
         )
       } else if (directObj.display_text || directObj.speech) {
@@ -526,6 +543,10 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
             meme: directObj.meme,
             gif_query: directObj.gif_query,
             reactions: directObj.reactions,
+            tradingCard: directObj.tradingCard,
+            todoCard: directObj.todoCard,
+            studyFocus: directObj.studyFocus,
+            musicTrack: directObj.musicTrack,
           }
         )
       }
@@ -556,6 +577,10 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
             meme: d.meme,
             gif_query: d.gif_query,
             reactions: d.reactions,
+            tradingCard: (d as any).tradingCard || parsed.tradingCard,
+            todoCard: (d as any).todoCard || parsed.todoCard,
+            studyFocus: (d as any).studyFocus || parsed.studyFocus,
+            musicTrack: (d as any).musicTrack || parsed.musicTrack,
           }
         )
       }
@@ -580,6 +605,10 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
               meme: d.meme,
               gif_query: d.gif_query,
               reactions: d.reactions,
+              tradingCard: (d as any).tradingCard || parsedRepaired.tradingCard,
+              todoCard: (d as any).todoCard || parsedRepaired.todoCard,
+              studyFocus: (d as any).studyFocus || parsedRepaired.studyFocus,
+              musicTrack: (d as any).musicTrack || parsedRepaired.musicTrack,
             }
           )
         }

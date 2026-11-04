@@ -112,6 +112,60 @@ export interface StructuredReply {
     items?: Array<{ id: string; title: string; completed: boolean; dueDate?: number }>
     pendingCount: number
   }
+  tradingCard?: TradingCardData
+}
+
+export interface TradingCardData {
+  symbol: string
+  name: string
+  currency: string
+  price: number
+  change: number
+  percentChange: number
+  dayHigh: number
+  dayLow: number
+  previousClose: number
+  volume: number
+  fiftyTwoWeekHigh?: number
+  fiftyTwoWeekLow?: number
+  assetClass: 'equity' | 'index' | 'crypto' | 'commodity' | 'forex'
+  sparkline?: number[]
+  indicators: {
+    rsi14: number
+    rsiStatus: string
+    macd: { line: number; signal: number; histogram: number; cross: string }
+    ema9: number
+    ema20: number
+    ema50: number
+    ema200: number
+    supertrend: { value: number; signal: 'BUY' | 'SELL' }
+    bollinger: { upper: number; middle: number; lower: number; squeeze: boolean }
+    atr14: number
+    stochastic?: { k: number; d: number; signal: string }
+    smc: { orderBlockZone: string; fibGoldenPocket: string; marketStructure: string }
+    confluenceScore: number
+  }
+  setup: {
+    action: string
+    entryZone: string
+    target1: number
+    target2: number
+    target3: number
+    stopLoss: number
+    riskReward: string
+    confidence: number
+    timeframe: string
+    rationale: string
+  }
+  pivots: {
+    pivot: number
+    s1: number
+    s2: number
+    s3?: number
+    r1: number
+    r2: number
+    r3?: number
+  }
 }
 
 export interface ChatMessage {
@@ -156,6 +210,7 @@ export interface ChatMessage {
     items?: Array<{ id: string; title: string; completed: boolean; dueDate?: number }>
     pendingCount: number
   }
+  tradingCard?: TradingCardData
   metadata?: {
     model?: string
     tokensPrompt?: number
