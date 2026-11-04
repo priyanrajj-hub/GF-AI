@@ -500,6 +500,11 @@ function attachArcReactorEmblem(vrm: VRM): void {
     triangleMesh.position.z = 0.004
     group.add(triangleMesh)
 
+    // Dynamic Arc Reactor Point Light for authentic cinematic glow
+    const arcLight = new THREE.PointLight(0x00f3ff, 1.2, 0.85)
+    arcLight.position.set(0, 0, 0.06)
+    group.add(arcLight)
+
     group.position.set(0, 0.05, 0.115)
     group.rotation.x = 0.08
     chest.add(group)
@@ -669,8 +674,20 @@ export const StarkArcTraderSkin: AvatarSkin = {
   name: 'Atlas (Stark Tech • Arc Reactor & Charcoal Suit)',
   description: 'Charcoal executive blazer, glowing cyan arc reactor core, and tech optics.',
   apply: (vrm: VRM) => {
-    AdaRedSkin.apply(vrm)
+    // 1. Hide feminine accessories, ribbons, bows, and extra skirt flares
     vrm.scene.traverse((obj) => {
+      if (/hair[1-8]_[LR]|mituami|ribbon|cloth_ribbon|other/i.test(obj.name)) {
+        obj.visible = false
+        obj.scale.set(0, 0, 0)
+      }
+      if (/cloth1|cloth2/i.test(obj.name)) {
+        obj.visible = false
+        obj.scale.set(0.001, 0.001, 0.001)
+      }
+      if (/skirt_\d+_\d+/i.test(obj.name)) {
+        obj.scale.set(0.001, 0.001, 0.001)
+      }
+
       if ((obj as THREE.Mesh).isMesh) {
         const mesh = obj as THREE.Mesh
         const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
@@ -678,37 +695,57 @@ export const StarkArcTraderSkin: AvatarSkin = {
           if (!mat) return
           const matName = (mat.name || '').toLowerCase()
 
+          // Hide feminine hair ribbons / bows
+          if (/hair_wear|other/i.test(matName)) {
+            mat.visible = false
+            return
+          }
+
           // Charcoal executive blazer & carbon tech shirt
           if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
-            if (mat.color) mat.color.set('#1A1D24') // Charcoal tailored suit
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0D0F14')
+            mat.visible = true
+            mat.transparent = false
+            mat.opacity = 1.0
+            if (mat.color) mat.color.set('#1c1f26') // Charcoal tailored suit
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0e1014')
             if (mat.roughness !== undefined) mat.roughness = 0.38
             if (mat.metalness !== undefined) mat.metalness = 0.22
           }
 
           // Dark textured espresso hair
           if (/hair/i.test(matName)) {
-            if (mat.color) mat.color.set('#141318')
-            if (mat.roughness !== undefined) mat.roughness = 0.35
+            mat.visible = true
+            if (mat.color) mat.color.set('#181514')
+            if (mat.roughness !== undefined) mat.roughness = 0.38
           }
 
           // High-tech accessories & metallic buckles
           if (/body_wear|glove|strap/i.test(matName)) {
+            mat.visible = true
             if (mat.color) mat.color.set('#0E1015')
-            if (mat.metalness !== undefined) mat.metalness = 0.55 // titanium tech finish
+            if (mat.metalness !== undefined) mat.metalness = 0.55
           }
 
-          // Trousers
+          // Suit Trousers
           if (/stocking|tight|leg_wear/i.test(matName)) {
             mat.visible = true
             mat.opacity = 1.0
             mat.transparent = false
-            if (mat.color) mat.color.set('#16181F') // Charcoal trousers
+            if (mat.color) mat.color.set('#14161c')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0a0c10')
+          }
+
+          // Clean masculine skin
+          if (/alicia_face\b|alicia_body\b/i.test(matName)) {
+            mat.visible = true
+            if (mat.color) mat.color.set('#fdeade')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#e8c6b5')
           }
         })
       }
     })
 
+    // 2. Attach Arc Reactor and signature Tony Stark Tech Glasses & Goatee Beard
     attachArcReactorEmblem(vrm)
     attachStarkTechGlassesAndBeard(vrm, true)
     attachYorHeadbandRose(vrm, false)

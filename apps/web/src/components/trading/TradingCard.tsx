@@ -236,28 +236,28 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
       {/* Tab 1: Actionable Trade Execution Setup */}
       {activeTab === 'setup' && (
         <div className="space-y-2.5">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs font-mono">
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0 flex flex-col justify-between">
-              <span className="text-[10px] text-slate-400 block font-medium truncate">Entry Zone</span>
-              <span className="font-bold text-cyan-300 text-xs sm:text-sm tracking-tight break-words mt-1">
+          <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-700/60 min-w-0 flex flex-col justify-between shadow-sm">
+              <span className="text-[10px] text-slate-400 block font-semibold truncate tracking-wider uppercase">Entry Zone</span>
+              <span className="font-bold text-cyan-300 text-xs sm:text-sm tracking-tight break-words mt-1 leading-snug">
                 {curr}{setup.entryZone}
               </span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-rose-500/40 min-w-0 flex flex-col justify-between">
-              <span className="text-[10px] text-rose-300 block font-medium truncate">Strict Stop-Loss</span>
-              <span className="font-bold text-rose-400 text-xs sm:text-sm tracking-tight break-words mt-1">
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-rose-500/50 min-w-0 flex flex-col justify-between shadow-sm">
+              <span className="text-[10px] text-rose-300 block font-semibold truncate tracking-wider uppercase">Strict Stop-Loss</span>
+              <span className="font-bold text-rose-400 text-xs sm:text-sm tracking-tight break-words mt-1 leading-snug">
                 {curr}{setup.stopLoss}
               </span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-emerald-500/40 min-w-0 flex flex-col justify-between">
-              <span className="text-[10px] text-emerald-300 block font-medium truncate">Target 1 & 2</span>
-              <span className="font-bold text-emerald-400 text-xs sm:text-sm tracking-tight break-words mt-1">
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-emerald-500/50 min-w-0 flex flex-col justify-between shadow-sm">
+              <span className="text-[10px] text-emerald-300 block font-semibold truncate tracking-wider uppercase">Target 1 & 2</span>
+              <span className="font-bold text-emerald-400 text-xs sm:text-sm tracking-tight break-words mt-1 leading-snug">
                 {curr}{setup.target1} • {curr}{setup.target2}
               </span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-purple-500/40 min-w-0 flex flex-col justify-between">
-              <span className="text-[10px] text-purple-300 block font-medium truncate">Risk/Reward (RRR)</span>
-              <span className="font-bold text-purple-300 text-xs sm:text-sm tracking-tight break-words mt-1">
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-purple-500/50 min-w-0 flex flex-col justify-between shadow-sm">
+              <span className="text-[10px] text-purple-300 block font-semibold truncate tracking-wider uppercase">Risk/Reward (RRR)</span>
+              <span className="font-bold text-purple-300 text-xs sm:text-sm tracking-tight break-words mt-1 leading-snug">
                 {setup.riskReward}
               </span>
             </div>
@@ -274,7 +274,7 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
 
       {/* Tab 2: All Technical Indicators Matrix */}
       {activeTab === 'indicators' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] font-mono">
+        <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
           <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
             <span className="text-[10px] text-slate-400 block truncate">RSI (14)</span>
             <div className="flex items-center justify-between gap-1 mt-0.5">
@@ -343,7 +343,7 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
       {/* Tab 3: Institutional Smart Money Concepts (SMC) & Pivots */}
       {activeTab === 'levels' && (
         <div className="space-y-2 text-[11px] font-mono">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div className="p-2.5 rounded-xl bg-slate-900/80 border border-indigo-500/30 min-w-0">
               <span className="text-[10px] text-indigo-300 block truncate font-medium">Order Block Zone</span>
               <span className="text-xs font-bold text-white truncate block mt-0.5">{curr}{ind.smc.orderBlockZone}</span>
@@ -413,7 +413,7 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs font-mono">
+          <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
             <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
               <span className="text-[10px] text-slate-400 block truncate font-medium">Position Shares</span>
               <span className="font-bold text-cyan-300 text-xs sm:text-sm truncate block mt-0.5">{calculatedShares} units</span>
@@ -476,7 +476,7 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+          <div className="grid grid-cols-2 gap-2.5 text-xs">
             <div className="p-2.5 rounded-xl bg-slate-900/80 border border-amber-500/30 min-w-0">
               <span className="text-[10px] text-amber-300 block truncate font-medium">Gold (GC=F)</span>
               <span className="font-bold text-amber-200 text-xs sm:text-sm truncate block mt-0.5">
@@ -517,7 +517,7 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
       {/* Tab 6: Analyst Consensus & Sentiment Suite */}
       {activeTab === 'ratings' && (
         <div className="space-y-2.5 text-[11px] font-mono">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+          <div className="grid grid-cols-2 gap-2.5 text-xs">
             <div className="p-2.5 rounded-xl bg-slate-900/80 border border-emerald-500/40 min-w-0">
               <span className="text-[10px] text-emerald-300 block truncate font-medium">Wall St / Institutional</span>
               <span className="font-bold text-emerald-400 text-xs sm:text-sm truncate block mt-0.5">

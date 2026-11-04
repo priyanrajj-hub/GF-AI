@@ -217,7 +217,7 @@ export class ProceduralAnimator {
         : 'walk'
       : this.state.currentActionId
 
-    // 5. Autonomous Girl Idle Flairs: perform charming feminine gestures periodically during idle
+    // 5. Autonomous Character Idle Flairs: tailored specifically to character persona
     if (
       !this.state.isMoving &&
       !this.state.activeOverlayAction &&
@@ -225,53 +225,77 @@ export class ProceduralAnimator {
       this.state.currentActionId === 'idle'
     ) {
       if (time > this.nextFlairTime) {
-        const girlFlairs = [
-          'hair_tuck',
-          'curious_lean',
-          'sassy_hip_pop',
-          'shy_giggle',
-          'hands_on_hips',
-          'peace_sign',
-          'cute_hop',
-          'cat_paws',
-          'blow_kiss',
-          'shrug',
-        ]
-        const randomFlair = girlFlairs[Math.floor(Math.random() * girlFlairs.length)]
+        const activeChar = (typeof window !== 'undefined' && (window as any).__ACTIVE_CHAR__) || 'ada'
+        let flairs: string[]
+        if (activeChar === 'atlas') {
+          flairs = [
+            'stark_billionaire_swagger',
+            'stark_hud_swipe',
+            'stark_glasses_adjust',
+            'shrug',
+            'thumbs_up',
+            'think',
+            'fist_pump',
+          ]
+        } else if (activeChar === 'mira') {
+          flairs = [
+            'yor_rose_elegance',
+            'yor_tender_wave',
+            'shy_giggle',
+            'hair_tuck',
+            'curious_lean',
+            'peace_sign',
+            'bow',
+          ]
+        } else {
+          flairs = [
+            'ada_tactical_poise',
+            'hair_tuck',
+            'sassy_hip_pop',
+            'hands_on_hips',
+            'curious_lean',
+            'point_present',
+            'shrug',
+          ]
+        }
+        const randomFlair = flairs[Math.floor(Math.random() * flairs.length)]
         this.setOverlayAction(randomFlair)
         this.nextFlairTime = time + 4.5 + Math.random() * 3.5
       }
     }
 
-    // 6. Locomotion & High-Fashion Feminine Catwalk Kinematics
+    // 6. Locomotion & Character Kinematics (Masculine Stride for Stark vs Runway Catwalk for Ada/Yor)
+    const activeChar = (typeof window !== 'undefined' && (window as any).__ACTIVE_CHAR__) || 'ada'
+    const isStark = activeChar === 'atlas'
+
     if (this.state.isMoving) {
       const isRunning = effectiveAction === 'run'
-      const walkFreq = isRunning ? 4.2 : 2.8
+      const walkFreq = isRunning ? 4.2 : isStark ? 2.6 : 2.8
       const phase = time * walkFreq
       const phaseL = phase
       const phaseR = phase + Math.PI
 
-      // Thigh forward/backward swing: smooth, gentle stride
-      const thighAmp = isRunning ? 0.32 : 0.20
+      // Thigh forward/backward swing
+      const thighAmp = isRunning ? 0.34 : isStark ? 0.24 : 0.20
       const swingL = Math.sin(phaseL) * thighAmp
       const swingR = Math.sin(phaseR) * thighAmp
 
-      // Runway Narrow Stance: gentle adduction along center line
-      const adduct = 0.025 + cuteRatio * 0.010
+      // Stance width: masculine slightly outward (+0.035) vs feminine catwalk adduction
+      const stanceAdduct = isStark ? -0.035 : (0.025 + cuteRatio * 0.010)
       if (leftUpperLeg && rightUpperLeg) {
         leftUpperLeg.rotation.x = THREE.MathUtils.lerp(leftUpperLeg.rotation.x, swingL, delta * 8.0)
-        leftUpperLeg.rotation.z = THREE.MathUtils.lerp(leftUpperLeg.rotation.z, -adduct, delta * 5.0)
+        leftUpperLeg.rotation.z = THREE.MathUtils.lerp(leftUpperLeg.rotation.z, -stanceAdduct, delta * 5.0)
         leftUpperLeg.rotation.y = THREE.MathUtils.lerp(leftUpperLeg.rotation.y, swingL * 0.06, delta * 5.0)
 
         rightUpperLeg.rotation.x = THREE.MathUtils.lerp(rightUpperLeg.rotation.x, swingR, delta * 8.0)
-        rightUpperLeg.rotation.z = THREE.MathUtils.lerp(rightUpperLeg.rotation.z, adduct, delta * 5.0)
+        rightUpperLeg.rotation.z = THREE.MathUtils.lerp(rightUpperLeg.rotation.z, stanceAdduct, delta * 5.0)
         rightUpperLeg.rotation.y = THREE.MathUtils.lerp(rightUpperLeg.rotation.y, swingR * 0.06, delta * 5.0)
       }
 
-      // Knee Flexion: smooth backward bend during swing phase
+      // Knee Flexion
       const swingLiftL = Math.max(0, Math.cos(phaseL))
       const swingLiftR = Math.max(0, Math.cos(phaseR))
-      const maxKneeBend = isRunning ? -0.55 : -0.38
+      const maxKneeBend = isRunning ? -0.55 : isStark ? -0.32 : -0.38
 
       if (leftLowerLeg && rightLowerLeg) {
         leftLowerLeg.rotation.x = THREE.MathUtils.lerp(leftLowerLeg.rotation.x, swingLiftL * maxKneeBend, delta * 10.0)
@@ -283,22 +307,24 @@ export class ProceduralAnimator {
         rightLowerLeg.rotation.y = THREE.MathUtils.lerp(rightLowerLeg.rotation.y, 0, delta * 5.0)
       }
 
-      // High Heels Foot Articulation
+      // Foot Articulation: flat solid strike for Stark vs heel arch for female models
+      const heelPitch = isStark ? 0.02 : 0.20
       if (leftFoot) {
-        leftFoot.rotation.x = THREE.MathUtils.lerp(leftFoot.rotation.x, 0.20 + Math.max(0, -swingL) * 0.05, delta * 6.0)
-        leftFoot.rotation.z = THREE.MathUtils.lerp(leftFoot.rotation.z, 0.01, delta * 5.0)
+        leftFoot.rotation.x = THREE.MathUtils.lerp(leftFoot.rotation.x, heelPitch + Math.max(0, -swingL) * 0.05, delta * 6.0)
+        leftFoot.rotation.z = THREE.MathUtils.lerp(leftFoot.rotation.z, isStark ? -0.01 : 0.01, delta * 5.0)
       }
       if (rightFoot) {
-        rightFoot.rotation.x = THREE.MathUtils.lerp(rightFoot.rotation.x, 0.20 + Math.max(0, -swingR) * 0.05, delta * 6.0)
-        rightFoot.rotation.z = THREE.MathUtils.lerp(rightFoot.rotation.z, -0.01, delta * 5.0)
+        rightFoot.rotation.x = THREE.MathUtils.lerp(rightFoot.rotation.x, heelPitch + Math.max(0, -swingR) * 0.05, delta * 6.0)
+        rightFoot.rotation.z = THREE.MathUtils.lerp(rightFoot.rotation.z, isStark ? 0.01 : -0.01, delta * 5.0)
       }
 
-      // Pelvis / Hips: Feminine Runway Sway, subtle bounce
+      // Pelvis / Hips: Masculine forward power drive vs feminine runway sway
       if (hips) {
-        hips.position.y = this.initialHipsY + Math.sin(phase * 2) * 0.006
-        hips.position.x = THREE.MathUtils.lerp(hips.position.x, Math.sin(phase) * (0.022 + cuteRatio * 0.008), delta * 8.0)
-        hips.rotation.z = THREE.MathUtils.lerp(hips.rotation.z, Math.sin(phase) * (0.028 + cuteRatio * 0.010), delta * 8.0)
-        hips.rotation.y = THREE.MathUtils.lerp(hips.rotation.y, Math.sin(phase) * 0.060, delta * 8.0)
+        const hipSway = isStark ? 0.008 : (0.022 + cuteRatio * 0.008)
+        hips.position.y = this.initialHipsY + Math.sin(phase * 2) * (isStark ? 0.004 : 0.006)
+        hips.position.x = THREE.MathUtils.lerp(hips.position.x, Math.sin(phase) * hipSway, delta * 8.0)
+        hips.rotation.z = THREE.MathUtils.lerp(hips.rotation.z, Math.sin(phase) * (isStark ? 0.010 : 0.028), delta * 8.0)
+        hips.rotation.y = THREE.MathUtils.lerp(hips.rotation.y, Math.sin(phase) * (isStark ? 0.025 : 0.060), delta * 8.0)
         hips.rotation.x = 0.01
       }
 
@@ -779,6 +805,109 @@ export class ProceduralAnimator {
           rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, 0.15, delta * 4.0)
         }
         if (spine) spine.rotation.x = THREE.MathUtils.lerp(spine.rotation.x, 0.18, delta * 3.5)
+        break
+      }
+
+      // --- Character-Specific Signature Kinematics ---
+      case 'stark_billionaire_swagger': {
+        // Tony Stark arms crossed with confident billionaire posture
+        if (leftArm && rightArm && leftForeArm && rightForeArm) {
+          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.65, delta * 5.0)
+          leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, -0.68, delta * 5.0)
+          leftForeArm.rotation.y = THREE.MathUtils.lerp(leftForeArm.rotation.y, -1.25, delta * 5.0)
+          leftForeArm.rotation.z = THREE.MathUtils.lerp(leftForeArm.rotation.z, 0.45, delta * 5.0)
+
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.65, delta * 5.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.68, delta * 5.0)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 1.25, delta * 5.0)
+          rightForeArm.rotation.z = THREE.MathUtils.lerp(rightForeArm.rotation.z, -0.45, delta * 5.0)
+        }
+        if (chest) chest.rotation.x = THREE.MathUtils.lerp(chest.rotation.x, -0.06, delta * 4.0)
+        if (head) {
+          head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -0.08, delta * 4.0)
+          head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, 0.05, delta * 4.0)
+        }
+        break
+      }
+
+      case 'stark_hud_swipe': {
+        // Tony Stark swiping through Jarvis holographic HUD
+        if (rightArm && rightForeArm) {
+          const swipeProg = Math.sin(time * 3.5) * 0.35
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.32, delta * 5.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.85, delta * 5.0)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 0.45 + swipeProg, delta * 6.0)
+          rightForeArm.rotation.z = THREE.MathUtils.lerp(rightForeArm.rotation.z, -0.15, delta * 5.0)
+        }
+        if (head) head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, 0.12, delta * 4.0)
+        break
+      }
+
+      case 'stark_glasses_adjust': {
+        // Tony Stark lifting hand to adjust aviator sunglasses with a sharp nod
+        if (rightArm && rightForeArm) {
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.25, delta * 5.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -1.15, delta * 5.0)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 1.35, delta * 5.0)
+          rightForeArm.rotation.z = THREE.MathUtils.lerp(rightForeArm.rotation.z, -0.30, delta * 5.0)
+        }
+        if (head) head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -0.10, delta * 4.0)
+        break
+      }
+
+      case 'yor_rose_elegance': {
+        // Yor Forger hands clasped softly in front, gentle head tilt
+        if (leftArm && rightArm && leftForeArm && rightForeArm) {
+          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.38, delta * 4.5)
+          leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, -0.45, delta * 4.5)
+          leftForeArm.rotation.y = THREE.MathUtils.lerp(leftForeArm.rotation.y, -0.85, delta * 4.5)
+          leftForeArm.rotation.z = THREE.MathUtils.lerp(leftForeArm.rotation.z, 0.40, delta * 4.5)
+
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.38, delta * 4.5)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.45, delta * 4.5)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 0.85, delta * 4.5)
+          rightForeArm.rotation.z = THREE.MathUtils.lerp(rightForeArm.rotation.z, -0.40, delta * 4.5)
+        }
+        if (head) {
+          head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, 0.12, delta * 4.0)
+          head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, 0.05, delta * 4.0)
+        }
+        break
+      }
+
+      case 'yor_tender_wave': {
+        // Yor sweet companion two-handed wave
+        const wave = Math.sin(time * 8.0) * 0.18
+        if (rightArm && rightForeArm) {
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.65, delta * 5.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.75, delta * 5.0)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 0.95 + wave, delta * 6.0)
+        }
+        if (leftArm && leftForeArm) {
+          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.65, delta * 5.0)
+          leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, -0.75, delta * 5.0)
+          leftForeArm.rotation.y = THREE.MathUtils.lerp(leftForeArm.rotation.y, -0.95 - wave, delta * 6.0)
+        }
+        if (head) head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, 0.08, delta * 4.0)
+        break
+      }
+
+      case 'ada_tactical_poise': {
+        // Ada Wong sleek espionage poise: hand on hip, sharp gaze
+        if (leftArm && leftForeArm) {
+          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.82, delta * 4.5)
+          leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, -0.12, delta * 4.5)
+          leftForeArm.rotation.z = THREE.MathUtils.lerp(leftForeArm.rotation.z, 0.70, delta * 4.5)
+          leftForeArm.rotation.y = THREE.MathUtils.lerp(leftForeArm.rotation.y, -0.40, delta * 4.5)
+        }
+        if (rightArm) {
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -1.15, delta * 4.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, 0.05, delta * 4.0)
+        }
+        if (head) {
+          head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, -0.08, delta * 4.0)
+          head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, 0.10, delta * 4.0)
+        }
         break
       }
 

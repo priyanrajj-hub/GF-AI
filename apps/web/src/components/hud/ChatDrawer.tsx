@@ -52,6 +52,9 @@ export const ChatDrawer: React.FC = () => {
     fullScreenHoloMode,
     activeSong,
     karaokeLine,
+    roamConfig,
+    setRoamConfig,
+    setActiveFX,
   } = useAppStore()
 
   const [input, setInput] = useState('')
@@ -384,49 +387,109 @@ export const ChatDrawer: React.FC = () => {
           </div>
         </div>
 
-        {/* Blended Co-Pilot Switcher: Ada (Tutor) | Mira (Companion) | Atlas (Stark Trader) */}
-        <div className="flex items-center justify-between gap-1 p-1 rounded-xl bg-slate-900/80 border border-cyan-500/30 text-[10px] font-mono">
+        {/* 3D Character Switcher: Tony Stark (RDJ) | Ada Wong (RE) | Yor Forger (Spy x Family) */}
+        <div className="flex items-center justify-between gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-cyan-500/30 text-[10px] font-mono">
           <button
-            onClick={() => setActiveCharacter('ada')}
-            className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 ${
-              activeCharacter === 'ada' || !activeCharacter
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_8px_rgba(0,243,255,0.4)]'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="Ada: Code Tutor & Focus Mentor"
-          >
-            <span>👩‍💼</span> Ada
-          </button>
-          <button
-            onClick={() => setActiveCharacter('mira')}
-            className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 ${
-              activeCharacter === 'mira'
-                ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-[0_0_8px_rgba(244,63,94,0.4)]'
-                : 'text-slate-400 hover:text-rose-200'
-            }`}
-            title="Mira: Fun & Caring Companion"
-          >
-            <span>🌹</span> Mira
-          </button>
-          <button
-            onClick={() => setActiveCharacter('atlas')}
-            className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 ${
+            onClick={() => {
+              setActiveCharacter('atlas')
+              performAction('stark_billionaire_swagger', { duration: 4.2 })
+              VoiceEngine.speak("Jarvis online. Stark Quant Trader ready. What market shall we break down?", { rate: 1.05, pitch: 0.94 })
+              setActiveFX(['sparkles'])
+            }}
+            className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 min-w-0 ${
               activeCharacter === 'atlas'
-                ? 'bg-gradient-to-r from-amber-600 to-cyan-600 text-white shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                ? 'bg-gradient-to-r from-amber-600 via-orange-500 to-cyan-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.5)] border border-amber-400/60'
                 : 'text-slate-400 hover:text-cyan-200'
             }`}
-            title="Atlas (Tony Stark): Quant Trader AI"
+            title="Tony Stark (RDJ): Tech Billionaire & Quant Vanguard"
           >
-            <span>⚡</span> Stark (Trader)
+            <span>⚡</span> <span className="truncate">Stark (RDJ)</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveCharacter('ada')
+              performAction('ada_tactical_poise', { duration: 3.8 })
+              VoiceEngine.speak("Ada Wong here. Tactical intelligence and market disciplines active.", { rate: 1.02, pitch: 1.04 })
+              setActiveFX(['sparkles'])
+            }}
+            className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 min-w-0 ${
+              activeCharacter === 'ada' || !activeCharacter
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_12px_rgba(0,243,255,0.5)] border border-cyan-400/60'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Ada Wong: Sleek Spy-Chic Mentor & Risk Operative"
+          >
+            <span>🍷</span> <span className="truncate">Ada Wong</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveCharacter('mira')
+              performAction('yor_rose_elegance', { duration: 4.0 })
+              VoiceEngine.speak("Hello! Yor Forger at your service. I will protect your trades with all my heart!", { rate: 1.00, pitch: 1.20 })
+              setActiveFX(['hearts', 'sparkles'])
+            }}
+            className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 min-w-0 ${
+              activeCharacter === 'mira'
+                ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-[0_0_12px_rgba(244,63,94,0.5)] border border-rose-400/60'
+                : 'text-slate-400 hover:text-rose-200'
+            }`}
+            title="Yor Forger (Spy x Family): Thorn Princess Companion"
+          >
+            <span>🌹</span> <span className="truncate">Yor Forger</span>
           </button>
         </div>
 
-        <div className="flex items-center justify-between px-1 text-[9px] font-mono text-cyan-400/80">
-          <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            Co-Pilot: {activeCharacter === 'atlas' ? '⚡ Stark Trader AI' : activeCharacter === 'mira' ? '🌹 Mira Companion' : '👩‍💼 Ada Study Mentor'}
-          </span>
-          <span className="text-slate-400">Blended Mode Active</span>
+        {/* Dynamic Co-Pilot Subheader & Stage Roaming Mobility Bar */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-1 text-[9px] font-mono text-cyan-400/80">
+            <span className="flex items-center gap-1 font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              Active 3D Avatar: {activeCharacter === 'atlas' ? '⚡ Tony Stark (RDJ)' : activeCharacter === 'mira' ? '🌹 Yor Forger (Thorn Princess)' : '🍷 Ada Wong (Spy-Chic)'}
+            </span>
+            <span className="text-slate-400">Lip-Sync & Physics Active</span>
+          </div>
+
+          <div className="flex items-center justify-between gap-1 p-1 rounded-xl bg-slate-950/80 border border-cyan-500/25 text-[9px] font-mono">
+            <button
+              onClick={() => {
+                const next = !roamConfig.enabled
+                setRoamConfig({ enabled: next })
+              }}
+              className={`px-2 py-0.5 rounded-lg transition-all cursor-pointer font-bold flex items-center gap-1 ${
+                roamConfig.enabled
+                  ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-400/50 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+              title="Toggle free autonomous wandering across the stage"
+            >
+              <span>🚶</span> {roamConfig.enabled ? 'Free Roam: ON' : 'Free Roam: OFF'}
+            </button>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  const targetX = (Math.random() - 0.5) * 1.5
+                  const targetZ = 0.15 + Math.random() * 0.35
+                  window.dispatchEvent(new CustomEvent('ada:move_to', { detail: { x: targetX, z: targetZ } }))
+                }}
+                className="px-2 py-0.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/70 text-cyan-200 border border-cyan-500/30 cursor-pointer font-medium transition-all"
+                title="Direct character to walk forward to the front spotlight"
+              >
+                📍 Stage Walk
+              </button>
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('ada:move_to', { detail: { action: 'home' } }))
+                }}
+                className="px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/60 cursor-pointer font-medium transition-all"
+                title="Return character to central home pedestal"
+              >
+                🎯 Center
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

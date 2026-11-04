@@ -208,15 +208,18 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
   useEffect(() => {
     if (vrm) {
       applyCharacterPhysicalTransformation(vrm, activeCharacter || 'ada')
+      if (typeof window !== 'undefined') {
+        ;(window as any).__ACTIVE_CHAR__ = activeCharacter || 'ada'
+      }
     }
   }, [activeCharacter, vrm])
 
   // Instant real-time wardrobe skin updates without re-loading the model
   useEffect(() => {
-    if (vrm) {
+    if (vrm && (activeCharacter === 'ada' || !activeCharacter)) {
       applyAvatarSkin(vrm, skinId || 'crimson_turtleneck')
     }
-  }, [skinId, vrm])
+  }, [skinId, vrm, activeCharacter])
 
   // Real-time accessory updates (Comms Headset, Gloves, Boots)
   useEffect(() => {
