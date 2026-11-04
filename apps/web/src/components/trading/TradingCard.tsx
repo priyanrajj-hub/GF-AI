@@ -8,7 +8,7 @@ interface TradingCardProps {
 
 export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick }) => {
   const [copied, setCopied] = useState(false)
-  const [activeTab, setActiveTab] = useState<'setup' | 'indicators' | 'levels' | 'sizer'>('setup')
+  const [activeTab, setActiveTab] = useState<'setup' | 'indicators' | 'levels' | 'sizer' | 'geo' | 'ratings'>('setup')
   const [accountEquity, setAccountEquity] = useState<number>(card.currency === 'INR' ? 100000 : 10000)
 
   const curr = card.currency === 'INR' ? '₹' : '$'
@@ -16,6 +16,9 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
   const sign = isPositive ? '+' : ''
   const ind = card.indicators
   const setup = card.setup
+  const geo = card.geopoliticalRadar
+  const sent = card.sentiment
+  const ratings = card.analystRatings
 
   // 1% Capital Risk Calculations
   const riskAmount = Number((accountEquity * 0.01).toFixed(2))
@@ -207,6 +210,26 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
           }`}
         >
           💰 1% Risk Sizer
+        </button>
+        <button
+          onClick={() => setActiveTab('geo')}
+          className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold shrink-0 ${
+            activeTab === 'geo'
+              ? 'bg-rose-500/25 text-rose-200 border border-rose-400/50 shadow-sm'
+              : 'text-slate-400 hover:text-white bg-slate-900/40'
+          }`}
+        >
+          ⚔️ War & Macro ({geo?.stressScore || 48}/100)
+        </button>
+        <button
+          onClick={() => setActiveTab('ratings')}
+          className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold shrink-0 ${
+            activeTab === 'ratings'
+              ? 'bg-emerald-500/25 text-emerald-200 border border-emerald-400/50 shadow-sm'
+              : 'text-slate-400 hover:text-white bg-slate-900/40'
+          }`}
+        >
+          ⭐ Ratings & Sentiment
         </button>
       </div>
 
@@ -420,6 +443,118 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
               <span className="text-cyan-400 font-bold shrink-0">👩‍💼 Ada Risk Discipline:</span>
               <span className="text-slate-300">
                 &quot;Risking strictly 1% ({curr}{riskAmount.toLocaleString()}) means your account survives 20 consecutive losses with 81% capital intact. Never gamble on emotional revenge trades!&quot;
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 5: Geopolitical War Radar & Safe-Haven Flight */}
+      {activeTab === 'geo' && (
+        <div className="space-y-2.5 text-[11px] font-mono">
+          <div className="p-3 rounded-xl bg-slate-900/90 border border-rose-500/40 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] text-rose-300 font-bold uppercase tracking-wider block">
+                ⚔️ Geopolitical Conflict Stress Index
+              </span>
+              <div className="text-base sm:text-lg font-bold text-white flex items-center gap-2 mt-0.5">
+                <span>{geo?.stressScore || 48}/100</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded border ${
+                  (geo?.stressScore || 48) >= 70
+                    ? 'bg-rose-500/20 text-rose-300 border-rose-400/50'
+                    : (geo?.stressScore || 48) >= 45
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-400/50'
+                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50'
+                }`}>
+                  {geo?.regime || 'MODERATE TENSION'}
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 block font-medium">Defense Status</span>
+              <span className="text-xs font-bold text-cyan-300">{geo?.defenseStatus || 'WATCHFUL'}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-amber-500/30 min-w-0">
+              <span className="text-[10px] text-amber-300 block truncate font-medium">Gold (GC=F)</span>
+              <span className="font-bold text-amber-200 text-xs sm:text-sm truncate block mt-0.5">
+                ${geo?.goldPrice || 2740.5} ({geo?.goldChange && geo.goldChange >= 0 ? '+' : ''}{geo?.goldChange || 0}%)
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-red-500/30 min-w-0">
+              <span className="text-[10px] text-red-300 block truncate font-medium">WTI Crude Oil</span>
+              <span className="font-bold text-red-300 text-xs sm:text-sm truncate block mt-0.5">
+                ${geo?.crudeOilPrice || 71.4} ({geo?.crudeOilChange && geo.crudeOilChange >= 0 ? '+' : ''}{geo?.crudeOilChange || 0}%)
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-blue-500/30 min-w-0">
+              <span className="text-[10px] text-blue-300 block truncate font-medium">USD Index (DXY)</span>
+              <span className="font-bold text-blue-200 text-xs sm:text-sm truncate block mt-0.5">
+                {geo?.dxyPrice || 104.2} ({geo?.dxyChange && geo.dxyChange >= 0 ? '+' : ''}{geo?.dxyChange || 0}%)
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-purple-500/30 min-w-0">
+              <span className="text-[10px] text-purple-300 block truncate font-medium">CBOE VIX Volatility</span>
+              <span className="font-bold text-purple-300 text-xs sm:text-sm truncate block mt-0.5">
+                {geo?.vix || 16.5}
+              </span>
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-slate-950/70 border border-rose-500/20 text-xs">
+            <span className="text-rose-400 font-bold block text-[10px] uppercase tracking-wider mb-1">
+              🛡️ Geopolitical Strategic Directive:
+            </span>
+            <p className="text-slate-300 leading-relaxed text-[11px]">
+              {geo?.strategicAdvice || 'Monitor safe-haven asset divergence and oil supply lines (Strait of Hormuz / Red Sea). Strict 1% risk limit mandatory.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 6: Analyst Consensus & Sentiment Suite */}
+      {activeTab === 'ratings' && (
+        <div className="space-y-2.5 text-[11px] font-mono">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-emerald-500/40 min-w-0">
+              <span className="text-[10px] text-emerald-300 block truncate font-medium">Wall St / Institutional</span>
+              <span className="font-bold text-emerald-400 text-xs sm:text-sm truncate block mt-0.5">
+                {ratings?.consensusRating || 'STRONG BUY'}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-cyan-500/30 min-w-0">
+              <span className="text-[10px] text-cyan-300 block truncate font-medium">Mean Target Price</span>
+              <span className="font-bold text-white text-xs sm:text-sm truncate block mt-0.5">
+                {curr}{ratings?.targetMean || (card.price * 1.14).toFixed(2)}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-purple-500/30 min-w-0">
+              <span className="text-[10px] text-purple-300 block truncate font-medium">Upside Potential</span>
+              <span className="font-bold text-purple-300 text-xs sm:text-sm truncate block mt-0.5">
+                +{ratings?.upsidePotentialPct || 14.0}%
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
+              <span className="text-[10px] text-slate-400 block truncate font-medium">Coverage</span>
+              <span className="font-bold text-slate-200 text-xs sm:text-sm truncate block mt-0.5">
+                {ratings?.numberOfAnalysts || 22} Analysts
+              </span>
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-slate-900/80 border border-cyan-500/30 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] text-cyan-300 block font-medium">Fear & Greed Index</span>
+              <span className="text-xs sm:text-sm font-bold text-white">
+                {sent?.fearGreedClassification || 'Greed'} ({sent?.fearGreedIndex || 54}/100)
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 block font-medium">Hugging Face FinBERT</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-bold">
+                {sent?.huggingFaceSentiment?.label || 'POSITIVE'} ({sent?.huggingFaceSentiment?.score || 0.72})
               </span>
             </div>
           </div>

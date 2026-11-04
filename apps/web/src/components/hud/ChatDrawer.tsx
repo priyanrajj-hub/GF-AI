@@ -887,6 +887,30 @@ export const ChatDrawer: React.FC = () => {
               🔬 All Indicators
             </button>
             <button
+              onClick={() => handleSendMessage('Analyze Geopolitical Conflict & War Risk Radar: Gold safe haven, Crude Oil supply shock, DXY Dollar, and VIX stress score')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer font-bold"
+            >
+              ⚔️ War & Geo Radar
+            </button>
+            <button
+              onClick={() => handleSendMessage('What is the current Market Fear & Greed Index, sentiment mood, and Hugging Face FinBERT financial tone?')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer font-medium"
+            >
+              😱 Fear & Greed
+            </button>
+            <button
+              onClick={() => handleSendMessage('Show Wall Street and Dalal Street consensus analyst ratings, target price, and upside potential for Reliance, Apple, and Nvidia')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-colors cursor-pointer font-medium"
+            >
+              ⭐ Analyst Ratings
+            </button>
+            <button
+              onClick={() => handleSendMessage('Run PyTorch Neural Network and Hugging Face model ensemble on market indicators')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 transition-colors cursor-pointer font-bold"
+            >
+              🧠 Neural Net & HF Models
+            </button>
+            <button
               onClick={() => handleSendMessage('Analyze World Markets: US S&P 500, Nasdaq, India Nifty, Crypto, and Gold')}
               className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-teal-950/60 border border-teal-500/40 text-teal-300 hover:bg-teal-900/60 transition-colors cursor-pointer font-medium"
             >
