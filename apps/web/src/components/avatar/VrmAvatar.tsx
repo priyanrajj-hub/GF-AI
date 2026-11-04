@@ -245,12 +245,59 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     }
   }, [activeCharacter, vrm])
 
-  // Instant real-time wardrobe skin updates without re-loading the model
+  // Instant real-time wardrobe skin updates for whichever character is active
   useEffect(() => {
-    if (vrm && (activeCharacter === 'ada' || !activeCharacter)) {
-      applyAvatarSkin(vrm, skinId || 'crimson_turtleneck')
+    if (vrm) {
+      if (skinId) {
+        applyAvatarSkin(vrm, skinId)
+      } else if (activeCharacter === 'mira') {
+        applyAvatarSkin(vrm, 'yor-thorn-princess')
+      } else if (activeCharacter === 'atlas') {
+        applyAvatarSkin(vrm, 'stark-executive-suit')
+      } else {
+        applyAvatarSkin(vrm, 'ada-red')
+      }
     }
   }, [skinId, vrm, activeCharacter])
+
+  // Dynamic armor plating & Arc Reactor energy updates for Tony Stark's Iron Man suits
+  useEffect(() => {
+    if (glbScene && (modelUrl || '').includes('ironman')) {
+      const arcLight = glbScene.getObjectByName('__IRONMAN_ARC_LIGHT__') as THREE.PointLight | undefined
+      const isStealth = skinId === 'stark-stealth-armor' || skinId === 'stark-stealth-hoodie'
+      const isSilver = skinId === 'stark-silver-centurion' || skinId === 'stark-executive-suit'
+
+      if (arcLight) {
+        if (isStealth) {
+          arcLight.color.set('#3b82f6') // Deep Cobalt
+        } else if (isSilver) {
+          arcLight.color.set('#10b981') // Quantum Emerald
+        } else {
+          arcLight.color.set('#00f3ff') // Classic Cyan Core
+        }
+      }
+
+      glbScene.traverse((obj) => {
+        if ((obj as THREE.Mesh).isMesh) {
+          const mesh = obj as THREE.Mesh
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+          mats.forEach((mat: any) => {
+            if (!mat || !mat.color) return
+            if (isStealth) {
+              if (mat.name === 'Mat.1' || mat.name === 'material') mat.color.set('#101216') // Obsidian Noir
+              if (mat.name === 'Mat.2') mat.color.set('#2a2c35') // Gunmetal Carbon
+            } else if (isSilver) {
+              if (mat.name === 'Mat.1' || mat.name === 'material') mat.color.set('#a01826') // Crimson Trim
+              if (mat.name === 'Mat.2') mat.color.set('#d8dee9') // Aerospace Chrome
+            } else {
+              if (mat.name === 'Mat.1') mat.color.set('#8B1E2B') // Titanium Hot-Rod Red
+              if (mat.name === 'Mat.2') mat.color.set('#D4AF37') // Sunburst Gold
+            }
+          })
+        }
+      })
+    }
+  }, [skinId, glbScene, modelUrl])
 
   // Real-time accessory updates (Comms Headset, Gloves, Boots)
   useEffect(() => {

@@ -454,6 +454,331 @@ export const YorCrimsonSweaterSkin: AvatarSkin = {
   },
 }
 
+
+/**
+ * Yor Forger • Thorn Princess Assassin Dress (Canonical Spy x Family Form)
+ * - Halter-neck midnight black cocktail dress (#0E0F14) with deep rose lining (#3A060D)
+ * - Dual golden sculpted roses and crown headband over temples
+ * - Knee-high assassin stiletto boots (#101116)
+ * - Piercing ruby-crimson assassin eyes (#D91E36) with subtle emissive aura
+ */
+export const YorThornPrincessSkin: AvatarSkin = {
+  id: 'yor-thorn-princess',
+  name: 'Yor Forger • Thorn Princess (Assassin Form)',
+  description: 'Iconic midnight noir halter dress with rose-printed lining, dual temple gold roses, and assassin stiletto boots.',
+  apply: (vrm: VRM) => {
+    AdaRedSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+
+          // Halter neck midnight black assassin dress
+          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+            mat.visible = true
+            mat.transparent = false
+            mat.opacity = 1.0
+            if (mat.color) mat.color.set('#0E0F14') // Midnight Noir
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#3A060D') // Deep blood rose inner shadow
+            if (mat.roughness !== undefined) mat.roughness = 0.35
+            if (mat.metalness !== undefined) mat.metalness = 0.12
+          }
+
+          // Glossy midnight black hair
+          if (/hair/i.test(matName)) {
+            mat.visible = true
+            if (mat.color) mat.color.set('#0A0B0E')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#040507')
+            if (mat.roughness !== undefined) mat.roughness = 0.22
+          }
+
+          // Golden Thorn Crown & Headband
+          if (/hair_wear|ribbon|accessory/i.test(matName)) {
+            mat.visible = true
+            mat.opacity = 1.0
+            mat.transparent = false
+            if (mat.color) mat.color.set('#E6C35C') // Brilliant Polished Gold
+            if (mat.metalness !== undefined) mat.metalness = 0.85
+            if (mat.roughness !== undefined) mat.roughness = 0.18
+          }
+
+          // Thigh-high assassin stockings & stiletto boots
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            mat.visible = true
+            mat.opacity = 1.0
+            mat.transparent = false
+            if (mat.color) mat.color.set('#101116')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#060709')
+            if (mat.roughness !== undefined) mat.roughness = 0.45
+          }
+
+          // Deadly Crimson Ruby Eyes
+          if (/eye|iris/i.test(matName)) {
+            if (mat.color) mat.color.set('#D91E36')
+            if (mat.emissive) mat.emissive.set('#520814')
+          }
+        })
+      }
+    })
+    attachYorHeadbandRose(vrm, true)
+    attachStarkTechGlassesAndBeard(vrm, false)
+    const chest = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
+    if (chest) {
+      const emblem = chest.getObjectByName('__STARK_ARC_REACTOR__')
+      if (emblem) emblem.visible = false
+    }
+  },
+}
+
+/**
+ * Yor Forger • Berlint Gala Royal Velvet Evening Gown (Spy x Family Code White)
+ * - Regal deep sapphire velvet evening gown (#10223D)
+ * - Antique gold filigree lace trim (#D4AF37)
+ * - Sheer midnight stockings and formal hair styling
+ */
+export const YorBerlintGalaSkin: AvatarSkin = {
+  id: 'yor-berlint-gala',
+  name: 'Yor Forger • Berlint Gala Royal Velvet Gown',
+  description: 'Regal deep sapphire velvet evening gown with antique gold filigree lace trim and formal hair styling.',
+  apply: (vrm: VRM) => {
+    AdaRedSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+
+          // Deep Sapphire velvet evening gown
+          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+            mat.visible = true
+            mat.transparent = false
+            mat.opacity = 1.0
+            if (mat.color) mat.color.set('#10223D') // Royal Sapphire Velvet
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#08101E')
+            if (mat.roughness !== undefined) mat.roughness = 0.65 // Soft plush velvet
+            if (mat.metalness !== undefined) mat.metalness = 0.08
+          }
+
+          // Jet black elegant updo hair
+          if (/hair/i.test(matName)) {
+            mat.visible = true
+            if (mat.color) mat.color.set('#0E1015')
+            if (mat.roughness !== undefined) mat.roughness = 0.25
+          }
+
+          // Antique Gold lace trim
+          if (/hair_wear|ribbon|accessory/i.test(matName)) {
+            mat.visible = true
+            if (mat.color) mat.color.set('#D4AF37')
+            if (mat.metalness !== undefined) mat.metalness = 0.8
+          }
+
+          // Sheer midnight stockings
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            mat.visible = true
+            mat.opacity = 0.88
+            mat.transparent = true
+            if (mat.color) mat.color.set('#0D0F14')
+          }
+
+          // Violet-tinted dark eyes
+          if (/eye|iris/i.test(matName)) {
+            if (mat.color) mat.color.set('#8B284A')
+          }
+        })
+      }
+    })
+    attachYorHeadbandRose(vrm, true)
+    attachStarkTechGlassesAndBeard(vrm, false)
+  },
+}
+
+/**
+ * Ada Wong • Neo-Tokyo Cyber Operative (Custom Holographic Agent Suit)
+ * - Carbon fiber stealth bodysuit with luminescent magenta and cyan cyber piping
+ * - Tactical holographic optics and high-shine boots
+ */
+export const AdaCyberOperativeSkin: AvatarSkin = {
+  id: 'ada-cyber-operative',
+  name: 'Ada Wong • Neo-Tokyo Cyber Operative',
+  description: 'Carbon mesh tactical agent suit with glowing magenta/cyan holographic piping and optics.',
+  apply: (vrm: VRM) => {
+    AdaRedSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+
+          // Carbon mesh operative suit
+          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+            mat.visible = true
+            mat.transparent = false
+            mat.opacity = 1.0
+            if (mat.color) mat.color.set('#141620')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0A0C14')
+            if (mat.roughness !== undefined) mat.roughness = 0.35
+            if (mat.metalness !== undefined) mat.metalness = 0.45
+            if (mat.emissive) mat.emissive.set('#4A0824') // Subtle neon undertone
+          }
+
+          // High-tech holographic straps
+          if (/body_wear|glove|strap/i.test(matName)) {
+            mat.visible = true
+            if (mat.color) mat.color.set('#00E5FF')
+            if (mat.emissive) mat.emissive.set('#005577')
+          }
+
+          // Dark tactical stockings
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            mat.visible = true
+            mat.opacity = 1.0
+            if (mat.color) mat.color.set('#0F1116')
+          }
+
+          // Sleek jet hair
+          if (/hair/i.test(matName)) {
+            mat.visible = true
+            if (mat.color) mat.color.set('#111218')
+          }
+        })
+      }
+    })
+    attachYorHeadbandRose(vrm, false)
+    attachStarkTechGlassesAndBeard(vrm, false)
+  },
+}
+
+/**
+ * Tony Stark • Italian Tailored Executive Suit (Iron Man 1 & 2 / Avengers Gala)
+ * - Bespoke charcoal Italian silk-wool blazer (#1C1F26) & tailored trousers
+ * - Amber-tinted aviator sunglasses, sculpted goatee, and chest Arc Reactor
+ */
+export const StarkExecutiveSuitSkin: AvatarSkin = {
+  id: 'stark-executive-suit',
+  name: 'Tony Stark • Italian Tailored Executive Suit',
+  description: 'Bespoke charcoal Italian wool blazer, amber aviator sunglasses, goatee beard, and chest Arc Reactor.',
+  apply: (vrm: VRM) => {
+    vrm.scene.traverse((obj) => {
+      if (/cloth1|cloth2/i.test(obj.name)) {
+        obj.visible = true
+        obj.scale.set(1.0, 1.0, 1.0)
+      }
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+
+          // Charcoal tailored blazer & silk shirt
+          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+            mat.visible = true
+            mat.transparent = false
+            mat.opacity = 1.0
+            if (mat.color) mat.color.set('#1C1F26')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0E1014')
+            if (mat.roughness !== undefined) mat.roughness = 0.38
+            if (mat.metalness !== undefined) mat.metalness = 0.22
+          }
+
+          // Dark textured hair
+          if (/hair/i.test(matName)) {
+            mat.visible = true
+            if (mat.color) mat.color.set('#181514')
+          }
+
+          // Suit Trousers
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            mat.visible = true
+            mat.opacity = 1.0
+            mat.transparent = false
+            if (mat.color) mat.color.set('#14161C')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0A0C10')
+          }
+
+          // Masculine skin
+          if (/alicia_face\b|alicia_body\b/i.test(matName)) {
+            mat.visible = true
+            if (mat.color) mat.color.set('#FDEADE')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#E8C6B5')
+          }
+        })
+      }
+    })
+    attachArcReactorEmblem(vrm)
+    attachStarkTechGlassesAndBeard(vrm, true)
+    attachYorHeadbandRose(vrm, false)
+  },
+}
+
+/**
+ * Tony Stark • S.H.I.E.L.D. Carbon Stealth Tech Hoodie (Avengers Endgame)
+ * - Matte carbon-weave tactical hoodie with Stark Industries cyan luminescent traces
+ */
+export const StarkStealthHoodieSkin: AvatarSkin = {
+  id: 'stark-stealth-hoodie',
+  name: 'Tony Stark • S.H.I.E.L.D. Carbon Tech Hoodie',
+  description: 'Matte carbon tactical tech hoodie with Stark cyan piping, dark aviator optics, and chest Arc Reactor.',
+  apply: (vrm: VRM) => {
+    vrm.scene.traverse((obj) => {
+      if (/cloth1|cloth2/i.test(obj.name)) {
+        obj.visible = true
+        obj.scale.set(1.0, 1.0, 1.0)
+      }
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+
+          // Matte carbon-weave tech hoodie
+          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
+            mat.visible = true
+            mat.transparent = false
+            mat.opacity = 1.0
+            if (mat.color) mat.color.set('#13151A')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0A0B0E')
+            if (mat.roughness !== undefined) mat.roughness = 0.55
+            if (mat.metalness !== undefined) mat.metalness = 0.15
+          }
+
+          // Dark hair
+          if (/hair/i.test(matName)) {
+            mat.visible = true
+            if (mat.color) mat.color.set('#151312')
+          }
+
+          // Stealth cargo trousers
+          if (/stocking|tight|leg_wear/i.test(matName)) {
+            mat.visible = true
+            mat.opacity = 1.0
+            mat.transparent = false
+            if (mat.color) mat.color.set('#101216')
+          }
+
+          // Skin
+          if (/alicia_face\b|alicia_body\b/i.test(matName)) {
+            mat.visible = true
+            if (mat.color) mat.color.set('#FDEADE')
+          }
+        })
+      }
+    })
+    attachArcReactorEmblem(vrm)
+    attachStarkTechGlassesAndBeard(vrm, true)
+    attachYorHeadbandRose(vrm, false)
+  },
+}
+
 /**
  * Attaches glowing holographic Arc Reactor chest emblem for Atlas / Stark Tech
  */
@@ -637,26 +962,45 @@ export function attachYorHeadbandRose(vrm: VRM, visible: boolean = true): void {
     roseGroup.name = '__YOR_HEADBAND_ROSE__'
 
     const goldMat = new THREE.MeshStandardMaterial({
-      color: 0xd4af37,
-      metalness: 0.75,
-      roughness: 0.22,
+      color: 0xe6c35c,
+      metalness: 0.85,
+      roughness: 0.18,
     })
 
-    // Stylized golden rose petals on the left temple
-    const centerGeo = new THREE.SphereGeometry(0.012, 12, 12)
-    const centerMesh = new THREE.Mesh(centerGeo, goldMat)
-    roseGroup.add(centerMesh)
+    // 1. Delicate golden headband crown arc
+    const bandGeo = new THREE.TorusGeometry(0.125, 0.0035, 8, 32, Math.PI * 0.95)
+    const bandMesh = new THREE.Mesh(bandGeo, goldMat)
+    bandMesh.rotation.x = Math.PI / 2
+    bandMesh.rotation.z = -Math.PI / 2
+    bandMesh.position.set(0, 0.082, 0.015)
+    roseGroup.add(bandMesh)
 
-    for (let i = 0; i < 5; i++) {
-      const angle = (i / 5) * Math.PI * 2
-      const petalGeo = new THREE.CylinderGeometry(0.008, 0.004, 0.016, 8)
-      const petalMesh = new THREE.Mesh(petalGeo, goldMat)
-      petalMesh.position.set(Math.cos(angle) * 0.012, Math.sin(angle) * 0.012, 0)
-      petalMesh.rotation.z = angle
-      roseGroup.add(petalMesh)
+    // Helper to build a sculpted golden rose
+    const createRose = () => {
+      const g = new THREE.Group()
+      const centerGeo = new THREE.SphereGeometry(0.013, 12, 12)
+      const centerMesh = new THREE.Mesh(centerGeo, goldMat)
+      g.add(centerMesh)
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2
+        const petalGeo = new THREE.CylinderGeometry(0.009, 0.004, 0.018, 8)
+        const petalMesh = new THREE.Mesh(petalGeo, goldMat)
+        petalMesh.position.set(Math.cos(angle) * 0.013, Math.sin(angle) * 0.013, 0)
+        petalMesh.rotation.z = angle
+        g.add(petalMesh)
+      }
+      return g
     }
 
-    roseGroup.position.set(0.098, 0.048, 0.038)
+    // Dual roses: Left and Right temples
+    const leftRose = createRose()
+    leftRose.position.set(0.098, 0.048, 0.038)
+    roseGroup.add(leftRose)
+
+    const rightRose = createRose()
+    rightRose.position.set(-0.098, 0.048, 0.038)
+    roseGroup.add(rightRose)
+
     headBone.add(roseGroup)
   }
   roseGroup.visible = visible
@@ -751,14 +1095,27 @@ export const StarkArcTraderSkin: AvatarSkin = {
 }
 
 export const AVATAR_SKINS: Record<string, AvatarSkin> = {
+  // Ada Wong Costumes
   'ada-red': AdaRedSkin,
   'crimson_turtleneck': CrimsonTurtleneckSkin,
   'black_stealth': BlackStealthSkin,
   'crimson_jacket': CrimsonJacketSkin,
+  'ada-cyber-operative': AdaCyberOperativeSkin,
+
+  // Yor Forger Costumes
+  'yor-thorn-princess': YorThornPrincessSkin,
+  'yor-crimson-sweater': YorCrimsonSweaterSkin,
+  'yor-berlint-gala': YorBerlintGalaSkin,
+
+  // Tony Stark Costumes
+  'stark-mark-armor': StarkArcTraderSkin,
+  'stark-arc-trader': StarkArcTraderSkin,
+  'stark-executive-suit': StarkExecutiveSuitSkin,
+  'stark-stealth-hoodie': StarkStealthHoodieSkin,
+
+  // Wardrobe / Lifestyle Variants
   'cozy-night': CozyNightSkin,
   'original-pastel': OriginalPastelSkin,
-  'yor-crimson-sweater': YorCrimsonSweaterSkin,
-  'stark-arc-trader': StarkArcTraderSkin,
 }
 
 /**
