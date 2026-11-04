@@ -392,7 +392,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   roamConfig: {
-    enabled: false,
+    enabled: true,
     range: 'half',
     energy: 'calm',
     followCursor: false,

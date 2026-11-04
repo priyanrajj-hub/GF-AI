@@ -291,12 +291,19 @@ class VoiceEngineManager {
     }
 
     const store = useAppStore.getState()
+    const activeChar = store.activeCharacter || 'ada'
+    const isAtlas = activeChar === 'atlas'
     const utterance = new SpeechSynthesisUtterance(cleanSpeech)
     this.currentUtterance = utterance
 
-    // Feminine girl pitch (1.24 = sweet, bright, melodic feminine tone)
-    utterance.pitch = options.pitch ?? 1.24
-    utterance.rate = options.rate ?? 1.02
+    // Character-Specific Pitch & Cadence:
+    // Atlas (Tony Stark): 0.94 masculine deep resonant pitch
+    // Ada (Ada Wong): 1.04 poised, articulate tutor pitch
+    // Mira (Yor Forger): 1.20 sweet melodic feminine pitch
+    const defaultPitch = isAtlas ? 0.94 : activeChar === 'ada' ? 1.04 : 1.20
+    const defaultRate = isAtlas ? 1.05 : 1.02
+    utterance.pitch = options.pitch ?? defaultPitch
+    utterance.rate = options.rate ?? defaultRate
     utterance.volume = store.audioVolume ?? 0.95
 
     const lang = options.language || store.settings.language
@@ -309,40 +316,68 @@ class VoiceEngineManager {
       utterance.lang = 'en-US'
     }
 
-    // Explicitly filter for FEMALE / GIRL voices, strictly avoiding male voices
     const voices = window.speechSynthesis.getVoices()
-    const maleNames = ['david', 'mark', 'george', 'richard', 'guy', 'stefan', 'male']
-    const femaleCandidates = voices.filter(
-      (v) => !maleNames.some((m) => v.name.toLowerCase().includes(m))
-    )
+    const maleNames = ['david', 'mark', 'george', 'richard', 'guy', 'stefan', 'male', 'christopher', 'alex', 'james']
 
-    const preferredVoice =
-      ((isTamilScript || lang === 'ta') && femaleCandidates.find((v) => v.lang.startsWith('ta'))) ||
-      (lang === 'tanglish' && femaleCandidates.find((v) => v.lang === 'en-IN')) ||
-      femaleCandidates.find(
-        (v) =>
-          v.name.includes('Jenny') ||
-          v.name.includes('Aria') ||
-          v.name.includes('Ana') ||
-          v.name.includes('Samantha') ||
-          v.name.includes('Google US English') ||
-          v.name.includes('Zira') ||
-          v.name.includes('Victoria') ||
-          v.name.includes('Natural')
-      ) ||
-      femaleCandidates.find((v) => v.lang.startsWith('en')) ||
-      voices[0]
+    let preferredVoice: SpeechSynthesisVoice | undefined
+    if (isAtlas) {
+      // Atlas / Tony Stark: Strictly select masculine male voices
+      const maleCandidates = voices.filter((v) =>
+        maleNames.some((m) => v.name.toLowerCase().includes(m))
+      )
+      preferredVoice =
+        maleCandidates.find((v) => v.lang.startsWith(utterance.lang)) ||
+        maleCandidates[0] ||
+        voices.find((v) => v.lang.startsWith('en'))
+    } else {
+      // Ada Wong & Yor Forger: Strictly select feminine female voices
+      const femaleCandidates = voices.filter(
+        (v) => !maleNames.some((m) => v.name.toLowerCase().includes(m))
+      )
+      preferredVoice =
+        ((isTamilScript || lang === 'ta') && femaleCandidates.find((v) => v.lang.startsWith('ta'))) ||
+        (lang === 'tanglish' && femaleCandidates.find((v) => v.lang === 'en-IN')) ||
+        femaleCandidates.find(
+          (v) =>
+            v.name.includes('Jenny') ||
+            v.name.includes('Aria') ||
+            v.name.includes('Ana') ||
+            v.name.includes('Samantha') ||
+            v.name.includes('Google US English') ||
+            v.name.includes('Zira') ||
+            v.name.includes('Victoria') ||
+            v.name.includes('Natural')
+        ) ||
+        femaleCandidates.find((v) => v.lang.startsWith('en')) ||
+        voices[0]
+    }
 
     if (preferredVoice) {
       utterance.voice = preferredVoice
     }
 
+    let speechSynthInterval: any = null
     utterance.onstart = () => {
       store.setSystemState('speaking')
       store.triggerGlitch()
+      // Generate synthetic speech frequency pulses for real-time lip-sync & visualizers
+      const synthArray = new Uint8Array(32)
+      speechSynthInterval = setInterval(() => {
+        if (useAppStore.getState().systemState !== 'speaking') {
+          clearInterval(speechSynthInterval)
+          return
+        }
+        const t = performance.now() / 1000
+        const pulse = Math.max(0, Math.sin(t * 22.0) * Math.sin(t * 10.0))
+        const amp = Math.floor(pulse * 190 + Math.random() * 50)
+        synthArray.fill(amp)
+        useAppStore.getState().setAudioFrequencies(synthArray)
+      }, 45)
     }
 
     utterance.onend = () => {
+      if (speechSynthInterval) clearInterval(speechSynthInterval)
+      useAppStore.getState().setAudioFrequencies(new Uint8Array(32))
       const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
       if (!isSinging) {
         store.setSystemState('idle')
@@ -351,6 +386,8 @@ class VoiceEngineManager {
     }
 
     utterance.onerror = (e) => {
+      if (speechSynthInterval) clearInterval(speechSynthInterval)
+      useAppStore.getState().setAudioFrequencies(new Uint8Array(32))
       console.warn('[WebSpeech Error]', e)
       const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
       if (!isSinging) {
