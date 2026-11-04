@@ -167,6 +167,33 @@ export interface TradingCardData {
     r2: number
     r3?: number
   }
+  geopoliticalRadar?: {
+    stressScore: number
+    regime: string
+    defenseStatus: string
+    goldPrice: number
+    goldChange: number
+    crudeOilPrice: number
+    crudeOilChange: number
+    dxyPrice: number
+    dxyChange: number
+    vix: number
+    strategicAdvice: string
+  }
+  sentiment?: {
+    fearGreedIndex: number
+    fearGreedClassification: string
+    marketTone: string
+    huggingFaceSentiment?: { label: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'; score: number; model: string }
+  }
+  analystRatings?: {
+    consensusRating: string
+    numberOfAnalysts: number
+    targetMean: number
+    targetHigh: number
+    targetLow: number
+    upsidePotentialPct: number
+  }
 }
 
 export interface ChatMessage {
