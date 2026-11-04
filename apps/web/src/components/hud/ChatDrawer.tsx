@@ -55,6 +55,8 @@ export const ChatDrawer: React.FC = () => {
     roamConfig,
     setRoamConfig,
     setActiveFX,
+    skinId,
+    setSkinId,
   } = useAppStore()
 
   const [input, setInput] = useState('')
@@ -439,6 +441,177 @@ export const ChatDrawer: React.FC = () => {
           >
             <span>🌹</span> <span className="truncate">Yor Forger</span>
           </button>
+        </div>
+
+        {/* Dynamic Character-Specific Wardrobe Costumes Strip */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950/80 border border-cyan-500/20 text-[10px] font-mono overflow-x-auto scrollbar-none">
+          <span className="text-[9px] text-cyan-400 font-bold px-1 shrink-0 uppercase tracking-wider flex items-center gap-1">
+            <span>👗</span> Outfit:
+          </span>
+          {activeCharacter === 'atlas' && (
+            <>
+              <button
+                onClick={() => {
+                  setSkinId('stark-mark-armor')
+                  VoiceEngine.speak("Mark nanotech armor engaged. Repulsor capacitors online.", { rate: 1.05, pitch: 0.94 })
+                  setActiveFX(['sparkles'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'stark-mark-armor' || skinId === 'stark-arc-trader' || !skinId
+                    ? 'bg-amber-500/25 text-amber-200 border border-amber-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="Avengers Nanotech Titanium Gold & Crimson Armor"
+              >
+                <span>🛡️</span> Mark Nanotech Armor
+              </button>
+              <button
+                onClick={() => {
+                  setSkinId('stark-stealth-armor')
+                  VoiceEngine.speak("Stealth strike armor engaged. Obsidian noir carbon plating active.", { rate: 1.05, pitch: 0.94 })
+                  setActiveFX(['sparkles'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'stark-stealth-armor' || skinId === 'stark-stealth-hoodie'
+                    ? 'bg-amber-500/25 text-amber-200 border border-amber-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="Obsidian Noir & Matte Gunmetal Stealth Nanotech Armor with Cobalt Arc Reactor"
+              >
+                <span>🕶️</span> Stealth Strike Armor
+              </button>
+              <button
+                onClick={() => {
+                  setSkinId('stark-silver-centurion')
+                  VoiceEngine.speak("Silver Centurion quantum armor online. Aerospace chrome plating primed.", { rate: 1.05, pitch: 0.94 })
+                  setActiveFX(['sparkles'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'stark-silver-centurion' || skinId === 'stark-executive-suit'
+                    ? 'bg-amber-500/25 text-amber-200 border border-amber-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="Polished Aerospace Chrome & Crimson Armor with Emerald Arc Reactor"
+              >
+                <span>⚡</span> Silver Centurion Armor
+              </button>
+            </>
+          )}
+
+          {(activeCharacter === 'ada' || !activeCharacter) && (
+            <>
+              <button
+                onClick={() => {
+                  setSkinId('ada-red')
+                  VoiceEngine.speak("The iconic crimson silk dress. High stakes, zero regrets.", { rate: 1.02, pitch: 1.04 })
+                  setActiveFX(['sparkles'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'ada-red' || (!skinId && activeCharacter === 'ada')
+                    ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="RE4 Classic Crimson Silk Cocktail Dress with Holster Straps"
+              >
+                <span>🍷</span> RE4 Crimson Qipao
+              </button>
+              <button
+                onClick={() => {
+                  setSkinId('crimson_turtleneck')
+                  VoiceEngine.speak("Fitted scarlet turtleneck and tactical harness locked.", { rate: 1.02, pitch: 1.04 })
+                  setActiveFX(['sparkles'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'crimson_turtleneck'
+                    ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="RE4 Remake Scarlet Ribbed Turtleneck & Leather Tactical Harness"
+              >
+                <span>🧣</span> Remake Turtleneck
+              </button>
+              <button
+                onClick={() => {
+                  setSkinId('black_stealth')
+                  VoiceEngine.speak("RE6 midnight espionage trench equipped. Moving through shadows.", { rate: 1.02, pitch: 1.04 })
+                  setActiveFX(['sparkles'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'black_stealth'
+                    ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="RE6 Midnight Leather Trench Coat with Crimson Lapels"
+              >
+                <span>🧥</span> Midnight Trench
+              </button>
+              <button
+                onClick={() => {
+                  setSkinId('ada-cyber-operative')
+                  VoiceEngine.speak("Neo-Tokyo cyber operative suit online. Holographic optics active.", { rate: 1.02, pitch: 1.04 })
+                  setActiveFX(['sparkles'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'ada-cyber-operative'
+                    ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="Custom Holographic Cyber Bodysuit with Neon Energy Piping"
+              >
+                <span>⚡</span> Cyber Operative
+              </button>
+            </>
+          )}
+
+          {activeCharacter === 'mira' && (
+            <>
+              <button
+                onClick={() => {
+                  setSkinId('yor-thorn-princess')
+                  VoiceEngine.speak("Thorn Princess ready. I will protect our family with my life!", { rate: 1.00, pitch: 1.20 })
+                  setActiveFX(['sparkles', 'hearts'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'yor-thorn-princess'
+                    ? 'bg-rose-500/25 text-rose-200 border border-rose-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="Anime Canon Thorn Princess Halter Dress with Dual Rose Headband"
+              >
+                <span>🗡️</span> Thorn Princess
+              </button>
+              <button
+                onClick={() => {
+                  setSkinId('yor-crimson-sweater')
+                  VoiceEngine.speak("Ah, so soft and cozy! Perfect for relaxing at home with Anya.", { rate: 1.00, pitch: 1.20 })
+                  setActiveFX(['hearts'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'yor-crimson-sweater' || (!skinId && activeCharacter === 'mira')
+                    ? 'bg-rose-500/25 text-rose-200 border border-rose-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="Casual Off-Shoulder Chunky Crimson Red Knit Sweater Dress"
+              >
+                <span>🧶</span> Cozy Sweater
+              </button>
+              <button
+                onClick={() => {
+                  setSkinId('yor-berlint-gala')
+                  VoiceEngine.speak("The Berlint royal velvet gown... Do I look elegant for the gala?", { rate: 1.00, pitch: 1.20 })
+                  setActiveFX(['sparkles', 'hearts'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'yor-berlint-gala'
+                    ? 'bg-rose-500/25 text-rose-200 border border-rose-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="Spy x Family Code White Gala Royal Sapphire Velvet Evening Gown"
+              >
+                <span>👑</span> Berlint Gala Gown
+              </button>
+            </>
+          )}
         </div>
 
         {/* Dynamic Co-Pilot Subheader & Stage Roaming Mobility Bar */}
