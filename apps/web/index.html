@@ -19,12 +19,26 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch((err) => {
-            console.log('[PWA] Service worker registration ignored:', err);
+      // Automatically purge stale service worker cache in development/localhost
+      if ('serviceWorker' in navigator) {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            for (let reg of registrations) {
+              reg.unregister();
+            }
           });
-        });
+          if ('caches' in window) {
+            caches.keys().then((keys) => {
+              for (let key of keys) caches.delete(key);
+            });
+          }
+        } else if (window.location.protocol.startsWith('http')) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch((err) => {
+              console.log('[PWA] Service worker registration ignored:', err);
+            });
+          });
+        }
       }
     </script>
   </body>
