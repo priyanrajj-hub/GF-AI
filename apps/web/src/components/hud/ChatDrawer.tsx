@@ -12,6 +12,8 @@ import {
   Copy,
   Check,
   Smile,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -57,6 +59,7 @@ export const ChatDrawer: React.FC = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [showStickerTray, setShowStickerTray] = useState(false)
   const [stickerTab, setStickerTab] = useState<'stickers' | 'memes'>('stickers')
+  const [isExpanded, setIsExpanded] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -334,18 +337,36 @@ export const ChatDrawer: React.FC = () => {
   const stickers = StickerProvider.getAll()
 
   return (
-    <aside className="fixed inset-x-2 bottom-18 h-[52vh] md:h-auto md:top-16 md:right-4 md:left-auto md:w-96 md:max-h-[calc(100dvh-100px)] z-30 flex flex-col glass-panel rounded-2xl border border-cyan-500/25 overflow-hidden shadow-2xl backdrop-blur-xl">
+    <aside
+      className={`fixed inset-x-2 bottom-18 md:bottom-auto md:top-16 md:right-4 md:left-auto z-30 flex flex-col glass-panel rounded-2xl border border-cyan-500/30 overflow-hidden shadow-2xl backdrop-blur-xl transition-all duration-300 ${
+        isExpanded
+          ? 'h-[85vh] md:h-[calc(100dvh-5rem)] md:w-[680px] lg:w-[800px]'
+          : 'h-[75vh] md:h-[calc(100dvh-5rem)] md:w-[480px]'
+      }`}
+    >
       {/* Drawer Header */}
-      <div className="px-3 py-2.5 border-b border-cyan-500/20 flex flex-col gap-2 bg-slate-950/60">
+      <div className="px-3 py-2.5 border-b border-cyan-500/20 flex flex-col gap-2 bg-slate-950/70">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bot className="w-4 h-4 text-cyan-400" />
-            <span className="font-mono text-xs font-semibold tracking-wider text-slate-200 uppercase">
+            <span className="font-mono text-xs font-semibold tracking-wider text-slate-100 uppercase">
               Holo-Transcript Link
             </span>
+            {isExpanded && (
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300">
+                Wide Studio
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1 rounded text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer"
+              title={isExpanded ? 'Collapse to standard width' : 'Expand drawer (Wide view)'}
+            >
+              {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            </button>
             <button
               onClick={clearMessages}
               className="p-1 rounded text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
@@ -410,17 +431,21 @@ export const ChatDrawer: React.FC = () => {
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[160px] max-h-[50vh]">
+      <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3.5 min-h-0">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`group relative flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+            className={`group relative flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} ${
+              msg.tradingCard ? 'w-full' : ''
+            }`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed relative ${
-                msg.role === 'user'
-                  ? 'bg-cyan-600/30 border border-cyan-400/40 text-cyan-50 rounded-br-none'
-                  : 'bg-slate-900/70 border border-cyan-500/20 text-slate-200 rounded-bl-none shadow-lg'
+              className={`rounded-2xl px-3.5 py-2.5 text-xs sm:text-[13px] leading-relaxed relative ${
+                msg.tradingCard
+                  ? 'w-full max-w-full bg-slate-900/90 border border-cyan-500/35 text-slate-100 rounded-bl-none shadow-2xl'
+                  : msg.role === 'user'
+                  ? 'max-w-[85%] bg-cyan-600/30 border border-cyan-400/40 text-cyan-50 rounded-br-none'
+                  : 'max-w-[90%] bg-slate-900/80 border border-cyan-500/20 text-slate-100 rounded-bl-none shadow-lg'
               }`}
             >
               {/* Copy Button */}
@@ -676,7 +701,7 @@ export const ChatDrawer: React.FC = () => {
               )}
 
               {/* Display text / Markdown */}
-              <div className="prose prose-invert prose-xs max-w-none font-sans text-xs leading-relaxed break-words space-y-1.5 [&_p]:mb-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_code]:bg-slate-950 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-cyan-300 [&_pre]:bg-slate-950 [&_pre]:p-2 [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-cyan-500/20 [&_strong]:text-cyan-200">
+              <div className="prose prose-invert prose-sm max-w-none font-sans text-xs sm:text-[13px] leading-relaxed text-slate-100 break-words space-y-1.5 [&_p]:mb-1.5 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_code]:bg-slate-950 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-cyan-300 [&_code]:font-mono [&_pre]:bg-slate-950/90 [&_pre]:p-3 [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-cyan-500/30 [&_strong]:text-cyan-200">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
