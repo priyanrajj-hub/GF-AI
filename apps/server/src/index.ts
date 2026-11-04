@@ -24,6 +24,7 @@ import { TradingService } from './services/tradingService.js'
 import { FinanceAnalystService } from './services/financeAnalystService.js'
 import { NewsGathererService } from './services/newsGathererService.js'
 import { WebScraperService } from './services/webScraperService.js'
+import { GuardrailsService } from './services/guardrailsService.js'
 import { RelationshipGrowthService } from './services/relationshipGrowthService.js'
 import { AdaSelfKnowledgeService } from './services/adaSelfKnowledgeService.js'
 import { GirlBehaviorService } from './services/girlBehaviorService.js'
@@ -1227,6 +1228,12 @@ app.post('/api/chat', async (req, res) => {
 
     if (resolvedTradingCard) {
       reply.tradingCard = resolvedTradingCard
+    }
+
+    // Apply Anti-Hallucination & Fact-Grounding Guardrails
+    reply.display_text = GuardrailsService.verifyFactGrounding(reply.display_text, resolvedTradingCard)
+    if (reply.speech) {
+      reply.speech = GuardrailsService.verifyFactGrounding(reply.speech, resolvedTradingCard)
     }
 
     const resolvedSpeaker: 'ada' | 'mira' | 'atlas' = (character as 'ada' | 'mira' | 'atlas') || 'ada'
