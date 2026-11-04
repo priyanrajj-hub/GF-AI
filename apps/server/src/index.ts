@@ -869,6 +869,8 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
+  let resolvedTradingCard: any = null
+
   // E. Real-Time Stock Recommendations Intent
   if (!liveInternetContext) {
     const isStockRecQuery =
@@ -891,6 +893,7 @@ app.post('/api/chat', async (req, res) => {
         const recs = await TradingService.getTopRecommendations()
         if (recs.length > 0) {
           liveInternetContext = TradingService.formatRecommendationsContext(recs)
+          resolvedTradingCard = recs[0]
           console.log(`📈 [Trading Engine] Injected ${recs.length} live stock setups`)
         }
       } catch (tradeErr: any) {
@@ -899,15 +902,17 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
-  // F. Specific Stock Quote Lookup Intent
+  // F. Specific Stock Quote & All World Markets & Indicators Intent
   if (!liveInternetContext) {
-    const quoteKeywords = [
+    const specificAssets = [
       'reliance',
       'tcs',
       'hdfc',
       'infosys',
       'infy',
       'tata steel',
+      'tata motors',
+      'tatamotors',
       'icici',
       'sbi',
       'sbin',
@@ -920,32 +925,102 @@ app.post('/api/chat', async (req, res) => {
       'maruti',
       'bajaj',
       'zomato',
+      'jiofin',
       'hal',
       'bel',
+      'titan',
+      'apple',
+      'aapl',
+      'tesla',
+      'tsla',
+      'nvidia',
+      'nvda',
+      'microsoft',
+      'msft',
+      'google',
+      'googl',
+      'amazon',
+      'amzn',
+      'meta',
+      'amd',
+      'pltr',
+      'coin',
+      'bitcoin',
+      'btc',
+      'ethereum',
+      'eth',
+      'solana',
+      'sol',
+      'gold',
+      'silver',
+      'crude',
+      'brent',
+      'usdinr',
+      'forex',
+      'sp500',
+      'spy',
+      'nasdaq',
+      'qqq',
+      'dow',
+      'dax',
+      'nikkei',
+      'ftse',
       'nifty',
       'banknifty',
       'bank nifty',
       'sensex',
-      'apple',
-      'tesla',
-      'nvidia',
-      'nvda',
-      'microsoft',
-      'google',
-      'amazon',
-      'btc',
-      'bitcoin',
-      'crude',
+      'vix',
     ]
-    const matchedStock = quoteKeywords.find((k) => cleanMsg.includes(k))
+
+    const genericMarketKeywords = [
+      'world market',
+      'world markets',
+      'market analyser',
+      'market analyzer',
+      'trading and indigator',
+      'indicator',
+      'indicators',
+      'trading',
+      'trade setup',
+      'trade ideas',
+      'rsi',
+      'macd',
+      'bollinger',
+      'supertrend',
+      'smc',
+      'order block',
+      'fibonacci',
+      'pivots',
+    ]
+
+    const matchKeyword = (text: string, kw: string) => {
+      const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      return new RegExp(`\\b${escaped}\\b`, 'i').test(text)
+    }
+
+    // Prioritize specific asset tickers with word boundary and length sorting (avoids "itc" in "bitcoin")
+    const matchedAsset = specificAssets
+      .slice()
+      .sort((a, b) => b.length - a.length)
+      .find((k) => matchKeyword(cleanMsg, k))
+
+    const matchedGeneric = genericMarketKeywords
+      .slice()
+      .sort((a, b) => b.length - a.length)
+      .find((k) => cleanMsg.includes(k))
+
+    const matchedStock = matchedAsset || matchedGeneric
 
     if (matchedStock) {
       try {
-        console.log(`📈 [Trading Engine] Fetching live stock quote & technical levels for: "${matchedStock}"`)
-        const quote = await TradingService.fetchQuote(matchedStock)
+        const symbolToLookup = matchedAsset ? matchedAsset : '^NSEI'
+
+        console.log(`📈 [Trading Engine] Fetching live quote & institutional technicals for: "${symbolToLookup}"`)
+        const quote = await TradingService.fetchQuote(symbolToLookup)
         if (quote) {
+          resolvedTradingCard = quote
           liveInternetContext = TradingService.formatQuoteContext(quote)
-          console.log(`📈 [Trading Engine] Injected live quote for ${quote.symbol} (₹${quote.price})`)
+          console.log(`📈 [Trading Engine] Injected institutional quote for ${quote.symbol} (${quote.currency} ${quote.price})`)
         }
       } catch (tradeErr: any) {
         console.warn('⚠️ [Trading Quote Error]:', tradeErr?.message)
@@ -1147,6 +1222,10 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
+    if (resolvedTradingCard) {
+      reply.tradingCard = resolvedTradingCard
+    }
+
     // Save Assistant response
     const assistantMsgObj: ChatMessage = {
       id: `msg-${Date.now()}-assistant`,
@@ -1157,6 +1236,7 @@ app.post('/api/chat', async (req, res) => {
       gesture: reply.gesture,
       meme: reply.meme,
       sticker: reply.sticker,
+      tradingCard: reply.tradingCard,
       timestamp: Date.now(),
     }
     db.addMessage(userId, assistantMsgObj)

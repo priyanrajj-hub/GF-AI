@@ -171,6 +171,7 @@ export const App: React.FC = () => {
         speech: parsedReply.speech,
         emotion: parsedReply.emotion,
         gesture: parsedReply.gesture,
+        tradingCard: parsedReply.tradingCard,
         timestamp: Date.now(),
       }
       addMessage(assistantMsg)
