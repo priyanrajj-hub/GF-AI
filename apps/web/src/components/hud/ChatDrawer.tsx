@@ -214,6 +214,7 @@ export const ChatDrawer: React.FC = () => {
         studyFocus: parsedReply.studyFocus,
         todoCard: parsedReply.todoCard,
         tradingCard: parsedReply.tradingCard,
+        marketHoursCard: (parsedReply as any).marketHoursCard || (parsedReply.tradingCard as any)?.marketHours,
         musicTrack: (singAction?.arguments as any)?.song || parsedReply.musicTrack || (singAction ? {
           title: (singAction.arguments as any)?.title || 'Original Studio Track',
           artist: (singAction.arguments as any)?.artist,
@@ -221,7 +222,7 @@ export const ChatDrawer: React.FC = () => {
           artworkUrl: (singAction.arguments as any)?.artworkUrl,
           danceAction: (singAction.arguments as any)?.dance || 'dance_pop_groove',
           bpm: (singAction.arguments as any)?.bpm || 120,
-          duration: (singAction.arguments as any)?.duration || 30,
+          duration: (singAction.arguments as any)?.duration || 210,
         } : undefined),
         timestamp: Date.now(),
       }
@@ -248,12 +249,20 @@ export const ChatDrawer: React.FC = () => {
         globalSongEngine.playSong(finalSong)
 
         // Real online track takes center stage - no TTS vocal clash!
-      } else if (/now playing|now singing/i.test(parsedReply.display_text || '')) {
-        // Fallback: If LLM output text mentions "Now Playing" or "Now Singing", immediately trigger music & dance!
-        const match = (parsedReply.display_text || '').match(/now (?:playing|singing)(?:\s*&[^\n:]*)?:\s*([^\n*(]+)/i)
-        const detectedTitle = match ? match[1].trim() : 'Starlight Sparkle'
-        performAction('dance_pop_groove', { emotion: 'excited', duration: 240 })
-        globalSongEngine.playSong(detectedTitle)
+      } else if (parsedReply.musicTrack || /now playing|now singing/i.test(parsedReply.display_text || '')) {
+        // Fallback: If musicTrack is returned or LLM output text mentions "Now Playing", immediately trigger music & dance!
+        const songObj = parsedReply.musicTrack
+        const dance = songObj?.danceAction || 'dance_pop_groove'
+
+        if (songObj && songObj.audioUrl) {
+          performAction(dance as any, { emotion: 'excited', duration: (songObj.duration || 240) + 4 })
+          globalSongEngine.playSong(songObj as any)
+        } else {
+          const match = (parsedReply.display_text || '').match(/now (?:playing|singing)(?:\s*&[^\n:]*)?:\s*([^\n\r*]+)/i)
+          const detectedTitle = match ? match[1].replace(/[*_#]/g, '').trim() : 'Starlight Sparkle'
+          performAction('dance_pop_groove', { emotion: 'excited', duration: 240 })
+          globalSongEngine.playSong(detectedTitle)
+        }
         // Real online track takes center stage - no TTS vocal clash!
       } else {
         if (parsedReply.actions && Array.isArray(parsedReply.actions)) {
@@ -1093,6 +1102,17 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                           loading="lazy"
                         />
                       </div>
+                    ),
+                    table: ({ node, ...props }) => (
+                      <div className="my-2 max-w-full overflow-x-auto rounded-xl border border-cyan-500/30 bg-slate-950/80 p-1 shadow-inner">
+                        <table {...props} className="w-full text-left text-[11px] font-mono border-collapse" />
+                      </div>
+                    ),
+                    th: ({ node, ...props }) => (
+                      <th {...props} className="px-2.5 py-1.5 bg-cyan-950/40 text-cyan-300 border-b border-cyan-500/30 font-bold whitespace-nowrap" />
+                    ),
+                    td: ({ node, ...props }) => (
+                      <td {...props} className="px-2.5 py-1.5 border-b border-slate-800/60 text-slate-200" />
                     ),
                   }}
                 >
