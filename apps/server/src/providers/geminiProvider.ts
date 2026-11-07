@@ -66,13 +66,34 @@ export class GeminiLLMProvider implements LLMProvider {
   private currentKeyIndex = 0
 
   constructor(apiKey?: string) {
-    const rawKeys = [
-      apiKey,
-      process.env.GEMINI_API_KEY,
-      process.env.GEMINI_API_KEY_2,
-    ].filter((k): k is string => Boolean(k && k.trim() && k !== 'your_gemini_api_key_here'))
+    const rawKeys: (string | undefined)[] = [apiKey]
 
-    this.apiKeys = Array.from(new Set(rawKeys))
+    if (process.env.GEMINI_API_KEYS) {
+      const split = process.env.GEMINI_API_KEYS.split(/[,;\n]+/).map(s => s.trim())
+      rawKeys.push(...split)
+    }
+
+    rawKeys.push(
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_1,
+      process.env.GEMINI_API_KEY_2,
+      process.env.GEMINI_API_KEY_3,
+      process.env.GEMINI_API_KEY_4,
+      process.env.GEMINI_API_KEY_5,
+      process.env.GEMINI_API_KEY_6,
+      process.env.GEMINI_API_KEY_7,
+      process.env.GEMINI_API_KEY_8
+    )
+
+    this.apiKeys = Array.from(
+      new Set(
+        rawKeys.filter((k): k is string => Boolean(k && k.trim() && k !== 'your_gemini_api_key_here'))
+      )
+    )
+
+    if (this.apiKeys.length > 0) {
+      console.log(`🤖 [GeminiLLMProvider] Initialized active key pool with ${this.apiKeys.length} authenticated keys.`)
+    }
   }
 
   isConfigured(): boolean {
@@ -90,19 +111,18 @@ export class GeminiLLMProvider implements LLMProvider {
   private rotateKey(): void {
     if (this.apiKeys.length > 1) {
       this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length
-      console.log(`[GeminiLLMProvider] Rotated to API key #${this.currentKeyIndex + 1}`)
+      console.log(`[GeminiLLMProvider] Rotated to API key #${this.currentKeyIndex + 1} of ${this.apiKeys.length}`)
     }
   }
 
   private getCandidateModels(tier: 'fast' | 'reasoning' = 'fast'): string[] {
     const list = [
       process.env.GEMINI_MODEL,
-      'gemini-flash-lite-latest',
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite-preview',
+      tier === 'reasoning' ? 'gemini-3.5-flash' : 'gemini-3.1-flash-lite',
+      'gemini-3.5-flash',
+      'gemini-3.1-flash-lite',
       'gemini-3.8-flash',
-      'gemini-flash-latest',
-      'gemini-2.5-flash-lite',
+      'gemini-3.5-flash-lite',
     ].filter((m): m is string => Boolean(m && m.trim()))
     return Array.from(new Set(list))
   }
@@ -252,7 +272,7 @@ export class GeminiLLMProvider implements LLMProvider {
     const ttsModels = [
       process.env.GEMINI_TTS_MODEL,
       'gemini-3.8-flash-tts',
-      'gemini-2.5-flash-preview-tts',
+      'gemini-3.8-flash-lite-tts',
       'gemini-3.1-flash-tts-preview',
     ].filter((m): m is string => Boolean(m && m.trim()))
 
