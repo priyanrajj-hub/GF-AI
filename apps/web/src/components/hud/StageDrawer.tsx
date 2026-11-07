@@ -61,7 +61,7 @@ export const StageDrawer: React.FC = () => {
     const song = songEngine.playSong(songId)
     setActiveSong(song)
     const dance = song.danceAction || (song.bpm >= 120 ? 'dance_cute_idol' : 'dance_pop_groove')
-    performAction(dance, { duration: song.duration + 2, emotion: 'excited', fx: ['music_notes', 'sparkles'] })
+    performAction(dance, { duration: (song.duration || 240) + 4, emotion: 'excited', fx: ['music_notes', 'sparkles'] })
     setKaraokeLine(song.lyrics[0]?.text || '')
   }
 
@@ -70,7 +70,7 @@ export const StageDrawer: React.FC = () => {
     const started = songEngine.playSong(song)
     setActiveSong(started)
     performAction(started.danceAction || 'dance_cute_idol', {
-      duration: started.duration + 2,
+      duration: (started.duration || 240) + 4,
       emotion: 'excited',
       fx: ['music_notes', 'sparkles'],
     })
