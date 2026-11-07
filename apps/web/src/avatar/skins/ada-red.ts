@@ -137,9 +137,10 @@ export const AdaRedSkin: AvatarSkin = {
             if (mat.color) mat.color.set('#9e5124')
           }
 
-          // Face Texture -> Dynamic Canvas Enhancement for Ruby Lips & Soft Blush
+          // Face Texture -> Ada Wong: Warm Olive Skin + BROWN Eyes painted on canvas (overrides baked-in blue)
           else if (/alicia_face\b/i.test(matName)) {
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#f5ded6')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#f0d5c0')
+            if (mat.color) mat.color.set('#FCECD6') // warm olive-beige skin tint
             if (mat.map && mat.map.image && !mat.userData.__adaMakeupApplied && typeof document !== 'undefined') {
               try {
                 const img = mat.map.image
@@ -151,62 +152,123 @@ export const AdaRedSkin: AvatarSkin = {
                   if (ctx) {
                     ctx.drawImage(img, 0, 0, 1024, 1024)
 
-                    // 1. Mature Sculpted Cheekbone Contour & Rosy-Peach Blush
-                    const gradL = ctx.createRadialGradient(380, 460, 4, 380, 460, 50)
-                    gradL.addColorStop(0, 'rgba(235, 95, 115, 0.42)')
-                    gradL.addColorStop(0.6, 'rgba(215, 80, 100, 0.18)')
-                    gradL.addColorStop(1, 'rgba(215, 80, 100, 0)')
+                    // 0. Warm olive skin tone overlay (tone down the pale base)
+                    ctx.globalCompositeOperation = 'multiply'
+                    ctx.fillStyle = 'rgba(255, 230, 195, 0.25)'
+                    ctx.fillRect(0, 0, 1024, 1024)
+                    ctx.globalCompositeOperation = 'source-over'
+
+                    // 1. ADA BROWN EYES — paint warm amber-brown iris directly onto texture
+                    // This fully overrides the baked-in blue iris on Alicia model
+                    // LEFT EYE iris overlay
+                    const leftIrisGrad = ctx.createRadialGradient(372, 400, 0, 372, 400, 24)
+                    leftIrisGrad.addColorStop(0, 'rgba(40, 15, 5, 0.98)')    // dark pupil center
+                    leftIrisGrad.addColorStop(0.25, 'rgba(100, 45, 12, 0.96)') // deep brown inner
+                    leftIrisGrad.addColorStop(0.55, 'rgba(158, 81, 36, 0.92)') // warm amber-brown
+                    leftIrisGrad.addColorStop(0.80, 'rgba(130, 65, 25, 0.75)') // outer ring fade
+                    leftIrisGrad.addColorStop(1, 'rgba(60, 25, 8, 0.0)')
+                    ctx.fillStyle = leftIrisGrad
+                    ctx.beginPath()
+                    ctx.ellipse(372, 400, 24, 19, 0, 0, Math.PI * 2)
+                    ctx.fill()
+                    // Left eye iris detail ring
+                    ctx.strokeStyle = 'rgba(90, 42, 12, 0.60)'
+                    ctx.lineWidth = 2
+                    ctx.beginPath()
+                    ctx.ellipse(372, 400, 16, 12, 0, 0, Math.PI * 2)
+                    ctx.stroke()
+                    // LEFT pupil
+                    ctx.fillStyle = 'rgba(10, 5, 2, 0.98)'
+                    ctx.beginPath()
+                    ctx.ellipse(372, 400, 7, 7, 0, 0, Math.PI * 2)
+                    ctx.fill()
+                    // Left eye glint
+                    ctx.fillStyle = 'rgba(255, 240, 220, 0.75)'
+                    ctx.beginPath()
+                    ctx.ellipse(368, 395, 4, 3, -0.4, 0, Math.PI * 2)
+                    ctx.fill()
+
+                    // RIGHT EYE iris overlay
+                    const rightIrisGrad = ctx.createRadialGradient(652, 400, 0, 652, 400, 24)
+                    rightIrisGrad.addColorStop(0, 'rgba(40, 15, 5, 0.98)')
+                    rightIrisGrad.addColorStop(0.25, 'rgba(100, 45, 12, 0.96)')
+                    rightIrisGrad.addColorStop(0.55, 'rgba(158, 81, 36, 0.92)')
+                    rightIrisGrad.addColorStop(0.80, 'rgba(130, 65, 25, 0.75)')
+                    rightIrisGrad.addColorStop(1, 'rgba(60, 25, 8, 0.0)')
+                    ctx.fillStyle = rightIrisGrad
+                    ctx.beginPath()
+                    ctx.ellipse(652, 400, 24, 19, 0, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.strokeStyle = 'rgba(90, 42, 12, 0.60)'
+                    ctx.lineWidth = 2
+                    ctx.beginPath()
+                    ctx.ellipse(652, 400, 16, 12, 0, 0, Math.PI * 2)
+                    ctx.stroke()
+                    // Right pupil
+                    ctx.fillStyle = 'rgba(10, 5, 2, 0.98)'
+                    ctx.beginPath()
+                    ctx.ellipse(652, 400, 7, 7, 0, 0, Math.PI * 2)
+                    ctx.fill()
+                    // Right eye glint
+                    ctx.fillStyle = 'rgba(255, 240, 220, 0.75)'
+                    ctx.beginPath()
+                    ctx.ellipse(648, 395, 4, 3, -0.4, 0, Math.PI * 2)
+                    ctx.fill()
+
+                    // 2. Ada Mature Sculpted Cheekbone Contour & Warm Olive Blush
+                    const gradL = ctx.createRadialGradient(360, 462, 4, 360, 462, 55)
+                    gradL.addColorStop(0, 'rgba(210, 110, 80, 0.32)')
+                    gradL.addColorStop(0.6, 'rgba(190, 95, 65, 0.12)')
+                    gradL.addColorStop(1, 'rgba(190, 95, 65, 0)')
                     ctx.fillStyle = gradL
                     ctx.beginPath()
-                    ctx.arc(380, 460, 50, 0, Math.PI * 2)
+                    ctx.arc(360, 462, 55, 0, Math.PI * 2)
                     ctx.fill()
 
-                    const gradR = ctx.createRadialGradient(644, 460, 4, 644, 460, 50)
-                    gradR.addColorStop(0, 'rgba(235, 95, 115, 0.42)')
-                    gradR.addColorStop(0.6, 'rgba(215, 80, 100, 0.18)')
-                    gradR.addColorStop(1, 'rgba(215, 80, 100, 0)')
+                    const gradR = ctx.createRadialGradient(664, 462, 4, 664, 462, 55)
+                    gradR.addColorStop(0, 'rgba(210, 110, 80, 0.32)')
+                    gradR.addColorStop(0.6, 'rgba(190, 95, 65, 0.12)')
+                    gradR.addColorStop(1, 'rgba(190, 95, 65, 0)')
                     ctx.fillStyle = gradR
                     ctx.beginPath()
-                    ctx.arc(644, 460, 50, 0, Math.PI * 2)
+                    ctx.arc(664, 462, 55, 0, Math.PI * 2)
                     ctx.fill()
 
-                    // 2. Mature Cat-Eye Eyeliner & Winged Depth (Above Upper Lash Line)
-                    ctx.fillStyle = 'rgba(15, 15, 20, 0.88)'
-                    // Left Eye Upper Wing
+                    // 3. Ada Signature Cat-Eye Eyeliner (Sharp angled wing — adult spy)
+                    ctx.fillStyle = 'rgba(10, 10, 15, 0.92)'
                     ctx.beginPath()
-                    ctx.moveTo(330, 395)
-                    ctx.quadraticCurveTo(365, 375, 415, 390)
-                    ctx.quadraticCurveTo(365, 380, 330, 395)
+                    ctx.moveTo(328, 393)
+                    ctx.quadraticCurveTo(360, 374, 408, 388)
+                    ctx.quadraticCurveTo(418, 384, 426, 378)
+                    ctx.quadraticCurveTo(410, 392, 360, 384)
+                    ctx.quadraticCurveTo(328, 393, 328, 393)
                     ctx.fill()
-                    // Right Eye Upper Wing
                     ctx.beginPath()
-                    ctx.moveTo(694, 395)
-                    ctx.quadraticCurveTo(659, 375, 609, 390)
-                    ctx.quadraticCurveTo(659, 380, 694, 395)
+                    ctx.moveTo(696, 393)
+                    ctx.quadraticCurveTo(664, 374, 616, 388)
+                    ctx.quadraticCurveTo(606, 384, 598, 378)
+                    ctx.quadraticCurveTo(614, 392, 664, 384)
+                    ctx.quadraticCurveTo(696, 393, 696, 393)
                     ctx.fill()
 
-                    // 3. Sophisticated Mature Ruby-Velvet Lips (Fuller Cupid's Bow & Satin Depth)
-                    ctx.fillStyle = 'rgba(175, 10, 28, 0.95)'
+                    // 4. Ada Ruby-Velvet Lips — crisp cupid's bow, deeper crimson
+                    ctx.fillStyle = 'rgba(165, 8, 24, 0.97)'
                     ctx.beginPath()
-                    ctx.moveTo(476, 594)
-                    ctx.quadraticCurveTo(494, 580, 505, 586)
-                    ctx.quadraticCurveTo(512, 590, 519, 586)
-                    ctx.quadraticCurveTo(530, 580, 548, 594)
-                    ctx.quadraticCurveTo(534, 614, 512, 615)
-                    ctx.quadraticCurveTo(490, 614, 476, 594)
+                    ctx.moveTo(475, 594)
+                    ctx.quadraticCurveTo(493, 578, 505, 585)
+                    ctx.quadraticCurveTo(512, 589, 520, 585)
+                    ctx.quadraticCurveTo(532, 578, 549, 594)
+                    ctx.quadraticCurveTo(535, 616, 512, 617)
+                    ctx.quadraticCurveTo(489, 616, 475, 594)
                     ctx.closePath()
                     ctx.fill()
-
-                    // Inner velvet depth
-                    ctx.fillStyle = 'rgba(105, 5, 15, 0.90)'
+                    ctx.fillStyle = 'rgba(90, 3, 12, 0.88)'
                     ctx.beginPath()
-                    ctx.ellipse(512, 597, 25, 5.5, 0, 0, Math.PI * 2)
+                    ctx.ellipse(512, 596, 24, 5, 0, 0, Math.PI * 2)
                     ctx.fill()
-
-                    // Elegant lower-lip satin gloss highlight
-                    ctx.fillStyle = 'rgba(255, 230, 240, 0.65)'
+                    ctx.fillStyle = 'rgba(255, 225, 235, 0.60)'
                     ctx.beginPath()
-                    ctx.ellipse(512, 605, 12, 3.5, 0, 0, Math.PI * 2)
+                    ctx.ellipse(512, 606, 11, 3, 0, 0, Math.PI * 2)
                     ctx.fill()
 
                     const newTex = new THREE.CanvasTexture(canvas)
@@ -219,7 +281,7 @@ export const AdaRedSkin: AvatarSkin = {
                   }
                 }
               } catch (e) {
-                console.warn('[Ada Skin] Failed to apply face makeup canvas overlay:', e)
+                console.warn('[Ada Skin] Failed to apply Ada face makeup canvas overlay:', e)
               }
             }
           }
@@ -441,6 +503,77 @@ export const YorCrimsonSweaterSkin: AvatarSkin = {
             if (mat.color) mat.color.set('#C4273C')
             if (mat.emissive) mat.emissive.set('#4A0812')
           }
+
+          // Yor Face Canvas: Pale porcelain skin + RUBY eyes painted directly (override baked blue iris)
+          if (/alicia_face\b/i.test(matName)) {
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#e8ddd8')
+            if (mat.color) mat.color.set('#F8EDE8') // pale porcelain Yor skin
+            if (mat.map && mat.map.image && !mat.userData.__yorMakeupApplied && typeof document !== 'undefined') {
+              try {
+                const img = mat.map.image
+                if (img.width && img.height) {
+                  const canvas = document.createElement('canvas')
+                  canvas.width = 1024; canvas.height = 1024
+                  const ctx = canvas.getContext('2d')
+                  if (ctx) {
+                    ctx.drawImage(img, 0, 0, 1024, 1024)
+                    // Yor pale skin overlay
+                    ctx.globalCompositeOperation = 'screen'
+                    ctx.fillStyle = 'rgba(255, 240, 235, 0.08)'
+                    ctx.fillRect(0, 0, 1024, 1024)
+                    ctx.globalCompositeOperation = 'source-over'
+                    // LEFT ruby eye
+                    const lRuby = ctx.createRadialGradient(372, 400, 0, 372, 400, 24)
+                    lRuby.addColorStop(0, 'rgba(30, 5, 8, 0.98)')
+                    lRuby.addColorStop(0.3, 'rgba(160, 20, 42, 0.95)')
+                    lRuby.addColorStop(0.65, 'rgba(217, 30, 54, 0.88)')
+                    lRuby.addColorStop(0.9, 'rgba(140, 10, 28, 0.60)')
+                    lRuby.addColorStop(1, 'rgba(80, 5, 15, 0.0)')
+                    ctx.fillStyle = lRuby
+                    ctx.beginPath(); ctx.ellipse(372, 400, 24, 19, 0, 0, Math.PI * 2); ctx.fill()
+                    ctx.fillStyle = 'rgba(10, 2, 3, 0.98)'
+                    ctx.beginPath(); ctx.ellipse(372, 400, 7, 7, 0, 0, Math.PI * 2); ctx.fill()
+                    ctx.fillStyle = 'rgba(255, 200, 200, 0.80)'
+                    ctx.beginPath(); ctx.ellipse(368, 395, 4, 3, -0.4, 0, Math.PI * 2); ctx.fill()
+                    // RIGHT ruby eye
+                    const rRuby = ctx.createRadialGradient(652, 400, 0, 652, 400, 24)
+                    rRuby.addColorStop(0, 'rgba(30, 5, 8, 0.98)')
+                    rRuby.addColorStop(0.3, 'rgba(160, 20, 42, 0.95)')
+                    rRuby.addColorStop(0.65, 'rgba(217, 30, 54, 0.88)')
+                    rRuby.addColorStop(0.9, 'rgba(140, 10, 28, 0.60)')
+                    rRuby.addColorStop(1, 'rgba(80, 5, 15, 0.0)')
+                    ctx.fillStyle = rRuby
+                    ctx.beginPath(); ctx.ellipse(652, 400, 24, 19, 0, 0, Math.PI * 2); ctx.fill()
+                    ctx.fillStyle = 'rgba(10, 2, 3, 0.98)'
+                    ctx.beginPath(); ctx.ellipse(652, 400, 7, 7, 0, 0, Math.PI * 2); ctx.fill()
+                    ctx.fillStyle = 'rgba(255, 200, 200, 0.80)'
+                    ctx.beginPath(); ctx.ellipse(648, 395, 4, 3, -0.4, 0, Math.PI * 2); ctx.fill()
+                    // Yor soft blush (rosy pink cheeks)
+                    const yorBlushL = ctx.createRadialGradient(355, 468, 2, 355, 468, 48)
+                    yorBlushL.addColorStop(0, 'rgba(255, 140, 150, 0.30)')
+                    yorBlushL.addColorStop(1, 'rgba(255, 140, 150, 0)')
+                    ctx.fillStyle = yorBlushL; ctx.beginPath(); ctx.arc(355, 468, 48, 0, Math.PI * 2); ctx.fill()
+                    const yorBlushR = ctx.createRadialGradient(669, 468, 2, 669, 468, 48)
+                    yorBlushR.addColorStop(0, 'rgba(255, 140, 150, 0.30)')
+                    yorBlushR.addColorStop(1, 'rgba(255, 140, 150, 0)')
+                    ctx.fillStyle = yorBlushR; ctx.beginPath(); ctx.arc(669, 468, 48, 0, Math.PI * 2); ctx.fill()
+                    // Yor soft pink lips (cheerful smile shape)
+                    ctx.fillStyle = 'rgba(220, 80, 95, 0.90)'
+                    ctx.beginPath()
+                    ctx.moveTo(480, 598); ctx.quadraticCurveTo(496, 583, 512, 588)
+                    ctx.quadraticCurveTo(528, 583, 544, 598)
+                    ctx.quadraticCurveTo(530, 614, 512, 615)
+                    ctx.quadraticCurveTo(494, 614, 480, 598); ctx.closePath(); ctx.fill()
+                    ctx.fillStyle = 'rgba(255, 200, 215, 0.55)'
+                    ctx.beginPath(); ctx.ellipse(512, 605, 10, 3, 0, 0, Math.PI * 2); ctx.fill()
+                    const yt = new THREE.CanvasTexture(canvas)
+                    yt.flipY = mat.map.flipY; yt.colorSpace = THREE.SRGBColorSpace; yt.needsUpdate = true
+                    mat.map = yt; mat.needsUpdate = true; mat.userData.__yorMakeupApplied = true
+                  }
+                }
+              } catch(e) { console.warn('[Yor Skin] face canvas failed:', e) }
+            }
+          }
         })
       }
     })
@@ -519,6 +652,67 @@ export const YorThornPrincessSkin: AvatarSkin = {
           if (/eye|iris/i.test(matName)) {
             if (mat.color) mat.color.set('#D91E36')
             if (mat.emissive) mat.emissive.set('#520814')
+          }
+
+          // Yor Thorn Princess Face: Pale skin + assassin ruby eyes on canvas
+          if (/alicia_face\b/i.test(matName)) {
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#ddd0cc')
+            if (mat.color) mat.color.set('#F5E8E4') // cool pale assassin skin
+            if (mat.map && mat.map.image && !mat.userData.__yorThornMakeupApplied && typeof document !== 'undefined') {
+              try {
+                const img = mat.map.image
+                if (img.width && img.height) {
+                  const canvas = document.createElement('canvas')
+                  canvas.width = 1024; canvas.height = 1024
+                  const ctx = canvas.getContext('2d')
+                  if (ctx) {
+                    ctx.drawImage(img, 0, 0, 1024, 1024)
+                    // LEFT deep ruby assassin eye
+                    const lDR = ctx.createRadialGradient(372, 400, 0, 372, 400, 24)
+                    lDR.addColorStop(0, 'rgba(15, 2, 4, 0.99)')
+                    lDR.addColorStop(0.3, 'rgba(140, 10, 28, 0.97)')
+                    lDR.addColorStop(0.6, 'rgba(217, 30, 54, 0.90)')
+                    lDR.addColorStop(0.85, 'rgba(170, 15, 35, 0.65)')
+                    lDR.addColorStop(1, 'rgba(80, 5, 15, 0.0)')
+                    ctx.fillStyle = lDR
+                    ctx.beginPath(); ctx.ellipse(372, 400, 25, 20, 0, 0, Math.PI * 2); ctx.fill()
+                    ctx.fillStyle = 'rgba(5, 1, 1, 0.99)'
+                    ctx.beginPath(); ctx.ellipse(372, 400, 7, 7, 0, 0, Math.PI * 2); ctx.fill()
+                    ctx.fillStyle = 'rgba(255, 180, 190, 0.70)'
+                    ctx.beginPath(); ctx.ellipse(368, 395, 4, 3, -0.4, 0, Math.PI * 2); ctx.fill()
+                    // RIGHT deep ruby assassin eye
+                    const rDR = ctx.createRadialGradient(652, 400, 0, 652, 400, 24)
+                    rDR.addColorStop(0, 'rgba(15, 2, 4, 0.99)')
+                    rDR.addColorStop(0.3, 'rgba(140, 10, 28, 0.97)')
+                    rDR.addColorStop(0.6, 'rgba(217, 30, 54, 0.90)')
+                    rDR.addColorStop(0.85, 'rgba(170, 15, 35, 0.65)')
+                    rDR.addColorStop(1, 'rgba(80, 5, 15, 0.0)')
+                    ctx.fillStyle = rDR
+                    ctx.beginPath(); ctx.ellipse(652, 400, 25, 20, 0, 0, Math.PI * 2); ctx.fill()
+                    ctx.fillStyle = 'rgba(5, 1, 1, 0.99)'
+                    ctx.beginPath(); ctx.ellipse(652, 400, 7, 7, 0, 0, Math.PI * 2); ctx.fill()
+                    ctx.fillStyle = 'rgba(255, 180, 190, 0.70)'
+                    ctx.beginPath(); ctx.ellipse(648, 395, 4, 3, -0.4, 0, Math.PI * 2); ctx.fill()
+                    // Thorn Princess blood-rose lip — darker, more sultry
+                    ctx.fillStyle = 'rgba(140, 20, 40, 0.96)'
+                    ctx.beginPath()
+                    ctx.moveTo(480, 596); ctx.quadraticCurveTo(496, 580, 512, 586)
+                    ctx.quadraticCurveTo(528, 580, 544, 596)
+                    ctx.quadraticCurveTo(530, 616, 512, 617)
+                    ctx.quadraticCurveTo(494, 616, 480, 596); ctx.closePath(); ctx.fill()
+                    ctx.fillStyle = 'rgba(255, 180, 190, 0.45)'
+                    ctx.beginPath(); ctx.ellipse(512, 606, 10, 3, 0, 0, Math.PI * 2); ctx.fill()
+                    // Slight dark contour brows (more intense for assassin look)
+                    ctx.fillStyle = 'rgba(30, 10, 15, 0.70)'
+                    ctx.beginPath(); ctx.moveTo(340, 362); ctx.quadraticCurveTo(375, 350, 420, 358); ctx.quadraticCurveTo(375, 356, 340, 366); ctx.fill()
+                    ctx.beginPath(); ctx.moveTo(684, 362); ctx.quadraticCurveTo(649, 350, 604, 358); ctx.quadraticCurveTo(649, 356, 684, 366); ctx.fill()
+                    const yt2 = new THREE.CanvasTexture(canvas)
+                    yt2.flipY = mat.map.flipY; yt2.colorSpace = THREE.SRGBColorSpace; yt2.needsUpdate = true
+                    mat.map = yt2; mat.needsUpdate = true; mat.userData.__yorThornMakeupApplied = true
+                  }
+                }
+              } catch(e) { console.warn('[Yor Thorn Skin] face canvas failed:', e) }
+            }
           }
         })
       }
@@ -1356,6 +1550,8 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
   const upperChest = humanoid.getNormalizedBoneNode('upperChest')
   const hips = humanoid.getNormalizedBoneNode('hips')
   const spine = humanoid.getNormalizedBoneNode('spine')
+  const neck = humanoid.getNormalizedBoneNode('neck')
+  const head = humanoid.getNormalizedBoneNode('head')
   const leftUpperArm = humanoid.getNormalizedBoneNode('leftUpperArm')
   const rightUpperArm = humanoid.getNormalizedBoneNode('rightUpperArm')
   const leftLowerArm = humanoid.getNormalizedBoneNode('leftLowerArm')
@@ -1390,6 +1586,10 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
     if (rightUpperLeg) rightUpperLeg.scale.set(1.14, 1.06, 1.14)
     if (leftLowerLeg) leftLowerLeg.scale.set(1.10, 1.06, 1.10)
     if (rightLowerLeg) rightLowerLeg.scale.set(1.10, 1.06, 1.10)
+
+    // 6. Tony Stark masculine head/neck proportions (slight head scale reduction for mature male face)
+    if (neck) neck.scale.set(1.08, 1.05, 1.08)
+    if (head) head.scale.set(0.94, 0.94, 0.94)
 
     // Hide feminine hair ribbons, hair bows, and collapse skirt into male suit trousers
     vrm.scene.traverse((obj) => {
@@ -1427,6 +1627,10 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
     if (leftUpperLeg) leftUpperLeg.scale.set(1.05, 1.02, 1.05)
     if (rightUpperLeg) rightUpperLeg.scale.set(1.05, 1.02, 1.05)
 
+    // 🌹 Yor Forger: tall, elegant — slightly longer neck, natural head scale (taller adult proportion)
+    if (neck) neck.scale.set(1.04, 1.06, 1.04) // elegant Yor neck
+    if (head) head.scale.set(0.96, 0.96, 0.96) // slightly smaller head = taller anime adult look
+
     // Allow feminine hair ribbons/side strands and restore dress skirt
     vrm.scene.traverse((obj) => {
       if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
@@ -1463,6 +1667,14 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
       if (b) b.scale.set(1.0, 1.0, 1.0)
     })
 
+    // 🔴 Ada Wong: confident adult spy — slightly defined shoulders, narrower head = mature adult
+    if (leftShoulder) leftShoulder.scale.set(1.06, 1.02, 1.04)
+    if (rightShoulder) rightShoulder.scale.set(1.06, 1.02, 1.04)
+    if (chest) chest.scale.set(1.04, 1.02, 1.05) // subtle adult chest definition
+    if (hips) hips.scale.set(1.08, 1.0, 1.06) // feminine hips but athletic (not exaggerated)
+    if (neck) neck.scale.set(1.02, 1.04, 1.02) // slightly longer elegant neck
+    if (head) head.scale.set(0.92, 0.92, 0.92) // key: smaller head = more mature adult face look
+
     vrm.scene.traverse((obj) => {
       if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
         obj.visible = true
@@ -1474,6 +1686,21 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
       if (/cloth1|cloth2/i.test(obj.name)) {
         obj.visible = true
         obj.scale.set(1.0, 1.0, 1.0)
+      }
+    })
+
+    // Reset makeup cache so face canvas re-applies fresh when switching back to Ada
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (mat && mat.userData) {
+            delete mat.userData.__adaMakeupApplied
+            delete mat.userData.__yorMakeupApplied
+            delete mat.userData.__yorThornMakeupApplied
+          }
+        })
       }
     })
 

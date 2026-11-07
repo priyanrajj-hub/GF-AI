@@ -76,6 +76,9 @@ interface AppState {
   setShowPermissionCenter: (show: boolean) => void
   showWellbeingModal: boolean
   setShowWellbeingModal: (show: boolean) => void
+  showLiveMarketPanel: boolean
+  setShowLiveMarketPanel: (show: boolean) => void
+  toggleLiveMarketPanel: () => void
   showFirstRunModal: boolean
   setShowFirstRunModal: (show: boolean) => void
   isMinorMode: boolean
@@ -466,6 +469,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   setShowPermissionCenter: (show) => set({ showPermissionCenter: show }),
   showWellbeingModal: false,
   setShowWellbeingModal: (show) => set({ showWellbeingModal: show }),
+  showLiveMarketPanel: false,
+  setShowLiveMarketPanel: (show) => set({ showLiveMarketPanel: show }),
+  toggleLiveMarketPanel: () => set((s) => ({ showLiveMarketPanel: !s.showLiveMarketPanel })),
   showFirstRunModal:
     typeof window !== 'undefined'
       ? localStorage.getItem('ada_first_run_acknowledged') !== 'true'

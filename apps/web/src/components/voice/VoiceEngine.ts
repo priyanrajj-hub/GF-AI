@@ -9,7 +9,10 @@ class VoiceEngineManager {
   private animFrameId: number | null = null
   private currentUtterance: SpeechSynthesisUtterance | null = null
   private currentAudioSource: AudioBufferSourceNode | null = null
+  private currentHtmlAudio: HTMLAudioElement | null = null
   private isNeuralPlaying = false
+  // Lock ID: incremented each speak() call; callbacks check against it to prevent stale double-play
+  private _speakLockId = 0
 
   getAudioContext(): AudioContext | null {
     this.initAudioContext()
@@ -51,6 +54,9 @@ class VoiceEngineManager {
 
   // --- Instant Barge-In Interrupt ---
   interruptSpeaking(): void {
+    // Invalidate any in-flight speak() promise so its fallback won't fire
+    this._speakLockId++
+
     if (this.currentAudioSource) {
       try {
         this.currentAudioSource.stop()
@@ -60,10 +66,20 @@ class VoiceEngineManager {
       }
       this.currentAudioSource = null
     }
+    if (this.currentHtmlAudio) {
+      try {
+        this.currentHtmlAudio.pause()
+        this.currentHtmlAudio.src = ''
+      } catch { /* ignore */ }
+      this.currentHtmlAudio = null
+    }
     this.isNeuralPlaying = false
 
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel()
+    }
+    if (this.currentUtterance) {
+      this.currentUtterance = null
     }
     const store = useAppStore.getState()
     const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
@@ -79,6 +95,9 @@ class VoiceEngineManager {
   ): Promise<void> {
     this.initAudioContext()
     this.interruptSpeaking()
+    // Capture this invocation's lock. If a newer speak() fires before we finish,
+    // our async callbacks will see a different lockId and silently bail.
+    const myLockId = this._speakLockId
 
     const store = useAppStore.getState()
     const activeChar = store.activeCharacter || 'ada'
@@ -234,10 +253,14 @@ class VoiceEngineManager {
                 gainNode.connect(this.audioContext.destination)
               }
 
+              // Check lock before committing to play (another speak() may have fired)
+              if (this._speakLockId !== myLockId) return
+
               this.currentAudioSource = source
               this.isNeuralPlaying = true
 
               source.onended = () => {
+                if (this._speakLockId !== myLockId) return // stale — a newer speak() already running
                 this.isNeuralPlaying = false
                 this.currentAudioSource = null
                 const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
@@ -250,45 +273,56 @@ class VoiceEngineManager {
               store.setSystemState('speaking')
               store.triggerGlitch()
               source.start(0)
-              return
+              return  // ← Neural Web Audio playing — DO NOT fall through to Web Speech
             } catch (decodeErr) {
               console.warn('[Web Audio Decode Error, attempting HTMLAudio fallback]:', decodeErr)
             }
           }
 
           // HTMLAudioElement Fallback for guaranteed playback in any browser context
+          if (this._speakLockId !== myLockId) return // lock check before fallback
           try {
             const audioElem = new Audio(`data:${data.mimeType || 'audio/mpeg'};base64,${data.audioBase64}`)
+            this.currentHtmlAudio = audioElem
             audioElem.volume = store.audioVolume ?? 0.95
             audioElem.onended = () => {
+              if (this._speakLockId !== myLockId) return
+              this.currentHtmlAudio = null
               store.setSystemState('idle')
               if (options.onEnd) options.onEnd()
             }
             store.setSystemState('speaking')
             await audioElem.play()
-            return
+            return  // ← HTMLAudio playing — DO NOT fall through to Web Speech
           } catch (audioElemErr) {
             console.warn('[HTMLAudio Fallback Failed]:', audioElemErr)
           }
         }
       }
     } catch (err) {
-      console.warn('[Neural TTS] Server voice synthesis failed, falling back to Web Speech girl voice:', err)
+      console.warn('[Neural TTS] Server voice synthesis failed, falling back to Web Speech:', err)
     }
 
-    // 2. High-Quality Web Speech API Female Girl Voice Fallback
-    this.speakWebSpeech(cleanSpeech, options)
+    // 2. Web Speech API Fallback — ONLY if neural TTS truly failed (no audio was started)
+    if (this._speakLockId !== myLockId) return // another speak() fired while we were awaiting
+    this.speakWebSpeech(cleanSpeech, options, myLockId)
   }
 
   private speakWebSpeech(
     cleanSpeech: string,
-    options: { rate?: number; pitch?: number; language?: string; onEnd?: () => void } = {}
+    options: { rate?: number; pitch?: number; language?: string; onEnd?: () => void } = {},
+    lockId?: number
   ): void {
+    if (lockId !== undefined && this._speakLockId !== lockId) return
+    if (this.isNeuralPlaying) return
+
     if (!('speechSynthesis' in window)) {
       console.warn('[TTS] SpeechSynthesis not supported in this browser.')
       if (options.onEnd) options.onEnd()
       return
     }
+
+    window.speechSynthesis.cancel()
 
     const store = useAppStore.getState()
     const activeChar = store.activeCharacter || 'ada'
@@ -358,6 +392,14 @@ class VoiceEngineManager {
 
     let speechSynthInterval: any = null
     utterance.onstart = () => {
+      if (lockId !== undefined && this._speakLockId !== lockId) {
+        window.speechSynthesis.cancel()
+        return
+      }
+      if (this.isNeuralPlaying) {
+        window.speechSynthesis.cancel()
+        return
+      }
       store.setSystemState('speaking')
       store.triggerGlitch()
       // Generate synthetic speech frequency pulses for real-time lip-sync & visualizers

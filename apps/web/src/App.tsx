@@ -15,6 +15,8 @@ import { DebugHUD } from './components/hud/DebugHUD.js'
 import { StageDrawer } from './components/hud/StageDrawer.js'
 import { WardrobeDrawer } from './components/wardrobe/WardrobeDrawer.js'
 import { EnvironmentDrawer } from './components/hud/EnvironmentDrawer.js'
+import { LiveMarketPanel } from './components/trading/LiveMarketPanel.js'
+import { MarketNewsTicker } from './components/trading/MarketNewsTicker.js'
 import { AnimationTestPage } from './pages/AnimationTest.js'
 import { ReactionLab } from './pages/ReactionLab.js'
 import { VoiceEngine } from './components/voice/VoiceEngine.js'
@@ -45,6 +47,8 @@ export const App: React.FC = () => {
     setShowWardrobeDrawer,
     showEnvironmentDrawer,
     setShowEnvironmentDrawer,
+    showLiveMarketPanel,
+    setShowLiveMarketPanel,
   } = useAppStore()
 
   // Task D: Check for hidden /animation-test or /reaction-lab route
@@ -268,6 +272,18 @@ export const App: React.FC = () => {
 
       {/* 2. Top Header HUD */}
       <TopBar />
+
+      {/* 2b. Live Market Bloomberg-style News Ticker */}
+      {!fullScreenHoloMode && (
+        <MarketNewsTicker className="fixed top-14 left-0 right-0 z-30 pointer-events-auto shadow-md" />
+      )}
+
+      {/* 2c. Floating Live AlgoTrading Radar Panel */}
+      {showLiveMarketPanel && !fullScreenHoloMode && (
+        <div className="fixed top-24 left-4 z-40 w-80 max-w-[calc(100vw-2rem)] pointer-events-auto animate-fade-in-up">
+          <LiveMarketPanel onClose={() => setShowLiveMarketPanel(false)} />
+        </div>
+      )}
 
       {/* 3. Left Mission & Focus Module (Collapsible) */}
       <MissionBriefing />
