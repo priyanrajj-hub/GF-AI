@@ -183,12 +183,12 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           const center = box.getCenter(new THREE.Vector3())
 
           if (size.y > 0) {
-            // Target height: 1.58m frame for clean framing from head to toe
-            const targetHeight = isIronman ? 1.58 : (isTripo ? 1.48 : 1.58)
+            // Heroic superhero height for Iron Man Mark armor (1.82m)
+            const targetHeight = isIronman ? 1.82 : (isTripo ? 1.52 : 1.62)
             const scale = targetHeight / size.y
             scene.scale.set(scale, scale, scale)
-            // Center horizontally and rest feet flat on home pad base (y = -0.72)
-            scene.position.set(-center.x * scale, -0.72 - box.min.y * scale, -center.z * scale)
+            // Center horizontally and align model feet with container base (container is at y = -0.72)
+            scene.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale)
           }
 
           scene.traverse((obj) => {
@@ -310,19 +310,21 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
   // Real-time accessory updates (Comms Headset, Gloves, Boots)
   useEffect(() => {
     if (vrm) {
+      // Do not clutter Yor's head with sci-fi comms gear
       const showHeadset =
-        accessories?.commsHeadset || systemState === 'listening' || activeMode === 'jarvis'
+        activeCharacter !== 'mira' &&
+        (accessories?.commsHeadset || (activeCharacter === 'ada' && activeMode === 'jarvis'))
       applyAvatarAccessories(
         vrm,
         {
-          commsHeadset: showHeadset,
+          commsHeadset: Boolean(showHeadset),
           gloves: accessories?.gloves,
           boots: accessories?.boots,
         },
         systemState === 'listening'
       )
     }
-  }, [vrm, accessories, systemState, activeMode])
+  }, [vrm, accessories, systemState, activeMode, activeCharacter])
 
   // Sync action from global store to animator
   useEffect(() => {
@@ -356,26 +358,27 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       }
     }
     const handlePokeEvent = () => {
-      const poke = navigatorRef.handlePoke()
+      const isStark = activeCharacter === 'atlas'
+      const poke = navigatorRef.handlePoke(activeCharacter || 'ada')
       if (animatorRef.current) {
         animatorRef.current.setOverlayAction(poke.action)
       }
-      useAppStore.getState().setEmotionAndGesture('happy', 1.0, poke.action as any)
+      useAppStore.getState().setEmotionAndGesture(isStark ? 'motivated' : 'happy', 1.0, poke.action as any)
       useAppStore.getState().addMessage({
         id: `msg-poke-${Date.now()}`,
         role: 'assistant',
         content: `*${poke.speech}*`,
         speech: poke.speech,
-        emotion: 'happy',
+        emotion: isStark ? 'motivated' : 'happy',
         gesture: poke.action as any,
         timestamp: Date.now(),
       })
       VoiceEngine.speak(poke.speech, {
-        rate: 1.06,
-        pitch: 1.05,
+        rate: isStark ? 1.0 : 1.06,
+        pitch: isStark ? 0.90 : 1.05,
         language: settings.language,
       })
-      setActiveFX(['exclamation', 'hearts', 'sparkles'])
+      setActiveFX(isStark ? ['sparkles', 'exclamation'] : ['exclamation', 'hearts', 'sparkles'])
       setTimeout(() => setActiveFX([]), 2800)
     }
     window.addEventListener('ada:move_to', handleMoveEvent)
@@ -481,26 +484,27 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     }
 
     if (isAvatarClicked) {
-      const poke = navigatorRef.handlePoke()
+      const isStark = activeCharacter === 'atlas'
+      const poke = navigatorRef.handlePoke(activeCharacter || 'ada')
       if (animatorRef.current) {
         animatorRef.current.setOverlayAction(poke.action)
       }
-      useAppStore.getState().setEmotionAndGesture('happy', 1.0, poke.action as any)
+      useAppStore.getState().setEmotionAndGesture(isStark ? 'motivated' : 'happy', 1.0, poke.action as any)
       useAppStore.getState().addMessage({
         id: `msg-poke-${Date.now()}`,
         role: 'assistant',
         content: `*${poke.speech}*`,
         speech: poke.speech,
-        emotion: 'happy',
+        emotion: isStark ? 'motivated' : 'happy',
         gesture: poke.action as any,
         timestamp: Date.now(),
       })
       VoiceEngine.speak(poke.speech, {
-        rate: 1.06,
-        pitch: 1.05,
+        rate: isStark ? 1.0 : 1.06,
+        pitch: isStark ? 0.90 : 1.05,
         language: settings.language,
       })
-      setActiveFX(['exclamation', 'hearts', 'sparkles'])
+      setActiveFX(isStark ? ['sparkles', 'exclamation'] : ['exclamation', 'hearts', 'sparkles'])
       setTimeout(() => setActiveFX([]), 2800)
       return
     }

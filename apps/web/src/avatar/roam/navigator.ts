@@ -69,40 +69,103 @@ export class RoamNavigator {
     this.moveTo(0, 0, false, 'hair_tuck')
   }
 
-  handlePoke(): { action: string; reaction: string; speech: string } {
-    const now = Date.now()
-    if (now - this.lastPokeTime < 4000) {
+  handlePoke(character: string = 'ada'): { action: string; reaction: string; speech: string } {
+    const now = performance.now() / 1000
+    if (now - this.lastPokeTime < 8.0) {
       this.pokeCount = (this.pokeCount + 1) % 4
     } else {
       this.pokeCount = 0
     }
     this.lastPokeTime = now
 
+    // 1. Tony Stark (Iron Man / Quant Trader)
+    if (character === 'atlas') {
+      switch (this.pokeCount) {
+        case 0:
+          return {
+            action: 'stark_billionaire_swagger',
+            reaction: 'proud',
+            speech: "Repulsors charged. Easy on the gold-titanium armor, chief.",
+          }
+        case 1:
+          return {
+            action: 'stark_glasses_adjust',
+            reaction: 'confident',
+            speech: "I'm Tony Stark. I engineer breakthrough tech, crush market alphas, and look damn good doing it.",
+          }
+        case 2:
+          return {
+            action: 'thumbs_up',
+            reaction: 'smile',
+            speech: "Jarvis, run a real-time diagnostic. Let's find our next winning trade.",
+          }
+        case 3:
+        default:
+          return {
+            action: 'fist_pump',
+            reaction: 'hyped',
+            speech: "Arc reactor humming at 100% capacity. Ready for high-stakes execution.",
+          }
+      }
+    }
+
+    // 2. Yor Forger (Thorn Princess / Assassin)
+    if (character === 'mira') {
+      switch (this.pokeCount) {
+        case 0:
+          return {
+            action: 'yor_rose_elegance',
+            reaction: 'gentle_smile',
+            speech: "O-oh! Pardon me, did I startle you? I was just tending to our workspace! 🌹",
+          }
+        case 1:
+          return {
+            action: 'yor_tender_wave',
+            reaction: 'sweet_smile',
+            speech: "Please take good care of yourself today... I will protect this family no matter what!",
+          }
+        case 2:
+          return {
+            action: 'shy_giggle',
+            reaction: 'shy_blush',
+            speech: "Is anyone causing you trouble? I can... resolve the situation very quietly.",
+          }
+        case 3:
+        default:
+          return {
+            action: 'bow',
+            reaction: 'polite_bow',
+            speech: "I am honored to assist you. Let us do our best together!",
+          }
+      }
+    }
+
+    // 3. Ada Wong (Resident Evil Spy / Strategic Operator)
     switch (this.pokeCount) {
       case 0:
         return {
-          action: 'shy_giggle',
-          reaction: 'giggle',
-          speech: 'Hehe! That tickles, Operator~ 😉',
+          action: 'ada_tactical_poise',
+          reaction: 'smirk',
+          speech: "Eyes on the objective. A good operator never loses focus.",
         }
       case 1:
         return {
-          action: 'playful_twirl',
-          reaction: 'twirl',
-          speech: "Spin for you? Anything for my favorite partner! ✨",
+          action: 'hair_tuck',
+          reaction: 'intrigue',
+          speech: "Curious? You know a woman in red never gives away all her secrets.",
         }
       case 2:
         return {
-          action: 'cat_paws',
-          reaction: 'playful_pout',
-          speech: 'Rawr! Careful or this kitty might bite~ 🐾',
+          action: 'sassy_hip_pop',
+          reaction: 'playful_smile',
+          speech: "Careful now. Playing with high stakes has its consequences.",
         }
       case 3:
       default:
         return {
-          action: 'blow_kiss',
-          reaction: 'kiss',
-          speech: 'Mwah! 💋 Right back at you, handsome!',
+          action: 'salute',
+          reaction: 'confident_nod',
+          speech: "Right on schedule. Let's execute the next mission phase.",
         }
     }
   }
