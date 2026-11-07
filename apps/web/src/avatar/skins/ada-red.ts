@@ -23,7 +23,8 @@ export const AdaRedSkin: AvatarSkin = {
   description: 'Signature crimson red dress, black hair, and hidden ribbon accessories.',
   apply: (vrm: VRM) => {
     attachStarkTechGlassesAndBeard(vrm, false)
-    attachYorHeadbandRose(vrm, false)
+    attachYorThornPrincessFeatures(vrm, false)
+    attachAdaTacticalAccessories(vrm, true)
     const chest = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
     if (chest) {
       const emblem = chest.getObjectByName('__STARK_ARC_REACTOR__')
@@ -1217,32 +1218,52 @@ export function attachStarkTechGlassesAndBeard(vrm: VRM, visible: boolean = true
 }
 
 /**
- * Attaches or updates Yor Forger's iconic Golden Rose Headband ornament
+/**
+ * Attaches or updates Yor Forger's iconic Thorn Princess assassin assets:
+ * 1. Golden floral headband crown & dual sculpted temple roses
+ * 2. Protruding golden stylus needle hairpins (canonical Spy x Family design)
+ * 3. Long twin side hair locks draping past shoulders over chest
+ * 4. Back hair rolled chignon updo
+ * 5. Midnight leather halter neck choker with golden ring
+ * 6. Cross-chest leather halter straps in crisp X-pattern
+ * 7. Dual golden stiletto needle daggers ("The Thorns") in combat grip
  */
-export function attachYorHeadbandRose(vrm: VRM, visible: boolean = true): void {
+export function attachYorThornPrincessFeatures(vrm: VRM, visible: boolean = true): void {
   const headBone = vrm.humanoid?.getNormalizedBoneNode('head')
+  const neckBone = vrm.humanoid?.getNormalizedBoneNode('neck')
+  const chestBone = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
+  const leftHand = vrm.humanoid?.getNormalizedBoneNode('leftHand')
+  const rightHand = vrm.humanoid?.getNormalizedBoneNode('rightHand')
+
   if (!headBone) return
 
-  let roseGroup = headBone.getObjectByName('__YOR_HEADBAND_ROSE__') as THREE.Group | undefined
-  if (!roseGroup) {
-    roseGroup = new THREE.Group()
-    roseGroup.name = '__YOR_HEADBAND_ROSE__'
+  // 1. Head Assembly (Headband, Roses, Needles, Hair Locks, Chignon)
+  let yorHeadGroup = headBone.getObjectByName('__YOR_HEAD_ASSEMBLY__') as THREE.Group | undefined
+  if (!yorHeadGroup) {
+    yorHeadGroup = new THREE.Group()
+    yorHeadGroup.name = '__YOR_HEAD_ASSEMBLY__'
 
     const goldMat = new THREE.MeshStandardMaterial({
       color: 0xe6c35c,
-      metalness: 0.85,
-      roughness: 0.18,
+      metalness: 0.90,
+      roughness: 0.16,
     })
 
-    // 1. Delicate golden headband crown arc
-    const bandGeo = new THREE.TorusGeometry(0.125, 0.0035, 8, 32, Math.PI * 0.95)
+    const hairMat = new THREE.MeshStandardMaterial({
+      color: 0x08090d,
+      roughness: 0.24,
+      metalness: 0.12,
+    })
+
+    // A. Golden Headband Crown
+    const bandGeo = new THREE.TorusGeometry(0.125, 0.0038, 8, 36, Math.PI * 0.96)
     const bandMesh = new THREE.Mesh(bandGeo, goldMat)
     bandMesh.rotation.x = Math.PI / 2
     bandMesh.rotation.z = -Math.PI / 2
     bandMesh.position.set(0, 0.082, 0.015)
-    roseGroup.add(bandMesh)
+    yorHeadGroup.add(bandMesh)
 
-    // Helper to build a sculpted golden rose
+    // B. Helper to build sculpted golden rose
     const createRose = () => {
       const g = new THREE.Group()
       const centerGeo = new THREE.SphereGeometry(0.013, 12, 12)
@@ -1259,19 +1280,227 @@ export function attachYorHeadbandRose(vrm: VRM, visible: boolean = true): void {
       return g
     }
 
-    // Dual roses: Left and Right temples
     const leftRose = createRose()
-    leftRose.position.set(0.098, 0.048, 0.038)
-    roseGroup.add(leftRose)
+    leftRose.position.set(0.098, 0.048, -0.015)
+    yorHeadGroup.add(leftRose)
 
     const rightRose = createRose()
-    rightRose.position.set(-0.098, 0.048, 0.038)
-    roseGroup.add(rightRose)
+    rightRose.position.set(-0.098, 0.048, -0.015)
+    yorHeadGroup.add(rightRose)
 
-    headBone.add(roseGroup)
+    // C. Dual Temple Stylus Needles (Protruding Hairpins)
+    const needleGeo = new THREE.CylinderGeometry(0.0016, 0.0028, 0.13, 10)
+    const needleTipGeo = new THREE.ConeGeometry(0.0028, 0.024, 10)
+
+    const createNeedlePin = (isLeft: boolean) => {
+      const g = new THREE.Group()
+      const shaft = new THREE.Mesh(needleGeo, goldMat)
+      const tip = new THREE.Mesh(needleTipGeo, goldMat)
+      tip.position.y = 0.077
+      g.add(shaft)
+      g.add(tip)
+      const sign = isLeft ? 1 : -1
+      g.position.set(sign * 0.114, 0.065, -0.015)
+      g.rotation.z = sign * -0.42
+      g.rotation.y = sign * 0.22
+      return g
+    }
+    yorHeadGroup.add(createNeedlePin(true))
+    yorHeadGroup.add(createNeedlePin(false))
+
+    // D. Long Front Twin Hair Locks (Flowing gracefully from temples in front of shoulders over chest)
+    const leftPoints = [
+      new THREE.Vector3(0.082, 0.042, -0.015),
+      new THREE.Vector3(0.088, -0.040, -0.048),
+      new THREE.Vector3(0.084, -0.135, -0.072),
+      new THREE.Vector3(0.076, -0.235, -0.070),
+      new THREE.Vector3(0.066, -0.330, -0.055),
+    ]
+    const leftCurve = new THREE.CatmullRomCurve3(leftPoints)
+    const leftHairTube = new THREE.Mesh(new THREE.TubeGeometry(leftCurve, 32, 0.0135, 12, false), hairMat)
+    yorHeadGroup.add(leftHairTube)
+
+    const rightPoints = [
+      new THREE.Vector3(-0.082, 0.042, -0.015),
+      new THREE.Vector3(-0.088, -0.040, -0.048),
+      new THREE.Vector3(-0.084, -0.135, -0.072),
+      new THREE.Vector3(-0.076, -0.235, -0.070),
+      new THREE.Vector3(-0.066, -0.330, -0.055),
+    ]
+    const rightCurve = new THREE.CatmullRomCurve3(rightPoints)
+    const rightHairTube = new THREE.Mesh(new THREE.TubeGeometry(rightCurve, 32, 0.0135, 12, false), hairMat)
+    yorHeadGroup.add(rightHairTube)
+
+    // E. Back Rolled Chignon / Hair Bun (Located at back of head: positive Z)
+    const chignonGeo = new THREE.TorusGeometry(0.042, 0.022, 14, 24)
+    const chignonMesh = new THREE.Mesh(chignonGeo, hairMat)
+    chignonMesh.position.set(0, 0.028, 0.095)
+    chignonMesh.rotation.x = Math.PI * 0.16
+    yorHeadGroup.add(chignonMesh)
+
+    headBone.add(yorHeadGroup)
   }
-  roseGroup.visible = visible
+  yorHeadGroup.visible = visible
+
+  // 2. Neck Choker with Golden O-Ring
+  if (neckBone) {
+    let chokerGroup = neckBone.getObjectByName('__YOR_CHOKER__') as THREE.Group | undefined
+    if (!chokerGroup) {
+      chokerGroup = new THREE.Group()
+      chokerGroup.name = '__YOR_CHOKER__'
+      const leatherMat = new THREE.MeshStandardMaterial({ color: 0x08080c, roughness: 0.35, metalness: 0.15 })
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xe6c35c, metalness: 0.90, roughness: 0.16 })
+
+      const collarGeo = new THREE.CylinderGeometry(0.052, 0.054, 0.024, 24, 1, true)
+      const collarMesh = new THREE.Mesh(collarGeo, leatherMat)
+      collarMesh.position.set(0, 0.018, 0)
+      chokerGroup.add(collarMesh)
+
+      const ringGeo = new THREE.TorusGeometry(0.009, 0.0022, 8, 16)
+      const ringMesh = new THREE.Mesh(ringGeo, goldMat)
+      ringMesh.position.set(0, 0.018, -0.054)
+      chokerGroup.add(ringMesh)
+
+      neckBone.add(chokerGroup)
+    }
+    chokerGroup.visible = visible
+  }
+
+  // 3. Chest Halter Straps (X-Cross Pattern in front of chest)
+  if (chestBone) {
+    let strapsGroup = chestBone.getObjectByName('__YOR_HALTER_STRAPS__') as THREE.Group | undefined
+    if (!strapsGroup) {
+      strapsGroup = new THREE.Group()
+      strapsGroup.name = '__YOR_HALTER_STRAPS__'
+      const leatherMat = new THREE.MeshStandardMaterial({ color: 0x08080c, roughness: 0.35, metalness: 0.15 })
+
+      const strapGeo = new THREE.BoxGeometry(0.016, 0.22, 0.004)
+      const s1 = new THREE.Mesh(strapGeo, leatherMat)
+      s1.position.set(0.022, 0.025, -0.098)
+      s1.rotation.z = Math.PI * 0.18
+      strapsGroup.add(s1)
+
+      const s2 = new THREE.Mesh(strapGeo, leatherMat)
+      s2.position.set(-0.022, 0.025, -0.098)
+      s2.rotation.z = -Math.PI * 0.18
+      strapsGroup.add(s2)
+
+      chestBone.add(strapsGroup)
+    }
+    strapsGroup.visible = visible
+  }
+
+  // 4. Dual Golden Stiletto Needle Daggers ("The Thorns")
+  const attachDagger = (handBone: THREE.Object3D | null | undefined, name: string) => {
+    if (!handBone) return
+    let dagger = handBone.getObjectByName(name) as THREE.Group | undefined
+    if (!dagger) {
+      dagger = new THREE.Group()
+      dagger.name = name
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xe6c35c, metalness: 0.92, roughness: 0.12 })
+
+      // Needle Blade (28cm length, sharp point)
+      const bladeGeo = new THREE.CylinderGeometry(0.0022, 0.0042, 0.28, 12)
+      const blade = new THREE.Mesh(bladeGeo, goldMat)
+      blade.position.y = -0.14
+      dagger.add(blade)
+
+      const tipGeo = new THREE.ConeGeometry(0.0042, 0.035, 12)
+      const tip = new THREE.Mesh(tipGeo, goldMat)
+      tip.position.y = -0.30
+      tip.rotation.x = Math.PI
+      dagger.add(tip)
+
+      // Circular Ring Pommel
+      const ringGeo = new THREE.TorusGeometry(0.014, 0.0028, 8, 20)
+      const pommel = new THREE.Mesh(ringGeo, goldMat)
+      pommel.position.y = 0.015
+      dagger.add(pommel)
+
+      dagger.position.set(0, -0.04, 0.01)
+      dagger.rotation.x = Math.PI * 0.12
+      handBone.add(dagger)
+    }
+    dagger.visible = visible
+  }
+
+  attachDagger(leftHand, '__YOR_DAGGER_L__')
+  attachDagger(rightHand, '__YOR_DAGGER_R__')
 }
+
+// Backward-compatible alias
+export function attachYorHeadbandRose(vrm: VRM, visible: boolean = true): void {
+  attachYorThornPrincessFeatures(vrm, visible)
+}
+
+/**
+ * Attaches Ada Wong's tactical espionage accessories:
+ * 1. Tactical shoulder harness & holster on chest
+ * 2. Tactical thigh gun holster on rightUpperLeg
+ */
+export function attachAdaTacticalAccessories(vrm: VRM, visible: boolean = true): void {
+  const chestBone = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
+  const rLegBone = vrm.humanoid?.getNormalizedBoneNode('rightUpperLeg')
+
+  if (chestBone) {
+    let harness = chestBone.getObjectByName('__ADA_HARNESS__') as THREE.Group | undefined
+    if (!harness) {
+      harness = new THREE.Group()
+      harness.name = '__ADA_HARNESS__'
+      const holsterMat = new THREE.MeshStandardMaterial({ color: 0x141418, roughness: 0.40, metalness: 0.20 })
+      const buckleMat = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.25, metalness: 0.80 })
+
+      // Left chest holster pouch (front is -Z)
+      const pouchGeo = new THREE.BoxGeometry(0.055, 0.09, 0.025)
+      const pouch = new THREE.Mesh(pouchGeo, holsterMat)
+      pouch.position.set(0.085, 0.01, -0.095)
+      pouch.rotation.z = -0.15
+      harness.add(pouch)
+
+      // Shoulder harness diagonal strap
+      const strapGeo = new THREE.BoxGeometry(0.02, 0.26, 0.005)
+      const strap = new THREE.Mesh(strapGeo, holsterMat)
+      strap.position.set(0.045, 0.03, -0.092)
+      strap.rotation.z = -0.35
+      harness.add(strap)
+
+      // Metal buckle
+      const buckleGeo = new THREE.BoxGeometry(0.024, 0.024, 0.008)
+      const buckle = new THREE.Mesh(buckleGeo, buckleMat)
+      buckle.position.set(0.05, 0.08, -0.095)
+      harness.add(buckle)
+
+      chestBone.add(harness)
+    }
+    harness.visible = visible
+  }
+
+  if (rLegBone) {
+    let thighHolster = rLegBone.getObjectByName('__ADA_THIGH_HOLSTER__') as THREE.Group | undefined
+    if (!thighHolster) {
+      thighHolster = new THREE.Group()
+      thighHolster.name = '__ADA_THIGH_HOLSTER__'
+      const holsterMat = new THREE.MeshStandardMaterial({ color: 0x141418, roughness: 0.40, metalness: 0.20 })
+
+      // Leg holster strap ring
+      const ringGeo = new THREE.CylinderGeometry(0.076, 0.074, 0.022, 24, 1, true)
+      const legStrap = new THREE.Mesh(ringGeo, holsterMat)
+      legStrap.position.set(0, -0.14, 0)
+      thighHolster.add(legStrap)
+
+      // Thigh side gun holster
+      const holsterGeo = new THREE.BoxGeometry(0.045, 0.11, 0.03)
+      const holsterMesh = new THREE.Mesh(holsterGeo, holsterMat)
+      holsterMesh.position.set(0.078, -0.15, -0.01)
+      holsterMesh.rotation.y = Math.PI * 0.1
+      thighHolster.add(holsterMesh)
+
+      rLegBone.add(thighHolster)
+    }
+    thighHolster.visible = visible
+  }
+}
+
 
 /**
  * Atlas / Tony Stark-Inspired High-Tech Market Analyst Skin
@@ -1686,7 +1915,7 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
     StarkArcTraderSkin.apply(vrm)
 
   } else if (char === 'mira') {
-    // 🌹 MIRA (YOR FORGER): Feminine Hourglass Silhouette & Knit Sweater
+    // 🌹 MIRA (YOR FORGER): Feminine Hourglass Silhouette & Thorn Princess Elegance
     if (leftShoulder) leftShoulder.scale.set(0.96, 0.98, 0.98)
     if (rightShoulder) rightShoulder.scale.set(0.96, 0.98, 0.98)
     if (chest) chest.scale.set(1.10, 1.08, 1.12)
@@ -1702,32 +1931,36 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
 
     // 🌹 Yor Forger: natural elegant poise
     if (neck) neck.scale.set(1.02, 1.02, 1.02)
-    if (head) head.scale.set(0.98, 0.98, 0.98)
+    if (head) head.scale.set(0.96, 0.96, 0.96)
 
-    // Allow feminine hair ribbons/side strands and natural dress skirt
+    // Strictly HIDE schoolgirl braids, ribbons, bows, and puffy sleeves!
     vrm.scene.traverse((obj) => {
-      if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
-        obj.visible = true
-        obj.scale.set(1.0, 1.0, 1.0)
-      }
-      if (/skirt_\d+_\d+/i.test(obj.name)) {
-        obj.scale.set(1.0, 1.0, 1.0)
+      if (/hair[2-8]_[LR]|mituami|ribbon|cloth_ribbon|other/i.test(obj.name)) {
+        obj.visible = false
+        obj.scale.set(0, 0, 0)
       }
       if (/cloth1|cloth2/i.test(obj.name)) {
-        obj.visible = true
-        obj.scale.set(1.0, 1.0, 1.0)
+        // Bare shoulders & arms for Yor halter dress
+        obj.visible = false
+        obj.scale.set(0, 0, 0)
+      }
+      if (/skirt_\d+_\d+/i.test(obj.name)) {
+        // Sleek pencil gown
+        obj.scale.set(0.70, 1.0, 0.70)
       }
     })
 
     attachStarkTechGlassesAndBeard(vrm, false)
-    attachYorHeadbandRose(vrm, true)
+    attachAdaTacticalAccessories(vrm, false)
+    attachYorThornPrincessFeatures(vrm, true)
+
     const chestBone = humanoid.getNormalizedBoneNode('chest') || humanoid.getNormalizedBoneNode('upperChest')
     if (chestBone) {
       const emblem = chestBone.getObjectByName('__STARK_ARC_REACTOR__')
       if (emblem) emblem.visible = false
     }
 
-    YorCrimsonSweaterSkin.apply(vrm)
+    YorThornPrincessSkin.apply(vrm)
 
   } else {
     // 👩‍💼 ADA (COACH & TUTOR): Spy-Chic Athletic Female Proportions (Standard 1.0)
@@ -1748,17 +1981,19 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
     if (neck) neck.scale.set(1.02, 1.02, 1.02)
     if (head) head.scale.set(0.98, 0.98, 0.98)
 
+    // Strictly HIDE schoolgirl braids, ribbons, and puffy sleeves
     vrm.scene.traverse((obj) => {
-      if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
-        obj.visible = true
-        obj.scale.set(1.0, 1.0, 1.0)
-      }
-      if (/skirt_\d+_\d+/i.test(obj.name)) {
-        obj.scale.set(1.0, 1.0, 1.0)
+      if (/hair[2-8]_[LR]|mituami|ribbon|cloth_ribbon|other/i.test(obj.name)) {
+        obj.visible = false
+        obj.scale.set(0, 0, 0)
       }
       if (/cloth1|cloth2/i.test(obj.name)) {
-        obj.visible = true
-        obj.scale.set(1.0, 1.0, 1.0)
+        obj.visible = false
+        obj.scale.set(0, 0, 0)
+      }
+      if (/skirt_\d+_\d+/i.test(obj.name)) {
+        // Sleek pencil-cut cocktail dress
+        obj.scale.set(0.72, 1.0, 0.72)
       }
     })
 
@@ -1778,7 +2013,9 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
     })
 
     attachStarkTechGlassesAndBeard(vrm, false)
-    attachYorHeadbandRose(vrm, false)
+    attachYorThornPrincessFeatures(vrm, false)
+    attachAdaTacticalAccessories(vrm, true)
+
     const chestBone = humanoid.getNormalizedBoneNode('chest') || humanoid.getNormalizedBoneNode('upperChest')
     if (chestBone) {
       const emblem = chestBone.getObjectByName('__STARK_ARC_REACTOR__')

@@ -237,13 +237,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (char === 'mira') {
       set({
         activeCharacter: 'mira',
-        skinId: 'yor-crimson-sweater',
+        skinId: 'yor-thorn-princess',
         activeMode: 'companion',
-        currentEmotion: 'playful',
+        currentEmotion: 'calm',
         isManualOutfit: true,
       })
       import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-        VoiceEngine.speak("Hello sweetheart! Mira is here with you. Ready to have some fun today?", { pitch: 1.25, rate: 1.05 })
+        VoiceEngine.speak("Excuse me... I am Yor Forger. I may be a bit clumsy as an ordinary clerk, but... if anyone threatens you, I will eliminate them without hesitation.", { pitch: 1.15, rate: 0.98 })
       }).catch(() => {})
     } else if (char === 'atlas') {
       set((state) => ({
@@ -258,18 +258,18 @@ export const useAppStore = create<AppState>((set, get) => ({
         },
       }))
       import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-        VoiceEngine.speak("Stark systems online. Ready to analyze markets, track setups, and conquer the day.", { pitch: 0.94, rate: 1.05 })
+        VoiceEngine.speak("Tony Stark. Jarvis is running diagnostics, the market algorithms are calibrated, and yes—the suit is fully operational. What's our next big play?", { pitch: 0.94, rate: 1.05 })
       }).catch(() => {})
     } else {
       set({
         activeCharacter: 'ada',
-        skinId: 'crimson_turtleneck',
+        skinId: 'ada-red',
         activeMode: 'mentor',
         currentEmotion: 'calm',
         isManualOutfit: false,
       })
       import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-        VoiceEngine.speak("Ada ready. What are we studying and building next?", { pitch: 1.05, rate: 1.0 })
+        VoiceEngine.speak("Ada Wong. Keep your eyes open and your mind sharp. Let's see what moves we can make today.", { pitch: 1.0, rate: 1.0 })
       }).catch(() => {})
     }
   },
