@@ -194,6 +194,7 @@ export interface TradingCardData {
     targetLow: number
     upsidePotentialPct: number
   }
+  recommendations?: TradingCardData[]
 }
 
 export interface ChatMessage {
