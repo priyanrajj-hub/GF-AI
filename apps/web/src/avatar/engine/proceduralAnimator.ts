@@ -260,7 +260,7 @@ export class ProceduralAnimator {
         }
         const randomFlair = flairs[Math.floor(Math.random() * flairs.length)]
         this.setOverlayAction(randomFlair)
-        this.nextFlairTime = time + 4.5 + Math.random() * 3.5
+        this.nextFlairTime = time + 10.0 + Math.random() * 8.0
       }
     }
 
@@ -435,27 +435,42 @@ export class ProceduralAnimator {
           if (rightHand) rightHand.rotation.x = THREE.MathUtils.lerp(rightHand.rotation.x, -armSwing * 0.20, delta * 5.0)
         } else {
           // Standing Idle: natural elegant human resting posture (arms hanging naturally along torso, zero awkward chicken-wing bend)
-          const rRestZ = weightPhase > 0.1 ? -1.38 : -1.41
+          const rRestZ = weightPhase > 0.1 ? -1.48 : -1.50
           const rRestX = weightPhase > 0.1 ? -0.04 : -0.02
-          const rForeZ = -0.04
-          const rForeY = 0.02
+          const rForeZ = -0.02
+          const rForeY = 0.01
 
-          const lRestZ = weightPhase < -0.1 ? 1.38 : 1.41
+          const lRestZ = weightPhase < -0.1 ? 1.48 : 1.50
           const lRestX = weightPhase < -0.1 ? -0.04 : -0.02
-          const lForeZ = 0.04
-          const lForeY = -0.02
+          const lForeZ = 0.02
+          const lForeY = -0.01
 
-          rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, rRestZ, delta * 3.5)
-          rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, rRestX, delta * 3.5)
-          rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, 0, delta * 3.5)
-          rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, rForeZ, delta * 3.5)
-          rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, rForeY, delta * 3.5)
+          rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, rRestZ, delta * 4.0)
+          rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, rRestX, delta * 4.0)
+          rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, 0, delta * 4.0)
 
-          leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, lRestZ, delta * 3.5)
-          leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, lRestX, delta * 3.5)
-          leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, 0, delta * 3.5)
-          leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, lForeZ, delta * 3.5)
-          leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, lForeY, delta * 3.5)
+          rightLowerArm.rotation.x = THREE.MathUtils.lerp(rightLowerArm.rotation.x, -0.04, delta * 4.0)
+          rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, rForeZ, delta * 4.0)
+          rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, rForeY, delta * 4.0)
+
+          leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, lRestZ, delta * 4.0)
+          leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, lRestX, delta * 4.0)
+          leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, 0, delta * 4.0)
+
+          leftLowerArm.rotation.x = THREE.MathUtils.lerp(leftLowerArm.rotation.x, -0.04, delta * 4.0)
+          leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, lForeZ, delta * 4.0)
+          leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, lForeY, delta * 4.0)
+
+          if (rightHand) {
+            rightHand.rotation.x = THREE.MathUtils.lerp(rightHand.rotation.x, 0, delta * 4.0)
+            rightHand.rotation.y = THREE.MathUtils.lerp(rightHand.rotation.y, 0, delta * 4.0)
+            rightHand.rotation.z = THREE.MathUtils.lerp(rightHand.rotation.z, 0, delta * 4.0)
+          }
+          if (leftHand) {
+            leftHand.rotation.x = THREE.MathUtils.lerp(leftHand.rotation.x, 0, delta * 4.0)
+            leftHand.rotation.y = THREE.MathUtils.lerp(leftHand.rotation.y, 0, delta * 4.0)
+            leftHand.rotation.z = THREE.MathUtils.lerp(leftHand.rotation.z, 0, delta * 4.0)
+          }
         }
       }
     }
