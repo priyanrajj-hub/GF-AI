@@ -51,34 +51,6 @@ export class GuardrailsService {
       console.log(`🛡️ [Anti-Hallucination Guardrail] Scrubbed ${scrubbedCount} prohibited claims from AI response.`)
     }
 
-    // 2. Ensure price grounding if quote is present
-    if (quote && quote.price > 0) {
-      const priceNum = quote.price
-      const currSym = quote.currency === 'INR' ? '₹' : '$'
-
-      // Check if text makes claims about price
-      const priceRegex = /([\$₹]\s*([0-9,]+(?:\.[0-9]+)?))/g
-      let match: RegExpExecArray | null
-
-      while ((match = priceRegex.exec(replyText)) !== null) {
-        const citedNum = parseFloat(match[2].replace(/,/g, ''))
-        // If number is roughly close to price (within 40%) but deviates by > 5%
-        if (citedNum > priceNum * 0.6 && citedNum < priceNum * 1.4) {
-          const dev = Math.abs((citedNum - priceNum) / priceNum) * 100
-          if (dev > 5.0) {
-            console.warn(
-              `⚠️ [Anti-Hallucination Guardrail] Intercepted deviating price ${match[1]} vs Ground Truth ${currSym}${priceNum} (dev: ${dev.toFixed(1)}%)`
-            )
-            // Replace with grounded truth
-            result = result.replace(
-              match[1],
-              `${currSym}${priceNum.toLocaleString()} (Grounded Tick)`
-            )
-          }
-        }
-      }
-    }
-
     return result
   }
 }
