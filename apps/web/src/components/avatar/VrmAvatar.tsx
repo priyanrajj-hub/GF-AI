@@ -61,11 +61,11 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     setIsLoading(true)
     setLoadError(null)
 
-    // Hard character boundaries: Tony Stark loads ironman.glb, Ada Wong loads authentic 3D PBR model, Yor loads VRM
+    // Character boundaries: Tony Stark loads ironman.glb, Ada & Yor load fully rigged expressive VRM
     const isAtlas = activeCharacter === 'atlas' || (modelUrl || '').includes('ironman')
-    const isTripoAda = activeCharacter === 'ada' || (modelUrl || '').includes('tripo')
+    const isExplicitTripo = (modelUrl || '').includes('tripo')
 
-    if (isAtlas || isTripoAda) {
+    if (isAtlas || isExplicitTripo) {
       setVrm(null)
     } else {
       setGlbScene(null)
@@ -77,7 +77,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
     const defaultUrl = isAtlas
       ? '/models/ironman.glb'
-      : isTripoAda
+      : isExplicitTripo
       ? '/models/ada_fullbody_tripo.glb'
       : '/models/ada.vrm'
 
@@ -476,65 +476,59 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     }
   })
 
-  // 3. Pointer Click Handling (Floor move & Avatar Poke)
-  const handlePointerDown = (e: any) => {
+  // 3. Pointer Click Handling (Avatar Poke & Double-Click Navigation)
+  const handleAvatarClick = (e: any) => {
     e.stopPropagation()
-
-    // If clicked directly on avatar mesh -> Energetic Poke reaction!
-    let isAvatarClicked = false
-    let current = e.object
-    while (current) {
-      if (current === vrm?.scene || current === glbScene) {
-        isAvatarClicked = true
-        break
-      }
-      current = current.parent
+    const isStark = activeCharacter === 'atlas'
+    const poke = navigatorRef.handlePoke(activeCharacter || 'ada')
+    if (animatorRef.current) {
+      animatorRef.current.setOverlayAction(poke.action)
     }
+    useAppStore.getState().setEmotionAndGesture(isStark ? 'motivated' : 'happy', 1.0, poke.action as any)
+    useAppStore.getState().addMessage({
+      id: `msg-poke-${Date.now()}`,
+      role: 'assistant',
+      content: `*${poke.speech}*`,
+      speech: poke.speech,
+      emotion: isStark ? 'motivated' : 'happy',
+      gesture: poke.action as any,
+      timestamp: Date.now(),
+    })
+    VoiceEngine.speak(poke.speech, {
+      rate: isStark ? 1.0 : 1.06,
+      pitch: isStark ? 0.90 : 1.05,
+      language: settings.language,
+    })
+    setActiveFX(isStark ? ['sparkles', 'exclamation'] : ['exclamation', 'hearts', 'sparkles'])
+    setTimeout(() => setActiveFX([]), 2800)
+  }
 
-    if (isAvatarClicked) {
-      const isStark = activeCharacter === 'atlas'
-      const poke = navigatorRef.handlePoke(activeCharacter || 'ada')
-      if (animatorRef.current) {
-        animatorRef.current.setOverlayAction(poke.action)
-      }
-      useAppStore.getState().setEmotionAndGesture(isStark ? 'motivated' : 'happy', 1.0, poke.action as any)
-      useAppStore.getState().addMessage({
-        id: `msg-poke-${Date.now()}`,
-        role: 'assistant',
-        content: `*${poke.speech}*`,
-        speech: poke.speech,
-        emotion: isStark ? 'motivated' : 'happy',
-        gesture: poke.action as any,
-        timestamp: Date.now(),
-      })
-      VoiceEngine.speak(poke.speech, {
-        rate: isStark ? 1.0 : 1.06,
-        pitch: isStark ? 0.90 : 1.05,
-        language: settings.language,
-      })
-      setActiveFX(isStark ? ['sparkles', 'exclamation'] : ['exclamation', 'hearts', 'sparkles'])
-      setTimeout(() => setActiveFX([]), 2800)
-      return
-    }
-
-    // Otherwise clicked on floor -> Walk or Run to spot with catwalk!
+  const handleFloorDoubleClick = (e: any) => {
+    e.stopPropagation()
     if (e.point) {
-      const isDouble = e.nativeEvent?.detail === 2
-      navigatorRef.moveTo(e.point.x, e.point.z, isDouble, 'sassy_hip_pop')
+      navigatorRef.moveTo(e.point.x, e.point.z, true, 'sassy_hip_pop')
       setClickMarker([e.point.x, -0.715, e.point.z])
       setTimeout(() => setClickMarker(null), 3000)
     }
   }
 
   return (
-    <group onPointerDown={handlePointerDown}>
-      {/* 1. VRM Character Scene (Strictly only for Ada and Yor - NEVER Tony Stark) */}
-      {vrm && activeCharacter !== 'atlas' && <primitive object={vrm.scene} />}
+    <group>
+      {/* 1. VRM Character Scene (Ada & Yor: fully rigged, expressive, animated) */}
+      {vrm && activeCharacter !== 'atlas' && (
+        <group onClick={handleAvatarClick}>
+          <primitive object={vrm.scene} />
+        </group>
+      )}
 
-      {/* 2. Standard GLB Scene */}
-      {glbScene && <primitive object={glbScene} />}
+      {/* 2. Standard GLB Scene (Iron Man Mark Armor) */}
+      {glbScene && (
+        <group onClick={handleAvatarClick}>
+          <primitive object={glbScene} />
+        </group>
+      )}
 
-      {/* 3. Anime FX Layer (Clean stage, mascot hidden to focus on Ada) */}
+      {/* 3. Anime FX Layer */}
       <AnimeFXLayer
         activeFX={activeFX}
         avatarPosition={avatarWorldPos}
@@ -555,10 +549,11 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
         </group>
       )}
 
-      {/* 5. Clickable Invisible Floor Plane for Raycast Navigation */}
+      {/* 5. Double-Click Floor Plane (Double-click to walk, drag to 360° rotate without conflict) */}
       <mesh
         position={[0, -0.72, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
+        onDoubleClick={handleFloorDoubleClick}
       >
         <planeGeometry args={[16, 16]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />

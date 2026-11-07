@@ -1256,64 +1256,24 @@ export function attachYorThornPrincessFeatures(vrm: VRM, visible: boolean = true
       metalness: 0.15,
     })
 
-    // 1. Golden Headband Crown
-    const bandGeo = new THREE.TorusGeometry(0.125, 0.0036, 12, 36, Math.PI * 0.96)
-    const bandMesh = new THREE.Mesh(bandGeo, goldMat)
-    bandMesh.rotation.x = Math.PI / 2
-    bandMesh.rotation.z = -Math.PI / 2
-    bandMesh.position.set(0, 0.080, 0.015)
-    headGroup.add(bandMesh)
-
-    // 2. Sculpted Golden Roses over temples
+    // 1. Subtle, snug hair-framing golden rose accents over temples
     const createRose = () => {
       const g = new THREE.Group()
-      const centerGeo = new THREE.SphereGeometry(0.013, 12, 12)
+      const centerGeo = new THREE.SphereGeometry(0.008, 10, 10)
       const centerMesh = new THREE.Mesh(centerGeo, goldMat)
       g.add(centerMesh)
-      for (let i = 0; i < 8; i++) {
-        const angle = (i / 8) * Math.PI * 2
-        const petalGeo = new THREE.CylinderGeometry(0.008, 0.003, 0.018, 8)
-        const petalMesh = new THREE.Mesh(petalGeo, goldMat)
-        petalMesh.position.set(Math.cos(angle) * 0.013, Math.sin(angle) * 0.013, 0)
-        petalMesh.rotation.z = angle
-        g.add(petalMesh)
-      }
       return g
     }
 
     const leftRose = createRose()
-    leftRose.position.set(0.098, 0.045, -0.012)
+    leftRose.position.set(0.082, 0.025, 0.015)
     headGroup.add(leftRose)
 
     const rightRose = createRose()
-    rightRose.position.set(-0.098, 0.045, -0.012)
+    rightRose.position.set(-0.082, 0.025, 0.015)
     headGroup.add(rightRose)
 
-    // 3. Protruding Golden Stylus Needles (Hairpins pointing backward/upward)
-    const needleShaftGeo = new THREE.CylinderGeometry(0.0018, 0.0032, 0.14, 10)
-    const needleTipGeo = new THREE.ConeGeometry(0.0032, 0.026, 10)
-
-    const createStylus = (isLeft: boolean) => {
-      const g = new THREE.Group()
-      const shaft = new THREE.Mesh(needleShaftGeo, goldMat)
-      const tip = new THREE.Mesh(needleTipGeo, goldMat)
-      tip.position.y = 0.082
-      g.add(shaft)
-      g.add(tip)
-      g.rotation.x = -Math.PI * 0.28
-      g.rotation.z = isLeft ? -Math.PI * 0.22 : Math.PI * 0.22
-      return g
-    }
-
-    const leftPin = createStylus(true)
-    leftPin.position.set(0.098, 0.055, -0.025)
-    headGroup.add(leftPin)
-
-    const rightPin = createStylus(false)
-    rightPin.position.set(-0.098, 0.055, -0.025)
-    headGroup.add(rightPin)
-
-    // 4. Dangling Golden Needle / Stiletto Earrings
+    // 2. Dangling Golden Needle / Stiletto Earrings
     const createEarring = () => {
       const g = new THREE.Group()
       const loopGeo = new THREE.TorusGeometry(0.004, 0.001, 8, 16)
