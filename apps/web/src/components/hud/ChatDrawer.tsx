@@ -47,6 +47,7 @@ export const ChatDrawer: React.FC = () => {
     activeCharacter,
     setActiveCharacter,
     settings,
+    updateSettings,
     setSystemState,
     setEmotionAndGesture,
     fullScreenHoloMode,
@@ -500,6 +501,34 @@ export const ChatDrawer: React.FC = () => {
 
           {(activeCharacter === 'ada' || !activeCharacter) && (
             <>
+              <button
+                onClick={() => {
+                  updateSettings({ avatarModelUrl: '/models/ada_fullbody_tripo.glb', renderMode: 'solid' })
+                  VoiceEngine.speak("Resident Evil 4 Remake Adriana Dxim 3D scan loaded. 360-degree orbit enabled.", { rate: 1.02, pitch: 1.04 })
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  settings.avatarModelUrl === '/models/ada_fullbody_tripo.glb'
+                    ? 'bg-rose-500/25 text-rose-200 border border-rose-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="Resident Evil 4 Remake 3D Photoreal Model (Adriana Dxim Face Scan & Tactical Harness)"
+              >
+                <span>🍷</span> RE4 3D Scan (Adriana Dxim)
+              </button>
+              <button
+                onClick={() => {
+                  updateSettings({ avatarModelUrl: '/models/ada.vrm', renderMode: 'holo-lite' })
+                  VoiceEngine.speak("Switching to interactive animated VTuber model.", { rate: 1.02, pitch: 1.04 })
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  settings.avatarModelUrl !== '/models/ada_fullbody_tripo.glb'
+                    ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="Interactive Animated VTuber Model with Lip-Sync"
+              >
+                <span>💃</span> Animated VTuber
+              </button>
               <button
                 onClick={() => {
                   setSkinId('ada-red')

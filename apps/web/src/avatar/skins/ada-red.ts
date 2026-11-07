@@ -473,7 +473,14 @@ export const YorCrimsonSweaterSkin: AvatarSkin = {
   name: 'Mira (Yor Style • Off-Shoulder Crimson Sweater)',
   description: 'Signature off-the-shoulder red knit sweater dress, thigh-high stockings, headband, and ruby eyes.',
   apply: (vrm: VRM) => {
-    AdaRedSkin.apply(vrm)
+    attachAdaTacticalAccessories(vrm, false)
+    attachYorThornPrincessFeatures(vrm, false)
+    attachStarkTechGlassesAndBeard(vrm, false)
+    const chestEmblem = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
+    if (chestEmblem) {
+      const em = chestEmblem.getObjectByName('__STARK_ARC_REACTOR__')
+      if (em) em.visible = false
+    }
     vrm.scene.traverse((obj) => {
       // Allow hair side-strands & headband for Yor styling
       if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
@@ -504,14 +511,18 @@ export const YorCrimsonSweaterSkin: AvatarSkin = {
             if (mat.roughness !== undefined) mat.roughness = 0.22 // silky sheen
           }
 
-          // Golden/Pearl Headband accent
-          if (/hair_wear|ribbon|accessory/i.test(matName)) {
+          // Golden/Pearl Headband accent (keep clean, hide side ribbons)
+          if (/ribbon/i.test(matName)) {
+            mat.visible = false
+            mat.opacity = 0.0
+            mat.transparent = true
+          } else if (/hair_wear|accessory/i.test(matName)) {
             mat.visible = true
             mat.opacity = 1.0
             mat.transparent = false
-            if (mat.color) mat.color.set('#D4AF37') // Antique Gold / Pearl
-            if (mat.metalness !== undefined) mat.metalness = 0.65
-            if (mat.roughness !== undefined) mat.roughness = 0.25
+            if (mat.color) mat.color.set('#F0EAE1') // Soft Cream/Pearl White Headband
+            if (mat.metalness !== undefined) mat.metalness = 0.15
+            if (mat.roughness !== undefined) mat.roughness = 0.40
           }
 
           // Thigh-high opaque black stockings
@@ -817,7 +828,14 @@ export const YorBerlintGalaSkin: AvatarSkin = {
   name: 'Yor Forger • Berlint Gala Royal Velvet Gown',
   description: 'Regal deep sapphire velvet evening gown with antique gold filigree lace trim and formal hair styling.',
   apply: (vrm: VRM) => {
-    AdaRedSkin.apply(vrm)
+    attachAdaTacticalAccessories(vrm, false)
+    attachYorThornPrincessFeatures(vrm, false)
+    attachStarkTechGlassesAndBeard(vrm, false)
+    const chestEmblem = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
+    if (chestEmblem) {
+      const em = chestEmblem.getObjectByName('__STARK_ARC_REACTOR__')
+      if (em) em.visible = false
+    }
     vrm.scene.traverse((obj) => {
       if ((obj as THREE.Mesh).isMesh) {
         const mesh = obj as THREE.Mesh
@@ -1236,6 +1254,8 @@ export function attachYorThornPrincessFeatures(vrm: VRM, visible: boolean = true
   const neckBone = vrm.humanoid?.getNormalizedBoneNode('neck')
   const leftHand = vrm.humanoid?.getNormalizedBoneNode('leftHand')
   const rightHand = vrm.humanoid?.getNormalizedBoneNode('rightHand')
+  const leftArm = vrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
+  const rightArm = vrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
 
   if (!headBone) return
 
@@ -1245,87 +1265,175 @@ export function attachYorThornPrincessFeatures(vrm: VRM, visible: boolean = true
     headGroup.name = '__YOR_HEAD_ASSEMBLY__'
 
     const goldMat = new THREE.MeshStandardMaterial({
-      color: 0xF7D060,
-      metalness: 0.92,
-      roughness: 0.16,
+      color: 0xF5C542,
+      metalness: 0.95,
+      roughness: 0.12,
     })
 
     const hairMat = new THREE.MeshStandardMaterial({
-      color: 0x0A0B0E,
+      color: 0x050608,
       roughness: 0.22,
-      metalness: 0.15,
+      metalness: 0.10,
     })
 
-    // 1. Subtle, snug hair-framing golden rose accents over temples
-    const createRose = () => {
+    // --- A. SIGNATURE YOR UPDO BUN & FLOWING BACK HAIR (Firmly at back of skull, +Z) ---
+    // In this VRM model: +Z is BACK of head, -Z is FRONT of face (mouth is at z=-0.055)
+    const backHairGroup = new THREE.Group()
+    backHairGroup.name = '__YOR_BACK_HAIR__'
+    backHairGroup.position.set(0, 0.035, 0.082) // placed strictly behind the skull (+Z)
+
+    // Updo bun sculpted at the back of the head
+    const bunGeo = new THREE.SphereGeometry(0.048, 16, 16)
+    bunGeo.scale(1.15, 0.95, 0.8)
+    const bunMesh = new THREE.Mesh(bunGeo, hairMat)
+    bunMesh.position.set(0, 0.015, 0.01)
+    backHairGroup.add(bunMesh)
+
+    // Flowing raven strands cascading down behind shoulders
+    const createBackHairStrand = (length: number, width: number, xOffset: number, curveX: number) => {
       const g = new THREE.Group()
-      const centerGeo = new THREE.SphereGeometry(0.008, 10, 10)
+      const segments = 4
+      for (let i = 0; i < segments; i++) {
+        const segLen = length / segments
+        const topW = width * (1.0 - (i / segments) * 0.3)
+        const botW = width * (1.0 - ((i + 1) / segments) * 0.5)
+        const geo = new THREE.CylinderGeometry(botW, topW, segLen, 8)
+        const mesh = new THREE.Mesh(geo, hairMat)
+        mesh.position.y = -segLen * (i + 0.5)
+        mesh.position.x = xOffset + (i / segments) * curveX
+        mesh.position.z = (i / segments) * 0.015 // stay behind back (+Z)
+        g.add(mesh)
+      }
+      return g
+    }
+
+    // Three elegant back cascades draping behind shoulders
+    backHairGroup.add(createBackHairStrand(0.32, 0.015, 0, 0))
+    backHairGroup.add(createBackHairStrand(0.30, 0.013, 0.035, 0.015))
+    backHairGroup.add(createBackHairStrand(0.30, 0.013, -0.035, -0.015))
+
+    headGroup.add(backHairGroup)
+
+    // --- B. TWIN FRONT RAVEN LOCKS (Draping cleanly down sides of face onto collarbone) ---
+    // Placed at x = ±0.062, z = -0.032 to frame cheeks without covering mouth or eyes
+    const createFrontLock = (isLeft: boolean) => {
+      const g = new THREE.Group()
+      const xSign = isLeft ? 1 : -1
+
+      // Upper lock tapering down cheek
+      const topGeo = new THREE.CylinderGeometry(0.005, 0.004, 0.11, 8)
+      const topMesh = new THREE.Mesh(topGeo, hairMat)
+      topMesh.position.set(0, -0.055, 0)
+      topMesh.rotation.z = xSign * 0.03
+      g.add(topMesh)
+
+      // Lower slender lock tapering past collarbone
+      const botGeo = new THREE.CylinderGeometry(0.004, 0.0015, 0.14, 8)
+      const botMesh = new THREE.Mesh(botGeo, hairMat)
+      botMesh.position.set(xSign * 0.003, -0.17, -0.004)
+      botMesh.rotation.z = xSign * -0.02
+      g.add(botMesh)
+
+      return g
+    }
+
+    const leftFrontLock = createFrontLock(true)
+    leftFrontLock.position.set(0.062, 0.032, -0.030)
+    headGroup.add(leftFrontLock)
+
+    const rightFrontLock = createFrontLock(false)
+    rightFrontLock.position.set(-0.062, 0.032, -0.030)
+    headGroup.add(rightFrontLock)
+
+    // --- C. GOLDEN CROWN TIARA HEADBAND ---
+    // Torus arc positioned over the crown of head
+    const tiaraGeo = new THREE.TorusGeometry(0.076, 0.0022, 8, 36, Math.PI * 0.90)
+    const tiaraMesh = new THREE.Mesh(tiaraGeo, goldMat)
+    tiaraMesh.rotation.x = Math.PI * 0.52
+    tiaraMesh.rotation.z = -Math.PI / 2
+    tiaraMesh.position.set(0, 0.052, 0.005)
+    headGroup.add(tiaraMesh)
+
+    // --- D. DUAL SCULPTED GOLDEN ROSES OVER TEMPLES ---
+    const createTempleRose = () => {
+      const g = new THREE.Group()
+      const centerGeo = new THREE.SphereGeometry(0.009, 10, 10)
       const centerMesh = new THREE.Mesh(centerGeo, goldMat)
       g.add(centerMesh)
+
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2
+        const petalGeo = new THREE.CylinderGeometry(0.0048, 0.002, 0.010, 8)
+        const petal = new THREE.Mesh(petalGeo, goldMat)
+        petal.position.set(Math.cos(angle) * 0.008, Math.sin(angle) * 0.008, 0)
+        petal.rotation.z = angle
+        g.add(petal)
+      }
       return g
     }
 
-    const leftRose = createRose()
-    leftRose.position.set(0.082, 0.025, 0.015)
+    const leftRose = createTempleRose()
+    leftRose.position.set(0.069, 0.036, 0.005)
     headGroup.add(leftRose)
 
-    const rightRose = createRose()
-    rightRose.position.set(-0.082, 0.025, 0.015)
+    const rightRose = createTempleRose()
+    rightRose.position.set(-0.069, 0.036, 0.005)
     headGroup.add(rightRose)
 
-    // 2. Dangling Golden Needle / Stiletto Earrings
-    const createEarring = () => {
+    // --- E. DUAL PROTRUDING GOLDEN THORN HAIRPINS ("The Thorns") ---
+    // Angled upwards and backwards (+Z) from the roses
+    const stylusShaftGeo = new THREE.CylinderGeometry(0.0013, 0.0022, 0.11, 8)
+    const stylusTipGeo = new THREE.ConeGeometry(0.0022, 0.020, 8)
+
+    const createThornHairpin = (isLeft: boolean) => {
       const g = new THREE.Group()
-      const loopGeo = new THREE.TorusGeometry(0.004, 0.001, 8, 16)
-      const loop = new THREE.Mesh(loopGeo, goldMat)
-      const spikeGeo = new THREE.ConeGeometry(0.0024, 0.038, 8)
-      const spike = new THREE.Mesh(spikeGeo, goldMat)
-      spike.rotation.x = Math.PI
-      spike.position.y = -0.022
-      g.add(loop)
-      g.add(spike)
+      const shaft = new THREE.Mesh(stylusShaftGeo, goldMat)
+      const tip = new THREE.Mesh(stylusTipGeo, goldMat)
+      tip.position.y = 0.065
+      g.add(shaft)
+      g.add(tip)
+      // Angle backwards (+Z) and slightly outwards
+      g.rotation.x = Math.PI * 0.38
+      g.rotation.z = isLeft ? -Math.PI * 0.14 : Math.PI * 0.14
       return g
     }
 
-    const leftEarring = createEarring()
-    leftEarring.position.set(0.098, -0.015, -0.010)
+    const leftPin = createThornHairpin(true)
+    leftPin.position.set(0.070, 0.042, 0.015)
+    headGroup.add(leftPin)
+
+    const rightPin = createThornHairpin(false)
+    rightPin.position.set(-0.070, 0.042, 0.015)
+    headGroup.add(rightPin)
+
+    // --- F. DANGLING GOLDEN NEEDLE STILETTO EARRINGS ---
+    const createDaggerEarring = () => {
+      const g = new THREE.Group()
+      const loopGeo = new THREE.TorusGeometry(0.0035, 0.0009, 8, 16)
+      const loop = new THREE.Mesh(loopGeo, goldMat)
+      g.add(loop)
+
+      const needleGeo = new THREE.ConeGeometry(0.0016, 0.038, 8)
+      const needle = new THREE.Mesh(needleGeo, goldMat)
+      needle.rotation.x = Math.PI
+      needle.position.y = -0.022
+      g.add(needle)
+      return g
+    }
+
+    const leftEarring = createDaggerEarring()
+    leftEarring.position.set(0.068, 0.006, 0.008)
     headGroup.add(leftEarring)
 
-    const rightEarring = createEarring()
-    rightEarring.position.set(-0.098, -0.015, -0.010)
+    const rightEarring = createDaggerEarring()
+    rightEarring.position.set(-0.068, 0.006, 0.008)
     headGroup.add(rightEarring)
-
-    // 5. Twin Front Raven Hair Locks (framing face and draping forward over chest)
-    const createSideLock = (isLeft: boolean) => {
-      const g = new THREE.Group()
-      const s1 = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.006, 0.12, 8), hairMat)
-      s1.position.set(0, -0.06, 0.02)
-      s1.rotation.z = isLeft ? 0.08 : -0.08
-      s1.rotation.x = 0.15
-      g.add(s1)
-
-      const s2 = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.002, 0.16, 8), hairMat)
-      s2.position.set(isLeft ? -0.008 : 0.008, -0.19, 0.05)
-      s2.rotation.z = isLeft ? -0.06 : 0.06
-      s2.rotation.x = 0.25
-      g.add(s2)
-
-      return g
-    }
-
-    const leftLock = createSideLock(true)
-    leftLock.position.set(0.088, 0.03, 0.01)
-    headGroup.add(leftLock)
-
-    const rightLock = createSideLock(false)
-    rightLock.position.set(-0.088, 0.03, 0.01)
-    headGroup.add(rightLock)
 
     headBone.add(headGroup)
   }
   if (headGroup) headGroup.visible = visible
 
-  // 6. Midnight Leather Halter Choker with Central Golden Ring
+  // --- G. MIDNIGHT HALTER CHOKER & GOLDEN RING ---
   if (neckBone) {
     let choker = neckBone.getObjectByName('__YOR_CHOKER__') as THREE.Group | undefined
     if (!choker && visible) {
@@ -1333,21 +1441,22 @@ export function attachYorThornPrincessFeatures(vrm: VRM, visible: boolean = true
       choker.name = '__YOR_CHOKER__'
 
       const leatherMat = new THREE.MeshStandardMaterial({
-        color: 0x111216,
-        roughness: 0.40,
+        color: 0x0A0B0E,
+        roughness: 0.35,
         metalness: 0.15,
       })
       const goldMat = new THREE.MeshStandardMaterial({
-        color: 0xF7D060,
-        metalness: 0.92,
-        roughness: 0.16,
+        color: 0xF5C542,
+        metalness: 0.95,
+        roughness: 0.12,
       })
 
-      const collarMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.056, 0.022, 24, 1, true), leatherMat)
+      const collarMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.050, 0.054, 0.020, 24, 1, true), leatherMat)
       choker.add(collarMesh)
 
-      const ringMesh = new THREE.Mesh(new THREE.TorusGeometry(0.009, 0.002, 8, 20), goldMat)
-      ringMesh.position.set(0, 0, -0.056)
+      // Ring positioned at front of neck (-Z)
+      const ringMesh = new THREE.Mesh(new THREE.TorusGeometry(0.008, 0.0020, 8, 20), goldMat)
+      ringMesh.position.set(0, -0.002, -0.052)
       choker.add(ringMesh)
 
       neckBone.add(choker)
@@ -1355,45 +1464,64 @@ export function attachYorThornPrincessFeatures(vrm: VRM, visible: boolean = true
     if (choker) choker.visible = visible
   }
 
-  // 7. Dual Golden Stiletto Needle Daggers ("The Thorns")
-  const goldMatDagger = new THREE.MeshStandardMaterial({
-    color: 0xF7D060,
-    metalness: 0.94,
-    roughness: 0.14,
+  // --- H. UPPER BICEP LEATHER ARMBANDS ---
+  const strapArmMat = new THREE.MeshStandardMaterial({ color: 0x0A0B0E, roughness: 0.35, metalness: 0.15 })
+  const attachArmBand = (armBone: THREE.Object3D | null | undefined, name: string) => {
+    if (!armBone) return
+    let band = armBone.getObjectByName(name)
+    if (!band && visible) {
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.043, 0.012, 20, 1, true), strapArmMat)
+      b.name = name
+      b.position.set(0, -0.06, 0)
+      armBone.add(b)
+      band = b
+    }
+    if (band) band.visible = visible
+  }
+  attachArmBand(leftArm, '__YOR_ARMBAND_L__')
+  attachArmBand(rightArm, '__YOR_ARMBAND_R__')
+
+  // --- I. DUAL GOLDEN NEEDLE STILETTO DAGGERS ("The Thorns") ---
+  const goldDaggerMat = new THREE.MeshStandardMaterial({
+    color: 0xF5C542,
+    metalness: 0.96,
+    roughness: 0.10,
   })
 
-  const attachDagger = (handBone: THREE.Object3D | null | undefined, name: string) => {
+  const attachThornDagger = (handBone: THREE.Object3D | null | undefined, name: string) => {
     if (!handBone) return
     let dagger = handBone.getObjectByName(name) as THREE.Group | undefined
     if (!dagger && visible) {
       dagger = new THREE.Group()
       dagger.name = name
 
-      const bladeGeo = new THREE.CylinderGeometry(0.0018, 0.0042, 0.26, 12)
-      const blade = new THREE.Mesh(bladeGeo, goldMatDagger)
-      blade.position.y = 0.13
+      // Stiletto needle pointing down along hand & fingers
+      const bladeGeo = new THREE.CylinderGeometry(0.0016, 0.0036, 0.26, 12)
+      const blade = new THREE.Mesh(bladeGeo, goldDaggerMat)
+      blade.position.y = -0.13
       dagger.add(blade)
 
-      const tipGeo = new THREE.ConeGeometry(0.0018, 0.024, 12)
-      const tip = new THREE.Mesh(tipGeo, goldMatDagger)
-      tip.position.y = 0.27
+      const tipGeo = new THREE.ConeGeometry(0.0036, 0.032, 12)
+      const tip = new THREE.Mesh(tipGeo, goldDaggerMat)
+      tip.rotation.x = Math.PI
+      tip.position.y = -0.275
       dagger.add(tip)
 
-      const ringGeo = new THREE.TorusGeometry(0.014, 0.0026, 8, 20)
-      const ring = new THREE.Mesh(ringGeo, goldMatDagger)
-      ring.position.y = -0.025
+      // Golden finger ring at the hilt
+      const ringGeo = new THREE.TorusGeometry(0.014, 0.0026, 8, 24)
+      const ring = new THREE.Mesh(ringGeo, goldDaggerMat)
+      ring.position.y = 0.012
       dagger.add(ring)
 
-      dagger.rotation.x = Math.PI / 2
-      dagger.position.set(0, 0, 0.04)
+      dagger.position.set(0, -0.04, 0.015)
 
       handBone.add(dagger)
     }
     if (dagger) dagger.visible = visible
   }
 
-  attachDagger(leftHand, '__YOR_DAGGER_L__')
-  attachDagger(rightHand, '__YOR_DAGGER_R__')
+  attachThornDagger(leftHand, '__YOR_DAGGER_L__')
+  attachThornDagger(rightHand, '__YOR_DAGGER_R__')
 }
 
 // Backward-compatible alias
