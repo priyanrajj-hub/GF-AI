@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
 import type {
   ChatMessage,
   MemoryItem,
@@ -76,9 +77,13 @@ export class AppDatabase {
   private filePath: string
   private data: DatabaseSchema
 
-  constructor(storageDir = './data') {
-    if (!fs.existsSync(storageDir)) {
-      fs.mkdirSync(storageDir, { recursive: true })
+  constructor(storageDir = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) ? path.join(os.tmpdir(), 'ada_data') : './data') {
+    try {
+      if (!fs.existsSync(storageDir)) {
+        fs.mkdirSync(storageDir, { recursive: true })
+      }
+    } catch (e) {
+      console.warn('[DB] Storage dir creation bypassed (serverless environment):', e)
     }
     this.filePath = path.join(storageDir, 'ada_persistence.json')
     this.data = this.load()

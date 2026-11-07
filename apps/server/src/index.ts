@@ -1104,6 +1104,19 @@ app.post('/api/chat', async (req, res) => {
     ]
 
     const genericMarketKeywords = [
+      'stock',
+      'stocks',
+      'share',
+      'shares',
+      'stock recommendation',
+      'stock recommendations',
+      'recommendations',
+      'recommendation',
+      'best stock',
+      'best stocks',
+      'sunday 1 hour trading',
+      'muhurat',
+      'muhurat trading',
       'world market',
       'world markets',
       'market analyser',
@@ -1953,11 +1966,22 @@ app.get('/api/market/radar', async (_req, res) => {
   })
 })
 
-// Start server
-if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`✨ [Ada Server] Live and listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`)
-  })
+// Start server only when run directly as standalone process
+const isServerless = Boolean(
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.SERVERLESS ||
+  process.env.NETLIFY
+)
+
+if (process.env.NODE_ENV !== 'test' && !isServerless) {
+  try {
+    app.listen(PORT, () => {
+      console.log(`✨ [Ada Server] Live and listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`)
+    })
+  } catch (e) {
+    console.warn('[Ada Server] app.listen skipped:', e)
+  }
 }
 
 export default app
