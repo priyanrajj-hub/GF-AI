@@ -192,7 +192,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
           if (size.y > 0) {
             // Heroic superhero height for Iron Man Mark armor (1.82m)
-            const targetHeight = isIronman ? 1.82 : (isTripo ? 1.52 : 1.62)
+            const targetHeight = isIronman ? 1.82 : (isTripo ? 1.72 : 1.62)
             const scale = targetHeight / size.y
             scene.scale.set(scale, scale, scale)
             // Center horizontally and align model feet with container base (container is at y = -0.72)
@@ -264,14 +264,12 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
   // Instant real-time wardrobe skin updates for whichever character is active
   useEffect(() => {
     if (vrm) {
-      if (skinId) {
-        applyAvatarSkin(vrm, skinId)
-      } else if (activeCharacter === 'mira') {
-        applyAvatarSkin(vrm, 'yor-thorn-princess')
+      if (activeCharacter === 'mira') {
+        applyAvatarSkin(vrm, (skinId && skinId.startsWith('yor-')) ? skinId : 'yor-thorn-princess')
       } else if (activeCharacter === 'atlas') {
-        applyAvatarSkin(vrm, 'stark-executive-suit')
+        applyAvatarSkin(vrm, (skinId && skinId.startsWith('stark-')) ? skinId : 'stark-arc-trader')
       } else {
-        applyAvatarSkin(vrm, 'ada-red')
+        applyAvatarSkin(vrm, (skinId && !skinId.startsWith('yor-') && !skinId.startsWith('stark-')) ? skinId : 'ada-red')
       }
     }
   }, [skinId, vrm, activeCharacter])
