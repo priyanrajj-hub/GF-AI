@@ -32,6 +32,9 @@ import { UserLifeMemoryService } from './services/userLifeMemoryService.js'
 import { TutorStudyService } from './services/tutorStudyService.js'
 // Neural TTS Provider for high-fidelity human girl voice (zero robotic fallback - v3)
 import { NeuralTTSProvider } from './providers/neuralTtsProvider.js'
+import { buildRagContext } from './rag/ragService.js'
+import { getStockQuote, getCryptoPrice, generateAlgoSignal } from './market/marketDataService.js'
+import { rateLimitChat, rateLimitVoice, sanitizeInput, requestId } from './middleware/security.js'
 
 dotenv.config()
 ProviderRegistry.init()
@@ -78,6 +81,8 @@ const limiter = rateLimit({
 app.use('/api/', limiter)
 
 app.use(express.json({ limit: '10mb' }))
+app.use(requestId)
+app.use(sanitizeInput)
 app.use(authMiddleware)
 
 // File upload setup for vision inspection
@@ -1197,9 +1202,24 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
-  const effectiveMessage = liveInternetContext
-    ? `${message}\n\n[LIVE CONTEXT PROVIDED:\n${liveInternetContext}\n]\n\n${systemMandate}`
-    : `${message}\n\n${systemMandate}`
+  // 1c. Query RAG Vector Database for Grounded Lore, Market Mechanics & Formulas
+  let ragContext = ''
+  try {
+    const ragResult = await buildRagContext(message, character || 'ada', 3)
+    if (ragResult.contextText) {
+      ragContext = ragResult.contextText
+    }
+  } catch (ragErr) {
+    console.warn('[RAG Vector DB Error]', ragErr)
+  }
+
+  const contextParts = [
+    ragContext,
+    liveInternetContext ? `[LIVE TELEMETRY CONTEXT:\n${liveInternetContext}\n]` : '',
+    systemMandate,
+  ].filter(Boolean).join('\n\n')
+
+  const effectiveMessage = contextParts ? `${message}\n\n${contextParts}` : message
 
   try {
     let reply: StructuredReply
@@ -1761,7 +1781,58 @@ app.get('/api/budget', (req, res) => {
   res.json({ usage, budget })
 })
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`✨ [Ada Server] Live and listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`)
+// ==========================================
+// 11. RAG VECTOR DATABASE ENDPOINTS
+// ==========================================
+app.get('/api/rag/query', async (req, res) => {
+  const query = (req.query.q as string) || ''
+  const character = (req.query.character as string) || 'ada'
+  const result = await buildRagContext(query, character, 5)
+  res.json(result)
 })
+
+// ==========================================
+// 12. QUANTITATIVE ALGOTRADING & MARKET DATA
+// ==========================================
+app.get('/api/market/quote/:symbol', async (req, res) => {
+  const quote = await getStockQuote(req.params.symbol)
+  res.json({ quote })
+})
+
+app.get('/api/market/crypto/:coinId', async (req, res) => {
+  const quote = await getCryptoPrice(req.params.coinId)
+  res.json({ quote })
+})
+
+app.get('/api/market/algo/:symbol', async (req, res) => {
+  const signal = await generateAlgoSignal(req.params.symbol)
+  res.json({ signal })
+})
+
+app.get('/api/market/radar', async (_req, res) => {
+  const [btc, eth, sol, nvda, aapl, nifty] = await Promise.all([
+    getCryptoPrice('bitcoin'),
+    getCryptoPrice('ethereum'),
+    getCryptoPrice('solana'),
+    getStockQuote('NVDA'),
+    getStockQuote('AAPL'),
+    getStockQuote('^NSEI'),
+  ])
+  res.json({
+    radar: {
+      crypto: [btc, eth, sol],
+      stocks: [nvda, aapl],
+      indices: [nifty],
+      updatedAt: new Date().toISOString(),
+    },
+  })
+})
+
+// Start server
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`✨ [Ada Server] Live and listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`)
+  })
+}
+
+export default app

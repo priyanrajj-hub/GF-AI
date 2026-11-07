@@ -59,4 +59,6 @@ local_profile.json
 *.local.json
 
 *.private.vrm
+.vercel
+*.png
 

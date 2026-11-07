@@ -20,6 +20,7 @@ import {
   CloudRain,
   Lock,
   Unlock,
+  TrendingUp,
 } from 'lucide-react'
 import type { PersonalityMode } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
@@ -43,6 +44,8 @@ export const TopBar: React.FC = () => {
     setShowWardrobeDrawer,
     showEnvironmentDrawer,
     setShowEnvironmentDrawer,
+    showLiveMarketPanel,
+    toggleLiveMarketPanel,
     fullScreenHoloMode,
     toggleFullScreenHolo,
     setShowSettingsModal,
@@ -473,6 +476,19 @@ export const TopBar: React.FC = () => {
           title="3D Stage Environments (Holo Lab, Bedroom, Rooftop, Sakura Garden, Library)"
         >
           <Compass className="w-4 h-4" />
+        </button>
+
+        {/* Live AlgoTrading & Market Radar */}
+        <button
+          onClick={toggleLiveMarketPanel}
+          className={`p-2 rounded-xl glass-panel-subtle transition-all cursor-pointer ${
+            showLiveMarketPanel
+              ? 'text-emerald-300 border border-emerald-400/60 bg-emerald-500/20 shadow-[0_0_14px_rgba(16,185,129,0.5)]'
+              : 'text-slate-400 hover:text-emerald-400'
+          }`}
+          title="Live AlgoTrading Radar (Real-Time Signals, RSI, MACD, Bollinger Bands, Stocks & Crypto)"
+        >
+          <TrendingUp className="w-4 h-4 text-emerald-400" />
         </button>
 
         {/* Reaction Lab Link */}
