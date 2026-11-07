@@ -1,10 +1,9 @@
-/**
- * Vercel Serverless Entry Point
- * ─────────────────────────────
- * Re-exports the Express app so Vercel can run it as a serverless function.
- * The Express server's app.listen() call is a no-op in this context —
- * Vercel handles the HTTP layer and simply calls the express handler.
- */
 import app from '../apps/server/src/index.js'
 
-export default app
+export default function handler(req: any, res: any) {
+  // Ensure req.url starts with /api so Express routes match
+  if (req.url && !req.url.startsWith('/api')) {
+    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url)
+  }
+  return app(req, res)
+}
