@@ -197,12 +197,12 @@ export const App: React.FC = () => {
             }
           : songId
 
-        performAction(dance as any, { emotion: 'excited', duration: (songObj?.duration || 32) + 2 })
+        performAction(dance as any, { emotion: 'excited', duration: (songObj?.duration || 240) + 4 })
         globalSongEngine.playSong(finalSong)
       } else if (/now playing|now singing/i.test(parsedReply.display_text || '')) {
         const match = (parsedReply.display_text || '').match(/now (?:playing|singing)(?:\s*&[^\n:]*)?:\s*([^\n*(]+)/i)
-        const detectedTitle = match ? match[1].trim() : 'Starlight Sparkle'
-        performAction('dance_pop_groove', { emotion: 'excited', duration: 32 })
+        const detectedTitle = match ? match[1].trim() : 'Shape of You'
+        performAction('dance_pop_groove', { emotion: 'excited', duration: 240 })
         globalSongEngine.playSong(detectedTitle)
       } else if (parsedReply.speech) {
         VoiceEngine.speak(parsedReply.speech, {

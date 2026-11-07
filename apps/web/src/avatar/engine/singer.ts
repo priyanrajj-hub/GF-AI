@@ -64,7 +64,7 @@ export class SongEngine {
     performAction(dance as any, {
       emotion: 'excited',
       intensity: 1.0,
-      duration: song.duration || 32,
+      duration: song.duration ? song.duration + 4 : 360,
     })
 
     // Unlock audio context immediately

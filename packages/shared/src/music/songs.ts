@@ -115,12 +115,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-blinding-lights',
+    audioUrl: 'https://aac.saavncdn.com/077/0b02a92687d1ae3369b6859f44872e52_160.mp4',
     title: 'Blinding Lights',
     artist: 'The Weeknd',
     genre: 'Synthwave / 80s Pop',
     mood: 'Nocturnal & High-Octane',
     bpm: 171,
-    duration: 23,
+    duration: 200,
     danceAction: 'dance_pop_groove',
     lyrics: [
       { time: 0.5, text: "I've been on my own for long enough, maybe you can show me how to love, maybe..." },
@@ -132,12 +133,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-bad-guy',
+    audioUrl: 'https://aac.saavncdn.com/025/3b05d69eea7b4fec5e71c8a8a36007ad_160.mp4',
     title: 'Bad Guy',
     artist: 'Billie Eilish',
     genre: 'Electropop / Dark Pop',
     mood: 'Cheeky & Sarcastic',
     bpm: 135,
-    duration: 22,
+    duration: 194,
     danceAction: 'dance_hiphop_bounce',
     lyrics: [
       { time: 0.5, text: "White shirt now red, my bloody nose, sleepin', you're on your tiptoes..." },
@@ -149,12 +151,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-bohemian-rhapsody',
+    audioUrl: 'https://aac.saavncdn.com/011/1bd54d5435c597e03d36f20d0a73c5ea_160.mp4',
     title: 'Bohemian Rhapsody',
     artist: 'Queen',
     genre: 'Classic Rock Opera',
     mood: 'Dramatic & Grand',
     bpm: 72,
-    duration: 25,
+    duration: 358,
     danceAction: 'dance_slow_sway',
     lyrics: [
       { time: 0.5, text: 'Is this the real life? Is this just fantasy?' },
@@ -167,12 +170,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-despacito',
+    audioUrl: 'https://aac.saavncdn.com/634/5796f0a4764cf7c3279eaef3976d00b4_160.mp4',
     title: 'Despacito',
     artist: 'Luis Fonsi ft. Daddy Yankee',
     genre: 'Reggaeton Pop',
     mood: 'Sensual & Groovy',
     bpm: 89,
-    duration: 24,
+    duration: 228,
     danceAction: 'dance_pop_groove',
     lyrics: [
       { time: 0.5, text: 'Sí, sabes que ya llevo un rato mirándote, tengo que bailar contigo hoy...' },
@@ -185,12 +189,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-flowers',
+    audioUrl: 'https://aac.saavncdn.com/047/985bd26eb8496d9a704c2fbb1bf0b8b7_160.mp4',
     title: 'Flowers',
     artist: 'Miley Cyrus',
     genre: 'Disco Funk Pop',
     mood: 'Independent & Joyful',
     bpm: 118,
-    duration: 24,
+    duration: 200,
     danceAction: 'dance_pop_groove',
     lyrics: [
       { time: 0.5, text: 'We were good, we were gold, kinda dream that can’t be sold...' },
@@ -203,12 +208,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-perfect',
+    audioUrl: 'https://aac.saavncdn.com/286/71bb6cc3391ddf619a4a3f1a1134f1c4_160.mp4',
     title: 'Perfect',
     artist: 'Ed Sheeran',
     genre: 'Acoustic Pop Ballad',
     mood: 'Romantic & Gentle',
     bpm: 63,
-    duration: 24,
+    duration: 263,
     danceAction: 'dance_slow_sway',
     lyrics: [
       { time: 0.5, text: 'I found a love for me, darling, just dive right in and follow my lead...' },
@@ -221,12 +227,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-espresso',
+    audioUrl: 'https://aac.saavncdn.com/111/cf81f6eb5b6768fe2e1ddf9335124a5f_160.mp4',
     title: 'Espresso',
     artist: 'Sabrina Carpenter',
     genre: 'Nu-Disco / Funk Pop',
     mood: 'Bubbly & Catchy',
     bpm: 104,
-    duration: 22,
+    duration: 175,
     danceAction: 'dance_cute_idol',
     lyrics: [
       { time: 0.5, text: "Now he's thinkin' 'bout me every night, oh, is it that sweet? I guess so!" },
@@ -238,12 +245,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-tum-hi-ho',
+    audioUrl: 'https://aac.saavncdn.com/430/5c5ea5cc00e3bff45616013226f376fe_160.mp4',
     title: 'Tum Hi Ho',
     artist: 'Arijit Singh',
     genre: 'Bollywood Soul Ballad',
     mood: 'Romantic & Deep',
     bpm: 88,
-    duration: 24,
+    duration: 262,
     danceAction: 'dance_slow_sway',
     lyrics: [
       { time: 0.5, text: 'Hum tere bin ab reh nahi sakte, tere bina kya wajood mera...' },
@@ -255,12 +263,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-chaiyya-chaiyya',
+    audioUrl: 'https://aac.saavncdn.com/596/4638940380eca6bcbc1e1de0d8e63938_160.mp4',
     title: 'Chaiyya Chaiyya',
     artist: 'A.R. Rahman & Sukhwinder Singh',
     genre: 'Indian Folk Dance',
     mood: 'Electrifying & Rhythmic',
     bpm: 102,
-    duration: 24,
+    duration: 406,
     danceAction: 'dance_hiphop_bounce',
     lyrics: [
       { time: 0.5, text: 'Jinke sar ho ishq ki chhaaon, paanv ke neeche jannat hogi...' },
@@ -272,13 +281,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-idol-spark',
-    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/68/1e/60/681e601f-e1f2-4ebb-37de-adf00bdf57b6/mzaf_8266263075137964740.plus.aac.p.m4a',
-    title: 'Starlight Sparkle (Dancing Song)',
-    artist: 'Ada',
+    audioUrl: 'https://aac.saavncdn.com/638/a7318e782b4ed4aa6c414bd3fe2c112e_160.mp4',
+    title: 'Idol (Dancing Anime Pop)',
+    artist: 'YOASOBI',
     genre: 'Anime Dance Pop',
     mood: 'High-Energy & Upbeat',
     bpm: 128,
-    duration: 22,
+    duration: 213,
     danceAction: 'dance_cute_idol',
     lyrics: [
       { time: 0.5, text: 'One, two, three, jump into the light!' },
@@ -290,13 +299,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-treachery-aizen',
-    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/09/77/5e/09775ee7-f71e-6400-2911-1e8498ec231f/mzaf_9762617435103270357.plus.aac.p.m4a',
+    audioUrl: 'https://aac.saavncdn.com/788/5abce273d75f757a25f5fdcb6a5f63e7_160.mp4',
     title: "Treachery (Aizen's Theme - Bleach)",
-    artist: 'Shiro SAGISU and Gabriele Motta',
+    artist: 'Shiro SAGISU',
     genre: 'Cinematic Anime OST / Epic Orchestral',
     mood: 'Godlike, Mysterious and Unstoppable',
     bpm: 124,
-    duration: 30,
+    duration: 202,
     danceAction: 'dance_hiphop_bounce',
     lyrics: [
       { time: 0.5, text: 'No one has stood at the top from the heavens... neither you, nor I, nor even God himself.' },
@@ -344,12 +353,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-cyber-sunrise',
+    audioUrl: 'https://aac.saavncdn.com/987/0c846bfe931e0f136d364c5ef5885372_160.mp4',
     title: 'Cyber Sunrise',
     artist: 'Ada',
     genre: 'Lo-Fi Electro Pop',
     mood: 'Warm & Encouraging',
     bpm: 96,
-    duration: 24,
+    duration: 135,
     danceAction: 'dance_pop_groove',
     lyrics: [
       { time: 0.5, text: 'Neon lights fade into morning skies...' },
@@ -408,7 +418,7 @@ export function resolveSong(query: string): SongSpec {
     genre: isUpbeat ? 'Electrifying Dance Pop' : 'Soulful Melodic Anthem',
     mood: isUpbeat ? 'High-Energy & Celebratory' : 'Heartfelt & Rhythmic',
     bpm,
-    duration: 24,
+    duration: 210,
     danceAction,
     lyrics: [
       { time: 0.5, text: `Singing ${capitalizedTitle} live right now for you, sweetheart!` },
