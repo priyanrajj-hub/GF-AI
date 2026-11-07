@@ -123,12 +123,7 @@ export const TopBar: React.FC = () => {
         {/* 3D Character Switcher: Tony Stark (RDJ) | Ada Wong (RE) | Yor Forger (Spy x Family) */}
         <div className="flex items-center gap-1.5 p-1 rounded-2xl glass-panel border border-cyan-500/40 shadow-lg">
           <button
-            onClick={() => {
-              setActiveCharacter('atlas')
-              import('../../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-                VoiceEngine.speak("Jarvis online. Tony Stark ready. Let's make things happen.", { pitch: 0.94, rate: 1.05 })
-              }).catch(() => {})
-            }}
+            onClick={() => setActiveCharacter('atlas')}
             className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
               activeCharacter === 'atlas'
                 ? 'bg-gradient-to-r from-amber-600 via-orange-500 to-cyan-500 text-white shadow-[0_0_14px_rgba(245,158,11,0.6)] border border-amber-400/80'
@@ -140,12 +135,7 @@ export const TopBar: React.FC = () => {
             <span>Tony Stark (RDJ)</span>
           </button>
           <button
-            onClick={() => {
-              setActiveCharacter('ada')
-              import('../../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-                VoiceEngine.speak("Ada Wong here. Tactical intelligence and market disciplines active.", { pitch: 1.05, rate: 1.02 })
-              }).catch(() => {})
-            }}
+            onClick={() => setActiveCharacter('ada')}
             className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
               activeCharacter === 'ada' || !activeCharacter
                 ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_14px_rgba(0,243,255,0.6)] border border-cyan-400/80'
@@ -157,12 +147,7 @@ export const TopBar: React.FC = () => {
             <span>Ada Wong</span>
           </button>
           <button
-            onClick={() => {
-              setActiveCharacter('mira')
-              import('../../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-                VoiceEngine.speak("Hello! Yor Forger at your service. I will protect you with all my heart!", { pitch: 1.22, rate: 1.00 })
-              }).catch(() => {})
-            }}
+            onClick={() => setActiveCharacter('mira')}
             className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
               activeCharacter === 'mira'
                 ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-[0_0_14px_rgba(244,63,94,0.6)] border border-rose-400/80'
