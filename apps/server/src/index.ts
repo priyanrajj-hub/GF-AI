@@ -81,7 +81,13 @@ const limiter = rateLimit({
 })
 app.use('/api/', limiter)
 
-app.use(express.json({ limit: '10mb' }))
+// Handle Vercel serverless pre-parsed bodies gracefully
+app.use((req, res, next) => {
+  if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
+    return next()
+  }
+  express.json({ limit: '10mb' })(req, res, next)
+})
 app.use(requestId)
 app.use(sanitizeInput)
 app.use(authMiddleware)
