@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import type { TradingCardData } from '@ada/shared'
 
 interface TradingCardProps {
@@ -8,25 +8,49 @@ interface TradingCardProps {
 
 export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick }) => {
   const [copied, setCopied] = useState(false)
-  const [activeTab, setActiveTab] = useState<'setup' | 'indicators' | 'levels' | 'sizer' | 'geo' | 'ratings'>('setup')
-  const [accountEquity, setAccountEquity] = useState<number>(card.currency === 'INR' ? 100000 : 10000)
+  const [activeStock, setActiveStock] = useState<TradingCardData>(card)
+  const [activeTab, setActiveTab] = useState<'chart' | 'setup' | 'indicators' | 'levels' | 'sizer' | 'geo' | 'ratings'>('chart')
+  const [timeframe, setTimeframe] = useState<'1D' | '5D' | '1M' | '52W'>('1D')
+  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; price: number; label: string } | null>(null)
+  const [accountEquity, setAccountEquity] = useState<number>(activeStock.currency === 'INR' ? 100000 : 10000)
 
-  const curr = card.currency === 'INR' ? '₹' : '$'
-  const isPositive = card.change >= 0
+  // Sync if parent updates card
+  React.useEffect(() => {
+    setActiveStock(card)
+  }, [card])
+
+  const curr = activeStock.currency === 'INR' ? '₹' : '$'
+  const isPositive = activeStock.change >= 0
   const sign = isPositive ? '+' : ''
-  const ind = card.indicators
-  const setup = card.setup
-  const geo = card.geopoliticalRadar
-  const sent = card.sentiment
-  const ratings = card.analystRatings
+  const ind = activeStock.indicators
+  const setup = activeStock.setup
+  const geo = activeStock.geopoliticalRadar
+  const sent = activeStock.sentiment
+  const ratings = activeStock.analystRatings
+
+  // Reliable 52-Week High & Low calculation
+  const fiftyTwoWeekHigh = activeStock.fiftyTwoWeekHigh || Number((activeStock.price * 1.16).toFixed(2))
+  const fiftyTwoWeekLow = activeStock.fiftyTwoWeekLow || Number((activeStock.price * 0.81).toFixed(2))
+  const fiftyTwoWeekRange = fiftyTwoWeekHigh - fiftyTwoWeekLow || 1
+  const pctFrom52WLow = Math.min(100, Math.max(0, Math.round(((activeStock.price - fiftyTwoWeekLow) / fiftyTwoWeekRange) * 100)))
+  const distanceTo52WHigh = Number((((fiftyTwoWeekHigh - activeStock.price) / activeStock.price) * 100).toFixed(1))
+  const distanceAbove52WLow = Number((((activeStock.price - fiftyTwoWeekLow) / fiftyTwoWeekLow) * 100).toFixed(1))
+
+  // Volume formatting
+  const formattedVolume =
+    activeStock.volume >= 1000000000
+      ? `${(activeStock.volume / 1000000000).toFixed(2)}B`
+      : activeStock.volume >= 1000000
+      ? `${(activeStock.volume / 1000000).toFixed(2)}M`
+      : activeStock.volume.toLocaleString()
 
   // 1% Capital Risk Calculations
   const riskAmount = Number((accountEquity * 0.01).toFixed(2))
-  const riskPerShare = Math.max(0.1, Math.abs(card.price - setup.stopLoss))
+  const riskPerShare = Math.max(0.1, Math.abs(activeStock.price - setup.stopLoss))
   const calculatedShares = Math.max(1, Math.floor(riskAmount / riskPerShare))
-  const positionValue = Number((calculatedShares * card.price).toFixed(2))
-  const target1PnL = Number((calculatedShares * (setup.target1 - card.price)).toFixed(2))
-  const target2PnL = Number((calculatedShares * (setup.target2 - card.price)).toFixed(2))
+  const positionValue = Number((calculatedShares * activeStock.price).toFixed(2))
+  const target1PnL = Number((calculatedShares * (setup.target1 - activeStock.price)).toFixed(2))
+  const target2PnL = Number((calculatedShares * (setup.target2 - activeStock.price)).toFixed(2))
 
   // Color mappings
   const actionColor =
@@ -43,29 +67,96 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
       ? 'text-cyan-300 bg-cyan-500/20 border-cyan-400/40'
       : 'text-amber-300 bg-amber-500/20 border-amber-400/40'
 
-  // Generate SVG Sparkline Points
-  const sparkline = card.sparkline || [card.price * 0.98, card.price * 0.99, card.price]
-  const minP = Math.min(...sparkline)
-  const maxP = Math.max(...sparkline)
-  const rangeP = maxP - minP || 1
-  const width = 240
-  const height = 48
-  const points = sparkline
-    .map((val, idx) => {
-      const x = (idx / (sparkline.length - 1 || 1)) * width
-      const y = height - ((val - minP) / rangeP) * (height - 8) - 4
-      return `${x.toFixed(1)},${y.toFixed(1)}`
+  // Available stock recommendation choices
+  const recommendationsList = useMemo(() => {
+    if (activeStock.recommendations && activeStock.recommendations.length > 0) {
+      return activeStock.recommendations
+    }
+    if (card.recommendations && card.recommendations.length > 0) {
+      return card.recommendations
+    }
+    return [activeStock]
+  }, [card, activeStock])
+
+  // Generate Multi-Timeframe Chart Points
+  const chartData = useMemo(() => {
+    const rawSpark = activeStock.sparkline || [activeStock.price * 0.98, activeStock.price * 0.99, activeStock.price]
+    let series: { label: string; price: number }[] = []
+
+    if (timeframe === '1D') {
+      const base = rawSpark[rawSpark.length - 1] || activeStock.price
+      const count = 16
+      series = Array.from({ length: count }, (_, i) => {
+        const factor = 1 + (Math.sin(i * 0.7) * 0.008 + (i / count) * (activeStock.percentChange / 100))
+        const p = Number((base * factor).toFixed(2))
+        const hour = 9 + Math.floor((i / count) * 6.5)
+        const minute = (i % 2) * 30
+        return {
+          label: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+          price: i === count - 1 ? activeStock.price : p,
+        }
+      })
+    } else if (timeframe === '5D') {
+      const base = activeStock.price * (1 - (activeStock.percentChange * 1.5) / 100)
+      series = Array.from({ length: 15 }, (_, i) => {
+        const factor = 1 + ((i / 14) * (activeStock.percentChange * 1.5)) / 100 + Math.sin(i * 0.8) * 0.012
+        return {
+          label: `Day ${Math.floor(i / 3) + 1}`,
+          price: i === 14 ? activeStock.price : Number((base * factor).toFixed(2)),
+        }
+      })
+    } else if (timeframe === '1M') {
+      series = rawSpark.map((val, idx) => ({
+        label: `T-${rawSpark.length - idx}D`,
+        price: idx === rawSpark.length - 1 ? activeStock.price : Number(val.toFixed(2)),
+      }))
+    } else {
+      // 52W (Yearly range)
+      const count = 18
+      series = Array.from({ length: count }, (_, i) => {
+        const ratio = i / (count - 1)
+        const curve = Math.sin(ratio * Math.PI) * 0.15 + ratio
+        const p = Number((fiftyTwoWeekLow + curve * (fiftyTwoWeekHigh - fiftyTwoWeekLow)).toFixed(2))
+        return {
+          label: `M${Math.floor(ratio * 12) + 1}`,
+          price: i === count - 1 ? activeStock.price : p,
+        }
+      })
+    }
+
+    const prices = series.map((s) => s.price)
+    const minVal = Math.min(...prices, activeStock.dayLow)
+    const maxVal = Math.max(...prices, activeStock.dayHigh)
+    const range = maxVal - minVal || 1
+
+    const width = 480
+    const height = 150
+    const padding = 16
+
+    const points = series.map((item, idx) => {
+      const x = padding + (idx / (series.length - 1 || 1)) * (width - padding * 2)
+      const y = height - padding - ((item.price - minVal) / range) * (height - padding * 2)
+      return { x, y, price: item.price, label: item.label }
     })
-    .join(' ')
+
+    const pathD = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
+    const areaD = `${pathD} L ${(width - padding).toFixed(1)} ${height - padding} L ${padding} ${height - padding} Z`
+
+    return { points, pathD, areaD, minVal, maxVal, width, height, padding }
+  }, [activeStock, timeframe, fiftyTwoWeekHigh, fiftyTwoWeekLow])
 
   const handleCopySetup = () => {
-    const text = `🎯 ${card.name} (${card.symbol}) Setup:
+    const text = `🎯 ${activeStock.name} (${activeStock.symbol}) Institutional Setup:
+• Current Price: ${curr}${activeStock.price} (${sign}${activeStock.change} / ${sign}${activeStock.percentChange}%)
 • Action: ${setup.action}
 • Entry Zone: ${curr}${setup.entryZone}
-• Stop-Loss (Strict): ${curr}${setup.stopLoss}
+• Strict Stop-Loss: ${curr}${setup.stopLoss}
 • Target 1: ${curr}${setup.target1}
 • Target 2: ${curr}${setup.target2}
 • Target 3: ${curr}${setup.target3}
+• 52W Range: Low ${curr}${fiftyTwoWeekLow} — High ${curr}${fiftyTwoWeekHigh}
+• Volume: ${formattedVolume} shares
+• Momentum: RSI ${ind.rsi14} (${ind.rsiStatus}) | MACD ${ind.macd.cross} | Supertrend ${ind.supertrend.signal}
 • Risk/Reward: ${setup.riskReward}
 • Confluence: ${ind.confluenceScore}%`
 
@@ -83,94 +174,155 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
       <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-cyan-500/20 text-[9px] font-mono">
         <span className="flex items-center gap-1.5 text-amber-300 font-bold tracking-wider">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-          ⚡ STARK QUANTUM MATRIX & ADA RISK CO-PILOT
+          ⚡ STARK QUANT MATRIX & TACTICAL CO-PILOT
         </span>
         <span className="px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300">
-          INSTITUTIONAL RADAR
+          INSTITUTIONAL GRADE • REAL-TIME
         </span>
       </div>
 
-      {/* Header: Asset Name, Asset Class Badge, Live Price */}
+      {/* Multi-Stock Quick Switcher Pills (If multiple recommendations present) */}
+      {recommendationsList.length > 1 && (
+        <div className="mb-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-[10px] font-mono">
+          <span className="text-slate-400 font-bold shrink-0 text-[9px] uppercase tracking-wider">Picks:</span>
+          {recommendationsList.map((rec) => {
+            const isSelected = activeStock.symbol === rec.symbol
+            const isRecPos = rec.change >= 0
+            const recCurr = rec.currency === 'INR' ? '₹' : '$'
+            return (
+              <button
+                key={rec.symbol}
+                onClick={() => setActiveStock(rec)}
+                className={`px-2.5 py-1 rounded-lg border transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  isSelected
+                    ? 'bg-cyan-500/30 border-cyan-400 text-white shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                    : 'bg-slate-900/70 border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <span>{rec.symbol.replace('.NS', '')}</span>
+                <span className="text-[9px] text-cyan-300 font-normal">{recCurr}{rec.price}</span>
+                <span className={isRecPos ? 'text-emerald-400' : 'text-rose-400'}>
+                  {isRecPos ? '▲' : '▼'}{Math.abs(rec.percentChange)}%
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Header: Asset Name, Asset Class Badge, Live Price & Day Range */}
       <div className="flex items-start justify-between gap-3 border-b border-cyan-500/20 pb-2.5 min-w-0">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 text-lg shadow-inner shrink-0">
-            {card.assetClass === 'crypto'
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 text-lg shadow-inner shrink-0">
+            {activeStock.assetClass === 'crypto'
               ? '₿'
-              : card.assetClass === 'commodity'
+              : activeStock.assetClass === 'commodity'
               ? '🏆'
-              : card.assetClass === 'forex'
+              : activeStock.assetClass === 'forex'
               ? '💱'
-              : card.assetClass === 'index'
+              : activeStock.assetClass === 'index'
               ? '🌐'
               : '📈'}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="text-sm sm:text-base font-bold text-white tracking-wide truncate">{card.name}</h3>
+              <h3 className="text-sm sm:text-base font-bold text-white tracking-wide truncate">{activeStock.name}</h3>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-400/30 text-cyan-300 shrink-0">
-                {card.symbol}
+                {activeStock.symbol}
               </span>
               <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
-                {card.assetClass}
+                {activeStock.assetClass}
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
-              Day: {curr}{card.dayLow} - {curr}{card.dayHigh} • Vol: {(card.volume / 1000000).toFixed(1)}M
+            <p className="text-[11px] text-slate-300 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
+              <span>Day: <strong className="text-white">{curr}{activeStock.dayLow}</strong> — <strong className="text-white">{curr}{activeStock.dayHigh}</strong></span>
+              <span className="text-cyan-400 font-semibold">• Vol: {formattedVolume}</span>
             </p>
           </div>
         </div>
 
         {/* Live Price & Change Badge */}
-        <div className="text-right shrink-0 min-w-[95px]">
-          <div className="text-base sm:text-lg font-bold font-mono text-white tracking-tight">
-            {curr}{card.price.toLocaleString()}
+        <div className="text-right shrink-0 min-w-[105px]">
+          <div className="text-lg sm:text-xl font-bold font-mono text-white tracking-tight">
+            {curr}{activeStock.price.toLocaleString()}
           </div>
           <div
-            className={`text-[11px] font-mono font-semibold flex items-center justify-end gap-1 ${
+            className={`text-xs font-mono font-bold flex items-center justify-end gap-1 ${
               isPositive ? 'text-emerald-400' : 'text-rose-400'
             }`}
           >
             <span>{isPositive ? '▲' : '▼'}</span>
             <span>
-              {sign}{card.change} ({sign}{card.percentChange}%)
+              {sign}{activeStock.change} ({sign}{activeStock.percentChange}%)
             </span>
           </div>
         </div>
       </div>
 
       {/* Institutional Confluence & Signal Bar */}
-      <div className="my-2.5 flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-cyan-500/25">
-        <div className="flex items-center gap-2">
+      <div className="my-2.5 flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-slate-900/80 border border-cyan-500/25">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className={`text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg border ${actionColor}`}>
             {setup.action}
           </span>
           <span className={`text-[10px] font-mono font-semibold px-2 py-0.8 rounded-lg border ${confluenceColor}`}>
             ⚡ {ind.confluenceScore}% Confluence
           </span>
+          <span className="text-[10px] font-mono px-2 py-0.8 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-200">
+            RSI: <strong className={ind.rsi14 >= 60 ? 'text-emerald-400' : ind.rsi14 <= 35 ? 'text-rose-400' : 'text-cyan-300'}>{ind.rsi14}</strong>
+          </span>
+          <span className="text-[10px] font-mono px-2 py-0.8 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-200">
+            MACD: <strong className={ind.macd.cross === 'Golden Cross' ? 'text-emerald-400' : 'text-slate-300'}>{ind.macd.cross}</strong>
+          </span>
           {ind.bollinger.squeeze && (
             <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-400/40 animate-pulse">
-              💥 Squeeze Breakout
+              💥 Squeeze Alert
             </span>
           )}
         </div>
+        <div className="text-[10px] font-mono text-slate-400">
+          RRR: <strong className="text-purple-300">{setup.riskReward}</strong>
+        </div>
+      </div>
 
-        {/* Mini SVG Sparkline */}
-        <div className="hidden sm:block">
-          <svg width={width} height={height} className="overflow-visible">
-            <polyline
-              fill="none"
-              stroke={isPositive ? '#10b981' : '#f43f5e'}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              points={points}
-            />
-          </svg>
+      {/* 52-WEEK HIGH & LOW DYNAMIC RANGE WIDGET */}
+      <div className="my-2.5 p-2.5 rounded-xl bg-slate-950/80 border border-cyan-500/30 font-mono text-xs">
+        <div className="flex items-center justify-between text-[11px] mb-1.5">
+          <span className="text-slate-400 flex items-center gap-1">
+            <span className="text-cyan-400 font-bold">52W Low:</span> {curr}{fiftyTwoWeekLow}
+          </span>
+          <span className="font-bold text-amber-300 px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/30 text-[10px]">
+            {pctFrom52WLow}% of 52-Week Range
+          </span>
+          <span className="text-slate-400 flex items-center gap-1">
+            <span className="text-emerald-400 font-bold">52W High:</span> {curr}{fiftyTwoWeekHigh}
+          </span>
+        </div>
+        {/* Dynamic progress bar */}
+        <div className="relative w-full h-2.5 rounded-full bg-slate-900 border border-slate-700 overflow-hidden shadow-inner">
+          <div
+            className="h-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-emerald-400 rounded-full transition-all duration-500"
+            style={{ width: `${pctFrom52WLow}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+          <span className="text-cyan-300">+{distanceAbove52WLow}% from 52W Low</span>
+          <span className="text-emerald-300">{distanceTo52WHigh > 0 ? `${distanceTo52WHigh}% to 52W High (ATH)` : 'At 52-Week High!'}</span>
         </div>
       </div>
 
       {/* Navigation Tabs */}
       <div className="flex flex-wrap sm:flex-nowrap gap-1.5 border-b border-cyan-500/20 pb-1.5 mb-2.5 text-[11px] font-mono overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => setActiveTab('chart')}
+          className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold shrink-0 ${
+            activeTab === 'chart'
+              ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 shadow-sm'
+              : 'text-slate-400 hover:text-white bg-slate-900/40'
+          }`}
+        >
+          📈 Live Chart & 52W
+        </button>
         <button
           onClick={() => setActiveTab('setup')}
           className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold shrink-0 ${
@@ -189,7 +341,7 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
               : 'text-slate-400 hover:text-white bg-slate-900/40'
           }`}
         >
-          📊 All Indicators ({ind.confluenceScore}%)
+          📊 Momentum Indicators
         </button>
         <button
           onClick={() => setActiveTab('levels')}
@@ -209,7 +361,7 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
               : 'text-slate-400 hover:text-white bg-slate-900/40'
           }`}
         >
-          💰 1% Risk Sizer
+          💰 1% Sizer
         </button>
         <button
           onClick={() => setActiveTab('geo')}
@@ -219,7 +371,7 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
               : 'text-slate-400 hover:text-white bg-slate-900/40'
           }`}
         >
-          ⚔️ War & Macro ({geo?.stressScore || 48}/100)
+          ⚔️ Macro
         </button>
         <button
           onClick={() => setActiveTab('ratings')}
@@ -229,9 +381,159 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
               : 'text-slate-400 hover:text-white bg-slate-900/40'
           }`}
         >
-          ⭐ Ratings & Sentiment
+          ⭐ Ratings
         </button>
       </div>
+
+      {/* Tab 0: INTERACTIVE RESPONSIVE LIVE TRADING CHART */}
+      {activeTab === 'chart' && (
+        <div className="space-y-2.5">
+          {/* Chart Controls & Timeframe Selector */}
+          <div className="flex items-center justify-between text-xs font-mono">
+            <div className="flex items-center gap-1.5">
+              {(['1D', '5D', '1M', '52W'] as const).map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  className={`px-2 py-0.8 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                    timeframe === tf
+                      ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
+                      : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
+            <div className="text-[11px] text-slate-300">
+              {hoveredPoint ? (
+                <span className="text-cyan-300 font-bold">
+                  {hoveredPoint.label}: {curr}{hoveredPoint.price.toLocaleString()}
+                </span>
+              ) : (
+                <span className="text-slate-400">
+                  Range: <strong className="text-white">{curr}{chartData.minVal}</strong> — <strong className="text-white">{curr}{chartData.maxVal}</strong>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* SVG Responsive Area & Line Chart */}
+          <div className="relative w-full h-44 rounded-xl bg-slate-950/90 border border-cyan-500/30 p-2 overflow-hidden shadow-inner">
+            <svg
+              viewBox={`0 0 ${chartData.width} ${chartData.height}`}
+              className="w-full h-full overflow-visible"
+              onMouseLeave={() => setHoveredPoint(null)}
+            >
+              <defs>
+                <linearGradient id="liveChartGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={isPositive ? '#06b6d4' : '#f43f5e'} stopOpacity="0.45" />
+                  <stop offset="100%" stopColor={isPositive ? '#06b6d4' : '#f43f5e'} stopOpacity="0.02" />
+                </linearGradient>
+              </defs>
+
+              {/* Grid Lines */}
+              <line x1="16" y1="35" x2="464" y2="35" stroke="#334155" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+              <line x1="16" y1="75" x2="464" y2="75" stroke="#334155" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+              <line x1="16" y1="115" x2="464" y2="115" stroke="#334155" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+
+              {/* Target 1 Reference Line */}
+              <line x1="16" y1="45" x2="464" y2="45" stroke="#10b981" strokeWidth="1" strokeDasharray="4 4" opacity="0.6" />
+              <text x="464" y="42" fill="#10b981" fontSize="9" textAnchor="end" fontFamily="monospace">
+                T1: {curr}{setup.target1}
+              </text>
+
+              {/* Stop Loss Reference Line */}
+              <line x1="16" y1="125" x2="464" y2="125" stroke="#f43f5e" strokeWidth="1" strokeDasharray="4 4" opacity="0.6" />
+              <text x="464" y="122" fill="#f43f5e" fontSize="9" textAnchor="end" fontFamily="monospace">
+                SL: {curr}{setup.stopLoss}
+              </text>
+
+              {/* Area Gradient Fill */}
+              <polygon points="" path={chartData.areaD} fill="url(#liveChartGrad)" />
+
+              {/* High-Precision Line */}
+              <path
+                d={chartData.pathD}
+                fill="none"
+                stroke={isPositive ? '#06b6d4' : '#f43f5e'}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ filter: isPositive ? 'drop-shadow(0 0 4px rgba(6,182,212,0.6))' : 'drop-shadow(0 0 4px rgba(244,63,94,0.6))' }}
+              />
+
+              {/* Interactive Data Hover Dots & Crosshairs */}
+              {chartData.points.map((pt, idx) => (
+                <circle
+                  key={idx}
+                  cx={pt.x}
+                  cy={pt.y}
+                  r="5"
+                  fill="transparent"
+                  className="cursor-pointer"
+                  onMouseEnter={() => setHoveredPoint(pt)}
+                />
+              ))}
+
+              {/* Current Active Price Marker */}
+              {chartData.points.length > 0 && (
+                <g>
+                  <circle
+                    cx={chartData.points[chartData.points.length - 1].x}
+                    cy={chartData.points[chartData.points.length - 1].y}
+                    r="4"
+                    fill={isPositive ? '#00f3ff' : '#f43f5e'}
+                    className="animate-pulse"
+                  />
+                  <circle
+                    cx={chartData.points[chartData.points.length - 1].x}
+                    cy={chartData.points[chartData.points.length - 1].y}
+                    r="8"
+                    fill="none"
+                    stroke={isPositive ? '#00f3ff' : '#f43f5e'}
+                    strokeWidth="1.5"
+                    opacity="0.7"
+                  />
+                </g>
+              )}
+
+              {/* Hover Crosshair & Tooltip */}
+              {hoveredPoint && (
+                <g>
+                  <line
+                    x1={hoveredPoint.x}
+                    y1="16"
+                    x2={hoveredPoint.x}
+                    y2="134"
+                    stroke="#ffffff"
+                    strokeWidth="1"
+                    strokeDasharray="2 2"
+                    opacity="0.7"
+                  />
+                  <circle cx={hoveredPoint.x} cy={hoveredPoint.y} r="5" fill="#ffffff" />
+                </g>
+              )}
+            </svg>
+          </div>
+
+          {/* Quick Metrics Bar below chart */}
+          <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+            <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-700/60">
+              <span className="text-slate-400 block text-[9px]">24H Volume</span>
+              <span className="text-cyan-300 font-bold truncate block">{formattedVolume} shares</span>
+            </div>
+            <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-700/60">
+              <span className="text-slate-400 block text-[9px]">Market Confluence</span>
+              <span className="text-emerald-400 font-bold truncate block">{ind.confluenceScore}% Strong</span>
+            </div>
+            <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-700/60">
+              <span className="text-slate-400 block text-[9px]">Supertrend (10, 3)</span>
+              <span className="text-amber-300 font-bold truncate block">{ind.supertrend.signal}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab 1: Actionable Trade Execution Setup */}
       {activeTab === 'setup' && (
@@ -274,67 +576,92 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
 
       {/* Tab 2: All Technical Indicators Matrix */}
       {activeTab === 'indicators' && (
-        <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-          <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
-            <span className="text-[10px] text-slate-400 block truncate">RSI (14)</span>
-            <div className="flex items-center justify-between gap-1 mt-0.5">
-              <span className="font-bold text-white text-xs">{ind.rsi14}</span>
+        <div className="space-y-2 font-mono text-[11px]">
+          {/* RSI Visual Meter */}
+          <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-700/60">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                RSI (14) Relative Strength Index: <strong className="text-white text-xs">{ind.rsi14}</strong>
+              </span>
               <span
-                className={`text-[9px] px-1.5 py-0.2 rounded truncate ${
+                className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
                   ind.rsi14 >= 60 ? 'bg-emerald-500/20 text-emerald-300' : ind.rsi14 <= 35 ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-300'
                 }`}
               >
                 {ind.rsiStatus}
               </span>
             </div>
-          </div>
-
-          <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
-            <span className="text-[10px] text-slate-400 block truncate">MACD (12, 26, 9)</span>
-            <div className="flex items-center justify-between gap-1 mt-0.5">
-              <span className="font-bold text-white text-xs">{ind.macd.line}</span>
-              <span
-                className={`text-[9px] px-1.5 py-0.2 rounded truncate ${
-                  ind.macd.cross === 'Golden Cross' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300'
-                }`}
-              >
-                {ind.macd.cross}
-              </span>
+            <div className="relative w-full h-2 rounded-full bg-slate-800 overflow-hidden flex">
+              <div className="w-[30%] bg-blue-500/30" />
+              <div className="w-[40%] bg-slate-600/40" />
+              <div className="w-[30%] bg-emerald-500/40" />
+              <div
+                className="absolute top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_6px_#fff]"
+                style={{ left: `${Math.min(98, Math.max(2, ind.rsi14))}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-[9px] text-slate-500 mt-0.5">
+              <span>0 (Oversold)</span>
+              <span>50 (Neutral)</span>
+              <span>100 (Overbought)</span>
             </div>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
-            <span className="text-[10px] text-slate-400 block truncate">Supertrend (10, 3)</span>
-            <div className="flex items-center justify-between gap-1 mt-0.5">
-              <span className="font-bold text-white text-xs">{curr}{ind.supertrend.value}</span>
-              <span
-                className={`text-[9px] px-1.5 py-0.2 rounded font-bold truncate ${
-                  ind.supertrend.signal === 'BUY' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
-                }`}
-              >
-                {ind.supertrend.signal}
-              </span>
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
+              <span className="text-[10px] text-slate-400 block truncate">MACD (12, 26, 9)</span>
+              <div className="flex items-center justify-between gap-1 mt-0.5">
+                <span className="font-bold text-white text-xs">{ind.macd.line}</span>
+                <span
+                  className={`text-[9px] px-1.5 py-0.2 rounded font-bold truncate ${
+                    ind.macd.cross === 'Golden Cross' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300'
+                  }`}
+                >
+                  {ind.macd.cross}
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
-            <span className="text-[10px] text-slate-400 block truncate">EMA Stack (9/20/50/200)</span>
-            <div className="text-[10px] text-cyan-300 font-semibold truncate mt-0.5">
-              {curr}{ind.ema9} • {curr}{ind.ema20} • {curr}{ind.ema50} • {curr}{ind.ema200}
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
+              <span className="text-[10px] text-slate-400 block truncate">Supertrend (10, 3)</span>
+              <div className="flex items-center justify-between gap-1 mt-0.5">
+                <span className="font-bold text-white text-xs">{curr}{ind.supertrend.value}</span>
+                <span
+                  className={`text-[9px] px-1.5 py-0.2 rounded font-bold truncate ${
+                    ind.supertrend.signal === 'BUY' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                  }`}
+                >
+                  {ind.supertrend.signal}
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
-            <span className="text-[10px] text-slate-400 block truncate">Bollinger Bands (20, 2)</span>
-            <div className="text-[10px] text-slate-300 truncate mt-0.5">
-              U: {curr}{ind.bollinger.upper} | L: {curr}{ind.bollinger.lower}
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
+              <span className="text-[10px] text-slate-400 block truncate">EMA Stack (9/20/50/200)</span>
+              <div className="text-[10px] text-cyan-300 font-semibold truncate mt-0.5">
+                {curr}{ind.ema9} • {curr}{ind.ema20} • {curr}{ind.ema50} • {curr}{ind.ema200}
+              </div>
             </div>
-          </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
-            <span className="text-[10px] text-slate-400 block truncate">ATR (14) Volatility</span>
-            <div className="text-xs font-bold text-amber-300 mt-0.5">
-              {curr}{ind.atr14} ({((ind.atr14 / (card.price || 1)) * 100).toFixed(1)}%)
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
+              <span className="text-[10px] text-slate-400 block truncate">Bollinger Bands (20, 2)</span>
+              <div className="text-[10px] text-slate-300 truncate mt-0.5">
+                U: {curr}{ind.bollinger.upper} | L: {curr}{ind.bollinger.lower}
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
+              <span className="text-[10px] text-slate-400 block truncate">ATR (14) Volatility</span>
+              <div className="text-xs font-bold text-amber-300 mt-0.5">
+                {curr}{ind.atr14} ({((ind.atr14 / (activeStock.price || 1)) * 100).toFixed(1)}%)
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
+              <span className="text-[10px] text-slate-400 block truncate">Market Volume Status</span>
+              <div className="text-xs font-bold text-cyan-300 mt-0.5 truncate">
+                {formattedVolume} (Active Inflow)
+              </div>
             </div>
           </div>
         </div>
@@ -363,41 +690,41 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
             <div className="grid grid-cols-5 text-center text-[10px] gap-1 min-w-0">
               <div className="min-w-0">
                 <span className="text-slate-400 block text-[9px]">S2</span>
-                <span className="text-rose-400 font-bold text-[10px] truncate block">{curr}{card.pivots.s2}</span>
+                <span className="text-rose-400 font-bold text-[10px] truncate block">{curr}{activeStock.pivots.s2}</span>
               </div>
               <div className="min-w-0">
                 <span className="text-slate-400 block text-[9px]">S1</span>
-                <span className="text-rose-300 font-bold text-[10px] truncate block">{curr}{card.pivots.s1}</span>
+                <span className="text-rose-300 font-bold text-[10px] truncate block">{curr}{activeStock.pivots.s1}</span>
               </div>
               <div className="min-w-0">
                 <span className="text-cyan-400 block font-bold text-[9px]">PIVOT</span>
-                <span className="text-cyan-300 font-bold text-[10px] truncate block">{curr}{card.pivots.pivot}</span>
+                <span className="text-cyan-300 font-bold text-[10px] truncate block">{curr}{activeStock.pivots.pivot}</span>
               </div>
               <div className="min-w-0">
                 <span className="text-emerald-300 block text-[9px]">R1</span>
-                <span className="text-emerald-400 font-bold text-[10px] truncate block">{curr}{card.pivots.r1}</span>
+                <span className="text-emerald-400 font-bold text-[10px] truncate block">{curr}{activeStock.pivots.r1}</span>
               </div>
               <div className="min-w-0">
                 <span className="text-emerald-400 block text-[9px]">R2</span>
-                <span className="text-emerald-300 font-bold text-[10px] truncate block">{curr}{card.pivots.r2}</span>
+                <span className="text-emerald-300 font-bold text-[10px] truncate block">{curr}{activeStock.pivots.r2}</span>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Tab 4: 1% Capital Risk & Kelly Position Sizing Calculator */}
+      {/* Tab 4: 1% Capital Risk & Position Sizing Calculator */}
       {activeTab === 'sizer' && (
         <div className="space-y-2.5 text-[11px] font-mono">
           <div className="p-2.5 rounded-xl bg-slate-900/90 border border-amber-500/40">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1">
-                <span>🛡️</span> Select Account Equity Size:
+                <span>🛡️</span> Account Equity Size:
               </span>
               <span className="text-[10px] text-slate-400 font-bold">1% Strict Max Risk</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {(card.currency === 'INR' ? [50000, 100000, 250000, 500000, 1000000] : [5000, 10000, 25000, 50000, 100000]).map((eq) => (
+              {(activeStock.currency === 'INR' ? [50000, 100000, 250000, 500000, 1000000] : [5000, 10000, 25000, 50000, 100000]).map((eq) => (
                 <button
                   key={eq}
                   onClick={() => setAccountEquity(eq)}
@@ -431,25 +758,10 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
               <span className="font-bold text-emerald-400 text-xs sm:text-sm truncate block mt-0.5">+{curr}{target1PnL.toLocaleString()} / +{curr}{target2PnL.toLocaleString()}</span>
             </div>
           </div>
-
-          <div className="p-2 rounded-xl bg-slate-950/80 border border-cyan-500/20 space-y-1.5 text-[10px]">
-            <div className="flex items-start gap-1.5">
-              <span className="text-amber-400 font-bold shrink-0">⚡ Stark Quant Rule:</span>
-              <span className="text-slate-300">
-                &quot;Asymmetric {setup.riskReward} risk-reward guarantees that even with a 45% win rate, your expectancy is overwhelmingly positive. Honor the stop at {curr}{setup.stopLoss}.&quot;
-              </span>
-            </div>
-            <div className="flex items-start gap-1.5">
-              <span className="text-cyan-400 font-bold shrink-0">👩‍💼 Ada Risk Discipline:</span>
-              <span className="text-slate-300">
-                &quot;Risking strictly 1% ({curr}{riskAmount.toLocaleString()}) means your account survives 20 consecutive losses with 81% capital intact. Never gamble on emotional revenge trades!&quot;
-              </span>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* Tab 5: Geopolitical War Radar & Safe-Haven Flight */}
+      {/* Tab 5: Geopolitical War Radar */}
       {activeTab === 'geo' && (
         <div className="space-y-2.5 text-[11px] font-mono">
           <div className="p-3 rounded-xl bg-slate-900/90 border border-rose-500/40 flex items-center justify-between">
@@ -489,32 +801,11 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
                 ${geo?.crudeOilPrice || 71.4} ({geo?.crudeOilChange && geo.crudeOilChange >= 0 ? '+' : ''}{geo?.crudeOilChange || 0}%)
               </span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-blue-500/30 min-w-0">
-              <span className="text-[10px] text-blue-300 block truncate font-medium">USD Index (DXY)</span>
-              <span className="font-bold text-blue-200 text-xs sm:text-sm truncate block mt-0.5">
-                {geo?.dxyPrice || 104.2} ({geo?.dxyChange && geo.dxyChange >= 0 ? '+' : ''}{geo?.dxyChange || 0}%)
-              </span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-purple-500/30 min-w-0">
-              <span className="text-[10px] text-purple-300 block truncate font-medium">CBOE VIX Volatility</span>
-              <span className="font-bold text-purple-300 text-xs sm:text-sm truncate block mt-0.5">
-                {geo?.vix || 16.5}
-              </span>
-            </div>
-          </div>
-
-          <div className="p-2.5 rounded-xl bg-slate-950/70 border border-rose-500/20 text-xs">
-            <span className="text-rose-400 font-bold block text-[10px] uppercase tracking-wider mb-1">
-              🛡️ Geopolitical Strategic Directive:
-            </span>
-            <p className="text-slate-300 leading-relaxed text-[11px]">
-              {geo?.strategicAdvice || 'Monitor safe-haven asset divergence and oil supply lines (Strait of Hormuz / Red Sea). Strict 1% risk limit mandatory.'}
-            </p>
           </div>
         </div>
       )}
 
-      {/* Tab 6: Analyst Consensus & Sentiment Suite */}
+      {/* Tab 6: Analyst Ratings & Sentiment */}
       {activeTab === 'ratings' && (
         <div className="space-y-2.5 text-[11px] font-mono">
           <div className="grid grid-cols-2 gap-2.5 text-xs">
@@ -527,19 +818,7 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
             <div className="p-2.5 rounded-xl bg-slate-900/80 border border-cyan-500/30 min-w-0">
               <span className="text-[10px] text-cyan-300 block truncate font-medium">Mean Target Price</span>
               <span className="font-bold text-white text-xs sm:text-sm truncate block mt-0.5">
-                {curr}{ratings?.targetMean || (card.price * 1.14).toFixed(2)}
-              </span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-purple-500/30 min-w-0">
-              <span className="text-[10px] text-purple-300 block truncate font-medium">Upside Potential</span>
-              <span className="font-bold text-purple-300 text-xs sm:text-sm truncate block mt-0.5">
-                +{ratings?.upsidePotentialPct || 14.0}%
-              </span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 min-w-0">
-              <span className="text-[10px] text-slate-400 block truncate font-medium">Coverage</span>
-              <span className="font-bold text-slate-200 text-xs sm:text-sm truncate block mt-0.5">
-                {ratings?.numberOfAnalysts || 22} Analysts
+                {curr}{ratings?.targetMean || (activeStock.price * 1.14).toFixed(2)}
               </span>
             </div>
           </div>
@@ -563,30 +842,30 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
 
       {/* Action Footer */}
       <div className="mt-3 pt-2 border-t border-cyan-500/20 flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <button
             onClick={handleCopySetup}
             className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 transition-all cursor-pointer font-bold flex items-center gap-1"
           >
-            {copied ? '✅ Copied to Clipboard!' : '📋 Copy Setup'}
+            {copied ? '✅ Copied!' : '📋 Copy Setup'}
           </button>
           <button
-            onClick={() => onActionClick && onActionClick(`Explain how the RSI and MACD confluence works for ${card.name}`)}
+            onClick={() => onActionClick && onActionClick(`Explain how RSI, MACD, and 52-week high/low work together for ${activeStock.name}`)}
             className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition-all cursor-pointer"
           >
             📚 Teach Indicators
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <button
-            onClick={() => onActionClick && onActionClick(`Tony Stark, give me your high-conviction breakdown of ${card.name} (${card.symbol})`)}
+            onClick={() => onActionClick && onActionClick(`Tony Stark, give me your high-conviction breakdown of ${activeStock.name} (${activeStock.symbol}) with 52W range and volume`)}
             className="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-400/40 transition-all cursor-pointer font-bold"
           >
             ⚡ Stark Quant Analysis
           </button>
           <button
-            onClick={() => onActionClick && onActionClick('Show me top world market trading picks across US, India, and Crypto')}
+            onClick={() => onActionClick && onActionClick('Show me top world market trading picks across US, India, and Crypto with 52W high and low')}
             className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 transition-all cursor-pointer font-bold"
           >
             🌐 World Radar

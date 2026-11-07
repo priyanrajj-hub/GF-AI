@@ -1024,7 +1024,10 @@ app.post('/api/chat', async (req, res) => {
         const recs = await TradingService.getTopRecommendations()
         if (recs.length > 0) {
           liveInternetContext = TradingService.formatRecommendationsContext(recs)
-          resolvedTradingCard = recs[0]
+          resolvedTradingCard = {
+            ...recs[0],
+            recommendations: recs,
+          }
           console.log(`📈 [Trading Engine] Injected ${recs.length} live stock setups`)
         }
       } catch (tradeErr: any) {
