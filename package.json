@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Ada AI Assistant - 3D Holographic AI Companion (Monorepo)",
   "private": true,
+  "type": "module",
   "workspaces": [
     "packages/*",
     "apps/*"
