@@ -69,26 +69,29 @@ function DynamicLightingRig() {
   }, [solarHour])
 
   const lightingPreset = useMemo(() => {
+    // High-definition studio baseline: ensures characters are radiant and visible at all times
+    const baseAmbIntensity = Math.max(0.75, solar.ambientIntensity * 1.8)
+    const baseKeyIntensity = Math.max(1.35, solar.sunIntensity * 1.25)
     return {
-      ambColor: new THREE.Color(solar.ambientColor),
-      ambIntensity: solar.ambientIntensity,
-      keyColor: new THREE.Color(solar.sunColor),
-      keyIntensity: solar.sunIntensity,
-      keyPos: solar.sunPosition,
-      rimColor: new THREE.Color(solar.rimColor),
-      rimIntensity: solar.rimIntensity,
-      fillColor: new THREE.Color(solar.skyMid),
-      fillIntensity: Math.max(0.25, solar.ambientIntensity * 1.1),
+      ambColor: new THREE.Color(solar.ambientColor).lerp(new THREE.Color('#e2e8f0'), 0.55),
+      ambIntensity: baseAmbIntensity,
+      keyColor: new THREE.Color(solar.sunColor).lerp(new THREE.Color('#ffffff'), 0.45),
+      keyIntensity: baseKeyIntensity,
+      keyPos: [0.6, 2.4, 3.2] as [number, number, number],
+      rimColor: new THREE.Color(solar.rimColor).lerp(new THREE.Color('#ffffff'), 0.35),
+      rimIntensity: Math.max(1.15, solar.rimIntensity),
+      fillColor: new THREE.Color(solar.skyMid).lerp(new THREE.Color('#f0f9ff'), 0.55),
+      fillIntensity: Math.max(0.70, solar.ambientIntensity * 1.6),
     }
   }, [solar])
 
-  // Character-specific signature studio lighting (no random green tint on Iron Man!)
+  // Character-specific signature studio lighting
   const emotionColor = useMemo(() => {
     if (activeCharacter === 'atlas') {
       return new THREE.Color('#00f3ff') // Electric Arc Cyan
     }
     if (activeCharacter === 'mira') {
-      return new THREE.Color('#f472b6') // Soft Sakura Rose
+      return new THREE.Color('#fb7185') // Vibrant Rose
     }
     switch (currentEmotion) {
       case 'happy':
@@ -105,12 +108,12 @@ function DynamicLightingRig() {
         return new THREE.Color('#38bdf8')
       case 'calm':
       default:
-        return new THREE.Color('#c81e2f')
+        return new THREE.Color('#00f3ff')
     }
   }, [currentEmotion, activeCharacter])
 
   useFrame((_, delta) => {
-    const lerpSpeed = delta * 2.5
+    const lerpSpeed = delta * 3.0
 
     if (ambRef.current) {
       ambRef.current.color.lerp(lightingPreset.ambColor, lerpSpeed)
@@ -126,8 +129,7 @@ function DynamicLightingRig() {
     }
 
     if (rimRef.current) {
-      // Blend time-of-day rim with subtle emotion color
-      const targetRim = lightingPreset.rimColor.clone().lerp(emotionColor, 0.35)
+      const targetRim = lightingPreset.rimColor.clone().lerp(emotionColor, 0.40)
       rimRef.current.color.lerp(targetRim, lerpSpeed)
       rimRef.current.intensity = THREE.MathUtils.lerp(rimRef.current.intensity, lightingPreset.rimIntensity, lerpSpeed)
     }
@@ -140,10 +142,22 @@ function DynamicLightingRig() {
 
   return (
     <>
-      <ambientLight ref={ambRef} intensity={0.3} color="#182030" />
-      <directionalLight ref={keyRef} position={[1.8, 2.5, 2.2]} intensity={0.9} color="#fff4eb" castShadow />
-      <directionalLight ref={rimRef} position={[-1.8, 2.0, -2.2]} intensity={1.0} color="#ff007f" />
-      <directionalLight ref={fillRef} position={[-1.8, 0.8, 1.5]} intensity={0.4} color="#00f3ff" />
+      <ambientLight ref={ambRef} intensity={0.75} color="#cbd5e1" />
+      {/* Front Studio Key Light: perfectly illuminates face, chest, and costume */}
+      <directionalLight ref={keyRef} position={[0.6, 2.4, 3.2]} intensity={1.35} color="#ffffff" castShadow />
+      {/* Back Hair & Shoulder Rim Light: creates separation from dark space */}
+      <directionalLight ref={rimRef} position={[-1.8, 2.2, -2.2]} intensity={1.15} color="#00f3ff" />
+      {/* Soft Fill Light: clears shadows on side and waist */}
+      <directionalLight ref={fillRef} position={[-2.0, 1.2, 2.2]} intensity={0.70} color="#f0f9ff" />
+      {/* Dedicated Face Portrait Spotlight for razor-sharp anime eye & facial feature clarity */}
+      <spotLight position={[0, 1.5, 2.6]} intensity={0.95} color="#ffffff" angle={0.55} penumbra={0.7} />
+      {/* Holographic Emitter Floor Glow */}
+      <pointLight
+        position={[0, -0.65, 0.35]}
+        intensity={1.2}
+        color={activeCharacter === 'atlas' ? '#00f3ff' : activeCharacter === 'mira' ? '#fb7185' : '#00f3ff'}
+        distance={3.2}
+      />
     </>
   )
 }

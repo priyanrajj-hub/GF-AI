@@ -235,13 +235,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       localStorage.setItem('ada_active_character', char)
     }
     if (char === 'mira') {
-      set({
+      set((state) => ({
         activeCharacter: 'mira',
         skinId: 'yor-thorn-princess',
         activeMode: 'companion',
         currentEmotion: 'calm',
         isManualOutfit: true,
-      })
+        settings: {
+          ...state.settings,
+          avatarModelUrl: '/models/ada.vrm',
+          renderMode: 'holo-lite',
+        },
+      }))
       import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
         VoiceEngine.speak("Excuse me... I am Yor Forger. I may be a bit clumsy as an ordinary clerk, but... if anyone threatens you, I will eliminate them without hesitation.", { pitch: 1.15, rate: 0.98 })
       }).catch(() => {})
@@ -254,6 +259,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         isManualOutfit: true,
         settings: {
           ...state.settings,
+          avatarModelUrl: '/models/ironman.glb',
           renderMode: 'solid',
         },
       }))
@@ -261,13 +267,18 @@ export const useAppStore = create<AppState>((set, get) => ({
         VoiceEngine.speak("Tony Stark. Jarvis is running diagnostics, the market algorithms are calibrated, and yes—the suit is fully operational. What's our next big play?", { pitch: 0.94, rate: 1.05 })
       }).catch(() => {})
     } else {
-      set({
+      set((state) => ({
         activeCharacter: 'ada',
         skinId: 'ada-red',
         activeMode: 'mentor',
         currentEmotion: 'calm',
         isManualOutfit: false,
-      })
+        settings: {
+          ...state.settings,
+          avatarModelUrl: '/models/ada.vrm',
+          renderMode: 'holo-lite',
+        },
+      }))
       import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
         VoiceEngine.speak("Ada Wong. Keep your eyes open and your mind sharp. Let's see what moves we can make today.", { pitch: 1.0, rate: 1.0 })
       }).catch(() => {})

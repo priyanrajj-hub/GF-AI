@@ -61,7 +61,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     setIsLoading(true)
     setLoadError(null)
 
-    // Hard character boundary: Tony Stark NEVER renders VRM anime girl mesh
+    // Hard character boundary: Tony Stark loads authentic Iron Man armor, Ada/Yor load VRM
     const isAtlas = activeCharacter === 'atlas' || (modelUrl || '').includes('ironman')
     if (isAtlas) {
       setVrm(null)
@@ -73,7 +73,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     loader.setMeshoptDecoder(MeshoptDecoder)
     loader.register((parser) => new VRMLoaderPlugin(parser))
 
-    const activeUrl = modelUrl || '/models/ada.vrm'
+    const activeUrl = isAtlas ? '/models/ironman.glb' : (modelUrl || '/models/ada.vrm')
 
     loader.load(
       activeUrl,
@@ -241,7 +241,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
         VRMUtils.deepDispose(vrm.scene)
       }
     }
-  }, [modelUrl, renderMode, hologramColor])
+  }, [activeCharacter, modelUrl, renderMode, hologramColor])
 
   // Instant real-time character transformation: Athletic Boy Stark vs Yor vs Ada
   useEffect(() => {
