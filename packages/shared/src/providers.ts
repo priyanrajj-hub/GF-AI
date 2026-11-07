@@ -19,6 +19,7 @@ export interface LLMGenerateOptions {
   llmProvider?: 'gemini' | 'huggingface' | 'auto'
   huggingfaceApiKey?: string
   liveInternetContext?: string
+  character?: 'ada' | 'mira' | 'atlas' | string
 }
 
 export interface LLMProvider {
