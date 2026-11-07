@@ -241,7 +241,7 @@ export const ChatDrawer: React.FC = () => {
             }
           : songId
 
-        performAction(dance as any, { emotion: 'excited', duration: (songObj?.duration || 32) + 2 })
+        performAction(dance as any, { emotion: 'excited', duration: (songObj?.duration || 240) + 4 })
 
         // Play authentic original studio recording and synchronized choreography immediately
         globalSongEngine.playSong(finalSong)
@@ -251,7 +251,7 @@ export const ChatDrawer: React.FC = () => {
         // Fallback: If LLM output text mentions "Now Playing" or "Now Singing", immediately trigger music & dance!
         const match = (parsedReply.display_text || '').match(/now (?:playing|singing)(?:\s*&[^\n:]*)?:\s*([^\n*(]+)/i)
         const detectedTitle = match ? match[1].trim() : 'Starlight Sparkle'
-        performAction('dance_pop_groove', { emotion: 'excited', duration: 32 })
+        performAction('dance_pop_groove', { emotion: 'excited', duration: 240 })
         globalSongEngine.playSong(detectedTitle)
         // Real online track takes center stage - no TTS vocal clash!
       } else {
@@ -797,7 +797,7 @@ export const ChatDrawer: React.FC = () => {
                         {msg.musicTrack.title}
                       </h4>
                       <p className="text-xs text-cyan-300/80 truncate">
-                        {msg.musicTrack.artist ? `by ${msg.musicTrack.artist}` : 'Original Studio Master Preview'}
+                        {msg.musicTrack.artist ? `by ${msg.musicTrack.artist}` : 'Original Studio Master Track'}
                       </p>
                     </div>
                   </div>
@@ -810,7 +810,7 @@ export const ChatDrawer: React.FC = () => {
                           globalSongEngine.stop()
                         } else {
                           globalSongEngine.playSong(msg.musicTrack as any)
-                          performAction(msg.musicTrack.danceAction || 'dance_pop_groove', { duration: 32 })
+                          performAction(msg.musicTrack.danceAction || 'dance_pop_groove', { duration: (msg.musicTrack.duration || 240) + 4 })
                         }
                       }}
                       className="px-3 py-1 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 flex items-center gap-1.5 font-bold cursor-pointer transition-all"
@@ -823,7 +823,7 @@ export const ChatDrawer: React.FC = () => {
                     </button>
 
                     <span className="text-[10px] text-cyan-400/80 font-mono">
-                      {activeSong?.id === msg.musicTrack.id ? (karaokeLine || 'Singing & Dancing...') : 'Studio Master Preview'}
+                      {activeSong?.id === msg.musicTrack.id ? (karaokeLine || 'Singing & Dancing...') : 'Full Master Track'}
                     </span>
                   </div>
                 </div>

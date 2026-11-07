@@ -97,6 +97,23 @@ export class SongEngine {
         this.audioElement.volume = store.audioVolume ?? 0.95
         this.audioElement.preload = 'auto'
 
+        // Detect real full track length from audio metadata
+        this.audioElement.onloadedmetadata = () => {
+          if (this.audioElement && this.audioElement.duration && !isNaN(this.audioElement.duration) && isFinite(this.audioElement.duration)) {
+            const realDuration = Math.round(this.audioElement.duration)
+            if (realDuration > 0) {
+              song.duration = realDuration
+              store.setActiveSong({ ...song, duration: realDuration })
+              // Keep the 3D dance active for the complete duration of the song
+              performAction((song.danceAction || 'dance_pop_groove') as any, {
+                emotion: 'excited',
+                intensity: 1.0,
+                duration: realDuration + 4,
+              })
+            }
+          }
+        }
+
         this.audioElement.onerror = () => {
           console.warn('[Online Audio Stream Failed, falling back to Web Audio Synth]')
           this.startSynthesizerTrack(song, onProgress)
@@ -110,7 +127,9 @@ export class SongEngine {
           })
         }
 
+        // ONLY stop when the complete song has finished playing from start to end!
         this.audioElement.onended = () => {
+          console.log(`🎶 [SongEngine] Song "${song.title}" completed full playback!`)
           this.stop()
         }
       } catch (err) {
@@ -129,6 +148,7 @@ export class SongEngine {
           if (data && data.track && data.track.audioUrl && this.isPlaying) {
             song.audioUrl = data.track.audioUrl
             song.artworkUrl = data.track.artworkUrl || song.artworkUrl
+            song.duration = data.track.duration || song.duration
             store.setActiveSong({ ...song })
             playOnlineAudio(data.track.audioUrl)
           } else if (this.isPlaying) {
@@ -160,12 +180,24 @@ export class SongEngine {
     }
     this.animFrameId = requestAnimationFrame(updateFrequencies)
 
-    // Schedule progress tracking & text karaoke updates (NO ROBOTIC TTS VOCAL NOISE!)
+    // Schedule progress tracking & text karaoke updates (Never forcibly cut off active audio stream)
     const startPerf = performance.now()
     this.progressInterval = window.setInterval(() => {
       if (!this.isPlaying) return
-      const elapsed = (performance.now() - startPerf) / 1000
-      const ratio = Math.min(1.0, elapsed / (song.duration || 30))
+
+      let elapsed: number
+      let totalDuration: number = song.duration || 210
+
+      if (this.audioElement && !isNaN(this.audioElement.currentTime) && this.audioElement.currentTime > 0) {
+        elapsed = this.audioElement.currentTime
+        if (this.audioElement.duration && !isNaN(this.audioElement.duration) && isFinite(this.audioElement.duration)) {
+          totalDuration = this.audioElement.duration
+        }
+      } else {
+        elapsed = (performance.now() - startPerf) / 1000
+      }
+
+      const ratio = Math.min(1.0, elapsed / Math.max(1, totalDuration))
       const current = this.getCurrentLine(elapsed)
 
       store.setKaraokeLine(current)
@@ -173,7 +205,9 @@ export class SongEngine {
         onProgress(current, ratio)
       }
 
-      if (elapsed >= (song.duration || 30)) {
+      // ONLY stop via timer if there is NO hardware audio element playing!
+      // (If audioElement is playing, audioElement.onended will fire when the full song is complete)
+      if (!this.audioElement && elapsed >= totalDuration) {
         this.stop()
       }
     }, 250)
