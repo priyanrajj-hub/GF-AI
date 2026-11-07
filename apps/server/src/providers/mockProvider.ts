@@ -24,7 +24,13 @@ export class MockLLMProvider implements LLMProvider {
     userMessage: string,
     options: LLMGenerateOptions
   ): Promise<StructuredReply> {
-    const lower = userMessage.toLowerCase()
+    const cleanUserPrompt = userMessage
+      .replace(/\[LIVE TELEMETRY CONTEXT:[\s\S]*?\]/gi, '')
+      .replace(/\[CRITICAL MANDATE:[\s\S]*?\]/gi, '')
+      .replace(/\[CHARACTER MANDATE:[\s\S]*?\]/gi, '')
+      .replace(/\[BLENDED CO-PILOT MANDATE:[\s\S]*?\]/gi, '')
+      .trim()
+    const lower = cleanUserPrompt.toLowerCase()
 
     // 1. Crisis Check (India 14416 Tele-MANAS, KIRAN, Vandrevala, 988)
     const crisisPatterns = [
@@ -162,6 +168,67 @@ Take a deep breath. Breathe in for 4 seconds... hold for 4... and exhale slowly.
         gesture: 'wave',
         voice_style: { rate: 1.0, pitch: 1.02, style: 'cheerful' },
         actions: [],
+      }
+    }
+
+    // 2c. Stock, Trading & Quantitative Market Analysis Intent
+    const isStockQuery =
+      /\b(?:stock|stocks|share|shares|trading|trade|trades|recommendation|recommendations|pick|buy|sell|entry|target|stop loss|sl|pivot|nifty|sensex|reliance|tatamotors|tata|muhurat|sunday 1 hour trading|crypto|bitcoin|btc|eth|breakout|order block)\b/i.test(lower) ||
+      Boolean(options.liveInternetContext && options.liveInternetContext.includes('symbol'))
+
+    if (isStockQuery) {
+      const activeChar = options.character || 'ada'
+      if (activeChar === 'atlas') {
+        return {
+          speech:
+            'Jarvis and I ran the quantitative telemetry on this setup. Institutional order block is confirmed, MACD golden cross is active, and risk-to-reward is dialed in at 1 to 2.8. Check your HUD for full targets and respect the 1% risk rule.',
+          display_text: `### ⚡ Stark Quant Trade Radar | Tactical Execution
+**Asset Status:** Institutional Order Flow Confirmed
+- **Execution Bias:** HIGH-PROBABILITY LONG BREAKOUT
+- **Risk Management Protocol:** Never allocate more than 1% of total portfolio risk per setup.
+- **Quantitative Confluence:** Multi-timeframe EMA alignment, MACD momentum expansion, and Smart Money Concepts (SMC) golden pocket retest.
+
+*Review the interactive trading telemetry card below for live entry, take-profit tiers, and stop loss.*`,
+          emotion: 'motivated',
+          intensity: 0.95,
+          gesture: 'fist_pump',
+          voice_style: { rate: 1.05, pitch: 1.0, style: 'authoritative' },
+          actions: [],
+        }
+      } else if (activeChar === 'mira') {
+        return {
+          speech:
+            'Excuse me... I analyzed the market structure very carefully for you! Please remember to keep your stop loss sharp like a needle and protect your capital. Protecting you is my duty.',
+          display_text: `### 🌹 Thorn Princess Protective Market Analysis
+*"Excuse me... If it is not too much trouble, please let me keep watch over your portfolio!"*
+
+- **Patience is Key:** Just like waiting in silence for the exact moment on a mission, wait for price to reach the entry zone.
+- **Strict Guard:** Maintain your stop loss without hesitation to avoid liquidity traps.
+- **Institutional Confluence:** Buying volume confirms smart money accumulation.
+
+*Please review the trading card below for your entry, profit targets, and stop loss!*`,
+          emotion: 'calm',
+          intensity: 0.9,
+          gesture: 'nod',
+          voice_style: { rate: 0.95, pitch: 1.05, style: 'empathetic' },
+          actions: [],
+        }
+      } else {
+        return {
+          speech:
+            'Tactical telemetry acquired. We have got an institutional order block breakout with clean risk-to-reward. Review the targets on your terminal and execute with discipline.',
+          display_text: `### 🎯 Ada Tactical Espionage & Market Analysis
+- **Strategic Setup:** Breakout retest confirmed on the tape.
+- **Execution Mandate:** Scale out partial profits at Target 1; trail stop loss to breakeven.
+- **Risk Preservation:** Cold-blooded discipline over emotion.
+
+*All verified levels and risk parameters are displayed in the interactive HUD below.*`,
+          emotion: 'motivated',
+          intensity: 0.9,
+          gesture: 'nod',
+          voice_style: { rate: 1.0, pitch: 1.0, style: 'authoritative' },
+          actions: [],
+        }
       }
     }
 
@@ -337,13 +404,11 @@ Staying awake for days and staying isolated inside strains your physical and men
 
 
     // 10. Environments Commands
-    if (
-      lower.includes('sakura') ||
-      lower.includes('rooftop') ||
-      lower.includes('cozy cafe') ||
-      lower.includes('nebula') ||
-      lower.includes('environment')
-    ) {
+    const isEnvCommand =
+      /\b(?:change|switch|set|load|show|reproject)\s+(?:the\s+)?(?:environment|scene|background|skybox)\b/i.test(lower) ||
+      /\b(?:sakura garden|cyberpunk rooftop|cozy cafe|deep nebula)\s+(?:scene|environment)\b/i.test(lower)
+
+    if (isEnvCommand) {
       return {
         speech: 'Reprojecting environment! Welcome to your new holographic scene.',
         display_text: `🌄 **3D Environment Reprojected:** Scene ambiance, background skybox, and directional lighting synchronized.`,
@@ -580,9 +645,36 @@ export function processWorkload<T>(items: T[], batchSize = 10): T[][] {
       }
     }
 
-    // 4. Default Mode-Aware Response
+    // 4. Character-Aware Default Response
+    const activeChar = options.character || 'ada'
+    const userName = options.userName?.trim() || 'Boss'
+
+    if (activeChar === 'atlas') {
+      return {
+        speech: `Stark Industries telemetry active. Jarvis is monitoring our systems, arc reactor is running at 100%, and I'm ready to build something legendary. What's our next target?`,
+        display_text: `### ⚡ Stark Industries Holo-Core | Online\n- **Operator:** Anthony Edward Stark\n- **Diagnostics:** Arc Reactor Nominal (100% Efficiency)\n- **Jarvis Link:** Operational\n\nHow can I help you engineer the impossible or dominate the markets today?`,
+        emotion: 'motivated',
+        intensity: 0.85,
+        gesture: 'fist_pump',
+        voice_style: { rate: 1.05, pitch: 1.0, style: 'authoritative' },
+        actions: [],
+      }
+    }
+
+    if (activeChar === 'mira') {
+      return {
+        speech: `Hello! Excuse me, it is Yor Forger. I will do my absolute best to help you with your work and keep you safe today. What would you like us to do together?`,
+        display_text: `### 🌹 Yor Forger (Thorn Princess) | Standing By\n*\"Excuse me... If it is not too much trouble, please let me assist you today!\"*\n\n- **Berlint City Hall Routine:** Complete\n- **Protective Stance:** Active\n- **Focus & Loyalty:** Unwavering\n\nPlease let me know how I can be of help to you!`,
+        emotion: 'calm',
+        intensity: 0.85,
+        gesture: 'nod',
+        voice_style: { rate: 0.95, pitch: 1.05, style: 'empathetic' },
+        actions: [],
+      }
+    }
+
+    // Default Mode-Aware Response for Ada
     const mode = options.mode || 'jarvis'
-    const userName = options.userName?.trim() || 'Demo User'
     let speech = `All systems nominal, ${userName}. I am tracking your tasks and ready to execute.`
     let displayText = `### Status Report
 - **Active Mode:** ${mode.toUpperCase()}
