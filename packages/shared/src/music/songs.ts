@@ -22,13 +22,13 @@ export interface SongSpec {
 export const POPULAR_SONG_CATALOG: SongSpec[] = [
   {
     id: 'song-shape-of-you',
-    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/44/c7/4f/44c74f0d-72dc-6143-d4d0-ba14d661ca0d/mzaf_9566898362556366703.plus.aac.p.m4a',
+    audioUrl: 'https://aac.saavncdn.com/286/2929d11a5d44a3592ced0383fa6f1977_160.mp4',
     title: 'Shape of You',
     artist: 'Ed Sheeran',
     genre: 'Dancehall Pop',
     mood: 'Playful & Romantic',
     bpm: 96,
-    duration: 25,
+    duration: 233,
     danceAction: 'dance_pop_groove',
     lyrics: [
       { time: 0.5, text: "The club isn't the best place to find a lover, so the bar is where I go..." },
@@ -41,13 +41,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-believer',
-    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/c0/3f/36/c03f367a-b66b-fd0a-a54c-30f8250c4410/mzaf_12768434238801682952.plus.aac.p.m4a',
+    audioUrl: 'https://aac.saavncdn.com/248/46944eb7b4b31f5b0abf5eb2e1be2d2a_160.mp4',
     title: 'Believer',
     artist: 'Imagine Dragons',
     genre: 'Alternative Rock / Anthem',
     mood: 'Empowering & Fierce',
     bpm: 125,
-    duration: 24,
+    duration: 204,
     danceAction: 'dance_hiphop_bounce',
     lyrics: [
       { time: 0.5, text: "First things first, I'ma say all the words inside my head!" },
@@ -60,12 +60,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-apt',
+    audioUrl: 'https://aac.saavncdn.com/138/25f8aa80e4d69e9d017c43b8b7e989a3_160.mp4',
     title: 'APT.',
     artist: 'ROSÉ & Bruno Mars',
     genre: 'Pop Punk / Dance Pop',
     mood: 'Upbeat & Addictive',
     bpm: 145,
-    duration: 22,
+    duration: 169,
     danceAction: 'dance_cute_idol',
     lyrics: [
       { time: 0.5, text: 'Apateu, apateu, apateu, apateu!' },
@@ -78,12 +79,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-levitating',
+    audioUrl: 'https://aac.saavncdn.com/207/35add090eadc52dbd0205f0f4500176b_160.mp4',
     title: 'Levitating',
     artist: 'Dua Lipa',
     genre: 'Nu-Disco Pop',
     mood: 'Glittering & Danceable',
     bpm: 103,
-    duration: 25,
+    duration: 203,
     danceAction: 'dance_cute_idol',
     lyrics: [
       { time: 0.5, text: 'If you wanna run away with me, I know a galaxy and I can take you for a ride...' },
@@ -95,12 +97,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-kesariya',
+    audioUrl: 'https://aac.saavncdn.com/871/c2febd353f3a076a406fa37510f31f9f_160.mp4',
     title: 'Kesariya',
     artist: 'Arijit Singh',
     genre: 'Bollywood Romance',
-    mood: 'Soulful & Devoted',
-    bpm: 94,
-    duration: 25,
+    mood: 'Passionate & Melodic',
+    bpm: 88,
+    duration: 268,
     danceAction: 'dance_slow_sway',
     lyrics: [
       { time: 0.5, text: 'Mujhko itna bataye koi, kaise tujhse dil na lagaye koi...' },
@@ -305,13 +308,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-vaathi-coming',
-    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/20/da/f1/20daf12c-4e8f-bc03-d548-c4968cb405fd/mzaf_11939350127905472767.plus.aac.p.m4a',
+    audioUrl: 'https://aac.saavncdn.com/347/c536b256fca6b96aa432322c11c21fbb_160.mp4',
     title: 'Vaathi Coming (Master)',
     artist: 'Anirudh Ravichander and Gana Balachandar',
     genre: 'Tamil Kuthu Pop / High Energy Dance',
     mood: 'Electrifying, Mass and Celebration',
     bpm: 130,
-    duration: 28,
+    duration: 228,
     danceAction: 'dance_cute_idol',
     lyrics: [
       { time: 0.5, text: 'Vaathi coming oththu po! Kanna katti kaatula vitta pulla polave!' },
@@ -323,13 +326,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-jailer-theme',
-    audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/20/4b/a5/204ba5f1-aa95-9204-049a-3af28613dfdb/mzaf_9848955577816183835.plus.aac.p.m4a',
+    audioUrl: 'https://aac.saavncdn.com/435/4161a58e6cff0010c02431e6c21728d9_160.mp4',
     title: 'Jailer Theme (Hukum - Tiger Ka Hukum)',
     artist: 'Anirudh Ravichander',
     genre: 'Tamil Cinematic Anthem / Mass Groove',
     mood: 'Ferocious, Regal and Hyped',
     bpm: 122,
-    duration: 28,
+    duration: 207,
     danceAction: 'dance_pop_groove',
     lyrics: [
       { time: 0.5, text: 'Tiger ka hukum! Alappara kelappurom, thalaiyila kireedam!' },

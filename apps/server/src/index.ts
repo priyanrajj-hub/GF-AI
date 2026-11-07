@@ -33,6 +33,7 @@ import { TutorStudyService } from './services/tutorStudyService.js'
 // Neural TTS Provider for high-fidelity human girl voice (zero robotic fallback - v3)
 import { NeuralTTSProvider } from './providers/neuralTtsProvider.js'
 import { buildRagContext } from './rag/ragService.js'
+import CryptoJS from 'crypto-js'
 import { getStockQuote, getCryptoPrice, generateAlgoSignal } from './market/marketDataService.js'
 import { rateLimitChat, rateLimitVoice, sanitizeInput, requestId } from './middleware/security.js'
 
@@ -120,8 +121,9 @@ app.get('/api/memes', (_req, res) => {
 })
 
 /**
- * Real-Time Music & Original Audio Search
- * Fetches original studio song previews and album artwork via public iTunes API
+ * Real-Time Music & Original Full Audio Search
+ * 1. Queries JioSaavn for full-length 160kbps/320kbps master tracks and decrypts the stream URL
+ * 2. Falls back to iTunes API if not found
  */
 async function searchRealSongTrack(query: string, language?: string) {
   try {
@@ -146,13 +148,57 @@ async function searchRealSongTrack(query: string, language?: string) {
     } else if (isTamilRequest && !clean.toLowerCase().includes('tamil')) {
       clean = `${clean} tamil`
     }
-    
-    // 1. Primary search with clean query
+
+    // 1. PRIMARY: JioSaavn Full-Length Song Stream
+    try {
+      const saavnSearchUrl = `https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&cc=in&includeMetaTags=1&query=${encodeURIComponent(clean)}`
+      const sRes = await fetch(saavnSearchUrl, { signal: AbortSignal.timeout(4000) })
+      if (sRes.ok) {
+        const sData = (await sRes.json()) as any
+        const topSong = sData?.songs?.data?.[0]
+        if (topSong && topSong.id) {
+          const detailUrl = `https://www.jiosaavn.com/api.php?__call=song.getDetails&cc=in&_marker=0%3F_marker%3D0&_format=json&pids=${topSong.id}`
+          const dRes = await fetch(detailUrl, { signal: AbortSignal.timeout(4000) })
+          if (dRes.ok) {
+            const dData = (await dRes.json()) as any
+            const item = dData[topSong.id]
+            if (item && item.encrypted_media_url) {
+              const desKey = CryptoJS.enc.Utf8.parse('38346591')
+              const dec = CryptoJS.DES.decrypt(
+                CryptoJS.lib.CipherParams.create({ ciphertext: CryptoJS.enc.Base64.parse(item.encrypted_media_url) }),
+                desKey,
+                { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 }
+              )
+              let fullAudioUrl = dec.toString(CryptoJS.enc.Utf8)
+              if (fullAudioUrl && fullAudioUrl.startsWith('http')) {
+                // Upgrade to 160kbps high fidelity full studio audio stream
+                if (fullAudioUrl.includes('_96.mp4')) {
+                  fullAudioUrl = fullAudioUrl.replace('_96.mp4', '_160.mp4')
+                }
+                const parsedDuration = parseInt(item.duration, 10) || 210
+                console.log(`🎶 [Music Engine] Resolved FULL studio song from JioSaavn: "${item.song}" (${parsedDuration}s, stream: ${fullAudioUrl})`)
+                return {
+                  title: (item.song || topSong.title) as string,
+                  artist: (item.primary_artists || topSong.description) as string,
+                  audioUrl: fullAudioUrl,
+                  artworkUrl: item.image ? (item.image as string).replace('150x150', '500x500') : undefined,
+                  duration: parsedDuration,
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (saavnErr) {
+      console.warn('[JioSaavn Search Failed, trying fallback]:', saavnErr)
+    }
+
+    // 2. FALLBACK: iTunes Preview
     let itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(clean)}&entity=song&limit=1`
     let res = await fetch(itunesUrl, { signal: AbortSignal.timeout(4000) })
     let data = res.ok ? ((await res.json()) as any) : null
 
-    // 2. Fallback search without filler words if no direct hit
+    // Fallback search without filler words if no direct hit
     if (!data || !data.results || data.results.length === 0) {
       const stripped = clean.replace(/theme|ost|anime|soundtrack|song|music|from/gi, ' ').replace(/\s+/g, ' ').trim()
       if (stripped && stripped !== clean) {
