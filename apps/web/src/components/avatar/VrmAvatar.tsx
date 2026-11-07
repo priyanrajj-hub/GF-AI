@@ -105,12 +105,12 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           if (spineBone) spineBone.scale.set(1.0, 1.02, 1.0)
           const lLeg = loadedVrm.humanoid?.getNormalizedBoneNode('leftUpperLeg')
           const rLeg = loadedVrm.humanoid?.getNormalizedBoneNode('rightUpperLeg')
-          if (lLeg) lLeg.scale.set(1.01, 1.04, 1.01)
-          if (rLeg) rLeg.scale.set(1.01, 1.04, 1.01)
+          if (lLeg) lLeg.scale.set(1.0, 1.0, 1.0)
+          if (rLeg) rLeg.scale.set(1.0, 1.0, 1.0)
           const lLowerLeg = loadedVrm.humanoid?.getNormalizedBoneNode('leftLowerLeg')
           const rLowerLeg = loadedVrm.humanoid?.getNormalizedBoneNode('rightLowerLeg')
-          if (lLowerLeg) lLowerLeg.scale.set(1.0, 1.03, 1.0)
-          if (rLowerLeg) rLowerLeg.scale.set(1.0, 1.03, 1.0)
+          if (lLowerLeg) lLowerLeg.scale.set(1.0, 1.0, 1.0)
+          if (rLowerLeg) rLowerLeg.scale.set(1.0, 1.0, 1.0)
 
           // Set initial relaxed A-pose (Task A #5: arms down, not T-pose)
           const initLArm = loadedVrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
@@ -183,12 +183,12 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           const center = box.getCenter(new THREE.Vector3())
 
           if (size.y > 0) {
-            // Target height: 1.62m frame for clean framing from head to toe
-            const targetHeight = isIronman ? 1.62 : (isTripo ? 1.48 : 1.62)
+            // Target height: 1.58m frame for clean framing from head to toe
+            const targetHeight = isIronman ? 1.58 : (isTripo ? 1.48 : 1.58)
             const scale = targetHeight / size.y
             scene.scale.set(scale, scale, scale)
-            // Center horizontally and rest feet flat on home pad base
-            scene.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale)
+            // Center horizontally and rest feet flat on home pad base (y = -0.72)
+            scene.position.set(-center.x * scale, -0.72 - box.min.y * scale, -center.z * scale)
           }
 
           scene.traverse((obj) => {

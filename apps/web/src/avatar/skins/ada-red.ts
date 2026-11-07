@@ -132,9 +132,34 @@ export const AdaRedSkin: AvatarSkin = {
             if (mat.shadeColorFactor) mat.shadeColorFactor.set('#000000')
           }
 
-          // Eyes -> Alluring Amber-Hazel with Golden Depth
-          else if (/eye/i.test(matName) && !/white/i.test(matName)) {
-            if (mat.color) mat.color.set('#9e5124')
+          // Eyes -> Alluring Amber-Hazel with Golden Depth (Ada Wong)
+          else if (/eye\b|alicia_eye/i.test(matName) && !/white/i.test(matName)) {
+            if (mat.color) mat.color.set('#ba6820')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#3a1805')
+            if (mat.map && mat.map.image && !mat.userData.__eyeTintAda && typeof document !== 'undefined') {
+              try {
+                const img = mat.map.image
+                if (img.width && img.height) {
+                  const canvas = document.createElement('canvas')
+                  canvas.width = img.width
+                  canvas.height = img.height
+                  const ctx = canvas.getContext('2d')
+                  if (ctx) {
+                    ctx.drawImage(img, 0, 0)
+                    ctx.globalCompositeOperation = 'color'
+                    ctx.fillStyle = '#a04812'
+                    ctx.fillRect(0, 0, canvas.width, canvas.height)
+                    ctx.globalCompositeOperation = 'source-over'
+                    const tex = new THREE.CanvasTexture(canvas)
+                    tex.colorSpace = THREE.SRGBColorSpace
+                    tex.flipY = mat.map.flipY
+                    mat.map = tex
+                    mat.userData.__eyeTintAda = true
+                    mat.needsUpdate = true
+                  }
+                }
+              } catch(e) {}
+            }
           }
 
           // Face Texture -> Ada Wong: Warm Olive Skin + BROWN Eyes painted on canvas (overrides baked-in blue)
@@ -498,10 +523,34 @@ export const YorCrimsonSweaterSkin: AvatarSkin = {
             if (mat.roughness !== undefined) mat.roughness = 0.5
           }
 
-          // Ruby/Crimson eyes
-          if (/eye|iris/i.test(matName)) {
-            if (mat.color) mat.color.set('#C4273C')
-            if (mat.emissive) mat.emissive.set('#4A0812')
+          // Ruby/Crimson eyes (Yor Forger signature)
+          if (/eye\b|alicia_eye/i.test(matName) && !/white/i.test(matName)) {
+            if (mat.color) mat.color.set('#D91E36')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#4A0812')
+            if (mat.map && mat.map.image && !mat.userData.__eyeTintYor && typeof document !== 'undefined') {
+              try {
+                const img = mat.map.image
+                if (img.width && img.height) {
+                  const canvas = document.createElement('canvas')
+                  canvas.width = img.width
+                  canvas.height = img.height
+                  const ctx = canvas.getContext('2d')
+                  if (ctx) {
+                    ctx.drawImage(img, 0, 0)
+                    ctx.globalCompositeOperation = 'color'
+                    ctx.fillStyle = '#ff0038'
+                    ctx.fillRect(0, 0, canvas.width, canvas.height)
+                    ctx.globalCompositeOperation = 'source-over'
+                    const tex = new THREE.CanvasTexture(canvas)
+                    tex.colorSpace = THREE.SRGBColorSpace
+                    tex.flipY = mat.map.flipY
+                    mat.map = tex
+                    mat.userData.__eyeTintYor = true
+                    mat.needsUpdate = true
+                  }
+                }
+              } catch(e) {}
+            }
           }
 
           // Yor Face Canvas: Pale porcelain skin + RUBY eyes painted directly (override baked blue iris)
@@ -649,9 +698,33 @@ export const YorThornPrincessSkin: AvatarSkin = {
           }
 
           // Deadly Crimson Ruby Eyes
-          if (/eye|iris/i.test(matName)) {
+          if (/eye\b|alicia_eye/i.test(matName) && !/white/i.test(matName)) {
             if (mat.color) mat.color.set('#D91E36')
-            if (mat.emissive) mat.emissive.set('#520814')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#520814')
+            if (mat.map && mat.map.image && !mat.userData.__eyeTintYorThorn && typeof document !== 'undefined') {
+              try {
+                const img = mat.map.image
+                if (img.width && img.height) {
+                  const canvas = document.createElement('canvas')
+                  canvas.width = img.width
+                  canvas.height = img.height
+                  const ctx = canvas.getContext('2d')
+                  if (ctx) {
+                    ctx.drawImage(img, 0, 0)
+                    ctx.globalCompositeOperation = 'color'
+                    ctx.fillStyle = '#ff0038'
+                    ctx.fillRect(0, 0, canvas.width, canvas.height)
+                    ctx.globalCompositeOperation = 'source-over'
+                    const tex = new THREE.CanvasTexture(canvas)
+                    tex.colorSpace = THREE.SRGBColorSpace
+                    tex.flipY = mat.map.flipY
+                    mat.map = tex
+                    mat.userData.__eyeTintYorThorn = true
+                    mat.needsUpdate = true
+                  }
+                }
+              } catch(e) {}
+            }
           }
 
           // Yor Thorn Princess Face: Pale skin + assassin ruby eyes on canvas
@@ -1624,21 +1697,21 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
     if (rightUpperArm) rightUpperArm.scale.set(0.95, 1.00, 0.95)
     if (leftLowerArm) leftLowerArm.scale.set(0.95, 1.00, 0.95)
     if (rightLowerArm) rightLowerArm.scale.set(0.95, 1.00, 0.95)
-    if (leftUpperLeg) leftUpperLeg.scale.set(1.05, 1.02, 1.05)
-    if (rightUpperLeg) rightUpperLeg.scale.set(1.05, 1.02, 1.05)
+    if (leftUpperLeg) leftUpperLeg.scale.set(1.0, 1.0, 1.0)
+    if (rightUpperLeg) rightUpperLeg.scale.set(1.0, 1.0, 1.0)
 
-    // 🌹 Yor Forger: tall, elegant — slightly longer neck, natural head scale (taller adult proportion)
-    if (neck) neck.scale.set(1.04, 1.06, 1.04) // elegant Yor neck
-    if (head) head.scale.set(0.96, 0.96, 0.96) // slightly smaller head = taller anime adult look
+    // 🌹 Yor Forger: natural elegant poise
+    if (neck) neck.scale.set(1.02, 1.02, 1.02)
+    if (head) head.scale.set(0.98, 0.98, 0.98)
 
-    // Allow feminine hair ribbons/side strands and restore dress skirt
+    // Allow feminine hair ribbons/side strands and natural dress skirt
     vrm.scene.traverse((obj) => {
       if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
         obj.visible = true
         obj.scale.set(1.0, 1.0, 1.0)
       }
       if (/skirt_\d+_\d+/i.test(obj.name)) {
-        obj.scale.set(0.72, 1.0, 0.72)
+        obj.scale.set(1.0, 1.0, 1.0)
       }
       if (/cloth1|cloth2/i.test(obj.name)) {
         obj.visible = true
@@ -1672,8 +1745,8 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
     if (rightShoulder) rightShoulder.scale.set(1.06, 1.02, 1.04)
     if (chest) chest.scale.set(1.04, 1.02, 1.05) // subtle adult chest definition
     if (hips) hips.scale.set(1.08, 1.0, 1.06) // feminine hips but athletic (not exaggerated)
-    if (neck) neck.scale.set(1.02, 1.04, 1.02) // slightly longer elegant neck
-    if (head) head.scale.set(0.92, 0.92, 0.92) // key: smaller head = more mature adult face look
+    if (neck) neck.scale.set(1.02, 1.02, 1.02)
+    if (head) head.scale.set(0.98, 0.98, 0.98)
 
     vrm.scene.traverse((obj) => {
       if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
@@ -1681,7 +1754,7 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
         obj.scale.set(1.0, 1.0, 1.0)
       }
       if (/skirt_\d+_\d+/i.test(obj.name)) {
-        obj.scale.set(0.72, 1.0, 0.72)
+        obj.scale.set(1.0, 1.0, 1.0)
       }
       if (/cloth1|cloth2/i.test(obj.name)) {
         obj.visible = true

@@ -8,6 +8,7 @@ import { FloatingParticles } from './FloatingParticles.js'
 import { ProjectorBase } from './ProjectorBase.js'
 import { ScenicEnvironmentBackdrop } from './ScenicEnvironmentBackdrop.js'
 import { AmbientSoundEngine } from './AmbientSoundEngine.js'
+import { Cinematic3DEnvironment } from './Cinematic3DEnvironment.js'
 
 function CameraRig() {
   const { pointer, size } = useThree()
@@ -18,21 +19,21 @@ function CameraRig() {
     const isCloseUp = !!settings.closeUpView
     const aspect = size.width / Math.max(1, size.height)
 
-    // Current position of Ada in world space
+    // Current position of avatar in world space
     const adaX = (avatarPosition && avatarPosition[0]) || 0
     const adaY = (avatarPosition && avatarPosition[1] !== undefined) ? avatarPosition[1] : -0.72
     const adaZ = (avatarPosition && avatarPosition[2]) || 0
 
-    // Full-body responsive framing distance - perfectly framing head to toe
-    let baseDist = 3.88
+    // Full-body responsive framing distance - perfectly framing head to toe with headroom
+    let baseDist = 4.35
     if (aspect < 1.0) {
-      baseDist = 4.35 // Mobile portrait
+      baseDist = 4.80 // Mobile portrait
     } else if (size.height < 650) {
-      baseDist = 3.95 // Short landscape
+      baseDist = 4.40 // Short landscape
     }
 
-    const targetZ = isCloseUp ? adaZ + 1.45 : baseDist
-    const targetY = isCloseUp ? adaY + 1.22 : 0.02
+    const targetZ = isCloseUp ? adaZ + 1.65 : baseDist
+    const targetY = isCloseUp ? adaY + 1.25 : 0.16 // Lift camera up so head has ample headroom below TopBar
     const targetX = adaX * (isCloseUp ? 0.90 : 0.35) + pointer.x * (isCloseUp ? 0.04 : 0.12)
 
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetX, delta * 3.0)
@@ -40,7 +41,7 @@ function CameraRig() {
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, delta * 3.0)
 
     const lookAtX = adaX * (isCloseUp ? 0.90 : 0.35)
-    const lookAtY = isCloseUp ? adaY + 1.22 : -0.14
+    const lookAtY = isCloseUp ? adaY + 1.20 : 0.08 // Look at chest level so head is comfortably below the top HUD
     const lookAtZ = isCloseUp ? adaZ : 0
     state.camera.lookAt(lookAtX, lookAtY, lookAtZ)
   })
@@ -55,7 +56,7 @@ import { SolarTimeService } from '../../services/solarTimeService.js'
  * the continuous Solar Time calculation (Real Sun & Twilight) plus the girl's active Emotion.
  */
 function DynamicLightingRig() {
-  const { solarHour, currentEmotion } = useAppStore()
+  const { solarHour, currentEmotion, activeCharacter } = useAppStore()
 
   const ambRef = useRef<THREE.AmbientLight>(null)
   const keyRef = useRef<THREE.DirectionalLight>(null)
@@ -81,26 +82,32 @@ function DynamicLightingRig() {
     }
   }, [solar])
 
-  // Emotion-reactive color highlights
+  // Character-specific signature studio lighting (no random green tint on Iron Man!)
   const emotionColor = useMemo(() => {
+    if (activeCharacter === 'atlas') {
+      return new THREE.Color('#00f3ff') // Electric Arc Cyan
+    }
+    if (activeCharacter === 'mira') {
+      return new THREE.Color('#f472b6') // Soft Sakura Rose
+    }
     switch (currentEmotion) {
       case 'happy':
         return new THREE.Color('#ffb703')
       case 'playful':
         return new THREE.Color('#ff007f')
       case 'thinking':
-        return new THREE.Color('#00ff88')
+        return new THREE.Color('#00f3ff')
       case 'concerned':
         return new THREE.Color('#c084fc')
       case 'motivated':
-        return new THREE.Color('#ff5500')
+        return new THREE.Color('#c81e2f')
       case 'sad':
         return new THREE.Color('#38bdf8')
       case 'calm':
       default:
-        return new THREE.Color('#00f3ff')
+        return new THREE.Color('#c81e2f')
     }
-  }, [currentEmotion])
+  }, [currentEmotion, activeCharacter])
 
   useFrame((_, delta) => {
     const lerpSpeed = delta * 2.5
@@ -212,6 +219,9 @@ export const HoloScene: React.FC = () => {
         <DynamicLightingRig />
 
         <Suspense fallback={null}>
+          {/* Custom 3D Animated Background Environments (Stark Lab, Ada Penthouse, Yor Moonlit Garden) */}
+          <Cinematic3DEnvironment />
+
           <group position={[0, 0, 0]}>
             {/* 3D Holo Home Pad Base with Emotion Reaction */}
             <ProjectorBase color={activeColor} />
