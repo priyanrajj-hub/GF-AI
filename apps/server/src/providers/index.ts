@@ -53,12 +53,12 @@ export class ProviderRegistry {
     // 1. LLM selection: check explicit preference or use ModelRouter
     const preferred = process.env.LLM_PROVIDER?.toLowerCase()
 
-    if (preferred === 'huggingface' && this.huggingfaceProvider.isConfigured()) {
-      console.log('🤗 [Provider] Using Hugging Face LLM Provider (Primary)')
-      this.llmProvider = this.huggingfaceProvider
-    } else if (preferred === 'gemini' && this.geminiProvider.isConfigured()) {
+    if (preferred === 'gemini' && this.geminiProvider.isConfigured()) {
       console.log('🤖 [Provider] Using Google Gemini LLM Provider')
       this.llmProvider = this.geminiProvider
+    } else if (preferred === 'huggingface' && this.huggingfaceProvider.isConfigured()) {
+      console.log('🤗 [Provider] Using Hugging Face LLM Provider (Primary)')
+      this.llmProvider = this.huggingfaceProvider
     } else if (preferred === 'groq' && this.groqProvider.isConfigured()) {
       console.log('⚡ [Provider] Using Groq Cloud LLM Provider')
       this.llmProvider = this.groqProvider
@@ -68,6 +68,9 @@ export class ProviderRegistry {
     } else if (preferred === 'ollama' && this.ollamaProvider.isConfigured()) {
       console.log('🦙 [Provider] Using Ollama Local LLM Provider')
       this.llmProvider = this.ollamaProvider
+    } else if (this.geminiProvider.isConfigured()) {
+      console.log('🤖 [Provider] Using Google Gemini LLM Provider (Multi-Key Rotation Active)')
+      this.llmProvider = this.geminiProvider
     } else {
       console.log('🔀 [Provider] Using Smart ModelRouter (Task-based failover & local fallback)')
       this.llmProvider = this.modelRouter
