@@ -61,9 +61,11 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     setIsLoading(true)
     setLoadError(null)
 
-    // Hard character boundary: Tony Stark loads authentic Iron Man armor, Ada/Yor load VRM
+    // Hard character boundaries: Tony Stark loads ironman.glb, Ada Wong loads authentic 3D PBR model, Yor loads VRM
     const isAtlas = activeCharacter === 'atlas' || (modelUrl || '').includes('ironman')
-    if (isAtlas) {
+    const isTripoAda = activeCharacter === 'ada' || (modelUrl || '').includes('tripo')
+
+    if (isAtlas || isTripoAda) {
       setVrm(null)
     } else {
       setGlbScene(null)
@@ -73,7 +75,13 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     loader.setMeshoptDecoder(MeshoptDecoder)
     loader.register((parser) => new VRMLoaderPlugin(parser))
 
-    const activeUrl = isAtlas ? '/models/ironman.glb' : (modelUrl || '/models/ada.vrm')
+    const defaultUrl = isAtlas
+      ? '/models/ironman.glb'
+      : isTripoAda
+      ? '/models/ada_fullbody_tripo.glb'
+      : '/models/ada.vrm'
+
+    const activeUrl = modelUrl || defaultUrl
 
     loader.load(
       activeUrl,
@@ -447,8 +455,8 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     // Standard GLB fallback positioning & idle breathing
     if (glbScene) {
       glbScene.position.set(currentPos.x, -0.72 + currentPos.y, currentPos.z)
-      const isTripo = (modelUrl || '').includes('tripo')
-      const isIronman = (modelUrl || '').includes('ironman')
+      const isTripo = (modelUrl || '').includes('tripo') || activeCharacter === 'ada'
+      const isIronman = (modelUrl || '').includes('ironman') || activeCharacter === 'atlas'
       const baseRotation = isTripo || isIronman ? 0 : Math.PI
       glbScene.rotation.y = baseRotation + navigatorRef.currentRotationY
 

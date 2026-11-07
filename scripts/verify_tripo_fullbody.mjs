@@ -26,8 +26,15 @@ async function run() {
   });
 
   try {
-    await page.goto('http://localhost:5173', { waitUntil: 'networkidle', timeout: 20000 });
-    await page.waitForTimeout(3000);
+    await page.goto('http://localhost:5173', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => {
+      localStorage.setItem('ada_first_run_acknowledged', 'true');
+      localStorage.setItem('ada_first_run_completed', 'true');
+      localStorage.setItem('ada_memory_consent', 'true');
+      localStorage.setItem('ada_avatar_model_url', '/models/ada_fullbody_tripo.glb');
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(6000);
 
     // 1. Open Settings modal
     console.log('Opening settings modal...');
