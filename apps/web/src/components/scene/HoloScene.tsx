@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { OrbitControls } from '@react-three/drei'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { useAppStore, computeTimeOfDay } from '../../store/useAppStore.js'
@@ -10,43 +11,40 @@ import { ScenicEnvironmentBackdrop } from './ScenicEnvironmentBackdrop.js'
 import { AmbientSoundEngine } from './AmbientSoundEngine.js'
 import { Cinematic3DEnvironment } from './Cinematic3DEnvironment.js'
 
-function CameraRig() {
-  const { pointer, size } = useThree()
+function CameraController() {
   const { settings, avatarPosition } = useAppStore()
+  const controlsRef = useRef<any>(null)
 
-  useFrame((state, delta) => {
-    const t = state.clock.elapsedTime
-    const isCloseUp = !!settings.closeUpView
-    const aspect = size.width / Math.max(1, size.height)
+  const isCloseUp = !!settings.closeUpView
+  const adaX = (avatarPosition && avatarPosition[0]) || 0
+  const adaY = (avatarPosition && avatarPosition[1] !== undefined) ? avatarPosition[1] : -0.72
+  const adaZ = (avatarPosition && avatarPosition[2]) || 0
 
-    // Current position of avatar in world space
-    const adaX = (avatarPosition && avatarPosition[0]) || 0
-    const adaY = (avatarPosition && avatarPosition[1] !== undefined) ? avatarPosition[1] : -0.72
-    const adaZ = (avatarPosition && avatarPosition[2]) || 0
+  const targetY = isCloseUp ? adaY + 1.25 : 0.38
+  const targetX = adaX * 0.5
+  const targetZ = adaZ * 0.5
 
-    // Full-body responsive framing distance - perfectly framing head to toe with headroom
-    let baseDist = 4.35
-    if (aspect < 1.0) {
-      baseDist = 4.80 // Mobile portrait
-    } else if (size.height < 650) {
-      baseDist = 4.40 // Short landscape
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.target.set(targetX, targetY, targetZ)
+      controlsRef.current.update()
     }
+  }, [targetX, targetY, targetZ])
 
-    const targetZ = isCloseUp ? adaZ + 1.65 : baseDist
-    const targetY = isCloseUp ? adaY + 1.25 : 0.16 // Lift camera up so head has ample headroom below TopBar
-    const targetX = adaX * (isCloseUp ? 0.90 : 0.35) + pointer.x * (isCloseUp ? 0.04 : 0.12)
-
-    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetX, delta * 3.0)
-    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetY + Math.sin(t * 0.4) * 0.006, delta * 3.0)
-    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, delta * 3.0)
-
-    const lookAtX = adaX * (isCloseUp ? 0.90 : 0.35)
-    const lookAtY = isCloseUp ? adaY + 1.20 : 0.08 // Look at chest level so head is comfortably below the top HUD
-    const lookAtZ = isCloseUp ? adaZ : 0
-    state.camera.lookAt(lookAtX, lookAtY, lookAtZ)
-  })
-
-  return null
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      makeDefault
+      enableDamping
+      dampingFactor={0.08}
+      minDistance={1.2}
+      maxDistance={6.0}
+      maxPolarAngle={Math.PI / 2 + 0.02}
+      minPolarAngle={0.10}
+      target={[targetX, targetY, targetZ]}
+      enablePan={true}
+    />
+  )
 }
 
 import { SolarTimeService } from '../../services/solarTimeService.js'
@@ -213,7 +211,7 @@ export const HoloScene: React.FC = () => {
   return (
     <div className="w-full h-full absolute inset-0 z-0 bg-[#030611] overflow-hidden">
       <Canvas
-        camera={{ position: [0, 0.04, 3.30], fov: 30 }}
+        camera={{ position: [0, 0.45, 3.80], fov: 32 }}
         dpr={settings.lowPerformanceMode ? 1 : [1, 2]}
         gl={{
           antialias: true,
@@ -266,8 +264,8 @@ export const HoloScene: React.FC = () => {
             />
           </group>
 
-          {/* Fixed Wide Parallax Camera */}
-          <CameraRig />
+          {/* 360° Rotatable Orbit Controls & Framed Camera */}
+          <CameraController />
 
           {/* Post-Processing Bloom */}
           {!settings.lowPerformanceMode && (

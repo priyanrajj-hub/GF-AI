@@ -197,7 +197,7 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
   },
   hologramColor: '#00f3ff', // Cyan Core primary
   renderMode: 'holo-lite', // Default: Hologram-lite
-  avatarModelUrl: '/models/ada_fullbody_tripo.glb',
+  avatarModelUrl: '/models/ada.vrm',
   closeUpView: false,
   handsFree: false,
   wakeWordEnabled: true,
@@ -275,7 +275,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         isManualOutfit: false,
         settings: {
           ...state.settings,
-          avatarModelUrl: '/models/ada_fullbody_tripo.glb',
+          avatarModelUrl: '/models/ada.vrm',
           renderMode: 'holo-lite',
         },
       }))
