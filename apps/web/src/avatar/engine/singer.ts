@@ -235,7 +235,8 @@ export class SongEngine {
         this.startTime = now
 
         const secondsPerBeat = 60 / song.bpm
-        const totalBeats = Math.floor((song.duration || 24) / secondsPerBeat)
+        const totalDurationSec = Math.max(180, song.duration || 180)
+        const totalBeats = Math.floor(totalDurationSec / secondsPerBeat)
         const melodyScale = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25]
         const bassScale = [65.41, 73.42, 82.41, 98.0, 110.0]
 

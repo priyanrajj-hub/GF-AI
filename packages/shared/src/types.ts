@@ -113,7 +113,39 @@ export interface StructuredReply {
     pendingCount: number
   }
   tradingCard?: TradingCardData
+  marketHoursCard?: GlobalMarketHoursRadar
   speaker?: 'ada' | 'mira' | 'atlas'
+}
+
+export interface MarketSessionInfo {
+  id: string
+  name: string
+  exchange: string
+  country: string
+  flag: string
+  timezone: string
+  status: 'OPEN' | 'CLOSED' | 'PRE_MARKET' | 'AFTER_HOURS' | 'LUNCH_BREAK' | 'WEEKEND' | 'HOLIDAY'
+  statusBadge: string
+  statusDetail: string
+  currentLocalTime: string
+  currentISTTime: string
+  regularHoursLocal: string
+  regularHoursIST: string
+  preMarketHoursLocal?: string
+  preMarketHoursIST?: string
+  postMarketHoursLocal?: string
+  postMarketHoursIST?: string
+  nextEvent: string
+  nextEventCountdownSeconds: number
+  workingDays: string
+  nonWorkingTimes: string
+  notes?: string
+}
+
+export interface GlobalMarketHoursRadar {
+  asOf: string
+  userTimezone: string
+  markets: MarketSessionInfo[]
 }
 
 export interface TradingCardData {
@@ -195,6 +227,7 @@ export interface TradingCardData {
     upsidePotentialPct: number
   }
   recommendations?: TradingCardData[]
+  marketHours?: GlobalMarketHoursRadar
 }
 
 export interface ChatMessage {
@@ -240,6 +273,7 @@ export interface ChatMessage {
     pendingCount: number
   }
   tradingCard?: TradingCardData
+  marketHoursCard?: GlobalMarketHoursRadar
   speaker?: 'ada' | 'mira' | 'atlas'
   metadata?: {
     model?: string

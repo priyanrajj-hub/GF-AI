@@ -9,7 +9,11 @@ interface TradingCardProps {
 export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick }) => {
   const [copied, setCopied] = useState(false)
   const [activeStock, setActiveStock] = useState<TradingCardData>(card)
-  const [activeTab, setActiveTab] = useState<'chart' | 'setup' | 'indicators' | 'levels' | 'sizer' | 'geo' | 'ratings'>('chart')
+  const [activeTab, setActiveTab] = useState<'chart' | 'setup' | 'indicators' | 'levels' | 'sizer' | 'geo' | 'ratings' | 'hours'>(
+    card.marketHours ? 'hours' : 'chart'
+  )
+  const [marketHoursData, setMarketHoursData] = useState(card.marketHours)
+  const [, setCurrentTimeTick] = useState<number>(Date.now())
   const [timeframe, setTimeframe] = useState<'1D' | '5D' | '1M' | '52W'>('1D')
   const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; price: number; label: string } | null>(null)
   const [accountEquity, setAccountEquity] = useState<number>(activeStock.currency === 'INR' ? 100000 : 10000)
@@ -17,7 +21,32 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
   // Sync if parent updates card
   React.useEffect(() => {
     setActiveStock(card)
+    if (card.marketHours) {
+      setMarketHoursData(card.marketHours)
+    }
   }, [card])
+
+  // Live real-time seconds ticking for countdowns
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTimeTick(Date.now())
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Lazy fetch market hours if not already supplied
+  React.useEffect(() => {
+    if (!marketHoursData) {
+      fetch('/api/trading/market-hours')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d && d.radar) {
+            setMarketHoursData(d.radar)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [marketHoursData])
 
   const curr = activeStock.currency === 'INR' ? '₹' : '$'
   const isPositive = activeStock.change >= 0
@@ -382,6 +411,16 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
           }`}
         >
           ⭐ Ratings
+        </button>
+        <button
+          onClick={() => setActiveTab('hours')}
+          className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold shrink-0 ${
+            activeTab === 'hours'
+              ? 'bg-blue-500/25 text-blue-200 border border-blue-400/50 shadow-sm shadow-blue-500/20'
+              : 'text-slate-400 hover:text-white bg-slate-900/40'
+          }`}
+        >
+          🕒 Market Hours
         </button>
       </div>
 
@@ -840,6 +879,260 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
         </div>
       )}
 
+      {/* Tab 7: GLOBAL MARKET SESSIONS & OPERATING HOURS RADAR */}
+      {activeTab === 'hours' && (
+        <div className="space-y-3 font-mono text-xs">
+          {/* Top Live Banner */}
+          <div className="p-2.5 rounded-xl bg-gradient-to-r from-blue-950/70 via-slate-900/90 to-cyan-950/60 border border-blue-500/30 flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🕒</span>
+              <div>
+                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                  Global Market Sessions & Operating Hours
+                  <span className="px-1.5 py-0.2 rounded text-[9px] bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    REAL-TIME
+                  </span>
+                </h4>
+                <p className="text-[10px] text-blue-300/80">
+                  Live countdowns, working schedules & non-working times across India, US, Europe & Asia
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[9px] text-slate-400 block">User Local Time</span>
+              <span className="text-xs font-bold text-cyan-300">
+                {new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })} IST
+              </span>
+            </div>
+          </div>
+
+          {/* Market Cards Grid */}
+          <div className="space-y-2">
+            {(marketHoursData?.markets || [
+              {
+                id: 'nse',
+                name: 'National Stock Exchange of India',
+                exchange: 'NSE (Nifty 50)',
+                country: 'India',
+                flag: '🇮🇳',
+                timezone: 'Asia/Kolkata',
+                status: 'OPEN',
+                statusBadge: '🟢 REGULAR SESSION (LIVE OPEN)',
+                statusDetail: 'Equities & Derivatives trading active',
+                currentLocalTime: '09:15 - 15:30 IST',
+                currentISTTime: 'IST (UTC+5:30)',
+                regularHoursLocal: '09:15 – 15:30 IST',
+                regularHoursIST: '09:15 – 15:30 IST',
+                preMarketHoursIST: '09:00 – 09:15 IST',
+                postMarketHoursIST: '15:40 – 16:00 IST',
+                nextEvent: 'Market closes at 15:30 IST',
+                workingDays: 'Monday – Friday',
+                nonWorkingTimes: 'Closed Weekends (Sat & Sun) + Daily 16:00 – 09:00 IST',
+              },
+              {
+                id: 'bse',
+                name: 'Bombay Stock Exchange',
+                exchange: 'BSE (Sensex)',
+                country: 'India',
+                flag: '🇮🇳',
+                timezone: 'Asia/Kolkata',
+                status: 'OPEN',
+                statusBadge: '🟢 REGULAR SESSION (LIVE OPEN)',
+                statusDetail: 'Synchronized with NSE India',
+                currentLocalTime: '09:15 - 15:30 IST',
+                currentISTTime: 'IST (UTC+5:30)',
+                regularHoursLocal: '09:15 – 15:30 IST',
+                regularHoursIST: '09:15 – 15:30 IST',
+                preMarketHoursIST: '09:00 – 09:15 IST',
+                postMarketHoursIST: '15:40 – 16:00 IST',
+                nextEvent: 'Market closes at 15:30 IST',
+                workingDays: 'Monday – Friday',
+                nonWorkingTimes: 'Closed Weekends (Sat & Sun) + Daily 16:00 – 09:00 IST',
+              },
+              {
+                id: 'mcx',
+                name: 'Multi Commodity Exchange of India',
+                exchange: 'MCX (Commodities)',
+                country: 'India',
+                flag: '🇮🇳',
+                timezone: 'Asia/Kolkata',
+                status: 'OPEN',
+                statusBadge: '🟢 MORNING & EVENING SESSIONS',
+                statusDetail: 'Gold, Silver, Crude Oil, Natural Gas, Base Metals',
+                currentLocalTime: '09:00 - 23:30 IST',
+                currentISTTime: 'IST (UTC+5:30)',
+                regularHoursLocal: 'Morning: 09:00 – 17:00 | Evening: 17:00 – 23:30 IST',
+                regularHoursIST: 'Morning: 09:00 – 17:00 | Evening: 17:00 – 23:30 IST',
+                nextEvent: 'Evening session active until 23:30 IST',
+                workingDays: 'Monday – Friday',
+                nonWorkingTimes: 'Closed Weekends (Sat & Sun) + Daily 23:30 – 09:00 IST',
+              },
+              {
+                id: 'nyse-nasdaq',
+                name: 'New York Stock Exchange & NASDAQ',
+                exchange: 'NYSE / NASDAQ',
+                country: 'United States',
+                flag: '🇺🇸',
+                timezone: 'America/New_York (EST/EDT)',
+                status: 'OPEN',
+                statusBadge: '🟢 US REGULAR SESSION (LIVE OPEN)',
+                statusDetail: 'Wall Street continuous trading',
+                currentLocalTime: '09:30 - 16:00 EST',
+                currentISTTime: '20:00 – 02:30 IST (EST) / 19:00 – 01:30 IST (EDT)',
+                regularHoursLocal: '09:30 – 16:00 EST',
+                regularHoursIST: '19:00 – 01:30 IST (EDT) / 20:00 – 02:30 IST (EST)',
+                preMarketHoursLocal: '04:00 – 09:30 EST',
+                preMarketHoursIST: '13:30 – 19:00 IST (EDT) / 14:30 – 20:00 IST (EST)',
+                postMarketHoursLocal: '16:00 – 20:00 EST',
+                postMarketHoursIST: '01:30 – 05:30 IST (EDT) / 02:30 – 06:30 IST (EST)',
+                nextEvent: 'Closing bell at 16:00 EST (02:30 IST)',
+                workingDays: 'Monday – Friday',
+                nonWorkingTimes: 'Closed Weekends (Sat & Sun) + Daily 20:00 – 04:00 EST (06:30 – 14:30 IST)',
+              },
+              {
+                id: 'lse',
+                name: 'London Stock Exchange',
+                exchange: 'LSE (FTSE 100)',
+                country: 'United Kingdom',
+                flag: '🇬🇧',
+                timezone: 'Europe/London (GMT/BST)',
+                status: 'OPEN',
+                statusBadge: '🟢 LONDON REGULAR SESSION',
+                statusDetail: 'FTSE continuous trading',
+                currentLocalTime: '08:00 - 16:30 London',
+                currentISTTime: '13:30 – 22:00 IST (BST) / 14:30 – 23:00 IST (GMT)',
+                regularHoursLocal: '08:00 – 16:30 London Time',
+                regularHoursIST: '13:30 – 22:00 IST',
+                nextEvent: 'LSE closes at 16:30 London',
+                workingDays: 'Monday – Friday',
+                nonWorkingTimes: 'Closed Weekends (Sat & Sun) + Daily 16:30 – 08:00 London Time',
+              },
+              {
+                id: 'tse',
+                name: 'Tokyo Stock Exchange',
+                exchange: 'TSE (Nikkei 225)',
+                country: 'Japan',
+                flag: '🇯🇵',
+                timezone: 'Asia/Tokyo (JST)',
+                status: 'OPEN',
+                statusBadge: '🟢 TOKYO SESSION',
+                statusDetail: 'Nikkei 225 trading session',
+                currentLocalTime: '09:00 - 15:30 JST',
+                currentISTTime: '05:30 – 12:00 IST',
+                regularHoursLocal: 'Morning: 09:00 – 11:30 JST | Afternoon: 12:30 – 15:30 JST',
+                regularHoursIST: 'Morning: 05:30 – 08:00 IST | Afternoon: 09:00 – 12:00 IST',
+                nextEvent: 'TSE Afternoon session',
+                workingDays: 'Monday – Friday',
+                nonWorkingTimes: 'Lunch recess (11:30–12:30 JST) + Daily 15:30 – 09:00 JST + Weekends',
+              },
+              {
+                id: 'crypto',
+                name: 'Global Cryptocurrency Markets',
+                exchange: 'Crypto (BTC / ETH / SOL)',
+                country: 'Global',
+                flag: '🌐',
+                timezone: 'UTC',
+                status: 'OPEN',
+                statusBadge: '🟢 24/7/365 ALWAYS LIVE OPEN',
+                statusDetail: 'Continuous uninterrupted global liquidity',
+                currentLocalTime: '24 Hours / 7 Days a Week',
+                currentISTTime: '24 Hours / 7 Days a Week (Always Open)',
+                regularHoursLocal: '24 Hours / 7 Days a Week (Never Closes)',
+                regularHoursIST: '24 Hours / 7 Days a Week (Never Closes)',
+                nextEvent: 'Active Continuous Trading (Zero session halts or closures)',
+                workingDays: 'Monday through Sunday (Every Single Day)',
+                nonWorkingTimes: 'None! Zero holidays, zero weekend breaks.',
+              },
+            ]).map((m: any) => {
+              const isOpen = m.status === 'OPEN'
+              const isPre = m.status === 'PRE_MARKET'
+              const isAfter = m.status === 'AFTER_HOURS'
+              const isLunch = m.status === 'LUNCH_BREAK'
+              const isWeekend = m.status === 'WEEKEND'
+
+              const statusColor = isOpen
+                ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300'
+                : isPre
+                ? 'border-yellow-500/50 bg-yellow-500/15 text-yellow-300'
+                : isAfter
+                ? 'border-orange-500/50 bg-orange-500/15 text-orange-300'
+                : isLunch
+                ? 'border-amber-500/50 bg-amber-500/15 text-amber-300'
+                : isWeekend
+                ? 'border-purple-500/50 bg-purple-500/15 text-purple-300'
+                : 'border-slate-700 bg-slate-900/60 text-slate-400'
+
+              return (
+                <div
+                  key={m.id}
+                  className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 hover:border-cyan-500/40 transition-all"
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-1.5 mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{m.flag}</span>
+                      <div>
+                        <span className="font-bold text-white text-xs block">{m.name}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">{m.exchange}</span>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColor}`}>
+                      {m.statusBadge || m.status}
+                    </span>
+                  </div>
+
+                  {/* Countdown & Timing Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 my-2 text-[11px] bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+                    <div>
+                      <span className="text-[9px] text-cyan-400 block font-bold uppercase tracking-wider">
+                        Operating Hours (in User IST)
+                      </span>
+                      <span className="font-bold text-white text-[11px] block mt-0.5">
+                        {m.regularHoursIST}
+                      </span>
+                      {m.preMarketHoursIST && (
+                        <span className="text-[9px] text-slate-400 block mt-0.5">
+                          Pre-Market: <strong className="text-yellow-300">{m.preMarketHoursIST}</strong>
+                        </span>
+                      )}
+                      {m.postMarketHoursIST && (
+                        <span className="text-[9px] text-slate-400 block mt-0.5">
+                          Post-Market: <strong className="text-orange-300">{m.postMarketHoursIST}</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] text-amber-400 block font-bold uppercase tracking-wider">
+                        Countdown & Next Event
+                      </span>
+                      <span className="font-bold text-amber-300 text-[11px] block mt-0.5">
+                        ⏳ {m.nextEvent}
+                      </span>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        Local Clock: <strong className="text-slate-300">{m.currentLocalTime}</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Non-Working Times Bar */}
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+                    <span className="truncate">
+                      🛑 Non-Working: <strong className="text-slate-300">{m.nonWorkingTimes}</strong>
+                    </span>
+                    <button
+                      onClick={() => onActionClick && onActionClick(`What are the exact trading timings, sessions, and non-working hours of ${m.name} (${m.exchange})?`)}
+                      className="text-cyan-400 hover:text-cyan-200 underline font-bold shrink-0 ml-2 cursor-pointer"
+                    >
+                      Ask AI →
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Action Footer */}
       <div className="mt-3 pt-2 border-t border-cyan-500/20 flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -858,6 +1151,12 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={() => setActiveTab('hours')}
+            className="px-2.5 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-400/40 transition-all cursor-pointer font-bold flex items-center gap-1 shadow-sm shadow-blue-500/20"
+          >
+            🕒 Market Hours Radar
+          </button>
           <button
             onClick={() => onActionClick && onActionClick(`Tony Stark, give me your high-conviction breakdown of ${activeStock.name} (${activeStock.symbol}) with 52W range and volume`)}
             className="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-400/40 transition-all cursor-pointer font-bold"

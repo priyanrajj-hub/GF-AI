@@ -288,7 +288,10 @@ class VoiceEngineManager {
             audioElem.onended = () => {
               if (this._speakLockId !== myLockId) return
               this.currentHtmlAudio = null
-              store.setSystemState('idle')
+              const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
+              if (!isSinging) {
+                store.setSystemState('idle')
+              }
               if (options.onEnd) options.onEnd()
             }
             store.setSystemState('speaking')
