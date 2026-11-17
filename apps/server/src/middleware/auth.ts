@@ -8,56 +8,64 @@ export interface AuthenticatedRequest extends Request {
   user?: AuthUserPayload
 }
 
-const isProduction = process.env.NODE_ENV === 'production'
-
 /**
  * Authentication Middleware:
  * Validates cryptographically signed JWT Bearer tokens.
- * Enforces identity verification and stops unauthenticated client spoofing.
+ * Enforces verified identity and completely rejects client-side identity spoofing (x-user-id).
+ * Does NOT assign a shared default identity (default-user-1) to unauthenticated requests.
  */
 export function authMiddleware(req: Request, _res: Response, next: NextFunction): void {
   const authReq = req as AuthenticatedRequest
   const authHeader = req.headers.authorization
-  const userHeader = req.headers['x-user-id'] as string
 
-  // 1. Check for Bearer JWT token
+  // 1. Inspect Authorization Bearer header
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const rawToken = authHeader.substring(7).trim()
     if (rawToken && rawToken !== 'null' && rawToken !== 'undefined') {
       const verified = JwtService.verify(rawToken)
-      if (verified) {
+      if (verified && verified.userId) {
         authReq.user = verified
         authReq.userId = verified.userId
-        authReq.userName = verified.userName
-        authReq.userRole = verified.role
+        authReq.userName = verified.userName || 'User'
+        authReq.userRole = verified.role || 'user'
         return next()
       }
     }
   }
 
-  // 2. Development / Test Environment Override (Strictly disabled in production)
-  if (!isProduction && userHeader && userHeader.trim()) {
-    authReq.userId = userHeader.trim()
-    authReq.userRole = 'user'
-    return next()
-  }
-
-  // 3. Fallback: Sandboxed guest session (Cannot impersonate registered accounts)
-  authReq.userId = 'default-user-1'
-  authReq.userName = 'Demo User'
-  authReq.userRole = 'guest'
+  // 2. Unauthenticated: Leave identity unset (never spoofable from x-user-id or shared default)
+  authReq.userId = ''
+  authReq.userName = undefined
+  authReq.userRole = undefined
+  authReq.user = undefined
   next()
 }
 
 /**
- * Route guard: Requires a valid, cryptographically verified user token.
+ * Route guard: Requires a valid, cryptographically verified user or guest token.
+ * Prevents unauthenticated access to private resources.
  */
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const authReq = req as AuthenticatedRequest
-  if (!authReq.user || authReq.userRole === 'guest') {
+  if (!authReq.user || !authReq.userId || authReq.userId.trim() === '') {
     res.status(401).json({
-      error: 'Unauthorized: A verified authentication token is required to access this resource.',
+      error: 'Unauthorized: A cryptographically verified authentication token is required to access this resource.',
       code: 'AUTH_REQUIRED',
+    })
+    return
+  }
+  next()
+}
+
+/**
+ * Route guard: Requires registered user account (rejects anonymous guest tokens).
+ */
+export function requireRegisteredUser(req: Request, res: Response, next: NextFunction): void {
+  const authReq = req as AuthenticatedRequest
+  if (!authReq.user || !authReq.userId || authReq.userRole === 'guest') {
+    res.status(403).json({
+      error: 'Forbidden: Full registered account required for this operation.',
+      code: 'REGISTERED_ACCOUNT_REQUIRED',
     })
     return
   }

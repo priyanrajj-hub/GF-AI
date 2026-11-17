@@ -7,8 +7,8 @@ export class ElevenLabsProvider {
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.ELEVENLABS_API_KEY || ''
-    // Ignore exhausted demo key if passed
-    if (key && key !== '[PURGED_ELEVENLABS_KEY]') {
+    // Validate key length and format
+    if (key && key.trim().length >= 20 && !key.trim().startsWith('placeholder')) {
       this.setApiKey(key)
     }
   }

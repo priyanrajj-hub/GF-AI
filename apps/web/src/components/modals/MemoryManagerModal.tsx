@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import type { MemoryItem } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
-import { apiUrl } from '../../utils/api.js'
+import { apiUrl, apiFetch } from '../../utils/api.js'
 
 export const MemoryManagerModal: React.FC = () => {
   const {
@@ -49,9 +49,7 @@ export const MemoryManagerModal: React.FC = () => {
   // Fetch memories from backend
   useEffect(() => {
     if (showMemoryModal) {
-      fetch(apiUrl('/api/memory'), {
-        headers: { 'x-user-id': settings.userId },
-      })
+      apiFetch('/api/memory')
         .then((res) => res.json())
         .then((data) => {
           if (data.memories) setMemories(data.memories)
@@ -70,11 +68,10 @@ export const MemoryManagerModal: React.FC = () => {
     if (!newContent.trim()) return
 
     try {
-      const res = await fetch(apiUrl('/api/memory'), {
+      const res = await apiFetch('/api/memory', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': settings.userId,
         },
         body: JSON.stringify({
           key: `user_${newCategory}`,
@@ -97,9 +94,8 @@ export const MemoryManagerModal: React.FC = () => {
 
   const handleDeleteMemory = async (id: string) => {
     try {
-      await fetch(apiUrl(`/api/memory/${id}`), {
+      await apiFetch(`/api/memory/${id}`, {
         method: 'DELETE',
-        headers: { 'x-user-id': settings.userId },
       })
       setMemories(memories.filter((m) => m.id !== id))
     } catch (err) {
@@ -115,11 +111,10 @@ export const MemoryManagerModal: React.FC = () => {
   const handleSaveEdit = async (id: string) => {
     if (!editContent.trim()) return
     try {
-      const res = await fetch(apiUrl(`/api/memory/${id}`), {
+      const res = await apiFetch(`/api/memory/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': settings.userId,
         },
         body: JSON.stringify({ content: editContent.trim() }),
       })
@@ -137,9 +132,8 @@ export const MemoryManagerModal: React.FC = () => {
   const handleForgetSource = async () => {
     if (!sourceToForget) return
     try {
-      const res = await fetch(apiUrl(`/api/memory/source/${encodeURIComponent(sourceToForget)}`), {
+      const res = await apiFetch(`/api/memory/source/${encodeURIComponent(sourceToForget)}`, {
         method: 'DELETE',
-        headers: { 'x-user-id': settings.userId },
       })
       const data = await res.json()
       if (data.success) {
@@ -156,9 +150,9 @@ export const MemoryManagerModal: React.FC = () => {
     if (!linkUrl.trim()) return
     setIsPreviewing(true)
     try {
-      const res = await fetch(apiUrl('/api/memory/preview-link'), {
+      const res = await apiFetch('/api/memory/preview-link', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': settings.userId },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: linkUrl.trim() }),
       })
       const data = await res.json()
@@ -182,9 +176,9 @@ export const MemoryManagerModal: React.FC = () => {
     if (factsToSave.length === 0) return
 
     try {
-      const res = await fetch(apiUrl('/api/memory/approve-link-facts'), {
+      const res = await apiFetch('/api/memory/approve-link-facts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': settings.userId },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: linkUrl.trim(), facts: factsToSave }),
       })
       const data = await res.json()
@@ -201,11 +195,10 @@ export const MemoryManagerModal: React.FC = () => {
 
   const handleTogglePin = async (id: string, currentPinned: boolean) => {
     try {
-      const res = await fetch(apiUrl(`/api/memory/${id}`), {
+      const res = await apiFetch(`/api/memory/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': settings.userId,
         },
         body: JSON.stringify({ pinned: !currentPinned }),
       })
@@ -220,9 +213,8 @@ export const MemoryManagerModal: React.FC = () => {
 
   const handleWipeAll = async () => {
     try {
-      await fetch(apiUrl('/api/memory'), {
+      await apiFetch('/api/memory', {
         method: 'DELETE',
-        headers: { 'x-user-id': settings.userId },
       })
       setMemories([])
       setShowConfirmWipe(false)

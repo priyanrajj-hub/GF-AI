@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { apiUrl } from '../../utils/api.js'
+import { apiUrl, apiFetch } from '../../utils/api.js'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -24,30 +24,30 @@ interface CryptoItem {
 
 type WatchlistTab = 'stocks' | 'crypto' | 'nifty'
 
-// ─── Static fallback data ────────────────────────────────────────────────────
+// ─── Default Watchlist Items (Zero price indicates loading/connecting) ─────────
 
-const FALLBACK_STOCKS: MarketItem[] = [
-  { symbol: 'AAPL',  name: 'Apple Inc.',       price: 189.42, change: 2.15,  changePct: 1.15,  rsi: 62, signal: 'BUY'  },
-  { symbol: 'NVDA',  name: 'NVIDIA Corp.',      price: 487.23, change: 11.08, changePct: 2.33,  rsi: 71, signal: 'HOLD' },
-  { symbol: 'TSLA',  name: 'Tesla Inc.',        price: 213.65, change: -4.32, changePct: -1.98, rsi: 38, signal: 'SELL' },
-  { symbol: 'MSFT',  name: 'Microsoft Corp.',   price: 378.91, change: 3.47,  changePct: 0.92,  rsi: 58, signal: 'BUY'  },
-  { symbol: 'AMZN',  name: 'Amazon.com Inc.',   price: 182.34, change: 1.23,  changePct: 0.68,  rsi: 55, signal: 'HOLD' },
+const DEFAULT_STOCKS: MarketItem[] = [
+  { symbol: 'AAPL',  name: 'Apple Inc.',       price: 0, change: 0, changePct: 0 },
+  { symbol: 'NVDA',  name: 'NVIDIA Corp.',      price: 0, change: 0, changePct: 0 },
+  { symbol: 'TSLA',  name: 'Tesla Inc.',        price: 0, change: 0, changePct: 0 },
+  { symbol: 'MSFT',  name: 'Microsoft Corp.',   price: 0, change: 0, changePct: 0 },
+  { symbol: 'AMZN',  name: 'Amazon.com Inc.',   price: 0, change: 0, changePct: 0 },
 ]
 
-const FALLBACK_CRYPTO: CryptoItem[] = [
-  { id: 'bitcoin',  symbol: 'BTC', name: 'Bitcoin',  price: 68420.50, changePct24h:  2.14 },
-  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', price: 3521.80,  changePct24h:  1.87 },
-  { id: 'solana',   symbol: 'SOL', name: 'Solana',   price: 192.45,   changePct24h: -0.93 },
-  { id: 'binancecoin', symbol: 'BNB', name: 'BNB',   price: 598.20,   changePct24h:  0.56 },
-  { id: 'ripple',   symbol: 'XRP', name: 'XRP',      price: 0.5812,   changePct24h: -1.42 },
+const DEFAULT_CRYPTO: CryptoItem[] = [
+  { id: 'bitcoin',  symbol: 'BTC', name: 'Bitcoin',  price: 0, changePct24h: 0 },
+  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', price: 0, changePct24h: 0 },
+  { id: 'solana',   symbol: 'SOL', name: 'Solana',   price: 0, changePct24h: 0 },
+  { id: 'binancecoin', symbol: 'BNB', name: 'BNB',   price: 0, changePct24h: 0 },
+  { id: 'ripple',   symbol: 'XRP', name: 'XRP',      price: 0, changePct24h: 0 },
 ]
 
-const FALLBACK_NIFTY: MarketItem[] = [
-  { symbol: 'RELIANCE', name: 'Reliance Ind.',  price: 2847.60, change: 42.50,  changePct: 1.52,  rsi: 61, signal: 'BUY'  },
-  { symbol: 'TCS',      name: 'Tata Consult.',  price: 4213.90, change: -38.10, changePct: -0.90, rsi: 44, signal: 'HOLD' },
-  { symbol: 'INFY',     name: 'Infosys Ltd.',   price: 1872.45, change: 24.85,  changePct: 1.34,  rsi: 59, signal: 'BUY'  },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank',      price: 1748.30, change: -12.60, changePct: -0.72, rsi: 47, signal: 'HOLD' },
-  { symbol: 'WIPRO',    name: 'Wipro Ltd.',     price: 547.80,  change: 8.40,   changePct: 1.56,  rsi: 65, signal: 'BUY'  },
+const DEFAULT_NIFTY: MarketItem[] = [
+  { symbol: 'RELIANCE', name: 'Reliance Ind.',  price: 0, change: 0, changePct: 0 },
+  { symbol: 'TCS',      name: 'Tata Consult.',  price: 0, change: 0, changePct: 0 },
+  { symbol: 'INFY',     name: 'Infosys Ltd.',   price: 0, change: 0, changePct: 0 },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank',      price: 0, change: 0, changePct: 0 },
+  { symbol: 'WIPRO',    name: 'Wipro Ltd.',     price: 0, change: 0, changePct: 0 },
 ]
 
 // ─── Helper components ────────────────────────────────────────────────────────
@@ -74,12 +74,14 @@ function SignalBadge({ signal }: { signal?: 'BUY' | 'SELL' | 'HOLD' }) {
 
 function StockRow({ item, currency = '$' }: { item: MarketItem; currency?: string }) {
   const pos = item.changePct >= 0
+  const isLoaded = item.price > 0
+
   return (
     <div
       className={`flex items-center justify-between py-1.5 px-2 rounded-lg transition-all duration-300 hover:bg-slate-800/60 animate-fade-in-up ${
-        pos ? 'glow-positive' : 'glow-negative'
+        isLoaded ? (pos ? 'glow-positive' : 'glow-negative') : ''
       }`}
-      style={{ borderLeft: `2px solid ${pos ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)'}` }}
+      style={{ borderLeft: `2px solid ${isLoaded ? (pos ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)') : 'rgba(100,116,139,0.3)'}` }}
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
@@ -89,13 +91,19 @@ function StockRow({ item, currency = '$' }: { item: MarketItem; currency?: strin
         <span className="text-[9px] text-slate-500 truncate block">{item.name}</span>
       </div>
       <div className="text-right shrink-0 ml-2">
-        <div className="text-[11px] font-mono font-bold text-slate-100">
-          {currency}{item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </div>
-        <div className={`flex items-center justify-end gap-0.5 text-[10px] font-mono font-semibold ${pos ? 'market-positive' : 'market-negative'}`}>
-          <TrendArrow pct={item.changePct} />
-          <span>{pos ? '+' : ''}{item.changePct.toFixed(2)}%</span>
-        </div>
+        {isLoaded ? (
+          <>
+            <div className="text-[11px] font-mono font-bold text-slate-100">
+              {currency}{item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <div className={`flex items-center justify-end gap-0.5 text-[10px] font-mono font-semibold ${pos ? 'market-positive' : 'market-negative'}`}>
+              <TrendArrow pct={item.changePct} />
+              <span>{pos ? '+' : ''}{item.changePct.toFixed(2)}%</span>
+            </div>
+          </>
+        ) : (
+          <span className="text-[9px] font-mono text-cyan-400/80 animate-pulse">CONNECTING...</span>
+        )}
       </div>
     </div>
   )
@@ -103,25 +111,33 @@ function StockRow({ item, currency = '$' }: { item: MarketItem; currency?: strin
 
 function CryptoRow({ item }: { item: CryptoItem }) {
   const pos = item.changePct24h >= 0
+  const isLoaded = item.price > 0
+
   return (
     <div
       className={`flex items-center justify-between py-1.5 px-2 rounded-lg transition-all duration-300 hover:bg-slate-800/60 animate-fade-in-up ${
-        pos ? 'glow-positive' : 'glow-negative'
+        isLoaded ? (pos ? 'glow-positive' : 'glow-negative') : ''
       }`}
-      style={{ borderLeft: `2px solid ${pos ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)'}` }}
+      style={{ borderLeft: `2px solid ${isLoaded ? (pos ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)') : 'rgba(100,116,139,0.3)'}` }}
     >
       <div className="min-w-0 flex-1">
         <span className="text-[11px] font-mono font-bold text-white">{item.symbol}</span>
         <span className="text-[9px] text-slate-500 block">{item.name}</span>
       </div>
       <div className="text-right shrink-0 ml-2">
-        <div className="text-[11px] font-mono font-bold text-slate-100">
-          ${item.price.toLocaleString(undefined, { minimumFractionDigits: item.price < 1 ? 4 : 2, maximumFractionDigits: item.price < 1 ? 4 : 2 })}
-        </div>
-        <div className={`flex items-center justify-end gap-0.5 text-[10px] font-mono font-semibold ${pos ? 'market-positive' : 'market-negative'}`}>
-          <TrendArrow pct={item.changePct24h} />
-          <span>{pos ? '+' : ''}{item.changePct24h.toFixed(2)}%</span>
-        </div>
+        {isLoaded ? (
+          <>
+            <div className="text-[11px] font-mono font-bold text-slate-100">
+              ${item.price.toLocaleString(undefined, { minimumFractionDigits: item.price < 1 ? 4 : 2, maximumFractionDigits: item.price < 1 ? 4 : 2 })}
+            </div>
+            <div className={`flex items-center justify-end gap-0.5 text-[10px] font-mono font-semibold ${pos ? 'market-positive' : 'market-negative'}`}>
+              <TrendArrow pct={item.changePct24h} />
+              <span>{pos ? '+' : ''}{item.changePct24h.toFixed(2)}%</span>
+            </div>
+          </>
+        ) : (
+          <span className="text-[9px] font-mono text-cyan-400/80 animate-pulse">CONNECTING...</span>
+        )}
       </div>
     </div>
   )
@@ -131,9 +147,9 @@ function CryptoRow({ item }: { item: CryptoItem }) {
 
 export const LiveMarketPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<WatchlistTab>('crypto')
-  const [stocks, setStocks] = useState<MarketItem[]>(FALLBACK_STOCKS)
-  const [crypto, setCrypto] = useState<CryptoItem[]>(FALLBACK_CRYPTO)
-  const [nifty, setNifty] = useState<MarketItem[]>(FALLBACK_NIFTY)
+  const [stocks, setStocks] = useState<MarketItem[]>(DEFAULT_STOCKS)
+  const [crypto, setCrypto] = useState<CryptoItem[]>(DEFAULT_CRYPTO)
+  const [nifty, setNifty] = useState<MarketItem[]>(DEFAULT_NIFTY)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [isLoading, setIsLoading] = useState(false)
   const [fetchFailed, setFetchFailed] = useState(false)

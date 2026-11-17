@@ -1,5 +1,5 @@
 import { useAppStore } from '../../store/useAppStore.js'
-import { apiUrl } from '../../utils/api.js'
+import { apiUrl, apiFetch } from '../../utils/api.js'
 
 class VoiceEngineManager {
   private recognition: any = null
@@ -158,11 +158,10 @@ class VoiceEngineManager {
           ? 'EXAVITQu4vr4xnSDxMaL'
           : store.settings.elevenlabsVoiceId
 
-      const res = await fetch(apiUrl('/api/tts'), {
+      const res = await apiFetch('/api/tts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': store.settings.userId || 'default-user-1',
         },
         body: JSON.stringify({
           text: cleanSpeech,

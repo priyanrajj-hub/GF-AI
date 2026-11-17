@@ -114,7 +114,7 @@ docker build -t gf-ai:latest -f Dockerfile .
 docker run -d \
   -p 3001:3001 \
   -e NODE_ENV=production \
-  -e JWT_SECRET="your-production-jwt-secret-key-at-least-32-chars" \
+  -e JWT_SECRET="<SET_YOUR_32_CHAR_SECRET_IN_ENV>" \
   -e ALLOWED_ORIGINS="https://gf-ai-ochre.vercel.app" \
   --name gf-ai-instance \
   gf-ai:latest

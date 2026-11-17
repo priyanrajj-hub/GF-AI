@@ -1,7 +1,7 @@
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 import fs from 'fs';
 
-const apiKey = '[PURGED_ELEVENLABS_KEY]';
+const apiKey = process.env.ELEVENLABS_API_KEY || '';
 const voiceId = 'NOpBlnGInO9m6vDvFkFC';
 
 async function testKey() {

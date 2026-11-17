@@ -37,7 +37,7 @@ import { NeuralTTSProvider } from './providers/neuralTtsProvider.js'
 import { buildRagContext } from './rag/ragService.js'
 import CryptoJS from 'crypto-js'
 import { getStockQuote, getCryptoPrice, generateAlgoSignal } from './market/marketDataService.js'
-import { rateLimitChat, rateLimitVoice, sanitizeInput, requestId } from './middleware/security.js'
+import { rateLimitChat, rateLimitVoice, rateLimitGeneral, rateLimitAuth, sanitizeInput, requestId } from './middleware/security.js'
 
 dotenv.config()
 ProviderRegistry.init()
@@ -46,11 +46,24 @@ const app = express()
 const PORT = process.env.PORT || 3001
 const isDev = process.env.NODE_ENV !== 'production'
 
-// Security middleware
+// Security middleware with Production Content Security Policy (CSP)
 app.use(
   helmet({
-    contentSecurityPolicy: false, // allow 3D canvas and audio blobs in local development
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        mediaSrc: ["'self'", "data:", "blob:", "https:"],
+        connectSrc: ["'self'", "https:", "wss:", "ws:"],
+        workerSrc: ["'self'", "blob:"],
+        objectSrc: ["'none'"],
+      },
+    },
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 )
 
@@ -93,15 +106,8 @@ app.use(
   })
 )
 
-// Rate limiting (120 requests per minute)
-const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 120,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests, please slow down.' },
-})
-app.use('/api/', limiter)
+// General API Rate Limiting (120 req/min)
+app.use('/api/', rateLimitGeneral)
 
 // Safe JSON body parser with 1 MB limit (mitigates memory exhaustion DoS)
 app.use((req, res, next) => {
@@ -114,10 +120,18 @@ app.use(requestId)
 app.use(sanitizeInput)
 app.use(authMiddleware)
 
-// File upload setup for vision inspection
+// Hardened file upload setup (5 MB max, strict MIME check)
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/plain']
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true)
+    } else {
+      cb(new Error('Invalid file type. Supported types: JPEG, PNG, WebP, PDF, TXT.'))
+    }
+  },
 })
 
 // ==========================================
@@ -141,7 +155,7 @@ app.get('/api/health', (req, res) => {
 // ==========================================
 
 // Issue cryptographically verified JWT token
-app.post('/api/auth/token', (req, res) => {
+app.post('/api/auth/token', rateLimitAuth, (req, res) => {
   const { userId, userName, role } = req.body || {}
   const safeId = (typeof userId === 'string' && userId.trim()) ? userId.trim() : `user_${Date.now()}`
   const safeName = (typeof userName === 'string' && userName.trim()) ? userName.trim() : 'Demo User'
@@ -164,8 +178,8 @@ app.post('/api/auth/token', (req, res) => {
   })
 })
 
-// Guest session token
-app.post('/api/auth/guest', (_req, res) => {
+// Guest session token (issues unique, isolated guest identity)
+app.post('/api/auth/guest', rateLimitAuth, (_req, res) => {
   const token = JwtService.createGuestToken()
   const payload = JwtService.verify(token)
   res.json({
@@ -179,10 +193,10 @@ app.post('/api/auth/guest', (_req, res) => {
 app.get('/api/auth/me', (req, res) => {
   const authReq = req as AuthenticatedRequest
   res.json({
-    authenticated: Boolean(authReq.user && authReq.userRole !== 'guest'),
-    userId: authReq.userId,
-    userName: authReq.userName || 'Demo User',
-    role: authReq.userRole || 'guest',
+    authenticated: Boolean(authReq.user && authReq.userId),
+    userId: authReq.userId || null,
+    userName: authReq.userName || null,
+    role: authReq.userRole || 'unauthenticated',
   })
 })
 
@@ -517,9 +531,9 @@ app.get('/api/ada/girl-activities', (_req, res) => {
 })
 
 // User's World, Life & Memory Profile
-app.get('/api/user/life-profile', (req, res) => {
+app.get('/api/user/life-profile', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
-  const userId = authReq.userId || 'default-user-1'
+  const userId = authReq.userId
   res.json({
     bio: UserLifeMemoryService.getBio(),
     memories: db.getMemories(userId),
@@ -550,12 +564,12 @@ app.get('/api/providers/router-stats', (_req, res) => {
 })
 
 // Relationship Journal
-app.get('/api/relationship-journal', (req, res) => {
+app.get('/api/relationship-journal', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   res.json({ entries: db.getRelationshipJournal(authReq.userId) })
 })
 
-app.post('/api/relationship-journal', (req, res) => {
+app.post('/api/relationship-journal', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const { type, title, content } = req.body
   if (!title || !content) return res.status(400).json({ error: 'Title and content are required' })
@@ -568,41 +582,41 @@ app.post('/api/relationship-journal', (req, res) => {
   res.json({ entry: created })
 })
 
-app.put('/api/relationship-journal/:id', (req, res) => {
+app.put('/api/relationship-journal/:id', requireAuth, (req, res) => {
   const authReq = req as unknown as AuthenticatedRequest
-  const updated = db.updateRelationshipJournalEntry(authReq.userId, req.params.id, req.body)
+  const updated = db.updateRelationshipJournalEntry(authReq.userId, String(req.params.id), req.body)
   if (!updated) return res.status(404).json({ error: 'Entry not found' })
   res.json({ entry: updated })
 })
 
-app.delete('/api/relationship-journal/:id', (req, res) => {
+app.delete('/api/relationship-journal/:id', requireAuth, (req, res) => {
   const authReq = req as unknown as AuthenticatedRequest
-  const deleted = db.deleteRelationshipJournalEntry(authReq.userId, req.params.id)
+  const deleted = db.deleteRelationshipJournalEntry(authReq.userId, String(req.params.id))
   res.json({ success: deleted })
 })
 
 // "What do you know about me" Transparency View
-app.get('/api/memory/transparency', (req, res) => {
+app.get('/api/memory/transparency', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   res.json(db.getTransparencyReport(authReq.userId))
 })
 
 // Memory Consolidation & Decay
-app.post('/api/memory/consolidate', (req, res) => {
+app.post('/api/memory/consolidate', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const result = db.consolidateAndDecay(authReq.userId)
   res.json({ success: true, result })
 })
 
 // RAG Documents with Source Citations
-app.get('/api/memory/rag', (req, res) => {
+app.get('/api/memory/rag', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const q = (req.query.q as string) || ''
   const docs = db.searchRagDocs(authReq.userId, q)
   res.json({ docs })
 })
 
-app.post('/api/memory/rag', (req, res) => {
+app.post('/api/memory/rag', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const { docTitle, chunkText, sourceCitation } = req.body
   if (!docTitle || !chunkText) return res.status(400).json({ error: 'docTitle and chunkText are required' })
@@ -610,9 +624,9 @@ app.post('/api/memory/rag', (req, res) => {
   res.json({ doc: created })
 })
 
-app.delete('/api/memory/rag/:id', (req, res) => {
+app.delete('/api/memory/rag/:id', requireAuth, (req, res) => {
   const authReq = req as unknown as AuthenticatedRequest
-  const deleted = db.deleteRagDoc(authReq.userId, req.params.id)
+  const deleted = db.deleteRagDoc(authReq.userId, String(req.params.id))
   res.json({ success: deleted })
 })
 
@@ -640,7 +654,7 @@ app.get('/api/permissions/audit', (_req, res) => {
 // ==========================================
 // 2. CHAT & LLM STREAMING
 // ==========================================
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', rateLimitChat, requireAuth, async (req, res) => {
   const authReq = req as AuthenticatedRequest
   const userId = authReq.userId
   const { message, mode, character, sliders, language, stream, llmProvider, huggingfaceApiKey } = req.body
@@ -1670,12 +1684,27 @@ app.post('/api/chat', async (req, res) => {
 // ==========================================
 // 3. VISION & FILE INSPECTION
 // ==========================================
-app.post('/api/chat/vision', upload.single('file'), async (req, res) => {
+app.post('/api/chat/vision', upload.single('file'), requireAuth, async (req, res) => {
   const { prompt = 'Explain and analyze this file/image in detail.' } = req.body
   const file = req.file
 
   if (!file) {
     return res.status(400).json({ error: 'No image or document file was uploaded' })
+  }
+
+  // File Signature (Magic Byte) Verification
+  const buf = file.buffer
+  const isJpeg = buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff
+  const isPng = buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47
+  const isWebp = buf.length >= 12 && buf.toString('utf8', 8, 12) === 'WEBP'
+  const isPdf = buf.length >= 4 && buf.toString('utf8', 0, 4) === '%PDF'
+  const isTxt = file.mimetype === 'text/plain'
+
+  if (!isJpeg && !isPng && !isWebp && !isPdf && !isTxt) {
+    return res.status(400).json({
+      error: 'File signature verification failed. Executable or disguised files are strictly rejected.',
+      code: 'INVALID_FILE_SIGNATURE',
+    })
   }
 
   const vision = ProviderRegistry.getVision()
@@ -1692,7 +1721,7 @@ app.post('/api/chat/vision', upload.single('file'), async (req, res) => {
 // ==========================================
 // 3.5. NEURAL AI VOICE SYNTHESIS (GIRL VOICE)
 // ==========================================
-app.post('/api/tts', async (req, res) => {
+app.post('/api/tts', rateLimitVoice, async (req, res) => {
   const {
     text,
     voice,
@@ -1747,9 +1776,9 @@ app.post('/api/tts', async (req, res) => {
     }
   }
 
-  // Check for ElevenLabs voice request (for English / Mira Yor / explicit user choice)
-  const isExhaustedDemoKey = (key?: string) => !key || key.trim() === '[PURGED_ELEVENLABS_KEY]'
-  const hasValidElevenKey = Boolean(elevenlabsApiKey && !isExhaustedDemoKey(elevenlabsApiKey))
+  // Check for ElevenLabs voice request (for English / explicit user choice)
+  const isInvalidDemoKey = (key?: string) => !key || key.trim().length < 20 || key.trim().startsWith('placeholder')
+  const hasValidElevenKey = Boolean(elevenlabsApiKey && !isInvalidDemoKey(elevenlabsApiKey))
 
   const isElevenLabs =
     (provider === 'elevenlabs' ||
@@ -1923,13 +1952,13 @@ app.post('/api/3d/generate', async (req, res) => {
 // ==========================================
 // 4. SETTINGS & PROFILE
 // ==========================================
-app.get('/api/settings', (req, res) => {
+app.get('/api/settings', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const settings = db.getUserSettings(authReq.userId)
   res.json({ settings })
 })
 
-app.post('/api/settings', (req, res) => {
+app.post('/api/settings', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const updated = db.updateUserSettings(authReq.userId, req.body)
   res.json({ settings: updated })
@@ -1938,14 +1967,14 @@ app.post('/api/settings', (req, res) => {
 // ==========================================
 // 5. MESSAGES / HISTORY
 // ==========================================
-app.get('/api/messages', (req, res) => {
+app.get('/api/messages', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const limit = parseInt(req.query.limit as string) || 50
   const messages = db.getMessages(authReq.userId, limit)
   res.json({ messages })
 })
 
-app.delete('/api/messages', (req, res) => {
+app.delete('/api/messages', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   db.clearMessages(authReq.userId)
   res.json({ success: true, message: 'Chat history cleared' })
@@ -1954,13 +1983,13 @@ app.delete('/api/messages', (req, res) => {
 // ==========================================
 // 6. LONG-TERM MEMORY (CONSENTED MEMORY MANAGER)
 // ==========================================
-app.get('/api/memory', (req, res) => {
+app.get('/api/memory', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const memories = db.getMemories(authReq.userId)
   res.json({ memories })
 })
 
-app.post('/api/memory', (req, res) => {
+app.post('/api/memory', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const { key, category, content, importance, pinned } = req.body
   if (!content) return res.status(400).json({ error: 'Content is required' })
@@ -1975,29 +2004,29 @@ app.post('/api/memory', (req, res) => {
   res.json({ memory: created })
 })
 
-app.put('/api/memory/:id', (req, res) => {
+app.put('/api/memory/:id', requireAuth, (req, res) => {
   const authReq = req as unknown as AuthenticatedRequest
-  const updated = db.updateMemory(authReq.userId, req.params.id, req.body)
+  const updated = db.updateMemory(authReq.userId, String(req.params.id), req.body)
   if (!updated) return res.status(404).json({ error: 'Memory item not found' })
   res.json({ memory: updated })
 })
 
-app.delete('/api/memory/:id', (req, res) => {
+app.delete('/api/memory/:id', requireAuth, (req, res) => {
   const authReq = req as unknown as AuthenticatedRequest
-  const deleted = db.deleteMemory(authReq.userId, req.params.id)
+  const deleted = db.deleteMemory(authReq.userId, String(req.params.id))
   res.json({ success: deleted })
 })
 
 // Forget a Source (Purge all memories from a specific source, e.g. a link or portfolio)
-app.delete('/api/memory/source/:source', (req, res) => {
+app.delete('/api/memory/source/:source', requireAuth, (req, res) => {
   const authReq = req as unknown as AuthenticatedRequest
-  const source = decodeURIComponent(req.params.source)
+  const source = decodeURIComponent(String(req.params.source))
   const count = db.deleteMemoriesBySource(authReq.userId, source)
   res.json({ success: true, removedCount: count, source })
 })
 
 // Memory Ingestion with Preview & User Approval Gate
-app.post('/api/memory/preview-link', async (req, res) => {
+app.post('/api/memory/preview-link', requireAuth, async (req, res) => {
   const { url } = req.body
   if (!url) return res.status(400).json({ error: 'URL is required' })
   try {
@@ -2012,7 +2041,7 @@ app.post('/api/memory/preview-link', async (req, res) => {
   }
 })
 
-app.post('/api/memory/approve-link-facts', (req, res) => {
+app.post('/api/memory/approve-link-facts', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const { url, facts } = req.body
   if (!facts || !Array.isArray(facts)) return res.status(400).json({ error: 'Facts array is required' })
@@ -2029,7 +2058,7 @@ app.post('/api/memory/approve-link-facts', (req, res) => {
   res.json({ success: true, count: added.length, memories: added })
 })
 
-app.delete('/api/memory', (req, res) => {
+app.delete('/api/memory', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   db.clearMemories(authReq.userId)
   res.json({ success: true, message: 'All memories cleared with user consent' })
@@ -2038,13 +2067,13 @@ app.delete('/api/memory', (req, res) => {
 // ==========================================
 // 7. NOTES & TO-DOS
 // ==========================================
-app.get('/api/notes', (req, res) => {
+app.get('/api/notes', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const notes = db.getNotes(authReq.userId)
   res.json({ notes })
 })
 
-app.post('/api/notes', (req, res) => {
+app.post('/api/notes', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const { title, content, completed = false, category = 'todo', dueDate } = req.body
   if (!title) return res.status(400).json({ error: 'Title is required' })
@@ -2058,29 +2087,29 @@ app.post('/api/notes', (req, res) => {
   res.json({ note: newNote })
 })
 
-app.put('/api/notes/:id', (req, res) => {
+app.put('/api/notes/:id', requireAuth, (req, res) => {
   const authReq = req as unknown as AuthenticatedRequest
-  const updated = db.updateNote(authReq.userId, req.params.id, req.body)
+  const updated = db.updateNote(authReq.userId, String(req.params.id), req.body)
   if (!updated) return res.status(404).json({ error: 'Note not found' })
   res.json({ note: updated })
 })
 
-app.delete('/api/notes/:id', (req, res) => {
+app.delete('/api/notes/:id', requireAuth, (req, res) => {
   const authReq = req as unknown as AuthenticatedRequest
-  const deleted = db.deleteNote(authReq.userId, req.params.id)
+  const deleted = db.deleteNote(authReq.userId, String(req.params.id))
   res.json({ success: deleted })
 })
 
 // ==========================================
 // 8. MOOD JOURNAL
 // ==========================================
-app.get('/api/journal', (req, res) => {
+app.get('/api/journal', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const entries = db.getJournal(authReq.userId)
   res.json({ entries })
 })
 
-app.post('/api/journal', (req, res) => {
+app.post('/api/journal', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const { mood, notes, energyLevel = 3, tags = [] } = req.body
   if (!mood) return res.status(400).json({ error: 'Mood is required' })
@@ -2122,7 +2151,7 @@ app.post('/api/memes/generate', async (req, res) => {
 // ==========================================
 // 10. MORNING BRIEFING & BUDGET
 // ==========================================
-app.get('/api/briefing', (req, res) => {
+app.get('/api/briefing', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const settings = db.getUserSettings(authReq.userId)
   const notes = db.getNotes(authReq.userId)
@@ -2146,7 +2175,7 @@ app.get('/api/briefing', (req, res) => {
   })
 })
 
-app.get('/api/budget', (req, res) => {
+app.get('/api/budget', requireAuth, (req, res) => {
   const authReq = req as AuthenticatedRequest
   const usage = db.getMonthTokenUsage(authReq.userId)
   const budget = ContextBuilder.checkBudget(authReq.userId)
@@ -2156,7 +2185,7 @@ app.get('/api/budget', (req, res) => {
 // ==========================================
 // 11. RAG VECTOR DATABASE ENDPOINTS
 // ==========================================
-app.get('/api/rag/query', async (req, res) => {
+app.get('/api/rag/query', requireAuth, async (req, res) => {
   const authReq = req as AuthenticatedRequest
   const query = (req.query.q as string) || ''
   const character = (req.query.character as string) || 'ada'

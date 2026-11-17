@@ -25,7 +25,7 @@ import { performAction } from './avatar/motion/performAction.js'
 import { globalReactionReconciler } from './avatar/reactions/index.js'
 import { globalCueScheduler } from './avatar/cues/CueScheduler.js'
 import { useAppStore } from './store/useAppStore.js'
-import { apiUrl } from './utils/api.js'
+import { apiUrl, apiFetch } from './utils/api.js'
 import type { StructuredReply, ChatMessage } from '@ada/shared'
 import { parseStructuredReply, sanitizeBubbleText } from '@ada/shared'
 
@@ -140,11 +140,10 @@ export const App: React.FC = () => {
     globalReactionReconciler.dispatchMicroReaction(transcript)
 
     try {
-      const res = await fetch(apiUrl('/api/chat'), {
+      const res = await apiFetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': settings.userId,
         },
         body: JSON.stringify({
           message: transcript,

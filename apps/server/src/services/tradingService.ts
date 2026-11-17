@@ -6,6 +6,11 @@ export interface StockQuote extends TradingCardData {
   support2: number
   resistance1: number
   resistance2: number
+  status?: 'unavailable' | 'live'
+  isLive?: boolean
+  source?: string
+  timestamp?: number
+  dataStatus?: string
 }
 
 export class TradingService {
@@ -165,104 +170,83 @@ export class TradingService {
   }
 
   /**
-   * Generates a realistic high-precision fallback quote if Yahoo Finance is rate-limited or unreachable.
+   * Generates a structured unavailable quote when provider fails or rate-limits.
+   * Explicitly avoids fabricating simulated prices.
    */
-  private static generateFallbackQuote(
+  private static generateUnavailableQuote(
     ticker: string,
     name: string,
     currency: string,
-    assetClass: TradingCardData['assetClass']
+    assetClass: TradingCardData['assetClass'],
+    reason = 'Provider unavailable'
   ): StockQuote {
-    let basePrice = 24250.0
-    if (ticker.includes('RELIANCE')) basePrice = 1285.5
-    else if (ticker.includes('TCS')) basePrice = 4120.0
-    else if (ticker.includes('HDFC')) basePrice = 1795.0
-    else if (ticker.includes('INFY')) basePrice = 1860.0
-    else if (ticker.includes('NVDA')) basePrice = 142.5
-    else if (ticker.includes('AAPL')) basePrice = 228.0
-    else if (ticker.includes('TSLA')) basePrice = 258.0
-    else if (ticker.includes('BTC')) basePrice = 69400.0
-    else if (ticker.includes('ETH')) basePrice = 2650.0
-    else if (ticker.includes('SOL')) basePrice = 182.0
-    else if (ticker.includes('GC=F')) basePrice = 2745.0
-    else if (ticker.includes('CL=F')) basePrice = 71.5
-    else if (ticker.includes('USDINR')) basePrice = 84.15
-
-    const closes: number[] = []
-    const highs: number[] = []
-    const lows: number[] = []
-    let p = basePrice * 0.95
-
-    for (let i = 0; i < 30; i++) {
-      const dailyDrift = 1.0 + (Math.sin(i * 0.5) * 0.015 + (i / 30) * 0.05 - 0.02)
-      p = Number((p * dailyDrift).toFixed(2))
-      closes.push(p)
-      highs.push(Number((p * 1.012).toFixed(2)))
-      lows.push(Number((p * 0.988).toFixed(2)))
-    }
-
-    const currentPrice = closes[closes.length - 1]
-    const prevClose = closes[closes.length - 2]
-    const change = Number((currentPrice - prevClose).toFixed(2))
-    const percentChange = Number(((change / prevClose) * 100).toFixed(2))
-
-    const { indicators, setup, pivots } = TechnicalAnalyzer.analyze(currentPrice, highs, lows, closes)
-
-    let trend: StockQuote['trend'] = 'Mild Bullish'
-    if (indicators.confluenceScore >= 75) trend = 'Strong Bullish'
-    else if (indicators.confluenceScore >= 55) trend = 'Mild Bullish'
-    else if (indicators.confluenceScore >= 40) trend = 'Consolidation'
-    else trend = 'Bearish'
-
     return {
       symbol: ticker,
       name,
       currency,
       assetClass,
-      price: currentPrice,
-      change,
-      percentChange,
-      dayHigh: Number((currentPrice * 1.012).toFixed(2)),
-      dayLow: Number((currentPrice * 0.988).toFixed(2)),
-      previousClose: prevClose,
-      volume: 15420000,
-      fiftyTwoWeekHigh: Number((currentPrice * 1.15).toFixed(2)),
-      fiftyTwoWeekLow: Number((currentPrice * 0.82).toFixed(2)),
-      sparkline: closes.slice(-14),
-      indicators,
-      setup,
-      pivots,
-      trend,
-      support1: pivots.s1,
-      support2: pivots.s2,
-      resistance1: pivots.r1,
-      resistance2: pivots.r2,
-      geopoliticalRadar: {
-        stressScore: 48,
-        regime: 'MODERATE GEOPOLITICAL TENSION',
-        defenseStatus: 'WATCHFUL CONSOLIDATION',
-        goldPrice: 2742.0,
-        goldChange: 0.65,
-        crudeOilPrice: 71.4,
-        crudeOilChange: 1.1,
-        dxyPrice: 104.2,
-        dxyChange: 0.15,
-        vix: 16.4,
-        strategicAdvice: 'Track crude oil supply lines and enforce 1% risk discipline.',
+      price: 0,
+      change: 0,
+      percentChange: 0,
+      dayHigh: 0,
+      dayLow: 0,
+      previousClose: 0,
+      volume: 0,
+      fiftyTwoWeekHigh: 0,
+      fiftyTwoWeekLow: 0,
+      sparkline: [],
+      indicators: {
+        rsi14: 0,
+        rsiStatus: 'NEUTRAL',
+        macd: { line: 0, signal: 0, histogram: 0, cross: 'NONE' },
+        bollinger: { upper: 0, middle: 0, lower: 0, squeeze: false },
+        ema9: 0,
+        ema20: 0,
+        ema50: 0,
+        ema200: 0,
+        supertrend: { value: 0, signal: 'BUY' },
+        atr14: 0,
+        smc: { orderBlockZone: 'N/A', fibGoldenPocket: 'N/A', marketStructure: 'NEUTRAL' },
+        confluenceScore: 0,
       },
-      sentiment: {
-        fearGreedIndex: 54,
-        fearGreedClassification: 'Greed',
-        marketTone: 'Greed',
-        huggingFaceSentiment: { label: 'POSITIVE', score: 0.72, model: 'ProsusAI/finbert (Financial Tone)' },
+      setup: {
+        action: 'NEUTRAL',
+        entryZone: 'N/A',
+        target1: 0,
+        target2: 0,
+        target3: 0,
+        stopLoss: 0,
+        riskReward: '0.0:1',
+        confidence: 0,
+        timeframe: '1D',
+        rationale: reason,
       },
+      pivots: {
+        pivot: 0,
+        r1: 0,
+        r2: 0,
+        r3: 0,
+        s1: 0,
+        s2: 0,
+        s3: 0,
+      },
+      trend: 'Consolidation',
+      support1: 0,
+      support2: 0,
+      resistance1: 0,
+      resistance2: 0,
+      status: 'unavailable',
+      isLive: false,
+      source: 'unavailable',
+      timestamp: Date.now(),
+      dataStatus: 'unavailable',
       analystRatings: {
-        consensusRating: 'BUY / OUTPERFORM',
-        numberOfAnalysts: 22,
-        targetMean: Number((currentPrice * 1.14).toFixed(2)),
-        targetHigh: Number((currentPrice * 1.25).toFixed(2)),
-        targetLow: Number((currentPrice * 0.96).toFixed(2)),
-        upsidePotentialPct: 14.0,
+        consensusRating: 'UNAVAILABLE',
+        numberOfAnalysts: 0,
+        targetMean: null as any,
+        targetHigh: null as any,
+        targetLow: null as any,
+        upsidePotentialPct: null as any,
       },
     }
   }
@@ -402,7 +386,8 @@ export class TradingService {
   }
 
   /**
-   * Fetches Wall Street & Dalal Street Consensus Analyst Ratings
+   * Fetches Wall Street & Dalal Street Consensus Analyst Ratings from genuine provider.
+   * Returns explicit unavailable state if provider does not return verified opinions.
    */
   static async fetchAnalystRatings(ticker: string, currentPrice: number): Promise<NonNullable<TradingCardData['analystRatings']>> {
     try {
@@ -417,13 +402,15 @@ export class TradingService {
       if (res.ok) {
         const d = await res.json()
         const finData = d?.quoteSummary?.result?.[0]?.financialData
-        if (finData) {
-          const rec = (finData.recommendationKey || 'buy').toUpperCase().replace('_', ' ')
-          const targetMean = finData.targetMeanPrice?.raw || Number((currentPrice * 1.14).toFixed(2))
-          const targetHigh = finData.targetHighPrice?.raw || Number((currentPrice * 1.28).toFixed(2))
-          const targetLow = finData.targetLowPrice?.raw || Number((currentPrice * 0.94).toFixed(2))
-          const numAnalysts = finData.numberOfAnalystOpinions?.raw || 24
-          const upsidePct = currentPrice > 0 ? Number((((targetMean - currentPrice) / currentPrice) * 100).toFixed(1)) : 14.0
+        if (finData && finData.numberOfAnalystOpinions?.raw) {
+          const rec = (finData.recommendationKey || 'hold').toUpperCase().replace('_', ' ')
+          const targetMean = finData.targetMeanPrice?.raw ?? null
+          const targetHigh = finData.targetHighPrice?.raw ?? null
+          const targetLow = finData.targetLowPrice?.raw ?? null
+          const numAnalysts = finData.numberOfAnalystOpinions.raw
+          const upsidePct = (targetMean && currentPrice > 0)
+            ? Number((((targetMean - currentPrice) / currentPrice) * 100).toFixed(1))
+            : null
 
           return {
             consensusRating: rec,
@@ -431,22 +418,21 @@ export class TradingService {
             targetMean,
             targetHigh,
             targetLow,
-            upsidePotentialPct: upsidePct,
+            upsidePotentialPct: upsidePct ?? 0,
           }
         }
       }
     } catch {
-      // fallback
+      // Return honest unavailable state
     }
 
-    const defaultUpside = 12.5
     return {
-      consensusRating: 'STRONG BUY / OUTPERFORM',
-      numberOfAnalysts: 18,
-      targetMean: Number((currentPrice * (1 + defaultUpside / 100)).toFixed(2)),
-      targetHigh: Number((currentPrice * 1.25).toFixed(2)),
-      targetLow: Number((currentPrice * 0.95).toFixed(2)),
-      upsidePotentialPct: defaultUpside,
+      consensusRating: 'UNAVAILABLE',
+      numberOfAnalysts: 0,
+      targetMean: null as any,
+      targetHigh: null as any,
+      targetLow: null as any,
+      upsidePotentialPct: null as any,
     }
   }
 
@@ -475,24 +461,28 @@ export class TradingService {
       const quoteData = data?.chart?.result?.[0]?.indicators?.quote?.[0]
 
       if (!meta || !meta.regularMarketPrice) {
-        return this.generateFallbackQuote(ticker, name, currency, assetClass)
+        return this.generateUnavailableQuote(ticker, name, currency, assetClass, 'Missing market price from provider')
       }
 
       const price = meta.regularMarketPrice
       const prevClose = meta.chartPreviousClose || price
       const change = Number((price - prevClose).toFixed(2))
       const percentChange = Number((prevClose !== 0 ? (change / prevClose) * 100 : 0).toFixed(2))
-      const dayHigh = Number((meta.regularMarketDayHigh || price * 1.01).toFixed(2))
-      const dayLow = Number((meta.regularMarketDayLow || price * 0.99).toFixed(2))
-      const volume = meta.regularMarketVolume || 1000000
+      const dayHigh = Number((meta.regularMarketDayHigh || price).toFixed(2))
+      const dayLow = Number((meta.regularMarketDayLow || price).toFixed(2))
+      const volume = meta.regularMarketVolume || 0
 
       const closes = (quoteData?.close || []).filter((c: any): c is number => typeof c === 'number' && !isNaN(c))
       const highs = (quoteData?.high || []).filter((h: any): h is number => typeof h === 'number' && !isNaN(h))
       const lows = (quoteData?.low || []).filter((l: any): l is number => typeof l === 'number' && !isNaN(l))
 
-      const safeCloses = closes.length >= 10 ? closes : [price * 0.98, price * 0.99, price]
-      const safeHighs = highs.length >= 10 ? highs : safeCloses.map((c: number) => c * 1.01)
-      const safeLows = lows.length >= 10 ? lows : safeCloses.map((c: number) => c * 0.99)
+      if (closes.length < 5) {
+        return this.generateUnavailableQuote(ticker, name, currency, assetClass, 'Insufficient historical candles from provider')
+      }
+
+      const safeCloses = closes
+      const safeHighs = highs.length === closes.length ? highs : safeCloses
+      const safeLows = lows.length === closes.length ? lows : safeCloses
 
       const { indicators, setup, pivots } = TechnicalAnalyzer.analyze(price, safeHighs, safeLows, safeCloses)
 
@@ -519,9 +509,9 @@ export class TradingService {
         dayHigh,
         dayLow,
         previousClose: Number(prevClose.toFixed(2)),
-        volume: volume || 12500000,
-        fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh || Number((Math.max(...safeHighs, price * 1.15)).toFixed(2)),
-        fiftyTwoWeekLow: meta.fiftyTwoWeekLow || Number((Math.min(...safeLows, price * 0.82)).toFixed(2)),
+        volume,
+        fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh || Math.max(...safeHighs),
+        fiftyTwoWeekLow: meta.fiftyTwoWeekLow || Math.min(...safeLows),
         sparkline: safeCloses.slice(-14),
         indicators,
         setup,
@@ -534,10 +524,14 @@ export class TradingService {
         geopoliticalRadar: geoRadar,
         sentiment,
         analystRatings,
+        status: 'live',
+        isLive: true,
+        source: 'Yahoo Finance',
+        timestamp: Date.now(),
       }
     } catch (err: any) {
-      console.warn(`[TradingService] Live feed fallback for ${ticker}:`, err.message)
-      return this.generateFallbackQuote(ticker, name, currency, assetClass)
+      console.warn(`[TradingService] Live feed unavailable for ${ticker}:`, err.message)
+      return this.generateUnavailableQuote(ticker, name, currency, assetClass, err.message)
     }
   }
 

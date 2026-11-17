@@ -213,16 +213,10 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
   roamEnabled: true,
   liveliness: 70,
   voice: 'en-US-AnaNeural',
-  elevenlabsApiKey:
-    typeof window !== 'undefined'
-      ? (localStorage.getItem('ada_elevenlabs_api_key') === '[PURGED_ELEVENLABS_KEY]' ? '' : localStorage.getItem('ada_elevenlabs_api_key') || '')
-      : '',
+  elevenlabsApiKey: '',
   elevenlabsVoiceId: 'EXAVITQu4vr4xnSDxMaL',
   elevenlabsModelId: 'eleven_multilingual_v2',
-  huggingfaceApiKey:
-    typeof window !== 'undefined'
-      ? localStorage.getItem('ada_hf_api_key') || ''
-      : '',
+  huggingfaceApiKey: '',
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -449,12 +443,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (partial.userName !== undefined) {
         localStorage.setItem('ada_user_name', partial.userName)
       }
-      if (partial.elevenlabsApiKey !== undefined) {
-        localStorage.setItem('ada_elevenlabs_api_key', partial.elevenlabsApiKey)
-      }
-      if (partial.huggingfaceApiKey !== undefined) {
-        localStorage.setItem('ada_hf_api_key', partial.huggingfaceApiKey)
-      }
+      // Security: purge any client-side API keys from localStorage
+      localStorage.removeItem('ada_elevenlabs_api_key')
+      localStorage.removeItem('ada_hf_api_key')
     }
     set((s) => ({
       settings: { ...s.settings, ...partial },

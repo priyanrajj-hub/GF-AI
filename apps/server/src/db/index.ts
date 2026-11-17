@@ -28,6 +28,20 @@ export interface RagDocChunk {
   createdAt: number
 }
 
+export interface BackgroundJob {
+  id: string
+  userId: string
+  jobType: string
+  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'
+  scheduledFor: number
+  executedAt?: number
+  attempts: number
+  maxAttempts: number
+  errorMessage?: string
+  payload?: any
+  createdAt: number
+}
+
 interface DatabaseSchema {
   users: Record<string, UserSettings>
   messages: Record<string, ChatMessage[]>
@@ -36,6 +50,7 @@ interface DatabaseSchema {
   journal: Record<string, MoodJournalEntry[]>
   relationshipJournal: Record<string, RelationshipJournalEntry[]>
   ragDocs: Record<string, RagDocChunk[]>
+  backgroundJobs: BackgroundJob[]
   tokenLogs: Array<{
     userId: string
     timestamp: number
@@ -101,6 +116,9 @@ export class AppDatabase {
               u.userName = 'Demo User'
             }
           }
+        }
+        if (!Array.isArray(parsed.backgroundJobs)) {
+          parsed.backgroundJobs = []
         }
         return parsed
       } catch (err) {
@@ -173,6 +191,7 @@ export class AppDatabase {
         ],
       },
       ragDocs: { 'default-user-1': [] },
+      backgroundJobs: [],
       tokenLogs: [],
     }
   }
@@ -504,6 +523,42 @@ export class AppDatabase {
     this.data.memories[userId] = deduped
     this.save()
     return { deduplicatedCount, decayedCount }
+  }
+
+  // --- Background Jobs & Notifications ---
+  enqueueBackgroundJob(job: Omit<BackgroundJob, 'id' | 'status' | 'attempts' | 'createdAt'>): BackgroundJob {
+    if (!this.data.backgroundJobs) {
+      this.data.backgroundJobs = []
+    }
+    const newJob: BackgroundJob = {
+      ...job,
+      id: `job-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      status: 'PENDING',
+      attempts: 0,
+      createdAt: Date.now(),
+    }
+    this.data.backgroundJobs.push(newJob)
+    this.save()
+    return newJob
+  }
+
+  getPendingBackgroundJobs(): BackgroundJob[] {
+    const now = Date.now()
+    return (this.data.backgroundJobs || []).filter(
+      (j) => j.status === 'PENDING' && j.scheduledFor <= now && j.attempts < j.maxAttempts
+    )
+  }
+
+  updateBackgroundJob(id: string, updates: Partial<BackgroundJob>): void {
+    const job = (this.data.backgroundJobs || []).find((j) => j.id === id)
+    if (job) {
+      Object.assign(job, updates)
+      this.save()
+    }
+  }
+
+  getUserBackgroundJobs(userId: string): BackgroundJob[] {
+    return (this.data.backgroundJobs || []).filter((j) => j.userId === userId)
   }
 }
 

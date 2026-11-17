@@ -59,6 +59,21 @@ export const rateLimitGeneral = rateLimit({
   skip: () => process.env.NODE_ENV === 'test',
 })
 
+/**
+ * Auth endpoint limiter: 30 requests per 15 minutes per IP (protects login and guest token issuance)
+ */
+export const rateLimitAuth = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip ?? 'unknown',
+  message: {
+    error: 'Too many authentication attempts. Please wait a few minutes before trying again.',
+  },
+  skip: () => process.env.NODE_ENV === 'test',
+})
+
 // ─── Input Sanitisation ───────────────────────────────────────────────────────
 
 /**

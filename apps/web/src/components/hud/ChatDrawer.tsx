@@ -34,7 +34,7 @@ import { globalCueScheduler } from '../../avatar/cues/CueScheduler.js'
 import { performAction } from '../../avatar/motion/performAction.js'
 import { globalSongEngine } from '../../avatar/engine/singer.js'
 import { TradingCard } from '../trading/TradingCard.js'
-import { apiUrl } from '../../utils/api.js'
+import { apiUrl, apiFetch } from '../../utils/api.js'
 
 export const ChatDrawer: React.FC = () => {
   const {
@@ -168,11 +168,10 @@ export const ChatDrawer: React.FC = () => {
     globalReactionReconciler.dispatchMicroReaction(text)
 
     try {
-      const res = await fetch(apiUrl('/api/chat'), {
+      const res = await apiFetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': settings.userId,
         },
         body: JSON.stringify({
           message: text,
@@ -435,11 +434,8 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
     addMessage(uploadNotice)
 
     try {
-      const res = await fetch(apiUrl('/api/chat/vision'), {
+      const res = await apiFetch('/api/chat/vision', {
         method: 'POST',
-        headers: {
-          'x-user-id': settings.userId,
-        },
         body: formData,
       })
       const data = await res.json()

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, Heart, Smile, Meh, Frown, Sparkles, BatteryCharging, BatteryLow } from 'lucide-react'
 import type { MoodJournalEntry } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
-import { apiUrl } from '../../utils/api.js'
+import { apiUrl, apiFetch } from '../../utils/api.js'
 
 export const MoodJournalModal: React.FC = () => {
   const {
@@ -20,9 +20,7 @@ export const MoodJournalModal: React.FC = () => {
 
   useEffect(() => {
     if (showMoodModal) {
-      fetch(apiUrl('/api/journal'), {
-        headers: { 'x-user-id': settings.userId },
-      })
+      apiFetch('/api/journal')
         .then((res) => res.json())
         .then((data) => {
           if (data.entries) setJournal(data.entries)
@@ -45,11 +43,10 @@ export const MoodJournalModal: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const res = await fetch(apiUrl('/api/journal'), {
+      const res = await apiFetch('/api/journal', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': settings.userId,
         },
         body: JSON.stringify({
           mood: selectedMood,

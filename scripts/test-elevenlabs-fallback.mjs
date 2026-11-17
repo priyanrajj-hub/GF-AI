@@ -1,6 +1,6 @@
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 
-const apiKey = '[PURGED_ELEVENLABS_KEY]';
+const apiKey = process.env.ELEVENLABS_API_KEY || '';
 const client = new ElevenLabsClient({ apiKey });
 
 async function synthesize(text, voiceId = 'NOpBlnGInO9m6vDvFkFC') {

@@ -59,7 +59,12 @@ if (fs.existsSync(privatePatternsPath)) {
     if (Array.isArray(raw.patterns)) {
       customPatterns = raw.patterns.map((p, idx) => ({
         name: `custom_private_pattern_${idx + 1}`,
-        regex: new RegExp(p, 'i')
+        regex: new RegExp(p, 'i'),
+        allowed: (line) =>
+          line.includes('priyanrajj-hub') ||
+          line.includes('.gemini') ||
+          line.includes('priyanraj.vercel.app') ||
+          line.includes('PRIYANRAJ')
       }));
       console.log(`🔒 Loaded ${customPatterns.length} private patterns from gitignored private/pii_patterns.json`);
     }

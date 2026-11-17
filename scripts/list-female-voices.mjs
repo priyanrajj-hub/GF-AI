@@ -1,6 +1,7 @@
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 
-const c = new ElevenLabsClient({ apiKey: '[PURGED_ELEVENLABS_KEY]' });
+const apiKey = process.env.ELEVENLABS_API_KEY || '';
+const c = new ElevenLabsClient({ apiKey });
 const vs = await c.voices.getAll();
 const female = vs.voices.filter(v => v.labels?.gender === 'female');
 console.log('Available Premade Female Voices for your account:');
