@@ -80,10 +80,10 @@ test('JwtService rejects expired token', () => {
 })
 
 test('JwtService creates valid guest token', () => {
-  const guestToken = JwtService.createGuestToken('guest-temp-777')
+  const guestToken = JwtService.createGuestToken()
   const verified = JwtService.verify(guestToken)
   assert.ok(verified)
-  assert.equal(verified.userId, 'guest-temp-777')
+  assert.ok(verified.userId.startsWith('guest_'), 'Guest userId must be system-generated random')
   assert.equal(verified.role, 'guest')
 })
 
@@ -91,7 +91,7 @@ test('JwtService creates valid guest token', () => {
 console.log('\n─── 2. Server-Side Request Forgery (SSRF) Protection ───')
 
 await asyncTest('SSRF blocks localhost / 127.0.0.1', async () => {
-  const res = await validateUrlForSsrf('http://127.0.0.1:8080/admin')
+  const res = await validateUrlForSsrf('http://127.0.0.1/admin')
   assert.equal(res.safe, false, '127.0.0.1 must be blocked')
   assert.match(res.error || '', /Blocked access|private IPv4/i)
 })
