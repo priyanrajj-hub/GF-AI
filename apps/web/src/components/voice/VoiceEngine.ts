@@ -140,22 +140,10 @@ class VoiceEngineManager {
       voiceSetting = isTanglish ? 'en-IN-NeerjaExpressiveNeural' : 'en-US-JennyNeural'
       isElevenLabs = false
     } else {
-      // Mira (Yor Companion): Sweet, warm real human girl voice (100% Free, Zero Quota)
-      const rawVoice = store.settings.voice || 'en-US-AnaNeural'
-      voiceSetting =
-        rawVoice === 'NOpBlnGInO9m6vDvFkFC' ||
-        rawVoice === 'cgSgspJ2msm6clMCkdW9' ||
-        rawVoice === 'EXAVITQu4vr4xnSDxMaL'
-          ? 'en-US-AnaNeural'
-          : rawVoice
-
-      const hasValidCustomElevenKey =
-        Boolean(store.settings.elevenlabsApiKey) &&
-        store.settings.elevenlabsApiKey !== '[PURGED_ELEVENLABS_KEY]'
-
-      isElevenLabs =
-        (voiceSetting.startsWith('elevenlabs:') || hasValidCustomElevenKey) &&
-        !isTanglish
+      // Mira (Hatsune Miku): Sweet, energetic Vocaloid cyber idol voice
+      const isJapanese = options.language === 'ja' || /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(cleanSpeech)
+      voiceSetting = isJapanese ? 'ja-JP-NanamiNeural' : 'en-US-AnaNeural'
+      isElevenLabs = false
     }
 
     // 1. Try High-Fidelity Studio Neural Voice
@@ -230,19 +218,33 @@ class VoiceEngineManager {
                 airPresenceBoost = 2.6
               }
 
+              const isMiku = activeChar === 'mira'
+              if (isMiku) {
+                rateMultiplier *= 1.08 // Sweet, brisk Vocaloid idol speed
+              }
+
               source.playbackRate.value = rateMultiplier * (options.rate || 1.0)
 
-              // Real Vocal Air Presence EQ: Gentle high-shelf boost at 3.8kHz
+              // Formant & Air Presence EQ:
+              // Vocaloid Formant Peaking Filter for Hatsune Miku: synthetic idol formant resonance
+              const vocaloidFilter = this.audioContext.createBiquadFilter()
+              vocaloidFilter.type = 'peaking'
+              vocaloidFilter.frequency.value = isMiku ? 1650 : 2500
+              vocaloidFilter.Q.value = isMiku ? 2.6 : 1.0
+              vocaloidFilter.gain.value = isMiku ? 5.2 : 0.0
+
+              // High-shelf boost for crystalline vocal sparkle
               const highShelf = this.audioContext.createBiquadFilter()
               highShelf.type = 'highshelf'
-              highShelf.frequency.value = 3800
-              highShelf.gain.value = airPresenceBoost
+              highShelf.frequency.value = isMiku ? 4200 : 3800
+              highShelf.gain.value = isMiku ? 4.2 : airPresenceBoost
 
               // Gain control
               const gainNode = this.audioContext.createGain()
               gainNode.gain.value = store.audioVolume ?? 0.95
 
-              source.connect(highShelf)
+              source.connect(vocaloidFilter)
+              vocaloidFilter.connect(highShelf)
               highShelf.connect(gainNode)
 
               // Connect to analyser for real-time lip-sync & visualizer rings
@@ -336,17 +338,21 @@ class VoiceEngineManager {
     // Character-Specific Pitch & Cadence:
     // Atlas (Tony Stark): 0.94 masculine deep resonant pitch
     // Ada (Ada Wong): 1.04 poised, articulate tutor pitch
-    // Mira (Yor Forger): 1.20 sweet melodic feminine pitch
-    const defaultPitch = isAtlas ? 0.94 : activeChar === 'ada' ? 1.04 : 1.20
-    const defaultRate = isAtlas ? 1.05 : 1.02
+    // Mira (Hatsune Miku): 1.35 sweet, energetic, high-pitch Vocaloid cyber idol pitch
+    const isMiku = activeChar === 'mira'
+    const defaultPitch = isAtlas ? 0.94 : isMiku ? 1.35 : 1.04
+    const defaultRate = isAtlas ? 1.05 : isMiku ? 1.10 : 1.02
     utterance.pitch = options.pitch ?? defaultPitch
     utterance.rate = options.rate ?? defaultRate
     utterance.volume = store.audioVolume ?? 0.95
 
     const lang = options.language || store.settings.language
     const isTamilScript = /[\u0B80-\u0BFF]/.test(cleanSpeech)
+    const isJapaneseScript = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(cleanSpeech)
     if (isTamilScript || lang === 'ta') {
       utterance.lang = 'ta-IN'
+    } else if (isJapaneseScript || lang === 'ja') {
+      utterance.lang = 'ja-JP'
     } else if (lang === 'tanglish' || lang === 'hi') {
       utterance.lang = 'en-IN'
     } else {
@@ -367,26 +373,33 @@ class VoiceEngineManager {
         maleCandidates[0] ||
         voices.find((v) => v.lang.startsWith('en'))
     } else {
-      // Ada Wong & Yor Forger: Strictly select feminine female voices
+      // Ada Wong & Hatsune Miku: Strictly select feminine female voices
       const femaleCandidates = voices.filter(
         (v) => !maleNames.some((m) => v.name.toLowerCase().includes(m))
       )
-      preferredVoice =
-        ((isTamilScript || lang === 'ta') && femaleCandidates.find((v) => v.lang.startsWith('ta'))) ||
-        (lang === 'tanglish' && femaleCandidates.find((v) => v.lang === 'en-IN')) ||
-        femaleCandidates.find(
-          (v) =>
-            v.name.includes('Jenny') ||
-            v.name.includes('Aria') ||
-            v.name.includes('Ana') ||
-            v.name.includes('Samantha') ||
-            v.name.includes('Google US English') ||
-            v.name.includes('Zira') ||
-            v.name.includes('Victoria') ||
-            v.name.includes('Natural')
-        ) ||
-        femaleCandidates.find((v) => v.lang.startsWith('en')) ||
-        voices[0]
+      if (isMiku && (isJapaneseScript || lang === 'ja')) {
+        preferredVoice =
+          femaleCandidates.find((v) => v.lang.startsWith('ja') || v.name.includes('Nanami') || v.name.includes('Kyoko') || v.name.includes('Ayumi')) ||
+          voices.find((v) => v.lang.startsWith('ja'))
+      }
+      if (!preferredVoice) {
+        preferredVoice =
+          ((isTamilScript || lang === 'ta') && femaleCandidates.find((v) => v.lang.startsWith('ta'))) ||
+          (lang === 'tanglish' && femaleCandidates.find((v) => v.lang === 'en-IN')) ||
+          femaleCandidates.find(
+            (v) =>
+              v.name.includes('Jenny') ||
+              v.name.includes('Aria') ||
+              v.name.includes('Ana') ||
+              v.name.includes('Samantha') ||
+              v.name.includes('Google US English') ||
+              v.name.includes('Zira') ||
+              v.name.includes('Victoria') ||
+              v.name.includes('Natural')
+          ) ||
+          femaleCandidates.find((v) => v.lang.startsWith('en')) ||
+          voices[0]
+      }
     }
 
     if (preferredVoice) {

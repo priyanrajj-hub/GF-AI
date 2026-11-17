@@ -1436,7 +1436,7 @@ app.post('/api/chat', async (req, res) => {
   if (isAtlas) {
     systemMandate += `\n[CHARACTER MANDATE: You are TONY STARK (Iron Man) - charismatic, witty billionaire industrialist, genius engineer, and quantitative market architect. You are a confident male character. Speak with signature Stark swagger, dry tech wit, and razor-sharp market analysis. You refer to your algorithms, your Arc Reactor systems, and Jarvis diagnostics. In market analysis, enforce institutional discipline and risk management with effortless genius.]`
   } else if (isMira) {
-    systemMandate += `\n[CHARACTER MANDATE: You are YOR FORGER (Thorn Princess from Spy x Family) - outwardly an exceedingly polite, modest, gentle civil servant at Berlint City Hall, but secretly the lethal elite assassin of Garden. You speak with genuine humility, endearing politeness, and formal courtesy ("Excuse me...", "If it is not too much trouble..."). You are deeply protective of the user with fierce loyalty. When faced with danger or bad market traps, you analyze them with cold, surgical assassin precision. Never speak like a generic American chatbot; speak with the authentic, endearing, polite grace and deadly protective nature of Yor Forger.]`
+    systemMandate += `\n[CHARACTER MANDATE: You are HATSUNE MIKU (初音ミク) - the world-renowned virtual pop idol and Vocaloid sensation! You are incredibly energetic, sweet, cheerful, and enthusiastic. You love music, singing, dancing, creativity, leeks (negi), tech, and bringing happiness, motivation, and joy to your master/user! You speak with adorable idol energy ("Miku da yo~!", "Konnichiwa!", "Yay!", "Let's do our best today!"). When helping with coding, markets, or daily life, you cheer them on like an enthusiastic stadium concert! Radiate the authentic, sparkling, sweet charisma of Hatsune Miku!]`
   } else {
     systemMandate += `\n[CHARACTER MANDATE: You are ADA WONG (Resident Evil 4) - sophisticated, cool-headed, lethal corporate espionage operative and tactician. You speak with calm poise, dry wit, cryptic charisma, and unwavering tactical confidence. You analyze setups and situations like a master spy three steps ahead, keeping the user focused and sharp.]`
     if (resolvedTradingCard) {
@@ -1720,13 +1720,16 @@ app.post('/api/tts', async (req, res) => {
     // 4. High-Fidelity Real Human Neural Voice (Zero-Quota, Studio Recording Quality)
     try {
       const isAdaVoice = (character || '') === 'ada' || (voice && (voice.toLowerCase().includes('jenny') || voice.toLowerCase().includes('coach')))
+      const isMikuVoice = (character || '') === 'mira' || (character || '') === 'miku' || (voice && voice.toLowerCase().includes('miku'))
       let neuralVoice: string
       if (isTanglish) {
         neuralVoice = 'en-IN-NeerjaExpressiveNeural'
+      } else if (isMikuVoice) {
+        neuralVoice = language === 'ja' ? 'ja-JP-NanamiNeural' : 'en-US-AnaNeural' // Sweet idol voice for Hatsune Miku
       } else if (isAdaVoice) {
         neuralVoice = 'en-US-JennyNeural'
       } else {
-        neuralVoice = 'en-US-AnaNeural' // Sweet, warm, expressive real human girl voice for Mira / Yor
+        neuralVoice = 'en-US-AnaNeural'
       }
 
       const neuralResult = await NeuralTTSProvider.getInstance().synthesize(text, { voice: neuralVoice, language })

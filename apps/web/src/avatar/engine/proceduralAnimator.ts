@@ -239,12 +239,12 @@ export class ProceduralAnimator {
           ]
         } else if (activeChar === 'mira') {
           flairs = [
-            'yor_rose_elegance',
-            'yor_tender_wave',
-            'shy_giggle',
-            'hair_tuck',
-            'curious_lean',
+            'miku_idol_pose',
+            'miku_twintail_spin',
+            'miku_negi_wave',
             'peace_sign',
+            'shy_giggle',
+            'curious_lean',
             'bow',
           ]
         } else {
@@ -474,6 +474,30 @@ export class ProceduralAnimator {
         }
       }
     }
+
+    // 8. Hatsune Miku Dynamic Twintail Secondary Hair Physics
+    if (activeChar === 'mira') {
+      const hairSway = Math.sin(time * 2.6) * 0.08
+      const hairBounce = Math.cos(time * 3.4) * 0.04
+      for (let i = 1; i <= 4; i++) {
+        const rHair = this.vrm.scene.getObjectByName(`右髪${i}`)
+        const lHair = this.vrm.scene.getObjectByName(`左髪${i}`)
+        if (rHair) {
+          rHair.rotation.z = THREE.MathUtils.lerp(rHair.rotation.z, -0.06 - hairSway * (i * 0.15), delta * 4.0)
+          rHair.rotation.x = THREE.MathUtils.lerp(rHair.rotation.x, hairBounce * (i * 0.1), delta * 4.0)
+        }
+        if (lHair) {
+          lHair.rotation.z = THREE.MathUtils.lerp(lHair.rotation.z, 0.06 + hairSway * (i * 0.15), delta * 4.0)
+          lHair.rotation.x = THREE.MathUtils.lerp(lHair.rotation.x, hairBounce * (i * 0.1), delta * 4.0)
+        }
+      }
+      for (let s = 0; s < 4; s++) {
+        const segL = this.vrm.scene.getObjectByName(`__MIKU_SEG_L_${s}__`)
+        const segR = this.vrm.scene.getObjectByName(`__MIKU_SEG_R_${s}__`)
+        if (segL) segL.rotation.z = THREE.MathUtils.lerp(segL.rotation.z, 0.10 + hairSway * 0.2, delta * 4.0)
+        if (segR) segR.rotation.z = THREE.MathUtils.lerp(segR.rotation.z, -0.10 - hairSway * 0.2, delta * 4.0)
+      }
+    }
   }
 
   private applyDanceMotion(danceId: string, time: number, delta: number, humanoid: any, cute: number): void {
@@ -508,6 +532,7 @@ export class ProceduralAnimator {
     const head = humanoid.getNormalizedBoneNode('head')
     const spine = humanoid.getNormalizedBoneNode('spine')
     const chest = humanoid.getNormalizedBoneNode('chest')
+    const hips = humanoid.getNormalizedBoneNode('hips')
 
     switch (actionId) {
       case 'wave': {
@@ -873,40 +898,52 @@ export class ProceduralAnimator {
         break
       }
 
+      case 'miku_idol_pose':
       case 'yor_rose_elegance': {
-        // Yor Forger hands clasped softly in front, gentle head tilt
+        // Hatsune Miku iconic cute anime idol pose: arms held close, cute peace/heart framing cheeks, cheerful tilt
         if (leftArm && rightArm && leftForeArm && rightForeArm) {
-          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.38, delta * 4.5)
-          leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, -0.45, delta * 4.5)
-          leftForeArm.rotation.y = THREE.MathUtils.lerp(leftForeArm.rotation.y, -0.85, delta * 4.5)
-          leftForeArm.rotation.z = THREE.MathUtils.lerp(leftForeArm.rotation.z, 0.40, delta * 4.5)
+          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.45, delta * 5.0)
+          leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, -0.65, delta * 5.0)
+          leftForeArm.rotation.y = THREE.MathUtils.lerp(leftForeArm.rotation.y, -1.15, delta * 5.0)
+          leftForeArm.rotation.z = THREE.MathUtils.lerp(leftForeArm.rotation.z, 0.55, delta * 5.0)
 
-          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.38, delta * 4.5)
-          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.45, delta * 4.5)
-          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 0.85, delta * 4.5)
-          rightForeArm.rotation.z = THREE.MathUtils.lerp(rightForeArm.rotation.z, -0.40, delta * 4.5)
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.45, delta * 5.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.65, delta * 5.0)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 1.15, delta * 5.0)
+          rightForeArm.rotation.z = THREE.MathUtils.lerp(rightForeArm.rotation.z, -0.55, delta * 5.0)
         }
         if (head) {
-          head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, 0.12, delta * 4.0)
-          head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, 0.05, delta * 4.0)
+          head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, 0.18, delta * 4.5)
+          head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -0.06, delta * 4.5)
         }
         break
       }
 
+      case 'miku_twintail_spin': {
+        // Energetic idol pirouette turn
+        const spinPhase = (time * 3.5) % (Math.PI * 2)
+        if (hips) hips.rotation.y = THREE.MathUtils.lerp(hips.rotation.y, spinPhase, delta * 6.0)
+        if (leftArm && rightArm) {
+          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.95, delta * 5.0)
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.95, delta * 5.0)
+        }
+        break
+      }
+
+      case 'miku_negi_wave':
       case 'yor_tender_wave': {
-        // Yor sweet companion two-handed wave
-        const wave = Math.sin(time * 8.0) * 0.18
+        // Miku high-energy concert wave with glowing stage cheer
+        const wave = Math.sin(time * 9.0) * 0.28
         if (rightArm && rightForeArm) {
-          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.65, delta * 5.0)
-          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.75, delta * 5.0)
-          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 0.95 + wave, delta * 6.0)
+          rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, -0.85, delta * 6.0)
+          rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.80, delta * 6.0)
+          rightForeArm.rotation.y = THREE.MathUtils.lerp(rightForeArm.rotation.y, 1.10 + wave, delta * 7.0)
         }
         if (leftArm && leftForeArm) {
-          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.65, delta * 5.0)
-          leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, -0.75, delta * 5.0)
-          leftForeArm.rotation.y = THREE.MathUtils.lerp(leftForeArm.rotation.y, -0.95 - wave, delta * 6.0)
+          leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0.40, delta * 5.0)
+          leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, -0.20, delta * 5.0)
         }
-        if (head) head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, 0.08, delta * 4.0)
+        if (head) head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, 0.12, delta * 4.0)
         break
       }
 

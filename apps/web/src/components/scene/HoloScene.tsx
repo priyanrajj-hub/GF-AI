@@ -257,10 +257,12 @@ export const HoloScene: React.FC = () => {
               modelUrl={
                 activeCharacter === 'atlas'
                   ? '/models/ironman.glb'
+                  : activeCharacter === 'mira'
+                  ? '/models/miku.vrm'
                   : settings.avatarModelUrl || '/models/ada.vrm'
               }
-              hologramColor={activeColor}
-              renderMode={activeCharacter === 'atlas' ? 'solid' : (settings.renderMode || 'holo-lite')}
+              hologramColor={activeCharacter === 'mira' ? '#39c5bb' : activeColor}
+              renderMode={activeCharacter === 'atlas' || activeCharacter === 'mira' ? 'solid' : (settings.renderMode || 'holo-lite')}
             />
           </group>
 
@@ -271,8 +273,8 @@ export const HoloScene: React.FC = () => {
           {!settings.lowPerformanceMode && (
             <EffectComposer multisampling={0}>
               <Bloom
-                intensity={0.28}
-                luminanceThreshold={0.90}
+                intensity={activeCharacter === 'mira' ? 0.12 : 0.28}
+                luminanceThreshold={activeCharacter === 'mira' ? 0.98 : 0.90}
                 luminanceSmoothing={0.7}
                 mipmapBlur
               />

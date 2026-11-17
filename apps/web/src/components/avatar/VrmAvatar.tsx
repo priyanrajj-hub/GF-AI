@@ -61,8 +61,9 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     setIsLoading(true)
     setLoadError(null)
 
-    // Character boundaries: Tony Stark loads ironman.glb, Ada & Yor load fully rigged expressive VRM
+    // Character boundaries: Tony Stark loads ironman.glb, Ada & Miku load fully rigged expressive VRM
     const isAtlas = activeCharacter === 'atlas' || (modelUrl || '').includes('ironman')
+    const isMiku = activeCharacter === 'mira' || (modelUrl || '').includes('miku')
     const isExplicitTripo = (modelUrl || '').includes('tripo')
 
     if (isAtlas || isExplicitTripo) {
@@ -79,6 +80,8 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       ? '/models/ironman.glb'
       : isExplicitTripo
       ? '/models/ada_fullbody_tripo.glb'
+      : isMiku
+      ? '/models/miku.vrm'
       : '/models/ada.vrm'
 
     const activeUrl = modelUrl || defaultUrl
@@ -104,27 +107,34 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           // Initial placement: feet resting firmly on floor / home pad (y = -0.72)
           loadedVrm.scene.position.set(0, -0.72, 0)
 
-          // Mature Adult Proportions (1:7.8 head-to-body ratio, statuesque elegant model poise):
-          const headBone = loadedVrm.humanoid?.getNormalizedBoneNode('head')
-          if (headBone) headBone.scale.set(0.96, 0.96, 0.96)
-          const neckBone = loadedVrm.humanoid?.getNormalizedBoneNode('neck')
-          if (neckBone) neckBone.scale.set(1.02, 1.05, 1.02)
-          const spineBone = loadedVrm.humanoid?.getNormalizedBoneNode('spine')
-          if (spineBone) spineBone.scale.set(1.0, 1.02, 1.0)
-          const lLeg = loadedVrm.humanoid?.getNormalizedBoneNode('leftUpperLeg')
-          const rLeg = loadedVrm.humanoid?.getNormalizedBoneNode('rightUpperLeg')
-          if (lLeg) lLeg.scale.set(1.0, 1.0, 1.0)
-          if (rLeg) rLeg.scale.set(1.0, 1.0, 1.0)
-          const lLowerLeg = loadedVrm.humanoid?.getNormalizedBoneNode('leftLowerLeg')
-          const rLowerLeg = loadedVrm.humanoid?.getNormalizedBoneNode('rightLowerLeg')
-          if (lLowerLeg) lLowerLeg.scale.set(1.0, 1.0, 1.0)
-          if (rLowerLeg) rLowerLeg.scale.set(1.0, 1.0, 1.0)
+          const metaTitle = ((loadedVrm.meta as any)?.title || (loadedVrm.meta as any)?.name || '') as string
+          const isMikuModel = isMiku || metaTitle.includes('ミク') || metaTitle.toLowerCase().includes('miku')
 
-          // Set initial relaxed A-pose (Task A #5: arms down, not T-pose)
-          const initLArm = loadedVrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
-          const initRArm = loadedVrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
-          if (initLArm) initLArm.rotation.set(0, 0, 1.25)
-          if (initRArm) initRArm.rotation.set(0, 0, -1.25)
+          if (isMikuModel) {
+            // Hatsune Miku: Youthful idol proportions
+            const headBone = loadedVrm.humanoid?.getNormalizedBoneNode('head')
+            if (headBone) headBone.scale.set(1.0, 1.0, 1.0)
+            const neckBone = loadedVrm.humanoid?.getNormalizedBoneNode('neck')
+            if (neckBone) neckBone.scale.set(1.0, 1.0, 1.0)
+            const spineBone = loadedVrm.humanoid?.getNormalizedBoneNode('spine')
+            if (spineBone) spineBone.scale.set(1.0, 1.0, 1.0)
+            const initLArm = loadedVrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
+            const initRArm = loadedVrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
+            if (initLArm) initLArm.rotation.set(0, 0, 1.15)
+            if (initRArm) initRArm.rotation.set(0, 0, -1.15)
+          } else {
+            // Mature Adult Proportions (Ada Wong):
+            const headBone = loadedVrm.humanoid?.getNormalizedBoneNode('head')
+            if (headBone) headBone.scale.set(0.96, 0.96, 0.96)
+            const neckBone = loadedVrm.humanoid?.getNormalizedBoneNode('neck')
+            if (neckBone) neckBone.scale.set(1.02, 1.05, 1.02)
+            const spineBone = loadedVrm.humanoid?.getNormalizedBoneNode('spine')
+            if (spineBone) spineBone.scale.set(1.0, 1.02, 1.0)
+            const initLArm = loadedVrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
+            const initRArm = loadedVrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
+            if (initLArm) initLArm.rotation.set(0, 0, 1.25)
+            if (initRArm) initRArm.rotation.set(0, 0, -1.25)
+          }
 
           // Enable shadows and disable frustum culling
           loadedVrm.scene.traverse((obj) => {
@@ -265,11 +275,11 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
   useEffect(() => {
     if (vrm) {
       if (activeCharacter === 'mira') {
-        applyAvatarSkin(vrm, (skinId && skinId.startsWith('yor-')) ? skinId : 'yor-thorn-princess')
+        applyAvatarSkin(vrm, (skinId && skinId.startsWith('miku-')) ? skinId : 'miku-classic-idol')
       } else if (activeCharacter === 'atlas') {
         applyAvatarSkin(vrm, (skinId && skinId.startsWith('stark-')) ? skinId : 'stark-arc-trader')
       } else {
-        applyAvatarSkin(vrm, (skinId && !skinId.startsWith('yor-') && !skinId.startsWith('stark-')) ? skinId : 'ada-red')
+        applyAvatarSkin(vrm, (skinId && !skinId.startsWith('miku-') && !skinId.startsWith('stark-') && !skinId.startsWith('yor-')) ? skinId : 'ada-red')
       }
     }
   }, [skinId, vrm, activeCharacter])

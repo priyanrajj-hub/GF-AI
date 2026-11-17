@@ -461,31 +461,88 @@ export const CrimsonJacketSkin: AvatarSkin = {
 }
 
 /**
- * Mira / Yor Forger-Inspired Off-The-Shoulder Crimson Red Sweater Dress Skin
- * - Off-the-shoulder crimson red chunky ribbed sweater dress (#BA263B)
- * - Deep ruby red eye tint (#C4273C)
- * - Glossy midnight-raven hair with headband accent (#0C0D12)
- * - Jet black thigh-high stockings (#141416)
- * - Light cream/beige ankle boots (#D9CFC4)
+ * Hatsune Miku • Classic Vocaloid Pop Idol (Official V4X Outfit)
+ * - Signature knee-length twin cyan pigtails (#00E5FF / #39C5BB)
+ * - Square black/magenta ribbons at the twintail bases
+ * - Cyber idol headset with microphone boom
+ * - Sleek silver sleeveless top with cyan collar and turquoise necktie with tie-clip
+ * - Detached synthesizer arm-warmers with LED equalizer panels
+ * - Black pleated skirt with cyan trim lining and yellow belt
+ * - Thigh-high boots with cyan soles
+ * - Red "01" Vocaloid tattoo decal on left upper arm
  */
-export const YorCrimsonSweaterSkin: AvatarSkin = {
-  id: 'yor-crimson-sweater',
-  name: 'Mira (Yor Style • Off-Shoulder Crimson Sweater)',
-  description: 'Signature off-the-shoulder red knit sweater dress, thigh-high stockings, headband, and ruby eyes.',
+export const MikuClassicIdolSkin: AvatarSkin = {
+  id: 'miku-classic-idol',
+  name: 'Hatsune Miku • Classic Vocaloid Diva (Official V4X Outfit)',
+  description: 'Signature twin cyan pigtails, square ribbons, silver top, turquoise tie, detached synth sleeves, pleated skirt, thigh-high boots, and 01 tattoo.',
   apply: (vrm: VRM) => {
     attachAdaTacticalAccessories(vrm, false)
     attachYorThornPrincessFeatures(vrm, false)
     attachStarkTechGlassesAndBeard(vrm, false)
+
     const chestEmblem = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
     if (chestEmblem) {
       const em = chestEmblem.getObjectByName('__STARK_ARC_REACTOR__')
       if (em) em.visible = false
     }
+
+    const headBone = vrm.humanoid?.getNormalizedBoneNode('head')
+    if (headBone) {
+      const starkGlasses = headBone.getObjectByName('__STARK_TECH_SUNGLASSES__')
+      if (starkGlasses) starkGlasses.visible = false
+      const starkGoatee = headBone.getObjectByName('__STARK_GOATEE_BEARD__')
+      if (starkGoatee) starkGoatee.visible = false
+      const commsHeadset = headBone.getObjectByName('__ada_comms_headset__')
+      if (commsHeadset) commsHeadset.visible = false
+      const yorHead = headBone.getObjectByName('__YOR_HEAD_ASSEMBLY__')
+      if (yorHead) yorHead.visible = false
+    }
+
+    const metaTitle = ((vrm.meta as any)?.title || (vrm.meta as any)?.name || '') as string
+    const isNativeMiku = Boolean(
+      metaTitle.includes('ミク') || metaTitle.toLowerCase().includes('miku') ||
+      vrm.scene.getObjectByName('右髪１')
+    )
+
+    if (isNativeMiku) {
+      // Native Tda Hatsune Miku: enable proper alpha discard, depth sorting, and preserve pristine textures
+      vrm.scene.traverse((obj) => {
+        if (/^__STARK_|^__YOR_|^__ADA_|^__ada_|^__headset/i.test(obj.name) || obj.parent?.name?.includes('headset') || obj.parent?.name?.includes('stark')) {
+          obj.visible = false
+          return
+        }
+        if ((obj as THREE.Mesh).isMesh) {
+          const mesh = obj as THREE.Mesh
+          mesh.frustumCulled = false
+          mesh.castShadow = true
+          mesh.receiveShadow = true
+          mesh.renderOrder = 10
+
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+          materials.forEach((mat: any) => {
+            if (!mat) return
+            mat.transparent = true
+            mat.depthWrite = true
+            mat.depthTest = true
+            mat.alphaTest = 0.5
+            mat.needsUpdate = true
+          })
+        }
+      })
+      attachMikuVocaloidFeatures(vrm, false)
+      attachStarkTechGlassesAndBeard(vrm, false)
+      updateCommsHeadset(vrm, false, false)
+      return
+    }
+
+    // Fallback on Ada base VRM:
+    attachMikuVocaloidFeatures(vrm, true)
+
     vrm.scene.traverse((obj) => {
-      // Allow hair side-strands & headband for Yor styling
-      if (/hair[2-4]_[LR]|mituami/i.test(obj.name)) {
-        obj.visible = true
-        obj.scale.set(1.0, 1.0, 1.0)
+      // Hide Ada ribbons & side braids
+      if (/hair[2-8]_[LR]|mituami|ribbon|cloth_ribbon/i.test(obj.name)) {
+        obj.visible = false
+        obj.scale.set(0, 0, 0)
       }
 
       if ((obj as THREE.Mesh).isMesh) {
@@ -495,405 +552,114 @@ export const YorCrimsonSweaterSkin: AvatarSkin = {
           if (!mat) return
           const matName = (mat.name || '').toLowerCase()
 
-          // Off-shoulder chunky crimson sweater dress
+          // Sleek silver sleeveless top (#D9DEE8)
           if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
-            if (mat.color) mat.color.set('#BA263B') // Yor Crimson Red
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#5E0E1B')
-            if ('shadeColor' in mat && mat.shadeColor) mat.shadeColor.set('#5E0E1B')
-            if (mat.roughness !== undefined) mat.roughness = 0.72 // soft chunky knit wool
-            if (mat.metalness !== undefined) mat.metalness = 0.05
+            if (mat.color) mat.color.set('#D9DEE8')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#8B92A2')
+            if (mat.roughness !== undefined) mat.roughness = 0.32
+            if (mat.metalness !== undefined) mat.metalness = 0.40
           }
 
-          // Glossy midnight black hair
+          // Signature Hatsune Miku vibrant cyan/teal hair (#00E5FF / #39C5BB)
           if (/hair/i.test(matName)) {
-            if (mat.color) mat.color.set('#0C0D12')
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#050508')
-            if (mat.roughness !== undefined) mat.roughness = 0.22 // silky sheen
-          }
-
-          // Golden/Pearl Headband accent (keep clean, hide side ribbons)
-          if (/ribbon/i.test(matName)) {
-            mat.visible = false
-            mat.opacity = 0.0
-            mat.transparent = true
-          } else if (/hair_wear|accessory/i.test(matName)) {
-            mat.visible = true
-            mat.opacity = 1.0
-            mat.transparent = false
-            if (mat.color) mat.color.set('#F0EAE1') // Soft Cream/Pearl White Headband
-            if (mat.metalness !== undefined) mat.metalness = 0.15
-            if (mat.roughness !== undefined) mat.roughness = 0.40
-          }
-
-          // Thigh-high opaque black stockings
-          if (/stocking|tight|leg_wear/i.test(matName)) {
-            mat.visible = true
-            mat.opacity = 0.95
-            mat.transparent = true
-            if (mat.color) mat.color.set('#141418')
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#0A0A0C')
-            if (mat.roughness !== undefined) mat.roughness = 0.5
-          }
-
-          // Ruby/Crimson eyes (Yor Forger signature)
-          if (/eye\b|alicia_eye/i.test(matName) && !/white/i.test(matName)) {
-            if (mat.color) mat.color.set('#D91E36')
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#4A0812')
-            if (mat.map && mat.map.image && !mat.userData.__eyeTintYor && typeof document !== 'undefined') {
-              try {
-                const img = mat.map.image
-                if (img.width && img.height) {
-                  const canvas = document.createElement('canvas')
-                  canvas.width = img.width
-                  canvas.height = img.height
-                  const ctx = canvas.getContext('2d')
-                  if (ctx) {
-                    ctx.drawImage(img, 0, 0)
-                    ctx.globalCompositeOperation = 'color'
-                    ctx.fillStyle = '#ff0038'
-                    ctx.fillRect(0, 0, canvas.width, canvas.height)
-                    ctx.globalCompositeOperation = 'source-over'
-                    const tex = new THREE.CanvasTexture(canvas)
-                    tex.colorSpace = THREE.SRGBColorSpace
-                    tex.flipY = mat.map.flipY
-                    mat.map = tex
-                    mat.userData.__eyeTintYor = true
-                    mat.needsUpdate = true
-                  }
-                }
-              } catch(e) {}
-            }
-          }
-
-          // Yor Face Canvas: Pale porcelain skin + RUBY eyes painted directly (override baked blue iris)
-          if (/alicia_face\b/i.test(matName)) {
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#e8ddd8')
-            if (mat.color) mat.color.set('#F8EDE8') // pale porcelain Yor skin
-            if (mat.map && mat.map.image && !mat.userData.__yorMakeupApplied && typeof document !== 'undefined') {
-              try {
-                const img = mat.map.image
-                if (img.width && img.height) {
-                  const canvas = document.createElement('canvas')
-                  canvas.width = 1024; canvas.height = 1024
-                  const ctx = canvas.getContext('2d')
-                  if (ctx) {
-                    ctx.drawImage(img, 0, 0, 1024, 1024)
-                    // Yor pale skin overlay
-                    ctx.globalCompositeOperation = 'screen'
-                    ctx.fillStyle = 'rgba(255, 240, 235, 0.08)'
-                    ctx.fillRect(0, 0, 1024, 1024)
-                    ctx.globalCompositeOperation = 'source-over'
-                    // LEFT ruby eye
-                    const lRuby = ctx.createRadialGradient(372, 400, 0, 372, 400, 24)
-                    lRuby.addColorStop(0, 'rgba(30, 5, 8, 0.98)')
-                    lRuby.addColorStop(0.3, 'rgba(160, 20, 42, 0.95)')
-                    lRuby.addColorStop(0.65, 'rgba(217, 30, 54, 0.88)')
-                    lRuby.addColorStop(0.9, 'rgba(140, 10, 28, 0.60)')
-                    lRuby.addColorStop(1, 'rgba(80, 5, 15, 0.0)')
-                    ctx.fillStyle = lRuby
-                    ctx.beginPath(); ctx.ellipse(372, 400, 24, 19, 0, 0, Math.PI * 2); ctx.fill()
-                    ctx.fillStyle = 'rgba(10, 2, 3, 0.98)'
-                    ctx.beginPath(); ctx.ellipse(372, 400, 7, 7, 0, 0, Math.PI * 2); ctx.fill()
-                    ctx.fillStyle = 'rgba(255, 200, 200, 0.80)'
-                    ctx.beginPath(); ctx.ellipse(368, 395, 4, 3, -0.4, 0, Math.PI * 2); ctx.fill()
-                    // RIGHT ruby eye
-                    const rRuby = ctx.createRadialGradient(652, 400, 0, 652, 400, 24)
-                    rRuby.addColorStop(0, 'rgba(30, 5, 8, 0.98)')
-                    rRuby.addColorStop(0.3, 'rgba(160, 20, 42, 0.95)')
-                    rRuby.addColorStop(0.65, 'rgba(217, 30, 54, 0.88)')
-                    rRuby.addColorStop(0.9, 'rgba(140, 10, 28, 0.60)')
-                    rRuby.addColorStop(1, 'rgba(80, 5, 15, 0.0)')
-                    ctx.fillStyle = rRuby
-                    ctx.beginPath(); ctx.ellipse(652, 400, 24, 19, 0, 0, Math.PI * 2); ctx.fill()
-                    ctx.fillStyle = 'rgba(10, 2, 3, 0.98)'
-                    ctx.beginPath(); ctx.ellipse(652, 400, 7, 7, 0, 0, Math.PI * 2); ctx.fill()
-                    ctx.fillStyle = 'rgba(255, 200, 200, 0.80)'
-                    ctx.beginPath(); ctx.ellipse(648, 395, 4, 3, -0.4, 0, Math.PI * 2); ctx.fill()
-                    // Yor soft blush (rosy pink cheeks)
-                    const yorBlushL = ctx.createRadialGradient(355, 468, 2, 355, 468, 48)
-                    yorBlushL.addColorStop(0, 'rgba(255, 140, 150, 0.30)')
-                    yorBlushL.addColorStop(1, 'rgba(255, 140, 150, 0)')
-                    ctx.fillStyle = yorBlushL; ctx.beginPath(); ctx.arc(355, 468, 48, 0, Math.PI * 2); ctx.fill()
-                    const yorBlushR = ctx.createRadialGradient(669, 468, 2, 669, 468, 48)
-                    yorBlushR.addColorStop(0, 'rgba(255, 140, 150, 0.30)')
-                    yorBlushR.addColorStop(1, 'rgba(255, 140, 150, 0)')
-                    ctx.fillStyle = yorBlushR; ctx.beginPath(); ctx.arc(669, 468, 48, 0, Math.PI * 2); ctx.fill()
-                    // Yor soft pink lips (cheerful smile shape)
-                    ctx.fillStyle = 'rgba(220, 80, 95, 0.90)'
-                    ctx.beginPath()
-                    ctx.moveTo(480, 598); ctx.quadraticCurveTo(496, 583, 512, 588)
-                    ctx.quadraticCurveTo(528, 583, 544, 598)
-                    ctx.quadraticCurveTo(530, 614, 512, 615)
-                    ctx.quadraticCurveTo(494, 614, 480, 598); ctx.closePath(); ctx.fill()
-                    ctx.fillStyle = 'rgba(255, 200, 215, 0.55)'
-                    ctx.beginPath(); ctx.ellipse(512, 605, 10, 3, 0, 0, Math.PI * 2); ctx.fill()
-                    const yt = new THREE.CanvasTexture(canvas)
-                    yt.flipY = mat.map.flipY; yt.colorSpace = THREE.SRGBColorSpace; yt.needsUpdate = true
-                    mat.map = yt; mat.needsUpdate = true; mat.userData.__yorMakeupApplied = true
-                  }
-                }
-              } catch(e) { console.warn('[Yor Skin] face canvas failed:', e) }
-            }
-          }
-        })
-      }
-    })
-    attachYorHeadbandRose(vrm, true)
-    attachStarkTechGlassesAndBeard(vrm, false)
-    const chestBone = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
-    if (chestBone) {
-      const emblem = chestBone.getObjectByName('__STARK_ARC_REACTOR__')
-      if (emblem) emblem.visible = false
-    }
-  },
-}
-
-
-/**
- * Yor Forger • Thorn Princess Assassin Dress (Canonical Spy x Family Form)
- * - Halter-neck midnight black cocktail dress (#0E0F14) with deep rose lining (#3A060D)
- * - Dual golden sculpted roses and crown headband over temples
- * - Knee-high assassin stiletto boots (#101116)
- * - Piercing ruby-crimson assassin eyes (#D91E36) with subtle emissive aura
- */
-export const YorThornPrincessSkin: AvatarSkin = {
-  id: 'yor-thorn-princess',
-  name: 'Yor Forger • Thorn Princess (Assassin Form)',
-  description: 'Iconic midnight noir halter dress with rose-printed lining, dual temple gold roses, and assassin stiletto boots.',
-  apply: (vrm: VRM) => {
-    // Directly apply Thorn Princess styling without bleeding Ada red dress
-    attachStarkTechGlassesAndBeard(vrm, false)
-    attachAdaTacticalAccessories(vrm, false)
-    attachYorThornPrincessFeatures(vrm, true)
-    const chestEmblem = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
-    if (chestEmblem) {
-      const em = chestEmblem.getObjectByName('__STARK_ARC_REACTOR__')
-      if (em) em.visible = false
-    }
-    vrm.scene.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        const mesh = obj as THREE.Mesh
-        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-        materials.forEach((mat: any) => {
-          if (!mat) return
-          const matName = (mat.name || '').toLowerCase()
-
-          // Halter neck midnight black assassin dress
-          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
-            mat.visible = true
-            mat.transparent = false
-            mat.opacity = 1.0
-            if (mat.color) mat.color.set('#0E0F14') // Midnight Noir
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#3A060D') // Deep blood rose inner shadow
-            if (mat.roughness !== undefined) mat.roughness = 0.35
-            if (mat.metalness !== undefined) mat.metalness = 0.12
-          }
-
-          // Glossy midnight black hair
-          if (/hair/i.test(matName)) {
-            mat.visible = true
-            if (mat.color) mat.color.set('#0A0B0E')
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#040507')
-            if (mat.roughness !== undefined) mat.roughness = 0.22
-          }
-
-          // Hide schoolgirl hair ties and side ribbons so Yor has clean, elegant hair
-          if (/hair_wear|ribbon|accessory/i.test(matName)) {
-            mat.visible = false
-            mat.opacity = 0.0
-            mat.transparent = true
-          }
-
-          // Thigh-high assassin stockings & stiletto boots
-          if (/stocking|tight|leg_wear/i.test(matName)) {
-            mat.visible = true
-            mat.opacity = 1.0
-            mat.transparent = false
-            if (mat.color) mat.color.set('#101116')
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#060709')
-            if (mat.roughness !== undefined) mat.roughness = 0.45
-          }
-
-          // Deadly Crimson Ruby Eyes
-          if (/eye\b|alicia_eye/i.test(matName) && !/white/i.test(matName)) {
-            if (mat.color) mat.color.set('#D91E36')
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#520814')
-            if (mat.map && mat.map.image && !mat.userData.__eyeTintYorThorn && typeof document !== 'undefined') {
-              try {
-                const img = mat.map.image
-                if (img.width && img.height) {
-                  const canvas = document.createElement('canvas')
-                  canvas.width = img.width
-                  canvas.height = img.height
-                  const ctx = canvas.getContext('2d')
-                  if (ctx) {
-                    ctx.drawImage(img, 0, 0)
-                    ctx.globalCompositeOperation = 'color'
-                    ctx.fillStyle = '#ff0038'
-                    ctx.fillRect(0, 0, canvas.width, canvas.height)
-                    ctx.globalCompositeOperation = 'source-over'
-                    const tex = new THREE.CanvasTexture(canvas)
-                    tex.colorSpace = THREE.SRGBColorSpace
-                    tex.flipY = mat.map.flipY
-                    mat.map = tex
-                    mat.userData.__eyeTintYorThorn = true
-                    mat.needsUpdate = true
-                  }
-                }
-              } catch(e) {}
-            }
-          }
-
-          // Yor Thorn Princess Face: Pale skin + assassin ruby eyes on canvas
-          if (/alicia_face\b/i.test(matName)) {
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#ddd0cc')
-            if (mat.color) mat.color.set('#F5E8E4') // cool pale assassin skin
-            if (mat.map && mat.map.image && !mat.userData.__yorThornMakeupApplied && typeof document !== 'undefined') {
-              try {
-                const img = mat.map.image
-                if (img.width && img.height) {
-                  const canvas = document.createElement('canvas')
-                  canvas.width = 1024; canvas.height = 1024
-                  const ctx = canvas.getContext('2d')
-                  if (ctx) {
-                    ctx.drawImage(img, 0, 0, 1024, 1024)
-                    // LEFT deep ruby assassin eye
-                    const lDR = ctx.createRadialGradient(372, 400, 0, 372, 400, 24)
-                    lDR.addColorStop(0, 'rgba(15, 2, 4, 0.99)')
-                    lDR.addColorStop(0.3, 'rgba(140, 10, 28, 0.97)')
-                    lDR.addColorStop(0.6, 'rgba(217, 30, 54, 0.90)')
-                    lDR.addColorStop(0.85, 'rgba(170, 15, 35, 0.65)')
-                    lDR.addColorStop(1, 'rgba(80, 5, 15, 0.0)')
-                    ctx.fillStyle = lDR
-                    ctx.beginPath(); ctx.ellipse(372, 400, 25, 20, 0, 0, Math.PI * 2); ctx.fill()
-                    ctx.fillStyle = 'rgba(5, 1, 1, 0.99)'
-                    ctx.beginPath(); ctx.ellipse(372, 400, 7, 7, 0, 0, Math.PI * 2); ctx.fill()
-                    ctx.fillStyle = 'rgba(255, 180, 190, 0.70)'
-                    ctx.beginPath(); ctx.ellipse(368, 395, 4, 3, -0.4, 0, Math.PI * 2); ctx.fill()
-                    // RIGHT deep ruby assassin eye
-                    const rDR = ctx.createRadialGradient(652, 400, 0, 652, 400, 24)
-                    rDR.addColorStop(0, 'rgba(15, 2, 4, 0.99)')
-                    rDR.addColorStop(0.3, 'rgba(140, 10, 28, 0.97)')
-                    rDR.addColorStop(0.6, 'rgba(217, 30, 54, 0.90)')
-                    rDR.addColorStop(0.85, 'rgba(170, 15, 35, 0.65)')
-                    rDR.addColorStop(1, 'rgba(80, 5, 15, 0.0)')
-                    ctx.fillStyle = rDR
-                    ctx.beginPath(); ctx.ellipse(652, 400, 25, 20, 0, 0, Math.PI * 2); ctx.fill()
-                    ctx.fillStyle = 'rgba(5, 1, 1, 0.99)'
-                    ctx.beginPath(); ctx.ellipse(652, 400, 7, 7, 0, 0, Math.PI * 2); ctx.fill()
-                    ctx.fillStyle = 'rgba(255, 180, 190, 0.70)'
-                    ctx.beginPath(); ctx.ellipse(648, 395, 4, 3, -0.4, 0, Math.PI * 2); ctx.fill()
-                    // Thorn Princess blood-rose lip — darker, more sultry
-                    ctx.fillStyle = 'rgba(140, 20, 40, 0.96)'
-                    ctx.beginPath()
-                    ctx.moveTo(480, 596); ctx.quadraticCurveTo(496, 580, 512, 586)
-                    ctx.quadraticCurveTo(528, 580, 544, 596)
-                    ctx.quadraticCurveTo(530, 616, 512, 617)
-                    ctx.quadraticCurveTo(494, 616, 480, 596); ctx.closePath(); ctx.fill()
-                    ctx.fillStyle = 'rgba(255, 180, 190, 0.45)'
-                    ctx.beginPath(); ctx.ellipse(512, 606, 10, 3, 0, 0, Math.PI * 2); ctx.fill()
-                    // Slight dark contour brows (more intense for assassin look)
-                    ctx.fillStyle = 'rgba(30, 10, 15, 0.70)'
-                    ctx.beginPath(); ctx.moveTo(340, 362); ctx.quadraticCurveTo(375, 350, 420, 358); ctx.quadraticCurveTo(375, 356, 340, 366); ctx.fill()
-                    ctx.beginPath(); ctx.moveTo(684, 362); ctx.quadraticCurveTo(649, 350, 604, 358); ctx.quadraticCurveTo(649, 356, 684, 366); ctx.fill()
-                    const yt2 = new THREE.CanvasTexture(canvas)
-                    yt2.flipY = mat.map.flipY; yt2.colorSpace = THREE.SRGBColorSpace; yt2.needsUpdate = true
-                    mat.map = yt2; mat.needsUpdate = true; mat.userData.__yorThornMakeupApplied = true
-                  }
-                }
-              } catch(e) { console.warn('[Yor Thorn Skin] face canvas failed:', e) }
-            }
-          }
-        })
-      }
-    })
-    attachYorHeadbandRose(vrm, true)
-    attachStarkTechGlassesAndBeard(vrm, false)
-    const chest = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
-    if (chest) {
-      const emblem = chest.getObjectByName('__STARK_ARC_REACTOR__')
-      if (emblem) emblem.visible = false
-    }
-  },
-}
-
-/**
- * Yor Forger • Berlint Gala Royal Velvet Evening Gown (Spy x Family Code White)
- * - Regal deep sapphire velvet evening gown (#10223D)
- * - Antique gold filigree lace trim (#D4AF37)
- * - Sheer midnight stockings and formal hair styling
- */
-export const YorBerlintGalaSkin: AvatarSkin = {
-  id: 'yor-berlint-gala',
-  name: 'Yor Forger • Berlint Gala Royal Velvet Gown',
-  description: 'Regal deep sapphire velvet evening gown with antique gold filigree lace trim and formal hair styling.',
-  apply: (vrm: VRM) => {
-    attachAdaTacticalAccessories(vrm, false)
-    attachYorThornPrincessFeatures(vrm, false)
-    attachStarkTechGlassesAndBeard(vrm, false)
-    const chestEmblem = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
-    if (chestEmblem) {
-      const em = chestEmblem.getObjectByName('__STARK_ARC_REACTOR__')
-      if (em) em.visible = false
-    }
-    vrm.scene.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        const mesh = obj as THREE.Mesh
-        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-        materials.forEach((mat: any) => {
-          if (!mat) return
-          const matName = (mat.name || '').toLowerCase()
-
-          // Deep Sapphire velvet evening gown
-          if (/wear|cloth|dress/i.test(matName) && !/hair_wear/i.test(matName)) {
-            mat.visible = true
-            mat.transparent = false
-            mat.opacity = 1.0
-            if (mat.color) mat.color.set('#10223D') // Royal Sapphire Velvet
-            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#08101E')
-            if (mat.roughness !== undefined) mat.roughness = 0.65 // Soft plush velvet
-            if (mat.metalness !== undefined) mat.metalness = 0.08
-          }
-
-          // Jet black elegant updo hair
-          if (/hair/i.test(matName)) {
-            mat.visible = true
-            if (mat.color) mat.color.set('#0E1015')
+            if (mat.color) mat.color.set('#00E5FF')
+            if (mat.shadeColorFactor) mat.shadeColorFactor.set('#008899')
             if (mat.roughness !== undefined) mat.roughness = 0.25
           }
 
-          // Antique Gold lace trim
-          if (/hair_wear|ribbon|accessory/i.test(matName)) {
-            mat.visible = true
-            if (mat.color) mat.color.set('#D4AF37')
-            if (mat.metalness !== undefined) mat.metalness = 0.8
-          }
-
-          // Sheer midnight stockings
-          if (/stocking|tight|leg_wear/i.test(matName)) {
-            mat.visible = true
-            mat.opacity = 0.88
-            mat.transparent = true
-            if (mat.color) mat.color.set('#0D0F14')
-          }
-
-          // Violet-tinted dark eyes
+          // Teal anime eyes (#00E5FF)
           if (/eye|iris/i.test(matName)) {
-            if (mat.color) mat.color.set('#8B284A')
+            if (mat.color) mat.color.set('#00E5FF')
           }
         })
       }
     })
-    attachYorHeadbandRose(vrm, true)
-    attachStarkTechGlassesAndBeard(vrm, false)
   },
 }
 
 /**
- * Ada Wong • Neo-Tokyo Cyber Operative (Custom Holographic Agent Suit)
- * - Carbon fiber stealth bodysuit with luminescent magenta and cyan cyber piping
- * - Tactical holographic optics and high-shine boots
+ * Hatsune Miku • Magical Mirai Concert Diva
+ * - Vivid iridescent cyan and hot magenta stage aesthetic
+ * - Luminous stage glow and audio-reactive equalizer accents
  */
+export const MikuMagicalMiraiSkin: AvatarSkin = {
+  id: 'miku-magical-mirai',
+  name: 'Hatsune Miku • Magical Mirai Concert Diva',
+  description: 'Concert tour diva edition with iridescent cyan, hot magenta accents, and luminous stage presence.',
+  apply: (vrm: VRM) => {
+    MikuClassicIdolSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          if (/wear|cloth|dress/i.test(mat.name || '')) {
+            if (mat.color) mat.color.set('#1A1528')
+            if (mat.roughness !== undefined) mat.roughness = 0.20
+            if (mat.metalness !== undefined) mat.metalness = 0.60
+          }
+        })
+      }
+    })
+  },
+}
+
+/**
+ * Hatsune Miku • Cyber Diva (Synthwave Hologram)
+ * - Digital glowing cyan & neon purple synthwave aesthetic
+ */
+export const MikuCyberDivaSkin: AvatarSkin = {
+  id: 'miku-cyber-diva',
+  name: 'Hatsune Miku • Cyber Synthwave Diva',
+  description: 'Futuristic holographic synthwave aesthetic with neon cyan and electric violet pulses.',
+  apply: (vrm: VRM) => {
+    MikuClassicIdolSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          if (/hair/i.test(mat.name || '')) {
+            if (mat.color) mat.color.set('#00F3FF')
+          }
+        })
+      }
+    })
+  },
+}
+
+/**
+ * Hatsune Miku • Sakura Miku (Cherry Blossom Edition)
+ * - Pastel pink twintails and delicate floral cherry blossom aesthetic
+ */
+export const MikuSakuraSkin: AvatarSkin = {
+  id: 'miku-sakura',
+  name: 'Hatsune Miku • Sakura Miku (Cherry Blossom)',
+  description: 'Spring cherry blossom edition with delicate pastel pink twintails and floral accents.',
+  apply: (vrm: VRM) => {
+    MikuClassicIdolSkin.apply(vrm)
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          if (/hair/i.test(mat.name || '')) {
+            if (mat.color) mat.color.set('#FFB7C5') // Sakura pink
+          }
+        })
+      }
+    })
+  },
+}
+
+// Backward-compatible aliases
+export const YorCrimsonSweaterSkin: AvatarSkin = MikuClassicIdolSkin;
+export const YorThornPrincessSkin: AvatarSkin = MikuClassicIdolSkin;
+export const YorBerlintGalaSkin: AvatarSkin = MikuMagicalMiraiSkin;
+
 export const AdaCyberOperativeSkin: AvatarSkin = {
   id: 'ada-cyber-operative',
   name: 'Ada Wong • Neo-Tokyo Cyber Operative',
@@ -1137,6 +903,20 @@ export function attachStarkTechGlassesAndBeard(vrm: VRM, visible: boolean = true
   if (!headBone) return
 
   let glassesGroup = headBone.getObjectByName('__STARK_TECH_SUNGLASSES__') as THREE.Group | undefined
+  let goateeGroup = headBone.getObjectByName('__STARK_GOATEE_BEARD__') as THREE.Group | undefined
+
+  if (!visible) {
+    if (glassesGroup) {
+      glassesGroup.visible = false
+      glassesGroup.traverse((c) => { c.visible = false })
+    }
+    if (goateeGroup) {
+      goateeGroup.visible = false
+      goateeGroup.traverse((c) => { c.visible = false })
+    }
+    return
+  }
+
   if (!glassesGroup) {
     glassesGroup = new THREE.Group()
     glassesGroup.name = '__STARK_TECH_SUNGLASSES__'
@@ -1204,7 +984,6 @@ export function attachStarkTechGlassesAndBeard(vrm: VRM, visible: boolean = true
   glassesGroup.visible = visible
 
   // 2. Signature Tony Stark Goatee Beard & Mustache
-  let goateeGroup = headBone.getObjectByName('__STARK_GOATEE_BEARD__') as THREE.Group | undefined
   if (!goateeGroup) {
     goateeGroup = new THREE.Group()
     goateeGroup.name = '__STARK_GOATEE_BEARD__'
@@ -1249,6 +1028,252 @@ export function attachStarkTechGlassesAndBeard(vrm: VRM, visible: boolean = true
  * 5. Midnight leather halter neck choker with golden ring
  * 6. Dual golden stiletto needle daggers in hands ("The Thorns")
  */
+/**
+ * Attaches Hatsune Miku's iconic Vocaloid accessories:
+ * 1. Long twin cyan/turquoise pigtails with natural idol curves & joints
+ * 2. Futuristic square black/magenta hair clips/ribbons at the twintail bases
+ * 3. Cyber idol headset with microphone boom curving to the cheek
+ * 4. Turquoise necktie with metallic tie-clip
+ * 5. Detached cyber synthesizer arm warmers / sleeves with LED digital equalizer display
+ * 6. Red "01" Vocaloid tattoo decal on the left upper arm
+ */
+export function attachMikuVocaloidFeatures(vrm: VRM, visible: boolean = true): void {
+  const headBone = vrm.humanoid?.getNormalizedBoneNode('head')
+  const chestBone = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
+  const lArm = vrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
+  const lForearm = vrm.humanoid?.getNormalizedBoneNode('leftLowerArm')
+  const rForearm = vrm.humanoid?.getNormalizedBoneNode('rightLowerArm')
+
+  if (!headBone) return
+
+  const metaTitle = ((vrm.meta as any)?.title || (vrm.meta as any)?.name || '') as string
+  const isNativeMiku = Boolean(
+    metaTitle.includes('ミク') || metaTitle.toLowerCase().includes('miku') ||
+    vrm.scene.getObjectByName('右髪１')
+  )
+
+  let headGroup = headBone.getObjectByName('__MIKU_HEAD_ASSEMBLY__') as THREE.Group | undefined
+  if (!headGroup && visible && !isNativeMiku) {
+    headGroup = new THREE.Group()
+    headGroup.name = '__MIKU_HEAD_ASSEMBLY__'
+
+    const cyanHairMat = new THREE.MeshStandardMaterial({
+      color: 0x00E5FF,
+      roughness: 0.28,
+      metalness: 0.12,
+    })
+
+    const ribbonMat = new THREE.MeshStandardMaterial({
+      color: 0x111116,
+      roughness: 0.35,
+      metalness: 0.20,
+    })
+    const magentaTrimMat = new THREE.MeshStandardMaterial({
+      color: 0xFF007F,
+      roughness: 0.20,
+      metalness: 0.30,
+      emissive: new THREE.Color(0xFF007F),
+      emissiveIntensity: 0.25,
+    })
+
+    const headsetMat = new THREE.MeshStandardMaterial({
+      color: 0x1A1D24,
+      metalness: 0.85,
+      roughness: 0.25,
+    })
+    const ledCyanMat = new THREE.MeshStandardMaterial({
+      color: 0x39C5BB,
+      emissive: new THREE.Color(0x39C5BB),
+      emissiveIntensity: 0.6,
+      roughness: 0.1,
+    })
+
+    // Twin cyan pigtails
+    const buildTwintail = (isLeft: boolean) => {
+      const tail = new THREE.Group()
+      tail.name = isLeft ? '__MIKU_TAIL_L__' : '__MIKU_TAIL_R__'
+      const sign = isLeft ? 1 : -1
+
+      const clipBox = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.038, 0.032), ribbonMat)
+      clipBox.position.set(0, 0, 0)
+      tail.add(clipBox)
+
+      const trimBox = new THREE.Mesh(new THREE.BoxGeometry(0.040, 0.040, 0.008), magentaTrimMat)
+      trimBox.position.set(0, 0, 0.016)
+      tail.add(trimBox)
+
+      const segments = 8
+      let parentObj: THREE.Object3D = tail
+      for (let s = 0; s < segments; s++) {
+        const segGroup = new THREE.Group()
+        segGroup.name = `__MIKU_SEG_${isLeft ? 'L' : 'R'}_${s}__`
+        const segLen = 0.095
+        const t = s / segments
+        const topRadius = 0.024 * (1.0 - t * 0.45)
+        const bottomRadius = 0.024 * (1.0 - (s + 1) / segments * 0.45)
+
+        const segGeo = new THREE.CylinderGeometry(bottomRadius, topRadius, segLen, 12)
+        const segMesh = new THREE.Mesh(segGeo, cyanHairMat)
+        segMesh.position.y = -segLen * 0.5
+        segGroup.add(segMesh)
+
+        segGroup.position.set(
+          s === 0 ? sign * 0.015 : sign * 0.006 * (1.0 - t),
+          s === 0 ? -0.02 : -segLen,
+          s === 0 ? 0.01 : 0.004
+        )
+        segGroup.rotation.z = sign * (0.12 - t * 0.04)
+
+        parentObj.add(segGroup)
+        parentObj = segGroup
+      }
+
+      tail.position.set(sign * 0.088, 0.065, 0.020)
+      return tail
+    }
+
+    headGroup.add(buildTwintail(true))
+    headGroup.add(buildTwintail(false))
+
+    // Headset
+    const headsetBand = new THREE.Mesh(
+      new THREE.TorusGeometry(0.088, 0.004, 8, 32, Math.PI),
+      headsetMat
+    )
+    headsetBand.rotation.x = -Math.PI / 2
+    headsetBand.position.set(0, 0.045, 0.008)
+    headGroup.add(headsetBand)
+
+    const createEarPad = (isLeft: boolean) => {
+      const g = new THREE.Group()
+      const sign = isLeft ? 1 : -1
+      const earPad = new THREE.Mesh(new THREE.CylinderGeometry(0.020, 0.022, 0.014, 16), headsetMat)
+      earPad.rotation.z = Math.PI / 2
+      g.add(earPad)
+
+      const ledRing = new THREE.Mesh(new THREE.TorusGeometry(0.016, 0.0025, 8, 20), ledCyanMat)
+      ledRing.rotation.y = Math.PI / 2
+      ledRing.position.x = sign * 0.008
+      g.add(ledRing)
+
+      g.position.set(sign * 0.085, 0.015, -0.005)
+
+      if (isLeft) {
+        const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.0018, 0.0018, 0.085, 8), headsetMat)
+        boom.rotation.z = -0.75
+        boom.rotation.y = 0.55
+        boom.position.set(-0.028, -0.035, -0.035)
+        g.add(boom)
+
+        const micTip = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 8, 8), ledCyanMat)
+        micTip.position.set(-0.055, -0.065, -0.068)
+        g.add(micTip)
+      }
+      return g
+    }
+    headGroup.add(createEarPad(true))
+    headGroup.add(createEarPad(false))
+
+    headBone.add(headGroup)
+  }
+  if (headGroup) headGroup.visible = visible && !isNativeMiku
+
+  // Chest Necktie
+  if (chestBone && !isNativeMiku) {
+    let tie = chestBone.getObjectByName('__MIKU_CHEST_TIE__') as THREE.Group | undefined
+    if (!tie && visible) {
+      tie = new THREE.Group()
+      tie.name = '__MIKU_CHEST_TIE__'
+
+      const tieMat = new THREE.MeshStandardMaterial({
+        color: 0x00E5FF,
+        roughness: 0.35,
+        metalness: 0.15,
+      })
+      const silverMat = new THREE.MeshStandardMaterial({
+        color: 0xD0D4DC,
+        metalness: 0.90,
+        roughness: 0.20,
+      })
+
+      const knot = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.018, 0.014), tieMat)
+      knot.position.set(0, 0.11, -0.075)
+      tie.add(knot)
+
+      const tieBody = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.16, 0.006), tieMat)
+      tieBody.position.set(0, 0.02, -0.082)
+      tie.add(tieBody)
+
+      const clip = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.006, 0.008), silverMat)
+      clip.position.set(0, 0.05, -0.084)
+      tie.add(clip)
+
+      chestBone.add(tie)
+    }
+    if (tie) tie.visible = visible
+  }
+
+  // Red "01" Tattoo Decal on Left Shoulder
+  if (lArm && !isNativeMiku) {
+    let tattoo = lArm.getObjectByName('__MIKU_01_TATTOO__') as THREE.Mesh | undefined
+    if (!tattoo && visible) {
+      const tattooMat = new THREE.MeshStandardMaterial({
+        color: 0xFF0033,
+        emissive: new THREE.Color(0xFF0033),
+        emissiveIntensity: 0.45,
+        roughness: 0.2,
+      })
+      tattoo = new THREE.Mesh(new THREE.PlaneGeometry(0.028, 0.018), tattooMat)
+      tattoo.name = '__MIKU_01_TATTOO__'
+      tattoo.position.set(0.046, -0.035, 0)
+      tattoo.rotation.y = Math.PI / 2
+      lArm.add(tattoo)
+    }
+    if (tattoo) tattoo.visible = visible
+  }
+
+  // Detached Synthesizer Sleeves
+  const synthSleeveMat = new THREE.MeshStandardMaterial({
+    color: 0x1A1C23,
+    roughness: 0.35,
+    metalness: 0.25,
+  })
+  const synthLedMat = new THREE.MeshStandardMaterial({
+    color: 0x00E5FF,
+    emissive: new THREE.Color(0x00E5FF),
+    emissiveIntensity: 0.70,
+  })
+
+  const attachSynthSleeve = (forearmBone: THREE.Object3D | null | undefined, name: string) => {
+    if (!forearmBone || isNativeMiku) return
+    let sleeve = forearmBone.getObjectByName(name) as THREE.Group | undefined
+    if (!sleeve && visible) {
+      sleeve = new THREE.Group()
+      sleeve.name = name
+
+      const sleeveMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.042, 0.062, 0.20, 20, 1, true),
+        synthSleeveMat
+      )
+      sleeveMesh.position.set(0, -0.09, 0)
+      sleeve.add(sleeveMesh)
+
+      const eqPanel = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.024, 0.07),
+        synthLedMat
+      )
+      eqPanel.position.set(0, -0.08, -0.052)
+      sleeve.add(eqPanel)
+
+      forearmBone.add(sleeve)
+    }
+    if (sleeve) sleeve.visible = visible
+  }
+
+  attachSynthSleeve(lForearm, '__MIKU_SLEEVE_L__')
+  attachSynthSleeve(rForearm, '__MIKU_SLEEVE_R__')
+}
+
 export function attachYorThornPrincessFeatures(vrm: VRM, visible: boolean = true): void {
   const headBone = vrm.humanoid?.getNormalizedBoneNode('head')
   const neckBone = vrm.humanoid?.getNormalizedBoneNode('neck')
@@ -1675,17 +1700,23 @@ export const StarkArcTraderSkin: AvatarSkin = {
 }
 
 export const AVATAR_SKINS: Record<string, AvatarSkin> = {
+  // Hatsune Miku Skins
+  'miku-classic-idol': MikuClassicIdolSkin,
+  'miku-magical-mirai': MikuMagicalMiraiSkin,
+  'miku-cyber-diva': MikuCyberDivaSkin,
+  'miku-sakura': MikuSakuraSkin,
+
+  // Legacy Yor aliases
+  'yor-thorn-princess': MikuClassicIdolSkin,
+  'yor-crimson-sweater': MikuMagicalMiraiSkin,
+  'yor-berlint-gala': MikuCyberDivaSkin,
+
   // Ada Wong Costumes
   'ada-red': AdaRedSkin,
   'crimson_turtleneck': CrimsonTurtleneckSkin,
   'black_stealth': BlackStealthSkin,
   'crimson_jacket': CrimsonJacketSkin,
   'ada-cyber-operative': AdaCyberOperativeSkin,
-
-  // Yor Forger Costumes
-  'yor-thorn-princess': YorThornPrincessSkin,
-  'yor-crimson-sweater': YorCrimsonSweaterSkin,
-  'yor-berlint-gala': YorBerlintGalaSkin,
 
   // Tony Stark Costumes
   'stark-mark-armor': StarkArcTraderSkin,
@@ -1706,6 +1737,14 @@ export function updateCommsHeadset(vrm: VRM, visible: boolean, isListening: bool
   if (!headBone) return
 
   let headsetGroup = headBone.getObjectByName('__ada_comms_headset__') as THREE.Group | undefined
+
+  if (!visible) {
+    if (headsetGroup) {
+      headsetGroup.visible = false
+      headsetGroup.traverse((c) => { c.visible = false })
+    }
+    return
+  }
 
   if (!headsetGroup) {
     headsetGroup = new THREE.Group()
@@ -1999,44 +2038,39 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
     StarkArcTraderSkin.apply(vrm)
 
   } else if (char === 'mira') {
-    // 🌹 MIRA (YOR FORGER): Feminine Hourglass Silhouette & Thorn Princess Elegance
-    if (leftShoulder) leftShoulder.scale.set(0.96, 0.98, 0.98)
-    if (rightShoulder) rightShoulder.scale.set(0.96, 0.98, 0.98)
-    if (chest) chest.scale.set(1.10, 1.08, 1.12)
-    if (upperChest) upperChest.scale.set(1.10, 1.08, 1.12)
-    if (spine) spine.scale.set(0.94, 1.00, 0.95) // slender waist
-    if (hips) hips.scale.set(1.16, 1.02, 1.14) // curvy feminine hourglass hips
-    if (leftUpperArm) leftUpperArm.scale.set(0.95, 1.00, 0.95)
-    if (rightUpperArm) rightUpperArm.scale.set(0.95, 1.00, 0.95)
-    if (leftLowerArm) leftLowerArm.scale.set(0.95, 1.00, 0.95)
-    if (rightLowerArm) rightLowerArm.scale.set(0.95, 1.00, 0.95)
-    if (leftUpperLeg) leftUpperLeg.scale.set(1.0, 1.0, 1.0)
-    if (rightUpperLeg) rightUpperLeg.scale.set(1.0, 1.0, 1.0)
+    // 🎤 HATSUNE MIKU (初音ミク): Slender Youthful Pop Idol Poise (158cm / 5'2")
+    const metaTitle = ((vrm.meta as any)?.title || (vrm.meta as any)?.name || '') as string
+    const isNativeMiku = Boolean(
+      metaTitle.includes('ミク') || metaTitle.toLowerCase().includes('miku') ||
+      vrm.scene.getObjectByName('右髪１')
+    )
 
-    // 🌹 Yor Forger: natural elegant poise
-    if (neck) neck.scale.set(1.02, 1.02, 1.02)
-    if (head) head.scale.set(0.96, 0.96, 0.96)
+    if (isNativeMiku) {
+      // Native Tda Miku model: perfect natural proportions
+      if (head) head.scale.set(1.0, 1.0, 1.0)
+      if (neck) neck.scale.set(1.0, 1.0, 1.0)
+      if (chest) chest.scale.set(1.0, 1.0, 1.0)
+      if (hips) hips.scale.set(1.0, 1.0, 1.0)
+    } else {
+      // Fallback Ada base: slender youthful pop idol frame
+      if (leftShoulder) leftShoulder.scale.set(0.92, 0.95, 0.92)
+      if (rightShoulder) rightShoulder.scale.set(0.92, 0.95, 0.92)
+      if (chest) chest.scale.set(0.95, 0.96, 0.95)
+      if (upperChest) upperChest.scale.set(0.95, 0.96, 0.95)
+      if (spine) spine.scale.set(0.95, 1.00, 0.95)
+      if (hips) hips.scale.set(0.95, 1.00, 0.95)
+      if (leftUpperArm) leftUpperArm.scale.set(0.90, 1.00, 0.90)
+      if (rightUpperArm) rightUpperArm.scale.set(0.90, 1.00, 0.90)
+      if (leftLowerArm) leftLowerArm.scale.set(0.90, 1.00, 0.90)
+      if (rightLowerArm) rightLowerArm.scale.set(0.90, 1.00, 0.90)
+      if (neck) neck.scale.set(0.98, 1.00, 0.98)
+      if (head) head.scale.set(1.02, 1.02, 1.02)
+    }
 
-    // Strictly HIDE schoolgirl braids, ribbons, bows, and puffy sleeves!
-    vrm.scene.traverse((obj) => {
-      if (/hair[2-8]_[LR]|mituami|ribbon|cloth_ribbon|other/i.test(obj.name)) {
-        obj.visible = false
-        obj.scale.set(0, 0, 0)
-      }
-      if (/cloth1|cloth2/i.test(obj.name)) {
-        // Bare shoulders & arms for Yor halter dress
-        obj.visible = false
-        obj.scale.set(0, 0, 0)
-      }
-      if (/skirt_\d+_\d+/i.test(obj.name)) {
-        // Sleek pencil gown
-        obj.scale.set(0.70, 1.0, 0.70)
-      }
-    })
-
+    // Detach other character assets
     attachStarkTechGlassesAndBeard(vrm, false)
     attachAdaTacticalAccessories(vrm, false)
-    attachYorThornPrincessFeatures(vrm, true)
+    attachYorThornPrincessFeatures(vrm, false)
 
     const chestBone = humanoid.getNormalizedBoneNode('chest') || humanoid.getNormalizedBoneNode('upperChest')
     if (chestBone) {
@@ -2044,8 +2078,7 @@ export function applyCharacterPhysicalTransformation(vrm: VRM, char: 'ada' | 'mi
       if (emblem) emblem.visible = false
     }
 
-    YorThornPrincessSkin.apply(vrm)
-
+    MikuClassicIdolSkin.apply(vrm)
   } else {
     // 👩‍💼 ADA (COACH & TUTOR): Spy-Chic Athletic Female Proportions (Standard 1.0)
     const bones = [

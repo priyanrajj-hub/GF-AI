@@ -352,6 +352,79 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
     ],
   },
   {
+    id: 'song-miku-world-is-mine',
+    audioUrl: 'https://aac.saavncdn.com/638/a7318e782b4ed4aa6c414bd3fe2c112e_160.mp4',
+    title: 'World is Mine (ワールドイズマイン)',
+    artist: 'Hatsune Miku (初音ミク) feat. ryo (supercell)',
+    genre: 'Vocaloid Anthem / J-Pop Diva',
+    mood: 'Proud, Adorable and Energetic',
+    bpm: 165,
+    duration: 254,
+    danceAction: 'dance_cute_idol',
+    lyrics: [
+      { time: 0.5, text: 'Sekai de ichiban o-hime-sama! Sou iu atsukai kokoroete yo ne!' },
+      { time: 5.2, text: 'Sono ichi: Itsumo to chigau kamigata ni kigatsuite koto!' },
+      { time: 10.0, text: 'Sono ni: Chanto kutsu made mirukoto, ii ne?' },
+      { time: 14.8, text: 'Sono san: Watashi no hitokoto ni wa mittsu no kotoba de henji suru koto!' },
+      { time: 19.5, text: 'Wakattara migite ga orusu nano o nantoka shite!' },
+      { time: 24.2, text: "Sekai de ichiban o-hime-sama! Ki ga tsuite ne, darlin'!" },
+    ],
+  },
+  {
+    id: 'song-miku-ievan-polkka',
+    audioUrl: 'https://aac.saavncdn.com/286/2929d11a5d44a3592ced0383fa6f1977_160.mp4',
+    title: 'Ievan Polkka (Loituma Leek Spin)',
+    artist: 'Hatsune Miku (初音ミク) feat. Otomania',
+    genre: 'Vocaloid Folk Dance / High-Speed Scat',
+    mood: 'Hilarious, High-Speed and Unstoppable',
+    bpm: 132,
+    duration: 150,
+    danceAction: 'dance_cute_idol',
+    lyrics: [
+      { time: 0.5, text: 'Aratsatsa ya ribidabi dilla barits dan dilla deh lando!' },
+      { time: 4.8, text: 'A barik kata barip parit pariba ribi ribi ribi dits ten lando!' },
+      { time: 9.2, text: 'Ja bari lassten lande balo ara wa barits ten lando!' },
+      { time: 13.8, text: 'A raba raba raba raba raba ribi dabi dilla barits dan dan!' },
+      { time: 18.2, text: "Spin the leek! Negi negi power 100%! Let's go!" },
+    ],
+  },
+  {
+    id: 'song-miku-popipo',
+    audioUrl: 'https://aac.saavncdn.com/347/c536b256fca6b96aa432322c11c21fbb_160.mp4',
+    title: 'PoPiPo (ぽっぴっぽー)',
+    artist: 'Hatsune Miku (初音ミク) feat. LamazeP',
+    genre: 'Hyperactive Electro Chiptune',
+    mood: 'Addictive, Bubbly and Refreshing',
+    bpm: 150,
+    duration: 182,
+    danceAction: 'dance_cute_idol',
+    lyrics: [
+      { time: 0.5, text: 'Po-pi-po-pi-po-po-pi-po! Po-pi-po-pi-po-po-pi-po!' },
+      { time: 4.8, text: 'Pii-pappapo-pi-po! Vegetable juice for only two hundred yen!' },
+      { time: 9.5, text: 'Po-pi-po-pi-po-po-pi-po! Healthy green delicious energy!' },
+      { time: 14.2, text: 'Drink it every single morning, shine bright with Miku!' },
+      { time: 19.0, text: 'Po-pi-po-pi-po-po-pi-po! Yeah!!' },
+    ],
+  },
+  {
+    id: 'song-miku-senbonzakura',
+    audioUrl: 'https://aac.saavncdn.com/788/5abce273d75f757a25f5fdcb6a5f63e7_160.mp4',
+    title: 'Senbonzakura (千本桜)',
+    artist: 'Hatsune Miku (初音ミク) feat. KurousaP',
+    genre: 'Neo-Traditional Rock / Vocaloid Epic',
+    mood: 'Hyped, Passionate and Historic',
+    bpm: 154,
+    duration: 245,
+    danceAction: 'dance_cute_idol',
+    lyrics: [
+      { time: 0.5, text: 'Daitan futeki ni haikara kakumei, rairaku rakuraku hanran shoujo!' },
+      { time: 5.2, text: 'Hinomeru yosete nisen renka, kousenjuu o kake nukero!' },
+      { time: 10.0, text: 'Senbonzakura yoru ni magire, kimi no koe mo todokanai yo!' },
+      { time: 15.2, text: 'Koko wa utage, hagane no ori, sono dantoudai kara mioroshite!' },
+      { time: 20.2, text: 'Sanzen sekai tokoyo no yami, nageku uta mo kikoenai yo!' },
+    ],
+  },
+  {
     id: 'song-cyber-sunrise',
     audioUrl: 'https://aac.saavncdn.com/987/0c846bfe931e0f136d364c5ef5885372_160.mp4',
     title: 'Cyber Sunrise',
@@ -395,7 +468,12 @@ export function resolveSong(query: string): SongSpec {
     }
   }
 
-  // 2. High-energy dance request without specific title
+  // 2. High-energy dance or Vocaloid request without specific title
+  if (clean.includes('miku') || clean.includes('vocaloid') || clean.includes('leek')) {
+    const mikuSong = POPULAR_SONG_CATALOG.find((s) => s.id === 'song-miku-world-is-mine')
+    if (mikuSong) return { ...mikuSong }
+  }
+
   if (!clean || clean.includes('dancing') || clean.includes('dance')) {
     const idolSong = POPULAR_SONG_CATALOG.find((s) => s.id === 'song-idol-spark')
     if (idolSong) return { ...idolSong }

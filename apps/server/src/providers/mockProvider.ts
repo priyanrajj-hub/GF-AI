@@ -245,12 +245,12 @@ Take a deep breath. Breathe in for 4 seconds... hold for 4... and exhale slowly.
       } else if (activeChar === 'mira') {
         return {
           speech:
-            'Excuse me... I analyzed the market data and 52-week levels very carefully for you! Please remember to keep your stop loss sharp like a needle and protect your capital. Protecting you is my duty.',
-          display_text: `### 🌹 Thorn Princess Protective Market Telemetry\n\n*"Excuse me... If it is not too much trouble, please review these carefully verified market levels!"*\n\n${contextBody}\n\n---\n⚔️ **Yor's Guard:** *Wait patiently for price to reach the entry zone. Never chase a moving candle, and always keep your stop loss active!*`,
-          emotion: 'calm',
-          intensity: 0.9,
-          gesture: 'nod',
-          voice_style: { rate: 0.95, pitch: 1.05, style: 'empathetic' },
+            'Konnichiwa! Miku da yo~! I calculated the market levels and technical indicators with sparkling idol precision! Keep your rhythm strong and let us make today amazing together!',
+          display_text: `### 🎤 Hatsune Miku Vocaloid Market & Joy Telemetry\n\n*"Konnichiwa! Let's sing, code, and trade with unstoppable idol energy!"*\n\n${contextBody}\n\n---\n🎵 **Miku's Melody:** *Stick to your entry zone like a perfect beat drop. Keep your risk measured and reach for the stars!*`,
+          emotion: 'excited',
+          intensity: 0.95,
+          gesture: 'celebrate',
+          voice_style: { rate: 1.08, pitch: 1.32, style: 'cheerful' },
           actions: [],
         }
       } else {
@@ -698,12 +698,12 @@ export function processWorkload<T>(items: T[], batchSize = 10): T[][] {
 
     if (activeChar === 'mira') {
       return {
-        speech: `Hello! Excuse me, it is Yor Forger. I will do my absolute best to help you with your work and keep you safe today. What would you like us to do together?`,
-        display_text: `### 🌹 Yor Forger (Thorn Princess) | Standing By\n*\"Excuse me... If it is not too much trouble, please let me assist you today!\"*\n\n- **Berlint City Hall Routine:** Complete\n- **Protective Stance:** Active\n- **Focus & Loyalty:** Unwavering\n\nPlease let me know how I can be of help to you!`,
-        emotion: 'calm',
-        intensity: 0.85,
-        gesture: 'nod',
-        voice_style: { rate: 0.95, pitch: 1.05, style: 'empathetic' },
+        speech: `Konnichiwa! Miku da yo~! Virtual pop idol Hatsune Miku is here to sing, code, and brighten your entire day! What song or mission are we taking on next?`,
+        display_text: `### 🎤 Hatsune Miku (Virtual Pop Idol) | Ready for Stage!\n*\"Miku da yo~! Let's create something dazzling together!\"*\n\n- **Vocaloid Synthesizer:** Synced & Active\n- **Idol Energy:** 100%\n- **Stage Lighting & Beats:** Armed\n\nTell me what you'd like to work on, or ask me to sing your favorite song!`,
+        emotion: 'excited',
+        intensity: 0.95,
+        gesture: 'celebrate',
+        voice_style: { rate: 1.08, pitch: 1.34, style: 'cheerful' },
         actions: [],
       }
     }

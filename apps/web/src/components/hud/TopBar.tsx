@@ -150,13 +150,13 @@ export const TopBar: React.FC = () => {
             onClick={() => setActiveCharacter('mira')}
             className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
               activeCharacter === 'mira'
-                ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-[0_0_14px_rgba(244,63,94,0.6)] border border-rose-400/80'
+                ? 'bg-gradient-to-r from-teal-500 via-cyan-400 to-emerald-400 text-slate-950 shadow-[0_0_16px_rgba(57,197,187,0.7)] border border-teal-300 font-extrabold'
                 : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
             }`}
-            title="Yor Forger (Spy x Family): Thorn Princess Assassin & Caring Companion"
+            title="Hatsune Miku (初音ミク): Virtual Pop Idol, Vocaloid Sensation & Joyful Companion"
           >
-            <span>🌹</span>
-            <span>Yor Forger</span>
+            <span>🎤</span>
+            <span>Hatsune Miku</span>
           </button>
         </div>
 

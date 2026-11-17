@@ -263,139 +263,148 @@ function AdaPenthouseEnvironment() {
   )
 }
 
-// ─── 3. YOR FORGER: Moonlit Thorn Garden & Twilight Estate ─────────────────────
-function YorThornGardenEnvironment() {
-  const petalsRef = useRef<THREE.Points>(null)
-  const moonRef = useRef<THREE.Mesh>(null)
+// ─── 3. HATSUNE MIKU: Cyber Vocaloid Hologram Concert Stage ──────────────────
+function MikuConcertStageEnvironment() {
+  const particlesRef = useRef<THREE.Points>(null)
+  const spotlightL = useRef<THREE.SpotLight>(null)
+  const spotlightR = useRef<THREE.SpotLight>(null)
+  const eqBarsRef = useRef<THREE.Group>(null)
 
-  const { petalPositions, petalSpeeds } = useMemo(() => {
-    const count = 180
+  const { particlePositions, particleSpeeds } = useMemo(() => {
+    const count = 220
     const pos = new Float32Array(count * 3)
     const speeds = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
       pos[i * 3] = (Math.random() - 0.5) * 8
-      pos[i * 3 + 1] = Math.random() * 4 - 0.5
+      pos[i * 3 + 1] = Math.random() * 4 - 0.6
       pos[i * 3 + 2] = (Math.random() - 0.5) * 6
-      speeds[i * 3] = (Math.random() - 0.5) * 0.2 // drift X
-      speeds[i * 3 + 1] = -0.3 - Math.random() * 0.35 // fall Y
+      speeds[i * 3] = (Math.random() - 0.5) * 0.15 // drift X
+      speeds[i * 3 + 1] = 0.25 + Math.random() * 0.40 // rise Y (upward stage sparkle)
       speeds[i * 3 + 2] = (Math.random() - 0.5) * 0.15 // drift Z
     }
-    return { petalPositions: pos, petalSpeeds: speeds }
+    return { particlePositions: pos, particleSpeeds: speeds }
   }, [])
 
   useFrame((state, delta) => {
     const t = state.clock.elapsedTime
-    if (petalsRef.current) {
-      const posAttr = petalsRef.current.geometry.attributes.position
+
+    // Upward floating concert stage particles
+    if (particlesRef.current) {
+      const posAttr = particlesRef.current.geometry.attributes.position
       const arr = posAttr.array as Float32Array
       for (let i = 0; i < arr.length / 3; i++) {
-        arr[i * 3] += petalSpeeds[i * 3] * delta + Math.sin(t + i) * 0.003
-        arr[i * 3 + 1] += petalSpeeds[i * 3 + 1] * delta
-        arr[i * 3 + 2] += petalSpeeds[i * 3 + 2] * delta
+        arr[i * 3] += particleSpeeds[i * 3] * delta + Math.sin(t * 1.5 + i) * 0.003
+        arr[i * 3 + 1] += particleSpeeds[i * 3 + 1] * delta
+        arr[i * 3 + 2] += particleSpeeds[i * 3 + 2] * delta
 
-        if (arr[i * 3 + 1] < -0.7) {
-          arr[i * 3 + 1] = 3.2
+        if (arr[i * 3 + 1] > 3.6) {
+          arr[i * 3 + 1] = -0.6
           arr[i * 3] = (Math.random() - 0.5) * 8
         }
       }
       posAttr.needsUpdate = true
     }
 
-    if (moonRef.current) {
-      moonRef.current.rotation.z = Math.sin(t * 0.1) * 0.02
+    // Sweeping concert laser spotlights
+    if (spotlightL.current) {
+      spotlightL.current.position.x = -2.5 + Math.sin(t * 1.2) * 0.8
+      spotlightL.current.target.position.set(Math.sin(t * 1.6) * 0.5, 0.4, 0)
+      spotlightL.current.target.updateMatrixWorld()
+    }
+    if (spotlightR.current) {
+      spotlightR.current.position.x = 2.5 - Math.cos(t * 1.2) * 0.8
+      spotlightR.current.target.position.set(-Math.sin(t * 1.6) * 0.5, 0.4, 0)
+      spotlightR.current.target.updateMatrixWorld()
+    }
+
+    // Audio-reactive equalizer towers
+    if (eqBarsRef.current) {
+      eqBarsRef.current.children.forEach((child, idx) => {
+        const bar = child as THREE.Mesh
+        const h = 0.4 + Math.abs(Math.sin(t * 4.0 + idx * 0.6)) * 1.8
+        bar.scale.y = THREE.MathUtils.lerp(bar.scale.y, h, delta * 12.0)
+      })
     }
   })
 
   return (
     <group position={[0, 0, 0]}>
-      {/* Stone Flagstone Garden Terrace Floor */}
+      {/* Reflective Glossy Cyber Stage Floor */}
       <mesh position={[0, -0.73, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[16, 16]} />
         <meshStandardMaterial
-          color="#0d0912"
-          roughness={0.65}
-          metalness={0.35}
+          color="#060c14"
+          roughness={0.20}
+          metalness={0.85}
         />
       </mesh>
 
-      {/* Luminous Giant Full Moon Backdrop */}
-      <mesh ref={moonRef} position={[2.6, 2.2, -4.8]}>
-        <circleGeometry args={[1.35, 48]} />
-        <meshBasicMaterial color="#fff3ea" />
+      {/* Luminous Neon Stage Ring around Miku's Feet */}
+      <mesh position={[0, -0.725, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.1, 1.16, 48]} />
+        <meshBasicMaterial color="#39c5bb" />
       </mesh>
-      {/* Moon Halo Corona */}
-      <mesh position={[2.6, 2.2, -4.82]}>
-        <circleGeometry args={[2.2, 48]} />
-        <meshBasicMaterial color="#e0c2ff" transparent opacity={0.25} />
+      <mesh position={[0, -0.725, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.5, 1.54, 48]} />
+        <meshBasicMaterial color="#ff007f" />
       </mesh>
-      <pointLight color="#f3e8ff" intensity={1.6} distance={8} position={[2.6, 2.4, -3.5]} />
 
-      {/* Victorian Wrought-Iron Archway Silhouette with Climbing Roses */}
-      <group position={[0, 0.9, -2.4]}>
-        {/* Left Column */}
-        <mesh position={[-2.2, 0, 0]}>
-          <cylinderGeometry args={[0.08, 0.10, 3.4, 16]} />
-          <meshStandardMaterial color="#0c0712" metalness={0.9} roughness={0.3} />
-        </mesh>
-        {/* Right Column */}
-        <mesh position={[2.2, 0, 0]}>
-          <cylinderGeometry args={[0.08, 0.10, 3.4, 16]} />
-          <meshStandardMaterial color="#0c0712" metalness={0.9} roughness={0.3} />
-        </mesh>
-        {/* Arch Crest */}
-        <mesh position={[0, 1.7, 0]} rotation={[0, 0, 0]}>
-          <torusGeometry args={[2.2, 0.06, 12, 48, Math.PI]} />
-          <meshStandardMaterial color="#0c0712" metalness={0.9} roughness={0.3} />
-        </mesh>
+      {/* Concert Laser Spotlights */}
+      <spotLight
+        ref={spotlightL}
+        position={[-2.5, 3.2, 1.5]}
+        intensity={3.2}
+        angle={0.45}
+        penumbra={0.6}
+        color="#00e5ff"
+        castShadow
+      />
+      <spotLight
+        ref={spotlightR}
+        position={[2.5, 3.2, 1.5]}
+        intensity={3.2}
+        angle={0.45}
+        penumbra={0.6}
+        color="#ff007f"
+        castShadow
+      />
 
-        {/* Golden Temple Roses on the Archway (Thorn Princess Signature) */}
-        {[-1.8, -0.9, 0, 0.9, 1.8].map((x, i) => (
-          <mesh key={`rose-${i}`} position={[x, 1.6 + Math.sin(i * 0.8) * 0.15, 0.08]}>
-            <sphereGeometry args={[0.07, 12, 12]} />
+      {/* Background Cyber Equalizer Synthesizer Columns (Positioned cleanly behind stage left & right) */}
+      <group ref={eqBarsRef} position={[0, -0.6, -3.8]}>
+        {[-3.2, -2.8, -2.4, -2.0, -1.6, 1.6, 2.0, 2.4, 2.8, 3.2].map((x, i) => (
+          <mesh key={`eq-${i}`} position={[x, 0.5, 0]}>
+            <boxGeometry args={[0.24, 1.0, 0.15]} />
             <meshStandardMaterial
-              color={i % 2 === 0 ? '#d91e36' : '#d4af37'}
-              roughness={0.3}
-              metalness={0.4}
+              color={i % 2 === 0 ? '#39c5bb' : '#ff007f'}
+              emissive={i % 2 === 0 ? '#00e5ff' : '#ff007f'}
+              emissiveIntensity={0.85}
+              roughness={0.2}
+              metalness={0.6}
             />
           </mesh>
         ))}
       </group>
 
-      {/* Falling Sakura Cherry Blossom & Rose Petals */}
-      <points ref={petalsRef}>
+      {/* Upward Rising Stage Energy Particles */}
+      <points ref={particlesRef}>
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            args={[petalPositions, 3]}
+            args={[particlePositions, 3]}
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.045}
-          color="#f472b6"
+          size={0.048}
+          color="#39c5bb"
           transparent
-          opacity={0.80}
+          opacity={0.85}
         />
       </points>
 
-      {/* Glowing Golden Twilight Fireflies */}
-      {[
-        [-1.2, 0.4, -0.8],
-        [1.5, 0.8, -1.0],
-        [-0.6, 1.2, -1.4],
-        [1.1, 0.1, -0.5],
-      ].map((pos, i) => (
-        <group key={`firefly-${i}`} position={pos as [number, number, number]}>
-          <mesh>
-            <sphereGeometry args={[0.02, 8, 8]} />
-            <meshBasicMaterial color="#fbbf24" />
-          </mesh>
-          <pointLight color="#f59e0b" intensity={0.5} distance={1.2} />
-        </group>
-      ))}
-
-      {/* Soft Rose & Lavender Twilight Ambient Atmosphere */}
-      <pointLight color="#db2777" intensity={0.9} distance={5} position={[-2, 1.0, 0]} />
-      <pointLight color="#7c3aed" intensity={0.7} distance={6} position={[2, 0.5, 0]} />
+      {/* Vibrant Cyan & Magenta Concert Atmosphere Glow */}
+      <pointLight color="#00e5ff" intensity={1.2} distance={8} position={[-2, 1.6, 0]} />
+      <pointLight color="#ff007f" intensity={1.1} distance={8} position={[2, 1.6, 0]} />
+      <pointLight color="#e0f7f6" intensity={0.8} distance={6} position={[0, 1.2, 1.8]} />
     </group>
   )
 }
@@ -409,7 +418,7 @@ export const Cinematic3DEnvironment: React.FC = () => {
   }
 
   if (activeCharacter === 'mira') {
-    return <YorThornGardenEnvironment />
+    return <MikuConcertStageEnvironment />
   }
 
   // Default: Ada Wong Espionage Penthouse

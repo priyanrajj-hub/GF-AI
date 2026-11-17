@@ -375,22 +375,22 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
         addMessage(fallbackMsg)
         VoiceEngine.speak(fallbackMsg.speech || '', { rate: 1.05, pitch: 0.94 })
       } else if (activeCharacter === 'mira') {
-        const yorReplies = [
-          'I am right here with you! If anyone tries to cause trouble or stress you out, please let me know—I will protect you with my thorns! How can I help right now?',
-          "Are you working hard today? Please don't overexert yourself! I might be a bit clumsy at cooking, but I will always be your sharpest protector.",
-          'Thorn Princess standing by. Tell me what needs to be taken care of, and I will execute it cleanly!',
+        const mikuReplies = [
+          'Konnichiwa! Miku da yo~! I am singing and cheering for you at the top of my lungs! What can we conquer next?',
+          'Yay! Your code and market setups are looking so bright! Keep the rhythm going, I believe in you 100%!',
+          'Virtual pop idol Hatsune Miku, locked into the stage! Let us make today a record-breaking performance!',
         ]
-        const yorText = yorReplies[Math.floor(Math.random() * yorReplies.length)]
+        const mikuText = mikuReplies[Math.floor(Math.random() * mikuReplies.length)]
         const fallbackMsg: ChatMessage = {
-          id: `msg-${Date.now()}-yor`,
+          id: `msg-${Date.now()}-miku`,
           role: 'assistant',
           speaker: 'mira',
-          content: yorText,
-          speech: yorText,
+          content: mikuText,
+          speech: mikuText,
           timestamp: Date.now(),
         }
         addMessage(fallbackMsg)
-        VoiceEngine.speak(yorText, { rate: 0.98, pitch: 1.15 })
+        VoiceEngine.speak(mikuText, { rate: 1.10, pitch: 1.34 })
       } else {
         const adaReplies = [
           'Target acquired. Keep your moves calculated and your composure sharp. What is the objective?',
@@ -553,18 +553,18 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
           <button
             onClick={() => {
               setActiveCharacter('mira')
-              performAction('yor_rose_elegance', { duration: 4.0 })
-              VoiceEngine.speak("Hello! Yor Forger at your service. I will protect your trades with all my heart!", { rate: 1.00, pitch: 1.20 })
-              setActiveFX(['hearts', 'sparkles'])
+              performAction('miku_idol_pose', { duration: 4.0 })
+              VoiceEngine.speak("Konnichiwa! Miku da yo~! Virtual pop idol Hatsune Miku is ready to sing, code, and illuminate your day!", { rate: 1.10, pitch: 1.34 })
+              setActiveFX(['sparkles', 'music_notes'])
             }}
             className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 min-w-0 ${
               activeCharacter === 'mira'
-                ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-[0_0_12px_rgba(244,63,94,0.5)] border border-rose-400/60'
-                : 'text-slate-400 hover:text-rose-200'
+                ? 'bg-gradient-to-r from-teal-500 via-cyan-400 to-emerald-400 text-slate-950 shadow-[0_0_14px_rgba(57,197,187,0.7)] border border-teal-300 font-extrabold'
+                : 'text-slate-400 hover:text-cyan-200'
             }`}
-            title="Yor Forger (Spy x Family): Thorn Princess Companion"
+            title="Hatsune Miku (初音ミク): Virtual Pop Idol, Vocaloid Sensation & Joyful Companion"
           >
-            <span>🌹</span> <span className="truncate">Yor Forger</span>
+            <span>🎤</span> <span className="truncate">Hatsune Miku</span>
           </button>
         </div>
 
@@ -720,48 +720,63 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
             <>
               <button
                 onClick={() => {
-                  setSkinId('yor-thorn-princess')
-                  VoiceEngine.speak("Thorn Princess ready. I will protect our family with my life!", { rate: 1.00, pitch: 1.20 })
-                  setActiveFX(['sparkles', 'hearts'])
+                  setSkinId('miku-classic-idol')
+                  VoiceEngine.speak("Classic V4X Idol outfit equipped! Time for a show-stopping performance!", { rate: 1.10, pitch: 1.34 })
+                  setActiveFX(['sparkles', 'music_notes'])
                 }}
                 className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
-                  skinId === 'yor-thorn-princess'
-                    ? 'bg-rose-500/25 text-rose-200 border border-rose-400/60 shadow-sm'
+                  skinId === 'miku-classic-idol' || !skinId
+                    ? 'bg-teal-500/25 text-teal-200 border border-teal-400/60 shadow-sm'
                     : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
                 }`}
-                title="Anime Canon Thorn Princess Halter Dress with Dual Rose Headband"
+                title="Signature V4X Twin Cyan Twintails, Silver Top, Tie & Synth Sleeves"
               >
-                <span>🗡️</span> Thorn Princess
+                <span>🎤</span> Classic Idol
               </button>
               <button
                 onClick={() => {
-                  setSkinId('yor-crimson-sweater')
-                  VoiceEngine.speak("Ah, so soft and cozy! Perfect for relaxing at home with Anya.", { rate: 1.00, pitch: 1.20 })
-                  setActiveFX(['hearts'])
+                  setSkinId('miku-magical-mirai')
+                  VoiceEngine.speak("Magical Mirai concert diva mode active! The lights are dazzling!", { rate: 1.10, pitch: 1.34 })
+                  setActiveFX(['sparkles'])
                 }}
                 className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
-                  skinId === 'yor-crimson-sweater' || (!skinId && activeCharacter === 'mira')
-                    ? 'bg-rose-500/25 text-rose-200 border border-rose-400/60 shadow-sm'
+                  skinId === 'miku-magical-mirai'
+                    ? 'bg-teal-500/25 text-teal-200 border border-teal-400/60 shadow-sm'
                     : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
                 }`}
-                title="Casual Off-Shoulder Chunky Crimson Red Knit Sweater Dress"
+                title="Magical Mirai Concert Diva Edition with Iridescent Stage Glow"
               >
-                <span>🧶</span> Cozy Sweater
+                <span>✨</span> Magical Mirai
               </button>
               <button
                 onClick={() => {
-                  setSkinId('yor-berlint-gala')
-                  VoiceEngine.speak("The Berlint royal velvet gown... Do I look elegant for the gala?", { rate: 1.00, pitch: 1.20 })
-                  setActiveFX(['sparkles', 'hearts'])
+                  setSkinId('miku-cyber-diva')
+                  VoiceEngine.speak("Cyber Synthwave Hologram engaged! Streaming pure digital sound!", { rate: 1.10, pitch: 1.34 })
+                  setActiveFX(['sparkles'])
                 }}
                 className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
-                  skinId === 'yor-berlint-gala'
-                    ? 'bg-rose-500/25 text-rose-200 border border-rose-400/60 shadow-sm'
+                  skinId === 'miku-cyber-diva'
+                    ? 'bg-teal-500/25 text-teal-200 border border-teal-400/60 shadow-sm'
                     : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
                 }`}
-                title="Spy x Family Code White Gala Royal Sapphire Velvet Evening Gown"
+                title="Futuristic Synthwave Hologram with Neon Cyan & Violet Accents"
               >
-                <span>👑</span> Berlint Gala Gown
+                <span>⚡</span> Cyber Diva
+              </button>
+              <button
+                onClick={() => {
+                  setSkinId('miku-sakura')
+                  VoiceEngine.speak("Sakura Miku is here! Like cherry blossoms dancing in the spring breeze!", { rate: 1.10, pitch: 1.34 })
+                  setActiveFX(['hearts', 'sparkles'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'miku-sakura'
+                    ? 'bg-pink-500/25 text-pink-200 border border-pink-400/60 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+                title="Spring Cherry Blossom Edition with Pastel Pink Twintails"
+              >
+                <span>🌸</span> Sakura Miku
               </button>
             </>
           )}
@@ -772,7 +787,7 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
           <div className="flex items-center justify-between px-1 text-[9px] font-mono text-cyan-400/80">
             <span className="flex items-center gap-1 font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              Active 3D Avatar: {activeCharacter === 'atlas' ? '⚡ Tony Stark (RDJ)' : activeCharacter === 'mira' ? '🌹 Yor Forger (Thorn Princess)' : '🍷 Ada Wong (Spy-Chic)'}
+              Active 3D Avatar: {activeCharacter === 'atlas' ? '⚡ Tony Stark (RDJ)' : activeCharacter === 'mira' ? '🎤 Hatsune Miku (Virtual Pop Idol)' : '🍷 Ada Wong (Spy-Chic)'}
             </span>
             <span className="text-slate-400">Lip-Sync & Physics Active</span>
           </div>
@@ -864,9 +879,9 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                       ⚡ Tony Stark (Trader AI)
                     </span>
                   ) : msg.speaker === 'mira' || (!msg.speaker && activeCharacter === 'mira') ? (
-                    <span className="flex items-center gap-1 text-rose-300 font-bold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse shadow-[0_0_6px_#f43f5e]" />
-                      🌹 Mira (Companion)
+                    <span className="flex items-center gap-1 text-teal-300 font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse shadow-[0_0_6px_#39c5bb]" />
+                      🎤 Hatsune Miku (初音ミク)
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 text-cyan-300 font-bold">
@@ -1340,34 +1355,34 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
         {activeCharacter === 'mira' && (
           <>
             <button
-              onClick={() => handleSendMessage('Play Vaathi Coming from Master')}
+              onClick={() => handleSendMessage('Sing World is Mine, Hatsune Miku!')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-teal-950/60 border border-teal-500/40 text-teal-300 hover:bg-teal-900/60 transition-colors cursor-pointer font-medium"
+            >
+              👑 World is Mine
+            </button>
+            <button
+              onClick={() => handleSendMessage('Sing Ievan Polkka and do the twintail leek spin!')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🥬 Leek Spin (Ievan Polkka)
+            </button>
+            <button
+              onClick={() => handleSendMessage('Play PoPiPo juice song and dance!')}
               className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-pink-950/60 border border-pink-500/40 text-pink-300 hover:bg-pink-900/60 transition-colors cursor-pointer font-medium"
             >
-              🎵 {settings.language === 'ta' ? 'தமிழ் பாடல்' : 'Tamil Song'}
+              🥤 PoPiPo
             </button>
             <button
-              onClick={() => handleSendMessage('Play a high energy dance song and dance to the rhythm!')}
+              onClick={() => handleSendMessage('Sing Senbonzakura (千本桜) with your idol flourish!')}
               className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer font-medium"
             >
-              💃 {settings.language === 'ta' ? 'நடனம் ஆடு' : 'Dance Move'}
+              🌸 Senbonzakura
             </button>
             <button
-              onClick={() => handleSendMessage('Show me a funny developer meme.')}
-              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-colors cursor-pointer font-medium"
-            >
-              🎭 {settings.language === 'ta' ? 'மீம்ஸ்' : 'Meme Me'}
-            </button>
-            <button
-              onClick={() => handleSendMessage(settings.language === 'ta' ? 'மீரா, என்னுடன் ஒரு டீ குடிக்க வரலாமா?' : 'Let\'s have a cozy chai date together, Mira!')}
-              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-orange-950/60 border border-orange-500/40 text-orange-300 hover:bg-orange-900/60 transition-colors cursor-pointer font-medium"
-            >
-              ☕ {settings.language === 'ta' ? 'டீ இடைவேளை' : 'Chai Date'}
-            </button>
-            <button
-              onClick={() => handleSendMessage('வணக்கம் மீரா, எப்படி இருக்கீங்க?')}
+              onClick={() => handleSendMessage('Do your signature idol stage pose and greet your fans!')}
               className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 transition-colors cursor-pointer font-medium"
             >
-              🌸 தமிழ் உரையாடல்
+              ✨ Idol Pose
             </button>
             <button
               onClick={() => handleSendMessage('Give me high-probability stock recommendations with entry, target and stop loss')}
@@ -1505,13 +1520,13 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
           onBlur={() => globalBackchannel.setUserTyping(false)}
           placeholder={
             settings.language === 'ta'
-              ? `தமிழில் பேசவும் அல்லது தட்டச்சு செய்யவும் (${activeCharacter === 'atlas' ? 'டோனி ஸ்டார்க்' : activeCharacter === 'mira' ? 'மீரா' : 'அடா'})...`
+              ? `தமிழில் பேசவும் அல்லது தட்டச்சு செய்யவும் (${activeCharacter === 'atlas' ? 'டோனி ஸ்டார்க்' : activeCharacter === 'mira' ? 'ஹட்சுனே மிக்கு' : 'அடா'})...`
               : settings.language === 'tanglish'
-              ? `Tanglish-la pesunga (${activeCharacter === 'atlas' ? 'Tony Stark' : activeCharacter === 'mira' ? 'Mira' : 'Ada'})...`
+              ? `Tanglish-la pesunga (${activeCharacter === 'atlas' ? 'Tony Stark' : activeCharacter === 'mira' ? 'Hatsune Miku' : 'Ada'})...`
               : activeCharacter === 'atlas'
               ? 'Ask Tony Stark about stocks, markets, tech, or wealth...'
               : activeCharacter === 'mira'
-              ? 'Chat with Mira, sing a song, dance, or hang out...'
+              ? 'Chat with Hatsune Miku, request a song, dance, or celebrate...'
               : 'Ask Ada for tutoring, study focus, code, or tasks...'
           }
           className="flex-1 bg-slate-900/80 border border-cyan-500/25 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"

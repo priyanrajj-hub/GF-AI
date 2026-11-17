@@ -109,33 +109,33 @@ export class RoamNavigator {
       }
     }
 
-    // 2. Yor Forger (Thorn Princess / Assassin)
+    // 2. Hatsune Miku (Virtual Pop Idol / Vocaloid)
     if (character === 'mira') {
       switch (this.pokeCount) {
         case 0:
           return {
-            action: 'yor_rose_elegance',
-            reaction: 'gentle_smile',
-            speech: "O-oh! Pardon me, did I startle you? I was just tending to our workspace! 🌹",
+            action: 'miku_idol_pose',
+            reaction: 'cheerful_wink',
+            speech: "Miku da yo~! Ready to sing, code, and illuminate your day! 🎤✨",
           }
         case 1:
           return {
-            action: 'yor_tender_wave',
+            action: 'miku_negi_wave',
             reaction: 'sweet_smile',
-            speech: "Please take good care of yourself today... I will protect this family no matter what!",
+            speech: "Konnichiwa! Let's hit the rhythm and create something extraordinary today!",
           }
         case 2:
           return {
-            action: 'shy_giggle',
-            reaction: 'shy_blush',
-            speech: "Is anyone causing you trouble? I can... resolve the situation very quietly.",
+            action: 'miku_twintail_spin',
+            reaction: 'playful_giggle',
+            speech: "Yay! Keep smiling! I'm cheering for you at the top of my voice!",
           }
         case 3:
         default:
           return {
-            action: 'bow',
-            reaction: 'polite_bow',
-            speech: "I am honored to assist you. Let us do our best together!",
+            action: 'miku_idol_pose',
+            reaction: 'sparkle_bow',
+            speech: "Arigatou! Let's make today's concert and codebase shine like the stars!",
           }
       }
     }

@@ -237,18 +237,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (char === 'mira') {
       set((state) => ({
         activeCharacter: 'mira',
-        skinId: 'yor-thorn-princess',
-        activeMode: 'companion',
-        currentEmotion: 'calm',
+        skinId: 'miku-classic-idol',
+        activeMode: 'playful',
+        currentEmotion: 'excited',
         isManualOutfit: true,
         settings: {
           ...state.settings,
-          avatarModelUrl: '/models/ada.vrm',
-          renderMode: 'holo-lite',
+          avatarModelUrl: '/models/miku.vrm',
+          renderMode: 'solid',
         },
       }))
       import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-        VoiceEngine.speak("Excuse me... I am Yor Forger. I may be a bit clumsy as an ordinary clerk, but... if anyone threatens you, I will eliminate them without hesitation.", { pitch: 1.15, rate: 0.98 })
+        VoiceEngine.speak("Konnichiwa! Miku da yo~! Virtual pop idol Hatsune Miku is ready to sing, code, and illuminate your day!", { pitch: 1.34, rate: 1.10 })
       }).catch(() => {})
     } else if (char === 'atlas') {
       set((state) => ({
