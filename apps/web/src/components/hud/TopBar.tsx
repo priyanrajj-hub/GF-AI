@@ -21,6 +21,9 @@ import {
   Lock,
   Unlock,
   TrendingUp,
+  LogIn,
+  LogOut,
+  User,
 } from 'lucide-react'
 import type { PersonalityMode } from '@ada/shared'
 import { useAppStore } from '../../store/useAppStore.js'
@@ -66,6 +69,10 @@ export const TopBar: React.FC = () => {
     timeOfDayPhase,
     timeSyncMode,
     setTimeSyncMode,
+    isAuthenticated,
+    currentUser,
+    setShowAuthModal,
+    logoutUser,
   } = useAppStore()
 
   const [showTimeSlider, setShowTimeSlider] = useState<boolean>(false)
@@ -528,6 +535,32 @@ export const TopBar: React.FC = () => {
         >
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
         </button>
+
+        {/* User Authentication / Identity Profile */}
+        {isAuthenticated && currentUser ? (
+          <div className="flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/40 px-2 py-1 text-xs">
+            <User className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="max-w-[100px] truncate text-cyan-200 text-[11px] font-medium" title={currentUser.email || currentUser.userName}>
+              {currentUser.email ? currentUser.email.split('@')[0] : (currentUser.userName || 'User')}
+            </span>
+            <button
+              onClick={logoutUser}
+              className="ml-1 p-1 text-slate-400 hover:text-rose-400 cursor-pointer"
+              title="Sign Out (Revoke Active Sessions)"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl glass-panel-subtle hover:text-cyan-300 text-slate-300 transition-colors cursor-pointer text-xs font-semibold"
+            title="Sign In with Secure Magic Link"
+          >
+            <LogIn className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Sign In</span>
+          </button>
+        )}
 
         <button
           onClick={() => setShowSettingsModal(true)}

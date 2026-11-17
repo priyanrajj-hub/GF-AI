@@ -161,6 +161,38 @@ export class AppDatabase {
     })
   }
 
+  async init(): Promise<void> {
+    await sqlDb.runMigrations()
+  }
+
+  async healthCheck(): Promise<boolean> {
+    return sqlDb.healthCheck()
+  }
+
+  getEngine(): string {
+    return sqlDb.getEngine()
+  }
+
+  async recordAuditEvent(event: {
+    userId?: string
+    ipAddress?: string
+    eventType: string
+    severity?: 'INFO' | 'WARN' | 'CRITICAL'
+    details?: string
+  }): Promise<void> {
+    const id = `aud_${randomBytes(8).toString('hex')}`
+    const now = Date.now()
+    try {
+      await sqlDb.query(
+        `INSERT INTO audit_events (id, user_id, ip_address, event_type, severity, details, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, event.userId || null, event.ipAddress || '127.0.0.1', event.eventType, event.severity || 'INFO', event.details || '', now]
+      )
+    } catch (err: any) {
+      console.warn('[DB] Failed to record audit event in SQL:', err.message)
+    }
+  }
+
   private load(): DatabaseSchema {
     if (fs.existsSync(this.filePath)) {
       try {
@@ -330,7 +362,7 @@ export class AppDatabase {
       id,
       email: cleanEmail,
       tokenHash,
-      failedAttempts: existing ? existing.failedAttempts : 0,
+      failedAttempts: 0,
       lockoutUntil: undefined,
       expiresAt,
       createdAt: Date.now(),
@@ -449,6 +481,26 @@ export class AppDatabase {
       createdAt: Date.now(),
     }
     this.save()
+
+    // Persist directly to durable SQL database, ensuring user entity exists for foreign key constraint
+    const now = Date.now()
+    sqlDb
+      .query(
+        `INSERT INTO users (id, user_name, role, created_at, updated_at) VALUES (?, ?, 'user', ?, ?)
+         ON CONFLICT (id) DO NOTHING`,
+        [userId, userId, now, now]
+      )
+      .then(() => {
+        return sqlDb.query(
+          `INSERT INTO refresh_tokens (token_hash, user_id, family_id, generation, is_revoked, expires_at, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT (token_hash) DO UPDATE SET is_revoked = EXCLUDED.is_revoked`,
+          [tokenHash, userId, familyId, generation, 0, expiresAt, now]
+        )
+      })
+      .catch((err) => {
+        console.warn('[DB] SQL storeRefreshTokenFamily notice:', err.message)
+      })
   }
 
   getRefreshTokenRecord(rawToken: string): RefreshTokenRecord | null {
@@ -463,6 +515,7 @@ export class AppDatabase {
       rec.isRevoked = true
       this.save()
     }
+    sqlDb.query('UPDATE refresh_tokens SET is_revoked = 1 WHERE token_hash = ?', [tokenHash]).catch(() => {})
   }
 
   revokeRefreshTokenFamily(familyId: string): void {
@@ -475,6 +528,20 @@ export class AppDatabase {
       }
     }
     if (changed) this.save()
+    sqlDb.query('UPDATE refresh_tokens SET is_revoked = 1 WHERE family_id = ?', [familyId]).catch(() => {})
+  }
+
+  revokeUserRefreshTokens(userId: string): void {
+    if (!userId) return
+    let changed = false
+    for (const rec of Object.values(this.data.refreshTokens || {})) {
+      if (rec.userId === userId) {
+        rec.isRevoked = true
+        changed = true
+      }
+    }
+    if (changed) this.save()
+    sqlDb.query('UPDATE refresh_tokens SET is_revoked = 1 WHERE user_id = ?', [userId]).catch(() => {})
   }
 
   setRefreshToken(userId: string, refreshToken: string | null): void {
@@ -844,8 +911,10 @@ export class AppDatabase {
   /**
    * GDPR / CCPA Right-To-Be-Forgotten: Strictly purges all user data across every table
    */
-  deleteUserData(userId: string): { purged: boolean; recordsRemoved: number } {
+  deleteUserData(userId: string): { purged: boolean; recordsRemoved: number; sqlPromise?: Promise<void> } {
     let recordsRemoved = 0
+    // Capture user email before account deletion for magic link purging
+    const userEmail = this.data.accounts?.[userId]?.email
 
     if (this.data.accounts && this.data.accounts[userId]) {
       delete this.data.accounts[userId]
@@ -897,9 +966,47 @@ export class AppDatabase {
         }
       }
     }
+    // P1 Requirement: Purge pending magic links keyed by user email
+    if (userEmail && this.data.magicLinks?.[userEmail.toLowerCase().trim()]) {
+      delete this.data.magicLinks[userEmail.toLowerCase().trim()]
+      recordsRemoved++
+    }
+    // P1 Requirement: Purge revocation records associated with this user
+    if (this.data.revokedTokens) {
+      for (const [jti, rec] of Object.entries(this.data.revokedTokens)) {
+        if (rec.userId === userId) {
+          delete this.data.revokedTokens[jti]
+          recordsRemoved++
+        }
+      }
+    }
 
     this.save()
-    return { purged: true, recordsRemoved }
+
+    // Durable SQL multi-table transactional cascade purge
+    const sqlPromise = sqlDb
+      .transaction(async (tx) => {
+        if (userEmail) {
+          await tx.query('DELETE FROM magic_links WHERE LOWER(email) = ?', [userEmail.toLowerCase().trim()])
+        }
+        await tx.query('DELETE FROM revoked_tokens WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM refresh_tokens WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM background_jobs WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM api_usage_costs WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM rag_document_chunks WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM relationship_journals WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM mood_journals WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM notes_tasks WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM memories WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM chat_messages WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM user_settings WHERE user_id = ?', [userId])
+        await tx.query('DELETE FROM users WHERE id = ?', [userId])
+      })
+      .catch((err) => {
+        console.warn('[DB] SQL user deletion notice:', err.message)
+      })
+
+    return { purged: true, recordsRemoved, sqlPromise }
   }
 }
 

@@ -146,8 +146,22 @@ const upload = multer({
 // ==========================================
 // 1. HEALTH & SYSTEM DIAGNOSTICS
 // ==========================================
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok' })
+app.get('/api/health', async (_req, res) => {
+  const isHealthy = await db.healthCheck()
+  if (!isHealthy) {
+    return res.status(503).json({
+      status: 'unhealthy',
+      database: 'disconnected',
+      engine: db.getEngine(),
+      timestamp: new Date().toISOString(),
+    })
+  }
+  res.json({
+    status: 'ok',
+    database: 'connected',
+    engine: db.getEngine(),
+    timestamp: new Date().toISOString(),
+  })
 })
 
 // ==========================================
@@ -185,10 +199,9 @@ app.post('/api/auth/magic-link/request', rateLimitAuth, async (req, res) => {
   const expiresAt = Date.now() + 15 * 60 * 1000 // 15 minutes
   db.saveMagicToken(cleanEmail, token, expiresAt)
 
-  // Dispatch email
-  const origin = (req.headers.origin as string) || (req.headers.referer as string) || 'https://gf-ai-ochre.vercel.app'
+  // Dispatch email using trusted canonical APP_URL (never request origin or referer)
   try {
-    await EmailService.sendMagicLink(cleanEmail, token, origin)
+    await EmailService.sendMagicLink(cleanEmail, token)
   } catch (err: any) {
     console.error('[Auth] Failed to dispatch magic link email:', err.message)
     if (process.env.NODE_ENV === 'production' && process.env.ENABLE_TEST_AUTH !== 'true') {
@@ -289,15 +302,31 @@ app.post('/api/auth/refresh', rateLimitAuth, (req, res) => {
   })
 })
 
-// Logout: Revoke current session token and clear refresh token
+// Logout: Invalidate current access token, presented refresh token, and user session family
 app.post('/api/auth/logout', requireAuth, (req, res) => {
   const authReq = req as unknown as AuthenticatedRequest
+  const { refreshToken } = req.body || {}
+
+  // 1. Revoke current access token jti
   if (authReq.user?.jti) {
-    JwtService.revokeToken(authReq.user.jti)
+    JwtService.revokeToken(authReq.user.jti, authReq.userId)
   }
+
+  // 2. Revoke presented refresh token and its family in durable store
+  if (refreshToken && typeof refreshToken === 'string') {
+    const verified = JwtService.verifyRefreshToken(refreshToken)
+    db.revokeRefreshToken(refreshToken)
+    if (verified?.familyId) {
+      db.revokeRefreshTokenFamily(verified.familyId)
+    }
+  }
+
+  // 3. Invalidate all active refresh token families for this user
   if (authReq.userId) {
+    db.revokeUserRefreshTokens(authReq.userId)
     db.setRefreshToken(authReq.userId, null)
   }
+
   res.json({ success: true, message: 'Logged out successfully' })
 })
 
@@ -2667,14 +2696,32 @@ const isServerless = Boolean(
   process.env.NETLIFY
 )
 
-if (process.env.NODE_ENV !== 'test' && !isServerless) {
+async function bootServer() {
   try {
-    app.listen(PORT, () => {
-      console.log(`✨ [Ada Server] Live and listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`)
-    })
-  } catch (e) {
-    console.warn('[Ada Server] app.listen skipped:', e)
+    await db.init()
+    const healthy = await db.healthCheck()
+    if (!healthy && (process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL))) {
+      console.error('FATAL [Startup]: Relational database health check failed in production mode. Aborting boot.')
+      process.exit(1)
+    }
+  } catch (err: any) {
+    if (process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)) {
+      console.error('FATAL [Startup]: Relational database migration failed in production mode:', err.message)
+      process.exit(1)
+    }
+  }
+
+  if (process.env.NODE_ENV !== 'test' && !isServerless) {
+    try {
+      app.listen(PORT, () => {
+        console.log(`✨ [Ada Server] Live and listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`)
+      })
+    } catch (e) {
+      console.warn('[Ada Server] app.listen skipped:', e)
+    }
   }
 }
+
+bootServer()
 
 export default app

@@ -174,6 +174,14 @@ interface AppState {
   journal: MoodJournalEntry[]
   setJournal: (entries: MoodJournalEntry[]) => void
 
+  // Auth & Identity (Round 4)
+  currentUser: { userId: string; email?: string; userName?: string; role?: string } | null
+  isAuthenticated: boolean
+  showAuthModal: boolean
+  setShowAuthModal: (show: boolean) => void
+  setCurrentUser: (user: any | null) => void
+  logoutUser: () => Promise<void>
+
   // Glitch trigger
   glitchTrigger: number
   triggerGlitch: () => void
@@ -565,6 +573,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   setNotes: (notes) => set({ notes }),
   journal: [],
   setJournal: (entries) => set({ journal: entries }),
+
+  // Auth implementation
+  currentUser: null,
+  isAuthenticated: false,
+  showAuthModal: false,
+  setShowAuthModal: (showAuthModal) => set({ showAuthModal }),
+  setCurrentUser: (currentUser) => set({ currentUser, isAuthenticated: Boolean(currentUser) }),
+  logoutUser: async () => {
+    try {
+      const { setAuthToken, setRefreshToken } = await import('../utils/api.js')
+      setAuthToken(null)
+      setRefreshToken(null)
+    } catch {}
+    set({ currentUser: null, isAuthenticated: false })
+  },
 
   glitchTrigger: 0,
   triggerGlitch: () => set((s) => ({ glitchTrigger: s.glitchTrigger + 1 })),

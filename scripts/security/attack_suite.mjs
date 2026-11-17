@@ -573,9 +573,11 @@ test('Magic Link Security: Tokens are stored SHA-256 hashed (never raw plaintext
 })
 
 test('Magic Link Brute-Force Defense: 5 failed attempts locks out account for 15 minutes', () => {
-  const email = 'lockout_test@example.com'
+  const email = 'lockout_test@example.test'
+  if (db.data.magicLinks) delete db.data.magicLinks[email]
   const realToken = crypto.randomBytes(32).toString('hex')
-  db.saveMagicToken(email, realToken, Date.now() + 15 * 60 * 1000)
+  const saved = db.saveMagicToken(email, realToken, Date.now() + 15 * 60 * 1000)
+  assert.equal(saved, true, 'Fresh magic token must be successfully saved')
 
   // 4 failed attempts: must fail without lock
   for (let i = 0; i < 4; i++) {
@@ -597,7 +599,7 @@ test('Magic Link Brute-Force Defense: 5 failed attempts locks out account for 15
 test('Admin Role Allowlist: Admin role derived strictly from ADMIN_EMAILS allowlist', () => {
   const origAdminEmails = process.env.ADMIN_EMAILS
   try {
-    process.env.ADMIN_EMAILS = 'authorized_admin@ada.ai,superadmin@ada.ai'
+    process.env.ADMIN_EMAILS = 'authorized_admin@example.test,superadmin@example.test'
 
     // Normal user login via magic link
     const normalEmail = 'regular_user@example.com'
@@ -608,7 +610,7 @@ test('Admin Role Allowlist: Admin role derived strictly from ADMIN_EMAILS allowl
     assert.equal(normalAcc.role, 'user', 'Regular email must get role "user"')
 
     // Admin email login via magic link
-    const adminEmail = 'authorized_admin@ada.ai'
+    const adminEmail = 'authorized_admin@example.test'
     const adminToken = crypto.randomBytes(32).toString('hex')
     db.saveMagicToken(adminEmail, adminToken, Date.now() + 15 * 60 * 1000)
     const adminAcc = db.verifyMagicToken(adminEmail, adminToken)

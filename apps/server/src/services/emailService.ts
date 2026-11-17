@@ -12,6 +12,50 @@ export interface SendEmailOptions {
   text?: string
 }
 
+export function getCanonicalAppUrl(candidateOrigin?: string): string {
+  // Strictly disallow attacker-controlled host/origin headers
+  if (candidateOrigin) {
+    try {
+      const parsed = new URL(candidateOrigin)
+      const allowedHosts = ['gf-ai-ochre.vercel.app', 'gf-ai.app', 'ada-ai.app']
+      const isAllowedLocal =
+        !['production'].includes(process.env.NODE_ENV || '') &&
+        (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')
+      const isAllowedVercel = parsed.hostname.endsWith('.vercel.app')
+      if (allowedHosts.includes(parsed.hostname) || isAllowedLocal || isAllowedVercel) {
+        return candidateOrigin.replace(/\/$/, '')
+      }
+    } catch {}
+  }
+
+  const configured = (process.env.APP_URL || '').trim()
+  if (configured) {
+    try {
+      const parsed = new URL(configured)
+      if (process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)) {
+        const allowedHosts = ['gf-ai-ochre.vercel.app', 'gf-ai.app', 'ada-ai.app']
+        if (!allowedHosts.includes(parsed.hostname) && !parsed.hostname.endsWith('.vercel.app')) {
+          console.warn(`[Security Warning]: Configured APP_URL host not permitted (${parsed.hostname}). Falling back to canonical production URL.`)
+          return 'https://gf-ai-ochre.vercel.app'
+        }
+      }
+      return configured.replace(/\/$/, '')
+    } catch {}
+  }
+  return (process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL))
+    ? 'https://gf-ai-ochre.vercel.app'
+    : 'http://localhost:5173'
+}
+
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export class EmailService {
   /**
    * Dispatches transactional email using configured provider.
@@ -20,7 +64,7 @@ export class EmailService {
     const isProd = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)
     const resendKey = process.env.RESEND_API_KEY
     const postmarkToken = process.env.POSTMARK_SERVER_TOKEN
-    const fromAddress = process.env.EMAIL_FROM || 'Ada Security <security@ada.ai>'
+    const fromAddress = process.env.EMAIL_FROM || 'Ada Security <security@gf-ai.app>'
 
     // 1. Resend Provider
     if (resendKey && resendKey.trim().length > 0) {
@@ -97,16 +141,19 @@ export class EmailService {
   }
 
   /**
-   * Helper: Dispatches Magic Login Link
+   * Helper: Dispatches Magic Login Link using Canonical Trusted Server APP_URL
+   * Token is placed in URL fragment to avoid exposure in server logs / referrers.
    */
-  static async sendMagicLink(email: string, rawToken: string, origin = 'http://localhost:5173'): Promise<void> {
-    const magicUrl = `${origin.replace(/\/$/, '')}/login/verify?email=${encodeURIComponent(email)}&token=${encodeURIComponent(rawToken)}`
+  static async sendMagicLink(email: string, rawToken: string): Promise<void> {
+    const canonicalBase = getCanonicalAppUrl()
+    const magicUrl = `${canonicalBase}/login/verify#token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(email)}`
+    const safeEmail = escapeHtml(email)
 
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #1e293b; border-radius: 8px; background-color: #0f172a; color: #f8fafc;">
         <h2 style="color: #00f3ff; margin-bottom: 16px;">Ada System — Secure Magic Login Link</h2>
         <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6;">
-          You requested a secure, passwordless authentication link for your Ada account (<strong>${email}</strong>).
+          You requested a secure, passwordless authentication link for your Ada account (<strong>${safeEmail}</strong>).
         </p>
         <div style="margin: 32px 0;">
           <a href="${magicUrl}" style="background-color: #00f3ff; color: #020617; text-decoration: none; font-weight: bold; padding: 12px 28px; border-radius: 6px; display: inline-block;">
@@ -119,7 +166,7 @@ export class EmailService {
         </p>
         <hr style="border: 0; border-top: 1px solid #1e293b; margin: 24px 0;" />
         <p style="color: #475569; font-size: 11px;">
-          Security Verification Code: <code style="color: #94a3b8;">${rawToken}</code>
+          Security Verification Code: <code style="color: #94a3b8;">${escapeHtml(rawToken)}</code>
         </p>
       </div>
     `
