@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
+import { randomBytes } from 'node:crypto'
 import type {
   ChatMessage,
   MemoryItem,
@@ -42,7 +43,20 @@ export interface BackgroundJob {
   createdAt: number
 }
 
+export interface UserAccount {
+  id: string
+  email: string
+  role: 'admin' | 'user' | 'guest'
+  passwordHash?: string
+  magicToken?: string
+  magicTokenExpires?: number
+  refreshToken?: string
+  createdAt: number
+  lastLoginAt: number
+}
+
 interface DatabaseSchema {
+  accounts: Record<string, UserAccount>
   users: Record<string, UserSettings>
   messages: Record<string, ChatMessage[]>
   memories: Record<string, MemoryItem[]>
@@ -127,12 +141,16 @@ export class AppDatabase {
         if (!Array.isArray(parsed.backgroundJobs)) {
           parsed.backgroundJobs = []
         }
+        if (!parsed.accounts) {
+          parsed.accounts = {}
+        }
         return parsed
       } catch (err) {
         console.warn('[DB] Could not parse existing DB file, starting fresh', err)
       }
     }
     return {
+      accounts: {},
       users: { 'default-user-1': DEFAULT_SETTINGS },
       messages: { 'default-user-1': [] },
       memories: {
@@ -234,6 +252,75 @@ export class AppDatabase {
     this.data.users[userId] = { ...current, ...partial, userId }
     this.save()
     return this.data.users[userId]
+  }
+
+  // --- Real Account & Identity Management ---
+  createAccount(email: string, role: 'user' | 'admin' = 'user', passwordHash?: string): UserAccount {
+    const id = `usr_${randomBytes(8).toString('hex')}`
+    const account: UserAccount = {
+      id,
+      email: email.toLowerCase().trim(),
+      role,
+      passwordHash,
+      createdAt: Date.now(),
+      lastLoginAt: Date.now(),
+    }
+    if (!this.data.accounts) this.data.accounts = {}
+    this.data.accounts[id] = account
+    if (!this.data.users[id]) {
+      this.data.users[id] = { ...DEFAULT_SETTINGS, userId: id, userName: email.split('@')[0] }
+    }
+    this.save()
+    return account
+  }
+
+  getAccountByEmail(email: string): UserAccount | null {
+    const cleanEmail = email.toLowerCase().trim()
+    for (const acc of Object.values(this.data.accounts || {})) {
+      if (acc.email === cleanEmail) return acc
+    }
+    return null
+  }
+
+  getAccountById(id: string): UserAccount | null {
+    return this.data.accounts?.[id] || null
+  }
+
+  saveMagicToken(email: string, token: string, expiresAt: number): boolean {
+    let acc = this.getAccountByEmail(email)
+    if (!acc) {
+      acc = this.createAccount(email, 'user')
+    }
+    acc.magicToken = token
+    acc.magicTokenExpires = expiresAt
+    this.save()
+    return true
+  }
+
+  verifyMagicToken(email: string, token: string): UserAccount | null {
+    const acc = this.getAccountByEmail(email)
+    if (!acc || !acc.magicToken || !acc.magicTokenExpires) return null
+    if (Date.now() > acc.magicTokenExpires) return null
+    if (acc.magicToken !== token) return null
+
+    // Single use: clear token after successful verification
+    acc.magicToken = undefined
+    acc.magicTokenExpires = undefined
+    acc.lastLoginAt = Date.now()
+    this.save()
+    return acc
+  }
+
+  setRefreshToken(userId: string, refreshToken: string | null): void {
+    const acc = this.data.accounts?.[userId]
+    if (acc) {
+      acc.refreshToken = refreshToken || undefined
+      this.save()
+    }
+  }
+
+  getRefreshToken(userId: string): string | null {
+    return this.data.accounts?.[userId]?.refreshToken || null
   }
 
   // --- Messages & Rolling Context ---

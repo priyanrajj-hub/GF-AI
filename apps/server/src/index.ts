@@ -1,5 +1,6 @@
 import cors from 'cors'
 import dotenv from 'dotenv'
+import { randomBytes } from 'node:crypto'
 import { env } from './config/env.js'
 import express from 'express'
 import rateLimit from 'express-rate-limit'
@@ -141,48 +142,16 @@ const upload = multer({
 // ==========================================
 // 1. HEALTH & SYSTEM DIAGNOSTICS
 // ==========================================
-app.get('/api/health', (req, res) => {
-  const authReq = req as AuthenticatedRequest
-  res.json({
-    status: 'online',
-    system: 'Ada AI Companion Backend',
-    version: '1.0.0',
-    userId: authReq.userId,
-    userRole: authReq.userRole || 'guest',
-    activeLLM: ProviderRegistry.getLLM().name,
-    timestamp: Date.now(),
-  })
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok' })
 })
 
 // ==========================================
 // AUTHENTICATION & IDENTITY ENDPOINTS
 // ==========================================
 
-// Issue cryptographically verified JWT token
-app.post('/api/auth/token', rateLimitAuth, (req, res) => {
-  const { userId, userName, role } = req.body || {}
-  const safeId = (typeof userId === 'string' && userId.trim()) ? userId.trim() : `user_${Date.now()}`
-  const safeName = (typeof userName === 'string' && userName.trim()) ? userName.trim() : 'Demo User'
-  const safeRole = role === 'admin' ? 'admin' : 'user'
-
-  const token = JwtService.sign({
-    userId: safeId,
-    userName: safeName,
-    role: safeRole,
-  })
-
-  res.json({
-    token,
-    user: {
-      userId: safeId,
-      userName: safeName,
-      role: safeRole,
-    },
-    expiresIn: '7d',
-  })
-})
-
-// Guest session token (issues unique, isolated guest identity)
+// Anonymous guest token: issues random, isolated guest identity (24h validity)
+// Server NEVER accepts userId or role from request body!
 app.post('/api/auth/guest', rateLimitAuth, (_req, res) => {
   const token = JwtService.createGuestToken()
   const payload = JwtService.verify(token)
@@ -191,6 +160,114 @@ app.post('/api/auth/guest', rateLimitAuth, (_req, res) => {
     user: payload,
     expiresIn: '24h',
   })
+})
+
+// Request Magic Link / Email Login
+app.post('/api/auth/magic-link/request', rateLimitAuth, (req, res) => {
+  const { email } = req.body || {}
+  if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    return res.status(400).json({ error: 'Valid email address is required', code: 'INVALID_EMAIL' })
+  }
+  const cleanEmail = email.trim().toLowerCase()
+  const token = randomBytes(32).toString('hex')
+  const expiresAt = Date.now() + 15 * 60 * 1000 // 15 minutes
+  db.saveMagicToken(cleanEmail, token, expiresAt)
+
+  res.json({
+    success: true,
+    message: 'Magic login link dispatched to email',
+    ...(process.env.NODE_ENV !== 'production' ? { testToken: token, testEmail: cleanEmail } : {}),
+  })
+})
+
+// Verify Magic Link and exchange for verified session JWT + Refresh Token
+app.post('/api/auth/magic-link/verify', rateLimitAuth, (req, res) => {
+  const { email, token } = req.body || {}
+  if (!email || !token || typeof email !== 'string' || typeof token !== 'string') {
+    return res.status(400).json({ error: 'Email and verification token are required', code: 'INVALID_PAYLOAD' })
+  }
+  const cleanEmail = email.trim().toLowerCase()
+  const account = db.verifyMagicToken(cleanEmail, token.trim())
+  if (!account) {
+    return res.status(401).json({ error: 'Invalid or expired magic link verification token', code: 'AUTH_FAILED' })
+  }
+
+  // Issue verified session token — role and userId come strictly from DB record!
+  const accessToken = JwtService.sign({
+    userId: account.id,
+    userName: account.email.split('@')[0],
+    role: account.role || 'user',
+  })
+  const refreshToken = JwtService.createRefreshToken(account.id)
+  db.setRefreshToken(account.id, refreshToken)
+
+  res.json({
+    token: accessToken,
+    refreshToken,
+    user: {
+      userId: account.id,
+      email: account.email,
+      userName: account.email.split('@')[0],
+      role: account.role || 'user',
+    },
+    expiresIn: '7d',
+  })
+})
+
+// Refresh Token Rotation: Exchange valid refresh token for new access and rotated refresh token
+app.post('/api/auth/refresh', rateLimitAuth, (req, res) => {
+  const { refreshToken } = req.body || {}
+  if (!refreshToken || typeof refreshToken !== 'string') {
+    return res.status(400).json({ error: 'Refresh token is required', code: 'REFRESH_TOKEN_REQUIRED' })
+  }
+
+  const verified = JwtService.verifyRefreshToken(refreshToken)
+  if (!verified) {
+    return res.status(401).json({ error: 'Invalid or expired refresh token', code: 'INVALID_REFRESH_TOKEN' })
+  }
+
+  const storedToken = db.getRefreshToken(verified.userId)
+  if (!storedToken || storedToken !== refreshToken) {
+    // Possible token reuse attack — revoke token family
+    JwtService.revokeToken(verified.jti)
+    db.setRefreshToken(verified.userId, null)
+    return res.status(401).json({ error: 'Refresh token has been reused or revoked', code: 'TOKEN_REVOKED' })
+  }
+
+  const account = db.getAccountById(verified.userId)
+  if (!account) {
+    return res.status(401).json({ error: 'User account not found', code: 'USER_NOT_FOUND' })
+  }
+
+  // Revoke old refresh token jti
+  JwtService.revokeToken(verified.jti)
+
+  // Rotate tokens
+  const newAccessToken = JwtService.sign({
+    userId: account.id,
+    userName: account.email.split('@')[0],
+    role: account.role || 'user',
+  })
+  const newRefreshToken = JwtService.createRefreshToken(account.id)
+  db.setRefreshToken(account.id, newRefreshToken)
+
+  res.json({
+    token: newAccessToken,
+    refreshToken: newRefreshToken,
+    expiresIn: '7d',
+  })
+})
+
+// Logout: Revoke current session token and clear refresh token
+app.post('/api/auth/logout', requireAuth, (req, res) => {
+  const authReq = req as unknown as AuthenticatedRequest
+  if (authReq.user?.jti) {
+    JwtService.revokeToken(authReq.user.jti)
+  }
+  if (authReq.userId) {
+    db.setRefreshToken(authReq.userId, null)
+  }
+  res.json({ success: true, message: 'Logged out successfully' })
 })
 
 // Verify authenticated identity

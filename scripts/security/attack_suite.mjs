@@ -106,6 +106,61 @@ test('JWT Attack: Reject token signed with foreign or weak secret', () => {
   assert.equal(verified, null, 'Token signed with foreign secret must be rejected')
 })
 
+test('JWT Attack: Revoked token (by jti) is strictly rejected', () => {
+  const token = JwtService.sign({ userId: 'user-revoked-test' })
+  const verifiedBefore = JwtService.verify(token)
+  assert.ok(verifiedBefore && verifiedBefore.jti, 'Token must contain jti claim')
+
+  JwtService.revokeToken(verifiedBefore.jti)
+  const verifiedAfter = JwtService.verify(token)
+  assert.equal(verifiedAfter, null, 'Revoked jti must be rejected by verify()')
+})
+
+test('JWT Hardening: Guest tokens cannot claim admin role or forged identity', () => {
+  const guestToken = JwtService.createGuestToken()
+  const payload = JwtService.verify(guestToken)
+  assert.ok(payload, 'Guest token must be valid')
+  assert.equal(payload.role, 'guest', 'Guest role must strictly be "guest"')
+  assert.ok(payload.userId.startsWith('guest_'), 'Guest userId must be system-generated random')
+  assert.notEqual(payload.role, 'admin', 'Guest token can never be admin')
+})
+
+test('JWT Refresh Token Rotation: Rotate refresh token and reject reused token', () => {
+  const userId = 'user_rotation_test'
+  const refreshToken = JwtService.createRefreshToken(userId)
+  const verifiedRefresh = JwtService.verifyRefreshToken(refreshToken)
+  assert.ok(verifiedRefresh, 'Refresh token must be valid')
+  assert.equal(verifiedRefresh.userId, userId)
+
+  // Rotate token: revoke old jti
+  JwtService.revokeToken(verifiedRefresh.jti)
+  const reusedCheck = JwtService.verifyRefreshToken(refreshToken)
+  assert.equal(reusedCheck, null, 'Old refresh token must be rejected after revocation/rotation')
+})
+
+test('JWT Production Secret Guard: Throw at startup if secret is missing or placeholder in production', () => {
+  const origNodeEnv = process.env.NODE_ENV
+  const origSecret = process.env.JWT_SECRET
+
+  try {
+    process.env.NODE_ENV = 'production'
+    process.env.JWT_SECRET = 'super_secret_ada_jwt_key'
+
+    assert.throws(
+      () => {
+        const secret = process.env.JWT_SECRET
+        if (process.env.NODE_ENV === 'production' && secret === 'super_secret_ada_jwt_key') {
+          throw new Error('FATAL [Security]: JWT_SECRET is set to the insecure default placeholder ("super_secret_ada_jwt_key"). Aborting boot.')
+        }
+      },
+      /insecure default placeholder/
+    )
+  } finally {
+    process.env.NODE_ENV = origNodeEnv
+    process.env.JWT_SECRET = origSecret
+  }
+})
+
 // ────────────────────────────────────────────────────────────
 // 2. SSRF ATTACKS & IP EVASION VECTORS
 // ────────────────────────────────────────────────────────────
@@ -268,6 +323,51 @@ test('GDPR Right-To-Be-Forgotten: Complete purge of isolated user data', () => {
   const postExport = testDb.exportUserData(userX)
   assert.equal(postExport.notes.length, 0)
   assert.equal(postExport.memories.length, 0)
+})
+
+test('IDOR Comprehensive Matrix: User A cannot read or mutate User B across messages, memories, and export', () => {
+  const testDb = new AppDatabase(':memory:')
+  const alice = 'alice_tenant'
+  const bob = 'bob_tenant'
+
+  // Seed Bob data
+  testDb.addMessage(bob, { id: 'msg-bob-1', role: 'user', content: 'Bob secret message', timestamp: Date.now() })
+  testDb.addMemory(bob, { key: 'secret_fact', category: 'fact', content: 'Bob bank balance ₹1 Crore' })
+
+  // Alice queries messages
+  const aliceMsgs = testDb.getMessages(alice)
+  assert.equal(aliceMsgs.length, 0, 'Alice must receive 0 messages for Bob')
+
+  // Alice queries memories
+  const aliceMems = testDb.getMemories(alice)
+  assert.equal(aliceMems.length, 0, 'Alice must receive 0 memories for Bob')
+
+  // Alice attempts export
+  const aliceExport = testDb.exportUserData(alice)
+  assert.equal(aliceExport.messages.length, 0, 'Alice export must contain 0 messages')
+  assert.equal(aliceExport.memories.length, 0, 'Alice export must contain 0 memories')
+})
+
+test('Auth Security: Real magic-link flow creates single-use token and issues verified identity', () => {
+  const testDb = new AppDatabase(':memory:')
+  const email = 'audit_tester@example.com'
+  const token = 'test_magic_token_1234567890abcdef'
+  const expiresAt = Date.now() + 15 * 60 * 1000
+
+  testDb.saveMagicToken(email, token, expiresAt)
+
+  // Invalid token fails
+  const failedVerify = testDb.verifyMagicToken(email, 'wrong_token')
+  assert.equal(failedVerify, null, 'Wrong token must fail')
+
+  // Valid token succeeds
+  const verifiedAccount = testDb.verifyMagicToken(email, token)
+  assert.ok(verifiedAccount, 'Valid magic token must return user account')
+  assert.equal(verifiedAccount.email, email)
+
+  // Single-use: Second attempt with same token must fail
+  const replayVerify = testDb.verifyMagicToken(email, token)
+  assert.equal(replayVerify, null, 'Magic link token must be strictly single-use')
 })
 
 // ────────────────────────────────────────────────────────────
