@@ -188,6 +188,41 @@ CREATE TABLE IF NOT EXISTS background_jobs (
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_user_status ON background_jobs(user_id, status, scheduled_for);
 
+-- 14. Cryptographic Revoked Tokens (Zero-Trust Shared Store)
+CREATE TABLE IF NOT EXISTS revoked_tokens (
+    jti VARCHAR(128) PRIMARY KEY,
+    user_id VARCHAR(64),
+    expires_at BIGINT NOT NULL,
+    revoked_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_revoked_tokens_expires ON revoked_tokens(expires_at);
+
+-- 15. Cryptographic Refresh Token Families (Reuse Detection & Hashed Storage)
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    token_hash VARCHAR(128) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    family_id VARCHAR(64) NOT NULL,
+    generation INTEGER NOT NULL DEFAULT 1,
+    is_revoked BOOLEAN NOT NULL DEFAULT FALSE,
+    expires_at BIGINT NOT NULL,
+    created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_family ON refresh_tokens(family_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
+
+-- 16. Magic Links (Hashed Tokens, Single-Use & Brute-Force Lockout)
+CREATE TABLE IF NOT EXISTS magic_links (
+    id VARCHAR(64) PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(128) NOT NULL UNIQUE,
+    failed_attempts INTEGER NOT NULL DEFAULT 0,
+    lockout_until BIGINT,
+    expires_at BIGINT NOT NULL,
+    used_at BIGINT,
+    created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_magic_links_email ON magic_links(email);
+
 -- ============================================================================
 -- POSTGRESQL ROW LEVEL SECURITY (RLS) POLICIES
 -- Multi-Tenant Data Isolation (Enforced at DB engine layer)

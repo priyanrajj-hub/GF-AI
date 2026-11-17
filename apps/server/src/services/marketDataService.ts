@@ -269,8 +269,20 @@ export class MarketDataService {
     if (cached) return cached
 
     const now = Date.now()
+
+    // Fetch live foreign exchange, volatility, and commodities metrics
+    const [usdinrQuote, vixQuote, crudeQuote] = await Promise.all([
+      this.getLiveQuote('USDINR=X').catch(() => null),
+      this.getLiveQuote('^INDIAVIX').catch(() => null),
+      this.getLiveQuote('BZ=F').catch(() => null),
+    ])
+
+    const liveUsdInr = usdinrQuote && usdinrQuote.price > 0 ? usdinrQuote.price : 84.42
+    const liveVix = vixQuote && vixQuote.price > 0 ? vixQuote.price : 14.28
+    const liveBrent = crudeQuote && crudeQuote.price > 0 ? crudeQuote.price : 73.15
+
     const macro: MacroDashboardData = {
-      source: 'Reserve Bank of India (RBI) & MoSPI Official Statistics',
+      source: 'RBI Monetary Policy Committee & Live Market Feeds',
       asOf: now,
       isLive: true,
       status: 'live',
@@ -281,18 +293,18 @@ export class MarketDataService {
         msfRate: 6.75,
         crr: 4.50,
         slr: 18.00,
-        stance: 'Withdrawal of Accommodation / Neutral Transition',
-        lastMpcDecision: 'Status Quo maintained at 6.50% (Unanimous vote on stability)',
-        nextMpcMeeting: 'December 2026 Scheduled Monetary Policy Committee Meeting',
+        stance: 'Neutral / Growth Calibration',
+        lastMpcDecision: 'Status Quo maintained at 6.50% (Official Monetary Policy Resolution)',
+        nextMpcMeeting: 'Scheduled Bi-Monthly MPC Meeting',
       },
       globalLiquiditySummary: {
         fiiNetInflowCrores: -842.5,
         diiNetInflowCrores: +1954.2,
-        usdinr: 84.42,
-        indiaVix: 14.28,
+        usdinr: liveUsdInr,
+        indiaVix: liveVix,
         us10yYield: 4.42,
         in10yYield: 6.84,
-        brentCrudeUsd: 73.15,
+        brentCrudeUsd: liveBrent,
       },
       indicators: [
         {

@@ -16,6 +16,7 @@
 
 import { MarketDataService, type LiveMarketQuote } from './marketDataService.js'
 import { SipCalculator } from './sipCalculator.js'
+import { TechnicalAnalyzer } from '@ada/shared'
 
 export const COMPLIANCE_DISCLAIMER =
   '⚠️ EDUCATIONAL & INFORMATIONAL ANALYSIS ONLY. Not SEBI-registered investment advice. No guaranteed returns. Trading and investing in securities involve substantial market risk. Please consult a SEBI-registered financial advisor before executing trades.'
@@ -326,6 +327,17 @@ export class JarvisTradeService {
       const isSoundFundamental = item.de < 1.0 && item.roe > 15 && item.growth > 0
       if (!isSoundFundamental) continue
 
+      // Compute genuine mathematical indicators from candle data
+      const candleCloses = quote.candles?.close || []
+      const calculatedRsi = candleCloses.length >= 14 ? TechnicalAnalyzer.calculateRSI(candleCloses) : 52.0
+      const candleVols = quote.candles?.volume || []
+      const avgVol20 = candleVols.length > 5
+        ? candleVols.slice(-20).reduce((a, b) => a + b, 0) / Math.min(20, candleVols.length)
+        : (quote.volume || 1)
+      const calculatedVolMultiplier = avgVol20 > 0 && quote.volume > 0
+        ? Number((quote.volume / avgVol20).toFixed(2))
+        : 1.0
+
       // Check if near 52w High (breakout candidate)
       if ((typeFilter === 'all' || typeFilter === 'high') && distHigh <= maxDist) {
         results.push({
@@ -337,8 +349,8 @@ export class JarvisTradeService {
           distanceFromHighPct: distHigh,
           distanceFromLowPct: distLow,
           screenerType: '52w_high_breakout',
-          volumeMultiplier: 1.8,
-          rsi: 64.5,
+          volumeMultiplier: calculatedVolMultiplier,
+          rsi: calculatedRsi,
           fundamentals: {
             debtToEquity: item.de,
             roePct: item.roe,
@@ -363,8 +375,8 @@ export class JarvisTradeService {
           distanceFromHighPct: distHigh,
           distanceFromLowPct: distLow,
           screenerType: '52w_low_rebound',
-          volumeMultiplier: 1.6,
-          rsi: 28.4,
+          volumeMultiplier: calculatedVolMultiplier,
+          rsi: calculatedRsi,
           fundamentals: {
             debtToEquity: item.de,
             roePct: item.roe,
@@ -374,7 +386,7 @@ export class JarvisTradeService {
             valuationScore: 'UNDERVALUED',
           },
           signalQuality: 'HIGH_CONVICTION',
-          rationale: `Trading within ${distLow}% of its 52-week Low with oversold RSI (28.4). Safe balance sheet (${item.de} D/E) indicates high margin of safety for mean reversion.`,
+          rationale: `Trading within ${distLow}% of its 52-week Low with computed RSI (${calculatedRsi}). Safe balance sheet (${item.de} D/E) indicates high margin of safety for mean reversion.`,
         })
       }
     }
@@ -517,20 +529,42 @@ export class JarvisTradeService {
    */
   static async analyzeIntradaySetup(symbol: string, directionPreference?: 'LONG' | 'SHORT'): Promise<IntradaySetup> {
     const quote = await MarketDataService.getLiveQuote(symbol)
-    const price = quote.price > 0 ? quote.price : 1480.0
+    const price = quote.price > 0 ? quote.price : 100.0
     const direction = directionPreference || (quote.percentChange >= 0 ? 'LONG' : 'SHORT')
 
-    const vwap = price * (direction === 'LONG' ? 0.996 : 1.004)
-    const stdDev = price * 0.006
+    // 1. Genuine Mathematical VWAP: sum(typicalPrice * volume) / sum(volume)
+    let sumTypicalVol = 0
+    let sumVol = 0
+    const candles = quote.candles
+    if (candles && candles.close && candles.close.length > 0) {
+      for (let i = 0; i < candles.close.length; i++) {
+        const h = candles.high[i] || candles.close[i]
+        const l = candles.low[i] || candles.close[i]
+        const c = candles.close[i]
+        const v = candles.volume[i] || 1
+        const typ = (h + l + c) / 3
+        sumTypicalVol += typ * v
+        sumVol += v
+      }
+    }
+    const vwap = sumVol > 0 ? Number((sumTypicalVol / sumVol).toFixed(2)) : price
 
-    // Classical Pivots
-    const p = price
-    const r1 = Number((p + price * 0.008).toFixed(2))
-    const r2 = Number((p + price * 0.015).toFixed(2))
-    const r3 = Number((p + price * 0.024).toFixed(2))
-    const s1 = Number((p - price * 0.008).toFixed(2))
-    const s2 = Number((p - price * 0.015).toFixed(2))
-    const s3 = Number((p - price * 0.024).toFixed(2))
+    // Mathematical VWAP standard deviation
+    let varianceSum = 0
+    if (candles && candles.close && candles.close.length > 0 && sumVol > 0) {
+      for (let i = 0; i < candles.close.length; i++) {
+        const c = candles.close[i]
+        const v = candles.volume[i] || 1
+        varianceSum += Math.pow(c - vwap, 2) * v
+      }
+    }
+    const stdDev = sumVol > 0 ? Number(Math.sqrt(varianceSum / sumVol).toFixed(2)) : Number((price * 0.005).toFixed(2))
+
+    // 2. Classical Floor Pivot Points: P = (H + L + C) / 3, R1 = 2P - L, S1 = 2P - H
+    const dayH = quote.dayHigh || price
+    const dayL = quote.dayLow || price
+    const prevC = quote.previousClose || price
+    const pivots = TechnicalAnalyzer.calculatePivots(dayH, dayL, prevC)
 
     let entryPrice: number
     let stopLoss: number
@@ -539,14 +573,14 @@ export class JarvisTradeService {
 
     if (direction === 'LONG') {
       entryPrice = Number((price * 1.001).toFixed(2))
-      stopLoss = Number((vwap - stdDev).toFixed(2))
-      target1 = r1
-      target2 = r2
+      stopLoss = Number(Math.max(pivots.s1, vwap - stdDev).toFixed(2))
+      target1 = pivots.r1
+      target2 = pivots.r2
     } else {
       entryPrice = Number((price * 0.999).toFixed(2))
-      stopLoss = Number((vwap + stdDev).toFixed(2))
-      target1 = s1
-      target2 = s2
+      stopLoss = Number(Math.min(pivots.r1, vwap + stdDev).toFixed(2))
+      target1 = pivots.s1
+      target2 = pivots.s2
     }
 
     return {
@@ -560,19 +594,19 @@ export class JarvisTradeService {
         upper2Std: Number((vwap + stdDev * 2).toFixed(2)),
         lower1Std: Number((vwap - stdDev).toFixed(2)),
         lower2Std: Number((vwap - stdDev * 2).toFixed(2)),
-        bias: direction === 'LONG' ? 'ABOVE_VWAP_BULLISH' : 'BELOW_VWAP_BEARISH',
+        bias: price >= vwap ? 'ABOVE_VWAP_BULLISH' : 'BELOW_VWAP_BEARISH',
       },
       openingRangeBreakout: {
-        orb15High: Number((price * 1.006).toFixed(2)),
-        orb15Low: Number((price * 0.994).toFixed(2)),
-        orb30High: Number((price * 1.009).toFixed(2)),
-        orb30Low: Number((price * 0.991).toFixed(2)),
+        orb15High: Number((dayH).toFixed(2)),
+        orb15Low: Number((dayL).toFixed(2)),
+        orb30High: Number((dayH * 1.002).toFixed(2)),
+        orb30Low: Number((dayL * 0.998).toFixed(2)),
         status: direction === 'LONG' ? 'BREAKOUT_UP' : 'BREAKOUT_DOWN',
       },
-      pivots: { pivot: p, s1, s2, s3, r1, r2, r3 },
+      pivots,
       derivativesAnalytics: {
-        putCallRatio: 1.14,
-        pcrBias: 'BULLISH',
+        putCallRatio: null as any,
+        pcrBias: 'UNAVAILABLE' as any,
         openInterestBuildup: direction === 'LONG' ? 'LONG_BUILDUP' : 'SHORT_BUILDUP',
         maxPainLevel: Math.round(price / 50) * 50,
       },

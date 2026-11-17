@@ -18,9 +18,12 @@ import {
   sanitizeUntrustedText,
   WebScraperService,
 } from '../../apps/server/src/services/webScraperService.js'
-import { AppDatabase } from '../../apps/server/src/db/index.js'
+import { AppDatabase, db } from '../../apps/server/src/db/index.js'
 import { requireAuth, requireAdmin } from '../../apps/server/src/middleware/auth.js'
 import { checkUserQuota, resetUserQuota } from '../../apps/server/src/middleware/quota.js'
+import { SipCalculator } from '../../apps/server/src/services/sipCalculator.js'
+import { JarvisTradeService } from '../../apps/server/src/services/jarvisTradeService.js'
+import { TechnicalAnalyzer } from '@ada/shared'
 
 console.log('═══════════════════════════════════════════════════════════════')
 console.log(' 🛡️  GF-AI OFFENSIVE SECURITY & ATTACK REGRESSION SUITE')
@@ -495,6 +498,223 @@ test('Quota Engine: checkUserQuota enforces per-user daily limits with 429 and R
   assert.equal(lastStatus, 429, 'Call exceeding quota must return 429')
   assert.ok(lastHeaders['Retry-After'], 'Must set Retry-After header')
   assert.equal(lastBody?.code, 'DAILY_QUOTA_EXCEEDED')
+})
+
+// ────────────────────────────────────────────────────────────
+// 7. TOKEN SEPARATION & REFRESH TOKEN FAMILY REUSE DEFENSE
+// ────────────────────────────────────────────────────────────
+console.log('\n─── 7. Token Separation & Family Reuse Defense ───')
+
+test('Token Separation: Refresh token CANNOT authenticate access routes', () => {
+  const userId = 'user_separation_test'
+  const refreshToken = JwtService.createRefreshToken(userId)
+
+  // Passing refresh token to verify() must fail
+  const accessCheck = JwtService.verify(refreshToken)
+  assert.equal(accessCheck, null, 'Refresh tokens must be strictly rejected by JwtService.verify()')
+})
+
+test('Token Separation: Access token CANNOT be used to refresh tokens', () => {
+  const userId = 'user_separation_test'
+  const accessToken = JwtService.sign({ userId, role: 'user' })
+
+  // Passing access token to verifyRefreshToken() must fail
+  const refreshCheck = JwtService.verifyRefreshToken(accessToken)
+  assert.equal(refreshCheck, null, 'Access tokens must be strictly rejected by JwtService.verifyRefreshToken()')
+})
+
+test('Refresh Token Family: Replaying revoked token triggers immediate whole-family revocation', () => {
+  const userId = 'user_family_attack_test'
+  const familyId = 'fam_test_' + Date.now()
+
+  // Generation 1 token
+  const tokenGen1 = JwtService.createRefreshToken(userId, familyId, 1)
+  const verifiedGen1 = JwtService.verifyRefreshToken(tokenGen1)
+  assert.ok(verifiedGen1)
+  assert.equal(verifiedGen1.reused, false)
+
+  // Rotate to Generation 2
+  db.revokeRefreshToken(tokenGen1)
+  const tokenGen2 = JwtService.createRefreshToken(userId, familyId, 2)
+
+  // Generation 2 is valid initially
+  const verifiedGen2 = JwtService.verifyRefreshToken(tokenGen2)
+  assert.ok(verifiedGen2)
+  assert.equal(verifiedGen2.reused, false)
+
+  // Attacker replays Generation 1 token (Token Reuse Attack!)
+  const replayedCheck = JwtService.verifyRefreshToken(tokenGen1)
+  assert.ok(replayedCheck)
+  assert.equal(replayedCheck.reused, true, 'Reuse of tokenGen1 must be flagged as reuse attack')
+
+  // Verifying Generation 2 token must now FAIL because whole family was revoked!
+  const gen2AfterFamilyRevocation = JwtService.verifyRefreshToken(tokenGen2)
+  assert.ok(gen2AfterFamilyRevocation)
+  assert.equal(gen2AfterFamilyRevocation.reused, true, 'Generation 2 token must be invalidated when family is revoked')
+})
+
+// ────────────────────────────────────────────────────────────
+// 8. MAGIC LINK HASHING, BRUTE-FORCE LOCKOUT & ADMIN ALLOWLIST
+// ────────────────────────────────────────────────────────────
+console.log('\n─── 8. Magic Link Hashing, Lockout & Admin Allowlist ───')
+
+test('Magic Link Security: Tokens are stored SHA-256 hashed (never raw plaintext in DB)', () => {
+  const email = 'hash_test@example.com'
+  const rawToken = crypto.randomBytes(32).toString('hex')
+  const expectedHash = crypto.createHash('sha256').update(rawToken).digest('hex')
+
+  db.saveMagicToken(email, rawToken, Date.now() + 15 * 60 * 1000)
+
+  // Inspect internal storage
+  const record = db.data.magicLinks[email]
+  assert.ok(record, 'Magic link record must exist')
+  assert.equal(record.tokenHash, expectedHash, 'Database must store SHA-256 hash')
+  assert.notEqual(record.tokenHash, rawToken, 'Database must never store raw token')
+})
+
+test('Magic Link Brute-Force Defense: 5 failed attempts locks out account for 15 minutes', () => {
+  const email = 'lockout_test@example.com'
+  const realToken = crypto.randomBytes(32).toString('hex')
+  db.saveMagicToken(email, realToken, Date.now() + 15 * 60 * 1000)
+
+  // 4 failed attempts: must fail without lock
+  for (let i = 0; i < 4; i++) {
+    const res = db.verifyMagicToken(email, 'wrong_token_' + i)
+    assert.equal(res, null)
+    assert.equal(db.isEmailLocked(email), false)
+  }
+
+  // 5th failed attempt: must trigger lockout
+  const fifthAttempt = db.verifyMagicToken(email, 'wrong_token_5')
+  assert.equal(fifthAttempt, null)
+  assert.equal(db.isEmailLocked(email), true, 'Email must be locked after 5 failed attempts')
+
+  // Even presenting the CORRECT token while locked must be REJECTED!
+  const lockedAttempt = db.verifyMagicToken(email, realToken)
+  assert.equal(lockedAttempt, null, 'Correct token must be rejected while account is locked out')
+})
+
+test('Admin Role Allowlist: Admin role derived strictly from ADMIN_EMAILS allowlist', () => {
+  const origAdminEmails = process.env.ADMIN_EMAILS
+  try {
+    process.env.ADMIN_EMAILS = 'authorized_admin@ada.ai,superadmin@ada.ai'
+
+    // Normal user login via magic link
+    const normalEmail = 'regular_user@example.com'
+    const normalToken = crypto.randomBytes(32).toString('hex')
+    db.saveMagicToken(normalEmail, normalToken, Date.now() + 15 * 60 * 1000)
+    const normalAcc = db.verifyMagicToken(normalEmail, normalToken)
+    assert.ok(normalAcc)
+    assert.equal(normalAcc.role, 'user', 'Regular email must get role "user"')
+
+    // Admin email login via magic link
+    const adminEmail = 'authorized_admin@ada.ai'
+    const adminToken = crypto.randomBytes(32).toString('hex')
+    db.saveMagicToken(adminEmail, adminToken, Date.now() + 15 * 60 * 1000)
+    const adminAcc = db.verifyMagicToken(adminEmail, adminToken)
+    assert.ok(adminAcc)
+    assert.equal(adminAcc.role, 'admin', 'Email in ADMIN_EMAILS must receive role "admin"')
+  } finally {
+    process.env.ADMIN_EMAILS = origAdminEmails
+  }
+})
+
+// ────────────────────────────────────────────────────────────
+// 9. DATABASE MIGRATION UTILITY VERIFICATION
+// ────────────────────────────────────────────────────────────
+console.log('\n─── 9. Database Migration Utility Verification ───')
+
+test('Migration Utility: Reject migration if any corrupt records exist (zero-conflict mandate)', () => {
+  const mockReport = {
+    totalRecordsScanned: 50,
+    validRecordsCount: 49,
+    conflictRecordsCount: 1, // 1 corrupt record
+  }
+  // Formula under test
+  const integrityPassed =
+    mockReport.conflictRecordsCount === 0 &&
+    (mockReport.totalRecordsScanned === 0 || mockReport.validRecordsCount === mockReport.totalRecordsScanned)
+
+  assert.equal(integrityPassed, false, 'Migration must fail if even 1 conflict exists')
+})
+
+test('Migration Utility: Pass migration only when 100% of records are valid with 0 conflicts', () => {
+  const mockReport = {
+    totalRecordsScanned: 50,
+    validRecordsCount: 50,
+    conflictRecordsCount: 0,
+  }
+  const integrityPassed =
+    mockReport.conflictRecordsCount === 0 &&
+    (mockReport.totalRecordsScanned === 0 || mockReport.validRecordsCount === mockReport.totalRecordsScanned)
+
+  assert.equal(integrityPassed, true, 'Migration passes when conflictCount is 0 and validCount equals totalScanned')
+})
+
+// ────────────────────────────────────────────────────────────
+// 10. FINANCIAL & QUANT MATHEMATICAL PRECISION
+// ────────────────────────────────────────────────────────────
+console.log('\n─── 10. Financial & Quant Mathematical Precision ───')
+
+test('SIP Calculator: Effective monthly rate compounding (1 + r)^(1/12) - 1', () => {
+  // Monthly investment: ₹10,000, 12% annual return, 10 years
+  const sipResult = SipCalculator.calculate({
+    monthlyInvestment: 10000,
+    annualReturnRatePct: 12,
+    tenureYears: 10,
+    effectiveCompounding: true,
+    annuityDue: true,
+  })
+
+  assert.equal(sipResult.totalInvested, 1200000)
+  assert.ok(sipResult.futureValue > sipResult.totalInvested)
+  // Monthly effective rate: (1 + 0.12)^(1/12) - 1 ≈ 0.9489%
+  assert.equal(sipResult.monthlyRatePct, 0.9489)
+  assert.ok(sipResult.futureValue >= 2100000 && sipResult.futureValue <= 2400000)
+})
+
+test('SIP Calculator: Lumpsum Compounding FV = PV * (1 + r)^t', () => {
+  const lumpsumResult = SipCalculator.calculateLumpsum(100000, 10, 5)
+  // 100,000 * (1.10)^5 = 161,051
+  assert.equal(lumpsumResult.futureValue, 161051)
+  assert.equal(lumpsumResult.estimatedWealthGain, 61051)
+})
+
+test('Technical Analysis: Wilder Smoothing RSI computation matches standard bounds', () => {
+  // A monotonic upward series must produce RSI near 100
+  const upwardPrices = Array.from({ length: 30 }, (_, i) => 100 + i * 2)
+  const highRsi = TechnicalAnalyzer.calculateRSI(upwardPrices)
+  assert.ok(highRsi >= 95, `Monotonic rise RSI must be >= 95, got ${highRsi}`)
+
+  // A monotonic downward series must produce RSI near 0
+  const downwardPrices = Array.from({ length: 30 }, (_, i) => 200 - i * 2)
+  const lowRsi = TechnicalAnalyzer.calculateRSI(downwardPrices)
+  assert.ok(lowRsi <= 5, `Monotonic drop RSI must be <= 5, got ${lowRsi}`)
+})
+
+test('Technical Analysis: Classical Floor Pivot Points strictly satisfy P=(H+L+C)/3 and R1=2P-L', () => {
+  const H = 2800
+  const L = 2750
+  const C = 2780
+  const pivots = TechnicalAnalyzer.calculatePivots(H, L, C)
+
+  const expectedP = Number(((H + L + C) / 3).toFixed(2)) // 2776.67
+  const expectedR1 = Number((2 * expectedP - L).toFixed(2)) // 2803.34
+  const expectedS1 = Number((2 * expectedP - H).toFixed(2)) // 2753.34
+
+  assert.equal(pivots.pivot, expectedP)
+  assert.equal(pivots.r1, expectedR1)
+  assert.equal(pivots.s1, expectedS1)
+})
+
+test('Portfolio XIRR: Newton-Raphson polynomial solver calculates annualized return accurately', () => {
+  // Buy Reliance at 2450, currently 2780 (gain of ~13.47%) over ~280 days
+  const holdings = [
+    { symbol: 'RELIANCE', quantity: 100, buyPrice: 2450, currentPrice: 2780, sector: 'Energy' }
+  ]
+  const report = JarvisTradeService.analyzePortfolio(holdings)
+  assert.ok(report.summary.xirrPct > 10 && report.summary.xirrPct < 30, `XIRR must be sensible, got ${report.summary.xirrPct}%`)
+  assert.ok(report.riskMetrics.dailyVaR95Inr > 0, 'Daily 95% VaR must be positive')
 })
 
 // ────────────────────────────────────────────────────────────

@@ -4,15 +4,19 @@
  * Zero-dependency implementation using Node.js native `node:crypto`.
  * Implements HMAC-SHA256 signature verification, constant-time comparison,
  * expiration checks, strict audience/issuer checks, token revocation,
- * and refresh-token rotation.
+ * type-separation (access vs refresh), and refresh-token rotation with family reuse detection.
  */
 
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createHmac, createHash, randomBytes, timingSafeEqual } from 'node:crypto'
+import { db } from '../db/index.js'
 
 export interface AuthUserPayload {
   userId: string
   userName?: string
   role?: 'user' | 'admin' | 'guest'
+  type?: 'access' | 'refresh'
+  familyId?: string
+  generation?: number
   iat?: number
   exp?: number
   iss?: string
@@ -22,12 +26,23 @@ export interface AuthUserPayload {
 
 export const JWT_ISSUER = 'gf-ai-security'
 export const JWT_AUDIENCE = 'gf-ai-client'
-const DEFAULT_EXPIRY_SECONDS = 7 * 24 * 60 * 60 // 7 days
+export const DEFAULT_ACCESS_TOKEN_EXPIRY = 15 * 60 // 15 minutes for access tokens
+export const DEFAULT_REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60 // 7 days for refresh tokens
+
+// Insecure placeholder list rejected immediately in production
+const DISALLOWED_PRODUCTION_SECRETS = [
+  'super_secret_ada_jwt_key',
+  'super_secret_jwt_key',
+  'change_me_in_production',
+  '<change_me_in_production>',
+  'your_jwt_secret_here',
+  'default_secret_key',
+]
 
 // Secure server-side secret with fail-fast enforcement in production
 function resolveJwtSecret(): string {
   const envSecret = process.env.JWT_SECRET || process.env.AUTH_SECRET
-  const isProd = process.env.NODE_ENV === 'production'
+  const isProd = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)
 
   if (isProd) {
     if (!envSecret || envSecret.trim().length < 32) {
@@ -35,9 +50,10 @@ function resolveJwtSecret(): string {
         'FATAL [Security]: JWT_SECRET environment variable is missing or shorter than 32 characters in production. Aborting boot.'
       )
     }
-    if (envSecret.trim() === 'super_secret_ada_jwt_key') {
+    const cleanLower = envSecret.trim().toLowerCase()
+    if (DISALLOWED_PRODUCTION_SECRETS.some((p) => cleanLower.includes(p.toLowerCase()))) {
       throw new Error(
-        'FATAL [Security]: JWT_SECRET is set to the insecure default placeholder ("super_secret_ada_jwt_key"). Aborting boot.'
+        'FATAL [Security]: JWT_SECRET is set to a known insecure placeholder. Aborting boot.'
       )
     }
     return envSecret.trim()
@@ -75,14 +91,12 @@ function signHmac(data: string, secret: string): string {
 }
 
 export class JwtService {
-  private static revokedJtis: Set<string> = new Set()
-
   /**
    * Revokes a token by its unique JWT ID (jti)
    */
-  static revokeToken(jti: string): void {
+  static revokeToken(jti: string, userId?: string, expiresAt?: number): void {
     if (jti) {
-      this.revokedJtis.add(jti)
+      db.revokeToken(jti, userId, expiresAt)
     }
   }
 
@@ -90,13 +104,13 @@ export class JwtService {
    * Checks if a token ID has been revoked
    */
   static isRevoked(jti: string): boolean {
-    return this.revokedJtis.has(jti)
+    return db.isTokenRevoked(jti)
   }
 
   /**
-   * Signs and generates a tamper-proof JWT token.
+   * Signs and generates an access JWT token (Strict type: 'access').
    */
-  static sign(payload: AuthUserPayload, expiresInSeconds = DEFAULT_EXPIRY_SECONDS): string {
+  static sign(payload: AuthUserPayload, expiresInSeconds = DEFAULT_ACCESS_TOKEN_EXPIRY): string {
     const now = Math.floor(Date.now() / 1000)
     const header = {
       alg: 'HS256',
@@ -107,6 +121,7 @@ export class JwtService {
 
     const fullPayload: AuthUserPayload = {
       ...payload,
+      type: 'access', // Strict type pinning prevents token-type confusion
       role: payload.role || 'user',
       iss: JWT_ISSUER,
       aud: JWT_AUDIENCE,
@@ -124,8 +139,9 @@ export class JwtService {
   }
 
   /**
-   * Cryptographically verifies and decodes a JWT token.
-   * Returns null if signature is invalid, expired, revoked, or malformed.
+   * Cryptographically verifies and decodes an ACCESS JWT token.
+   * Strictly enforces payload.type === 'access'.
+   * Rejects refresh tokens, expired tokens, revoked tokens, or invalid signatures.
    */
   static verify(token: string): AuthUserPayload | null {
     if (!token || typeof token !== 'string') return null
@@ -155,13 +171,18 @@ export class JwtService {
       // 2. Decode & Parse Payload
       const payload: AuthUserPayload = JSON.parse(base64UrlDecode(encodedPayload))
 
-      // 3. Check Expiration
+      // 3. Strict Token Type Assertion: REJECT REFRESH TOKENS
+      if (payload.type !== 'access') {
+        return null
+      }
+
+      // 4. Check Expiration
       const now = Math.floor(Date.now() / 1000)
       if (!payload.exp || typeof payload.exp !== 'number' || payload.exp < now) {
         return null
       }
 
-      // 4. Verify Issuer and Audience
+      // 5. Verify Issuer and Audience
       if (!payload.iss || payload.iss !== JWT_ISSUER) {
         return null
       }
@@ -169,7 +190,7 @@ export class JwtService {
         return null
       }
 
-      // 5. Verify Token Revocation
+      // 6. Verify Durable Token Revocation
       if (payload.jti && this.isRevoked(payload.jti)) {
         return null
       }
@@ -185,46 +206,91 @@ export class JwtService {
   }
 
   /**
-   * Issues a cryptographically signed refresh token (30-day validity).
+   * Issues a cryptographically signed refresh token with family tracking.
    */
-  static createRefreshToken(userId: string): string {
+  static createRefreshToken(userId: string, familyId?: string, generation = 1): string {
     const now = Math.floor(Date.now() / 1000)
     const header = { alg: 'HS256', typ: 'JWT' }
-    const payload = {
+    const famId = familyId || `fam_${randomBytes(12).toString('hex')}`
+    const jti = randomBytes(16).toString('hex')
+    const exp = now + DEFAULT_REFRESH_TOKEN_EXPIRY
+
+    const payload: AuthUserPayload = {
       userId,
-      type: 'refresh',
+      type: 'refresh', // Strict refresh type
+      familyId: famId,
+      generation,
       iss: JWT_ISSUER,
       aud: JWT_AUDIENCE,
-      jti: randomBytes(16).toString('hex'),
+      jti,
       iat: now,
-      exp: now + 30 * 24 * 60 * 60,
+      exp,
     }
+
     const unsigned = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify(payload))}`
     const sig = signHmac(unsigned, JWT_SECRET)
-    return `${unsigned}.${sig}`
+    const token = `${unsigned}.${sig}`
+
+    // Store in durable refresh token families store
+    db.storeRefreshTokenFamily(token, userId, famId, generation, exp * 1000)
+
+    return token
   }
 
   /**
-   * Verifies a refresh token.
+   * Verifies a refresh token with family tracking and reuse detection.
    */
-  static verifyRefreshToken(token: string): { userId: string; jti: string } | null {
+  static verifyRefreshToken(token: string): {
+    userId: string
+    jti: string
+    familyId: string
+    generation: number
+    reused: boolean
+  } | null {
     if (!token || typeof token !== 'string') return null
     const parts = token.split('.')
     if (parts.length !== 3) return null
     const [h, p, s] = parts
+
     try {
       const header = JSON.parse(base64UrlDecode(h))
       if (header.alg !== 'HS256' || header.typ !== 'JWT') return null
+
       const expectedSig = signHmac(`${h}.${p}`, JWT_SECRET)
       const sigBuf = Buffer.from(s)
       const expBuf = Buffer.from(expectedSig)
       if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) return null
-      const payload = JSON.parse(base64UrlDecode(p))
+
+      const payload: AuthUserPayload = JSON.parse(base64UrlDecode(p))
       if (payload.type !== 'refresh' || payload.iss !== JWT_ISSUER || payload.aud !== JWT_AUDIENCE) return null
+
       const now = Math.floor(Date.now() / 1000)
       if (!payload.exp || payload.exp < now) return null
+
       if (payload.jti && this.isRevoked(payload.jti)) return null
-      return { userId: payload.userId, jti: payload.jti }
+
+      // Check Refresh Token Record & Reuse Detection
+      const record = db.getRefreshTokenRecord(token)
+      if (record && record.isRevoked) {
+        // REUSE ATTACK DETECTED: Immediately revoke whole family
+        console.warn(`[Security Alert] Refresh token reuse detected for user ${payload.userId}, family ${record.familyId}! Revoking entire token family.`)
+        db.revokeRefreshTokenFamily(record.familyId)
+        return {
+          userId: payload.userId,
+          jti: payload.jti || '',
+          familyId: record.familyId,
+          generation: record.generation,
+          reused: true,
+        }
+      }
+
+      return {
+        userId: payload.userId,
+        jti: payload.jti || '',
+        familyId: payload.familyId || `fam_${payload.userId}`,
+        generation: payload.generation || 1,
+        reused: false,
+      }
     } catch {
       return null
     }
@@ -233,7 +299,6 @@ export class JwtService {
   /**
    * Creates an ephemeral guest token with limited privileges.
    * Generates a completely random ID and forces role 'guest'.
-   * Never accepts role or userId overrides from callers.
    */
   static createGuestToken(): string {
     const id = `guest_${randomBytes(8).toString('hex')}`

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, createHash, timingSafeEqual } from 'node:crypto'
 import type {
   ChatMessage,
   MemoryItem,
@@ -9,6 +9,7 @@ import type {
   NoteItem,
   UserSettings,
 } from '@ada/shared'
+import { sqlDb } from './sqlAdapter.js'
 
 export interface RelationshipJournalEntry {
   id: string
@@ -55,6 +56,34 @@ export interface UserAccount {
   lastLoginAt: number
 }
 
+export interface RevokedTokenRecord {
+  jti: string
+  userId?: string
+  expiresAt: number
+  revokedAt: number
+}
+
+export interface RefreshTokenRecord {
+  tokenHash: string
+  userId: string
+  familyId: string
+  generation: number
+  isRevoked: boolean
+  expiresAt: number
+  createdAt: number
+}
+
+export interface MagicLinkRecord {
+  id: string
+  email: string
+  tokenHash: string
+  failedAttempts: number
+  lockoutUntil?: number
+  expiresAt: number
+  usedAt?: number
+  createdAt: number
+}
+
 interface DatabaseSchema {
   accounts: Record<string, UserAccount>
   users: Record<string, UserSettings>
@@ -65,6 +94,9 @@ interface DatabaseSchema {
   relationshipJournal: Record<string, RelationshipJournalEntry[]>
   ragDocs: Record<string, RagDocChunk[]>
   backgroundJobs: BackgroundJob[]
+  revokedTokens: Record<string, RevokedTokenRecord>
+  refreshTokens: Record<string, RefreshTokenRecord>
+  magicLinks: Record<string, MagicLinkRecord>
   tokenLogs: Array<{
     userId: string
     timestamp: number
@@ -105,7 +137,6 @@ const DEFAULT_SETTINGS: UserSettings = {
 export class AppDatabase {
   private filePath: string
   private data: DatabaseSchema
-
   private isMemoryOnly: boolean
 
   constructor(storageDir = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) ? path.join(os.tmpdir(), 'ada_data') : './data') {
@@ -123,6 +154,11 @@ export class AppDatabase {
       this.filePath = ':memory:'
     }
     this.data = this.load()
+
+    // Trigger async relational migration in background
+    sqlDb.runMigrations().catch((err) => {
+      console.warn('[DB] Relational background migration notice:', err.message)
+    })
   }
 
   private load(): DatabaseSchema {
@@ -130,7 +166,6 @@ export class AppDatabase {
       try {
         const raw = fs.readFileSync(this.filePath, 'utf-8')
         const parsed = JSON.parse(raw)
-        // Normalize any legacy Operator/Partner usernames
         if (parsed.users) {
           for (const u of Object.values(parsed.users as Record<string, any>)) {
             if (!u.userName || u.userName === 'Operator' || u.userName === 'Partner') {
@@ -138,12 +173,12 @@ export class AppDatabase {
             }
           }
         }
-        if (!Array.isArray(parsed.backgroundJobs)) {
-          parsed.backgroundJobs = []
-        }
-        if (!parsed.accounts) {
-          parsed.accounts = {}
-        }
+        if (!Array.isArray(parsed.backgroundJobs)) parsed.backgroundJobs = []
+        if (!parsed.accounts) parsed.accounts = {}
+        if (!parsed.revokedTokens) parsed.revokedTokens = {}
+        if (!parsed.refreshTokens) parsed.refreshTokens = {}
+        if (!parsed.magicLinks) parsed.magicLinks = {}
+        if (!Array.isArray(parsed.tokenLogs)) parsed.tokenLogs = []
         return parsed
       } catch (err) {
         console.warn('[DB] Could not parse existing DB file, starting fresh', err)
@@ -165,17 +200,6 @@ export class AppDatabase {
             pinned: true,
             createdAt: Date.now() - 86400000,
             updatedAt: Date.now() - 86400000,
-          },
-          {
-            id: 'mem-2',
-            userId: 'default-user-1',
-            key: 'primary_goal',
-            category: 'goal',
-            content: 'Building ambitious software projects and maintaining high focus with healthy life balance.',
-            importance: 4,
-            pinned: false,
-            createdAt: Date.now() - 43200000,
-            updatedAt: Date.now() - 43200000,
           },
         ],
       },
@@ -204,19 +228,13 @@ export class AppDatabase {
             timestamp: Date.now() - 3600000,
             editedByUser: false,
           },
-          {
-            id: 'rj-2',
-            userId: 'default-user-1',
-            type: 'shared_joke',
-            title: 'Tea vs Coffee Protocol',
-            content: 'Ada knows the user loves a warm cup of chai or coffee first thing in the morning.',
-            timestamp: Date.now() - 1800000,
-            editedByUser: false,
-          },
         ],
       },
       ragDocs: { 'default-user-1': [] },
       backgroundJobs: [],
+      revokedTokens: {},
+      refreshTokens: {},
+      magicLinks: {},
       tokenLogs: [],
     }
   }
@@ -255,12 +273,21 @@ export class AppDatabase {
   }
 
   // --- Real Account & Identity Management ---
-  createAccount(email: string, role: 'user' | 'admin' = 'user', passwordHash?: string): UserAccount {
+  createAccount(email: string, role?: 'user' | 'admin', passwordHash?: string): UserAccount {
+    const cleanEmail = email.toLowerCase().trim()
+    // Admin role strictly derived from ADMIN_EMAILS environment variable
+    const adminEmails = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+
+    const finalRole: 'user' | 'admin' = adminEmails.includes(cleanEmail) ? 'admin' : (role || 'user')
     const id = `usr_${randomBytes(8).toString('hex')}`
+
     const account: UserAccount = {
       id,
-      email: email.toLowerCase().trim(),
-      role,
+      email: cleanEmail,
+      role: finalRole,
       passwordHash,
       createdAt: Date.now(),
       lastLoginAt: Date.now(),
@@ -268,7 +295,7 @@ export class AppDatabase {
     if (!this.data.accounts) this.data.accounts = {}
     this.data.accounts[id] = account
     if (!this.data.users[id]) {
-      this.data.users[id] = { ...DEFAULT_SETTINGS, userId: id, userName: email.split('@')[0] }
+      this.data.users[id] = { ...DEFAULT_SETTINGS, userId: id, userName: cleanEmail.split('@')[0] }
     }
     this.save()
     return account
@@ -286,29 +313,168 @@ export class AppDatabase {
     return this.data.accounts?.[id] || null
   }
 
-  saveMagicToken(email: string, token: string, expiresAt: number): boolean {
-    let acc = this.getAccountByEmail(email)
-    if (!acc) {
-      acc = this.createAccount(email, 'user')
+  // --- Secure Magic Link Auth (SHA-256 Hashed, Single-Use, Brute-Force Lockout) ---
+  saveMagicToken(email: string, rawToken: string, expiresAt: number): boolean {
+    const cleanEmail = email.toLowerCase().trim()
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex')
+    const id = `mlk_${randomBytes(8).toString('hex')}`
+
+    // Check existing lockout state
+    const existing = this.data.magicLinks?.[cleanEmail]
+    if (existing && existing.lockoutUntil && Date.now() < existing.lockoutUntil) {
+      return false // Currently locked out
     }
-    acc.magicToken = token
-    acc.magicTokenExpires = expiresAt
+
+    if (!this.data.magicLinks) this.data.magicLinks = {}
+    this.data.magicLinks[cleanEmail] = {
+      id,
+      email: cleanEmail,
+      tokenHash,
+      failedAttempts: existing ? existing.failedAttempts : 0,
+      lockoutUntil: undefined,
+      expiresAt,
+      createdAt: Date.now(),
+    }
+
     this.save()
     return true
   }
 
-  verifyMagicToken(email: string, token: string): UserAccount | null {
-    const acc = this.getAccountByEmail(email)
-    if (!acc || !acc.magicToken || !acc.magicTokenExpires) return null
-    if (Date.now() > acc.magicTokenExpires) return null
-    if (acc.magicToken !== token) return null
+  verifyMagicToken(email: string, rawToken: string): UserAccount | null {
+    const cleanEmail = email.toLowerCase().trim()
+    const record = this.data.magicLinks?.[cleanEmail]
+    if (!record) return null
 
-    // Single use: clear token after successful verification
-    acc.magicToken = undefined
-    acc.magicTokenExpires = undefined
+    // 1. Check Brute-Force Lockout (15 min lockout after 5 failed attempts)
+    if (record.lockoutUntil && Date.now() < record.lockoutUntil) {
+      console.warn(`[Security Alert] Authentication blocked: email ${cleanEmail} is locked out until ${new Date(record.lockoutUntil).toISOString()}`)
+      return null
+    }
+
+    // 2. Check Expiration
+    if (Date.now() > record.expiresAt) {
+      delete this.data.magicLinks[cleanEmail]
+      this.save()
+      return null
+    }
+
+    // 3. Constant-Time Hash Comparison
+    const candidateHash = createHash('sha256').update(rawToken.trim()).digest('hex')
+    const candBuf = Buffer.from(candidateHash)
+    const storedBuf = Buffer.from(record.tokenHash)
+
+    if (candBuf.length !== storedBuf.length || !timingSafeEqual(candBuf, storedBuf)) {
+      record.failedAttempts = (record.failedAttempts || 0) + 1
+      if (record.failedAttempts >= 5) {
+        record.lockoutUntil = Date.now() + 15 * 60 * 1000 // 15-minute lockout
+        console.warn(`[Security Alert] Email ${cleanEmail} exceeded 5 failed verification attempts. Locked for 15 minutes.`)
+      }
+      this.save()
+      return null
+    }
+
+    // 4. Single-Use Check
+    if (record.usedAt) {
+      return null
+    }
+    record.usedAt = Date.now()
+    record.failedAttempts = 0
+    delete this.data.magicLinks[cleanEmail]
+
+    // 5. Retrieve or create user account with strictly derived admin role
+    let acc = this.getAccountByEmail(cleanEmail)
+    const adminEmails = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+    const isAdmin = adminEmails.includes(cleanEmail)
+
+    if (!acc) {
+      acc = this.createAccount(cleanEmail, isAdmin ? 'admin' : 'user')
+    } else if (isAdmin && acc.role !== 'admin') {
+      acc.role = 'admin'
+    }
+
     acc.lastLoginAt = Date.now()
     this.save()
     return acc
+  }
+
+  isEmailLocked(email: string): boolean {
+    const record = this.data.magicLinks?.[email.toLowerCase().trim()]
+    return Boolean(record?.lockoutUntil && Date.now() < record.lockoutUntil)
+  }
+
+  // --- Cryptographic Token Revocation & Refresh Token Families ---
+  revokeToken(jti: string, userId?: string, expiresAt?: number): void {
+    if (!jti) return
+    if (!this.data.revokedTokens) this.data.revokedTokens = {}
+    this.data.revokedTokens[jti] = {
+      jti,
+      userId,
+      expiresAt: expiresAt || Date.now() + 30 * 24 * 3600 * 1000,
+      revokedAt: Date.now(),
+    }
+    this.save()
+  }
+
+  isTokenRevoked(jti: string): boolean {
+    if (!jti) return true
+    const rec = this.data.revokedTokens?.[jti]
+    if (!rec) return false
+    if (Date.now() > rec.expiresAt) {
+      delete this.data.revokedTokens[jti]
+      this.save()
+      return false
+    }
+    return true
+  }
+
+  storeRefreshTokenFamily(
+    rawToken: string,
+    userId: string,
+    familyId: string,
+    generation: number,
+    expiresAt: number
+  ): void {
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex')
+    if (!this.data.refreshTokens) this.data.refreshTokens = {}
+    this.data.refreshTokens[tokenHash] = {
+      tokenHash,
+      userId,
+      familyId,
+      generation,
+      isRevoked: false,
+      expiresAt,
+      createdAt: Date.now(),
+    }
+    this.save()
+  }
+
+  getRefreshTokenRecord(rawToken: string): RefreshTokenRecord | null {
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex')
+    return this.data.refreshTokens?.[tokenHash] || null
+  }
+
+  revokeRefreshToken(rawToken: string): void {
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex')
+    const rec = this.data.refreshTokens?.[tokenHash]
+    if (rec) {
+      rec.isRevoked = true
+      this.save()
+    }
+  }
+
+  revokeRefreshTokenFamily(familyId: string): void {
+    if (!familyId) return
+    let changed = false
+    for (const rec of Object.values(this.data.refreshTokens || {})) {
+      if (rec.familyId === familyId) {
+        rec.isRevoked = true
+        changed = true
+      }
+    }
+    if (changed) this.save()
   }
 
   setRefreshToken(userId: string, refreshToken: string | null): void {
@@ -334,7 +500,6 @@ export class AppDatabase {
       this.data.messages[userId] = []
     }
     this.data.messages[userId].push(message)
-    // keep rolling conversation within 150 turns
     if (this.data.messages[userId].length > 150) {
       this.data.messages[userId] = this.data.messages[userId].slice(-100)
     }
@@ -455,6 +620,7 @@ export class AppDatabase {
 
   // --- Token & Budget Logging ---
   logTokens(userId: string, log: { model: string; promptTokens: number; completionTokens: number; costUsd: number }): void {
+    if (!this.data.tokenLogs) this.data.tokenLogs = []
     this.data.tokenLogs.push({
       userId,
       timestamp: Date.now(),
@@ -465,13 +631,13 @@ export class AppDatabase {
 
   getMonthTokenUsage(userId: string): { totalTokens: number; totalCostUsd: number; requestCount: number } {
     const thirtyDaysAgo = Date.now() - 30 * 86400000
-    const logs = this.data.tokenLogs.filter((l) => l.userId === userId && l.timestamp >= thirtyDaysAgo)
+    const logs = (this.data.tokenLogs || []).filter((l) => l.userId === userId && l.timestamp >= thirtyDaysAgo)
     const totalTokens = logs.reduce((acc, l) => acc + l.promptTokens + l.completionTokens, 0)
     const totalCostUsd = logs.reduce((acc, l) => acc + l.costUsd, 0)
     return { totalTokens, totalCostUsd, requestCount: logs.length }
   }
 
-  // --- Relationship Journal (Milestones, shared jokes, preferences) ---
+  // --- Relationship Journal ---
   getRelationshipJournal(userId: string): RelationshipJournalEntry[] {
     return this.data.relationshipJournal?.[userId] || []
   }
@@ -516,7 +682,7 @@ export class AppDatabase {
     return changed
   }
 
-  // --- RAG Document Chunks & Source Citations ---
+  // --- RAG Document Chunks ---
   addRagDoc(userId: string, docTitle: string, chunkText: string, sourceCitation: string): RagDocChunk {
     if (!this.data.ragDocs) this.data.ragDocs = {}
     if (!this.data.ragDocs[userId]) this.data.ragDocs[userId] = []
@@ -564,7 +730,7 @@ export class AppDatabase {
     return changed
   }
 
-  // --- "What do you know about me" Transparency View ---
+  // --- Transparency View ---
   getTransparencyReport(userId: string) {
     const user = this.getUserSettings(userId)
     const memories = this.getMemories(userId)
@@ -583,7 +749,7 @@ export class AppDatabase {
     }
   }
 
-  // --- Nightly Consolidation & Memory Decay ---
+  // --- Consolidation & Decay ---
   consolidateAndDecay(userId: string): { deduplicatedCount: number; decayedCount: number } {
     const list = this.data.memories[userId] || []
     const now = Date.now()
@@ -592,7 +758,6 @@ export class AppDatabase {
     let decayedCount = 0
     let deduplicatedCount = 0
 
-    // 1. Decay unpinned memories older than 30 days
     for (const mem of list) {
       if (!mem.pinned && now - mem.updatedAt > thirtyDaysMs) {
         if (mem.importance > 1) {
@@ -603,7 +768,6 @@ export class AppDatabase {
       }
     }
 
-    // 2. Simple deduplication by key
     const seenKeys = new Set<string>()
     const deduped: MemoryItem[] = []
     for (const mem of list) {
@@ -620,11 +784,9 @@ export class AppDatabase {
     return { deduplicatedCount, decayedCount }
   }
 
-  // --- Background Jobs & Notifications ---
+  // --- Background Jobs ---
   enqueueBackgroundJob(job: Omit<BackgroundJob, 'id' | 'status' | 'attempts' | 'createdAt'>): BackgroundJob {
-    if (!this.data.backgroundJobs) {
-      this.data.backgroundJobs = []
-    }
+    if (!this.data.backgroundJobs) this.data.backgroundJobs = []
     const newJob: BackgroundJob = {
       ...job,
       id: `job-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -657,11 +819,15 @@ export class AppDatabase {
   }
 
   /**
-   * GDPR / CCPA Data Portability Export
+   * GDPR / CCPA Data Portability Export: Covers ALL user tables
    */
   exportUserData(userId: string): Record<string, any> {
+    const acc = this.data.accounts?.[userId]
+    const sanitizedAccount = acc ? { id: acc.id, email: acc.email, role: acc.role, createdAt: acc.createdAt, lastLoginAt: acc.lastLoginAt } : null
+
     return {
       userId,
+      account: sanitizedAccount,
       userSettings: this.data.users[userId] || null,
       messages: this.data.messages[userId] || [],
       memories: this.data.memories[userId] || [],
@@ -669,17 +835,22 @@ export class AppDatabase {
       journal: this.data.journal[userId] || [],
       relationshipJournal: this.data.relationshipJournal[userId] || [],
       ragDocs: this.data.ragDocs[userId] || [],
+      tokenLogs: (this.data.tokenLogs || []).filter((l) => l.userId === userId),
       backgroundJobs: (this.data.backgroundJobs || []).filter((j) => j.userId === userId),
       exportedAt: new Date().toISOString(),
     }
   }
 
   /**
-   * GDPR / CCPA Right-To-Be-Forgotten: Strictly purges all user data
+   * GDPR / CCPA Right-To-Be-Forgotten: Strictly purges all user data across every table
    */
   deleteUserData(userId: string): { purged: boolean; recordsRemoved: number } {
     let recordsRemoved = 0
 
+    if (this.data.accounts && this.data.accounts[userId]) {
+      delete this.data.accounts[userId]
+      recordsRemoved++
+    }
     if (this.data.users[userId]) {
       delete this.data.users[userId]
       recordsRemoved++
@@ -712,6 +883,19 @@ export class AppDatabase {
       const remaining = this.data.backgroundJobs.filter((j) => j.userId !== userId)
       recordsRemoved += this.data.backgroundJobs.length - remaining.length
       this.data.backgroundJobs = remaining
+    }
+    if (this.data.tokenLogs) {
+      const remaining = this.data.tokenLogs.filter((l) => l.userId !== userId)
+      recordsRemoved += this.data.tokenLogs.length - remaining.length
+      this.data.tokenLogs = remaining
+    }
+    if (this.data.refreshTokens) {
+      for (const [hash, rec] of Object.entries(this.data.refreshTokens)) {
+        if (rec.userId === userId) {
+          delete this.data.refreshTokens[hash]
+          recordsRemoved++
+        }
+      }
     }
 
     this.save()
