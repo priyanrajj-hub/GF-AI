@@ -414,50 +414,60 @@ export class ProceduralAnimator {
       const weightPhase = Math.sin(time * 0.45)
 
       if (leftUpperArm && rightUpperArm && leftLowerArm && rightLowerArm) {
+        const isMiku = activeChar === 'mira'
         const walkFreq = effectiveAction === 'run' ? 4.2 : 2.8
         const armSwing = this.state.isMoving ? Math.sin(time * walkFreq) * (effectiveAction === 'run' ? 0.18 : 0.10) : 0
 
         if (this.state.isMoving) {
-          leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, 1.20, delta * 4.5)
+          const moveArmZ = isMiku ? 1.36 : 1.20
+          leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, moveArmZ, delta * 4.5)
           leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, -armSwing - 0.04, delta * 5.0)
-          leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, 0, delta * 4.0)
+          leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, isMiku ? 0.02 : 0, delta * 4.0)
 
-          rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, -1.20, delta * 4.5)
+          rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, -moveArmZ, delta * 4.5)
           rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, armSwing - 0.04, delta * 5.0)
-          rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, 0, delta * 4.0)
+          rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, isMiku ? -0.02 : 0, delta * 4.0)
 
-          leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, 0.24, delta * 4.0)
-          rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, -0.24, delta * 4.0)
-          leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, 0.12, delta * 4.0)
-          rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, -0.12, delta * 4.0)
+          const moveForeZ = isMiku ? 0.03 : 0.24
+          const moveForeY = isMiku ? 0.01 : 0.12
+          leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, moveForeZ, delta * 4.0)
+          rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, -moveForeZ, delta * 4.0)
+          leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, moveForeY, delta * 4.0)
+          rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, -moveForeY, delta * 4.0)
+          leftLowerArm.rotation.x = THREE.MathUtils.lerp(leftLowerArm.rotation.x, isMiku ? -0.06 : 0, delta * 4.0)
+          rightLowerArm.rotation.x = THREE.MathUtils.lerp(rightLowerArm.rotation.x, isMiku ? -0.06 : 0, delta * 4.0)
 
           if (leftHand) leftHand.rotation.x = THREE.MathUtils.lerp(leftHand.rotation.x, armSwing * 0.20, delta * 5.0)
           if (rightHand) rightHand.rotation.x = THREE.MathUtils.lerp(rightHand.rotation.x, -armSwing * 0.20, delta * 5.0)
         } else {
-          // Standing Idle: natural elegant human resting posture (arms hanging naturally along torso, zero awkward chicken-wing bend)
-          const rRestZ = weightPhase > 0.1 ? -1.48 : -1.50
-          const rRestX = weightPhase > 0.1 ? -0.04 : -0.02
-          const rForeZ = -0.02
-          const rForeY = 0.01
+          // Standing Idle: natural elegant idol resting posture (arms hanging naturally along torso, zero awkward chicken-wing bend)
+          const rRestZ = isMiku
+            ? (weightPhase > 0.1 ? -1.37 : -1.39)
+            : (weightPhase > 0.1 ? -1.48 : -1.50)
+          const rRestX = isMiku ? -0.05 : (weightPhase > 0.1 ? -0.04 : -0.02)
+          const rForeZ = isMiku ? -0.02 : -0.02
+          const rForeY = isMiku ? -0.01 : 0.01
 
-          const lRestZ = weightPhase < -0.1 ? 1.48 : 1.50
-          const lRestX = weightPhase < -0.1 ? -0.04 : -0.02
-          const lForeZ = 0.02
-          const lForeY = -0.01
+          const lRestZ = isMiku
+            ? (weightPhase < -0.1 ? 1.37 : 1.39)
+            : (weightPhase < -0.1 ? 1.48 : 1.50)
+          const lRestX = isMiku ? -0.05 : (weightPhase < -0.1 ? -0.04 : -0.02)
+          const lForeZ = isMiku ? 0.02 : 0.02
+          const lForeY = isMiku ? 0.01 : -0.01
 
           rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, rRestZ, delta * 4.0)
           rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, rRestX, delta * 4.0)
-          rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, 0, delta * 4.0)
+          rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, isMiku ? -0.02 : 0, delta * 4.0)
 
-          rightLowerArm.rotation.x = THREE.MathUtils.lerp(rightLowerArm.rotation.x, -0.04, delta * 4.0)
+          rightLowerArm.rotation.x = THREE.MathUtils.lerp(rightLowerArm.rotation.x, isMiku ? -0.06 : -0.04, delta * 4.0)
           rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, rForeZ, delta * 4.0)
           rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, rForeY, delta * 4.0)
 
           leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, lRestZ, delta * 4.0)
           leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, lRestX, delta * 4.0)
-          leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, 0, delta * 4.0)
+          leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, isMiku ? 0.02 : 0, delta * 4.0)
 
-          leftLowerArm.rotation.x = THREE.MathUtils.lerp(leftLowerArm.rotation.x, -0.04, delta * 4.0)
+          leftLowerArm.rotation.x = THREE.MathUtils.lerp(leftLowerArm.rotation.x, isMiku ? -0.06 : -0.04, delta * 4.0)
           leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, lForeZ, delta * 4.0)
           leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, lForeY, delta * 4.0)
 

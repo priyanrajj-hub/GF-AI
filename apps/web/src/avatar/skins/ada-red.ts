@@ -479,6 +479,7 @@ export const MikuClassicIdolSkin: AvatarSkin = {
     attachAdaTacticalAccessories(vrm, false)
     attachYorThornPrincessFeatures(vrm, false)
     attachStarkTechGlassesAndBeard(vrm, false)
+    attachGoldenPirateAccessories(vrm, false)
 
     const chestEmblem = vrm.humanoid?.getNormalizedBoneNode('chest') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
     if (chestEmblem) {
@@ -621,8 +622,13 @@ export const MikuCyberDivaSkin: AvatarSkin = {
         const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
         materials.forEach((mat: any) => {
           if (!mat) return
-          if (/hair/i.test(mat.name || '')) {
+          if (mat.name === '11' || mat.name === '12' || /hair/i.test(mat.name || '')) {
             if (mat.color) mat.color.set('#00F3FF')
+            if (mat.emissive) {
+              mat.emissive.set('#00A8FF')
+              mat.emissiveIntensity = 0.35
+            }
+            mat.needsUpdate = true
           }
         })
       }
@@ -646,12 +652,92 @@ export const MikuSakuraSkin: AvatarSkin = {
         const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
         materials.forEach((mat: any) => {
           if (!mat) return
-          if (/hair/i.test(mat.name || '')) {
-            if (mat.color) mat.color.set('#FFB7C5') // Sakura pink
+          if (mat.name === '11' || mat.name === '12' || /hair/i.test(mat.name || '')) {
+            if (mat.color) mat.color.set('#FFB7C5') // Sakura blossom pink
+            mat.needsUpdate = true
           }
         })
       }
     })
+  },
+}
+
+/**
+ * Hatsune Miku • Golden Pirate Diva (Fortnite Collab Edition)
+ * - 24k polished gold filigree pirate captain coat trims, buttons, and epaulettes
+ * - Deep velvet pirate obsidian coat & pleated skirt with crimson lining
+ * - Golden pirate skull & crossbones buckle on waist
+ * - Twin nautical golden anchor hairclips on twintails
+ * - Metallic gold pirate boots
+ */
+export const MikuGoldenPirateSkin: AvatarSkin = {
+  id: 'miku-golden-pirate',
+  name: 'Hatsune Miku • Golden Pirate Diva (Fortnite Edition)',
+  description: 'Fortnite-inspired high-seas cyber pirate diva outfit. Features 24k polished gold filigree pirate captain coat trims, skull & compass crossbones buckle, golden twintail anchor ribbons, and shimmering metallic gold boots.',
+  apply: (vrm: VRM) => {
+    MikuClassicIdolSkin.apply(vrm)
+
+    const metaTitle = ((vrm.meta as any)?.title || (vrm.meta as any)?.name || '') as string
+    const isNativeMiku = Boolean(
+      metaTitle.includes('ミク') || metaTitle.toLowerCase().includes('miku') ||
+      vrm.scene.getObjectByName('右髪１')
+    )
+
+    // Apply high-seas golden pirate materials
+    vrm.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        materials.forEach((mat: any) => {
+          if (!mat) return
+          const matName = (mat.name || '').toLowerCase()
+
+          // For native Tda Miku V4X:
+          if (isNativeMiku) {
+            // Preserve pristine skin, face, eyes, and textures
+            if (['0', '1', '2', '6', '7', '8', '9', '10', '13', '14'].includes(mat.name)) {
+              if (mat.color) mat.color.set('#FFFFFF')
+              mat.transparent = true
+              mat.depthWrite = true
+              mat.depthTest = true
+              mat.alphaTest = 0.5
+              mat.needsUpdate = true
+              return
+            }
+
+            // Accent materials -> 24k Polished Gold (Fortnite Golden Edition)
+            if (['3', '4', '5', '15'].includes(mat.name)) {
+              if (mat.color) mat.color.set('#FFD700')
+              if (mat.roughness !== undefined) mat.roughness = 0.16
+              if (mat.metalness !== undefined) mat.metalness = 0.94
+              if (mat.emissive) {
+                mat.emissive.set('#FFB700')
+                mat.emissiveIntensity = 0.40
+              }
+              mat.needsUpdate = true
+            } else if (mat.name === '11' || mat.name === '12') {
+              // Signature cyan twintails with subtle gilded shimmer
+              if (mat.roughness !== undefined) mat.roughness = 0.28
+              if (mat.metalness !== undefined) mat.metalness = 0.15
+              mat.needsUpdate = true
+            }
+          } else {
+            // Ada fallback meshes
+            if (/wear|cloth|dress/i.test(matName)) {
+              if (mat.color) mat.color.set('#0E1118')
+              if (mat.metalness !== undefined) mat.metalness = 0.65
+            }
+            if (/boot|shoe|belt/i.test(matName)) {
+              if (mat.color) mat.color.set('#FFD700')
+              if (mat.metalness !== undefined) mat.metalness = 0.88
+            }
+          }
+        })
+      }
+    })
+
+    // Attach Fortnite Golden Pirate 3D accessories
+    attachGoldenPirateAccessories(vrm, true)
   },
 }
 
@@ -1699,9 +1785,145 @@ export const StarkArcTraderSkin: AvatarSkin = {
   },
 }
 
+/**
+ * Attaches Fortnite-inspired Golden Pirate Accessories to Hatsune Miku:
+ * 1. 24k Gold Pirate Belt Buckle with Crossed Cutlasses & Skull Insignia at waist
+ * 2. Twin 24k Gold Nautical Anchor Hair Clips with Crimson Ribbons on pigtails
+ * 3. 24k Gold Pirate Captain Epaulettes with Bullion Fringes on shoulders
+ */
+export function attachGoldenPirateAccessories(vrm: VRM, visible: boolean = true): void {
+  const hips = vrm.humanoid?.getNormalizedBoneNode('hips') || vrm.humanoid?.getNormalizedBoneNode('spine')
+  const head = vrm.humanoid?.getNormalizedBoneNode('head')
+  const leftShoulder = vrm.humanoid?.getNormalizedBoneNode('leftShoulder') || vrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
+  const rightShoulder = vrm.humanoid?.getNormalizedBoneNode('rightShoulder') || vrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
+
+  if (!visible) {
+    if (hips) {
+      const b = hips.getObjectByName('__MIKU_PIRATE_BUCKLE__')
+      if (b) b.visible = false
+    }
+    if (head) {
+      const aL = head.getObjectByName('__MIKU_ANCHOR_L__')
+      if (aL) aL.visible = false
+      const aR = head.getObjectByName('__MIKU_ANCHOR_R__')
+      if (aR) aR.visible = false
+    }
+    if (leftShoulder) {
+      const epL = leftShoulder.getObjectByName('__MIKU_EPAULETTE_L__')
+      if (epL) epL.visible = false
+    }
+    if (rightShoulder) {
+      const epR = rightShoulder.getObjectByName('__MIKU_EPAULETTE_R__')
+      if (epR) epR.visible = false
+    }
+    return
+  }
+
+  const goldPbrMat = new THREE.MeshStandardMaterial({
+    color: 0xFFD700,
+    metalness: 0.92,
+    roughness: 0.16,
+    emissive: new THREE.Color(0xD4AF37),
+    emissiveIntensity: 0.25,
+  })
+
+  const crimsonSashMat = new THREE.MeshStandardMaterial({
+    color: 0x99001F,
+    roughness: 0.35,
+    metalness: 0.20,
+  })
+
+  // 1. Golden Pirate Belt Buckle (clean up any legacy buckle if present)
+  if (hips) {
+    const buckle = hips.getObjectByName('__MIKU_PIRATE_BUCKLE__')
+    if (buckle) {
+      buckle.visible = false
+      hips.remove(buckle)
+    }
+  }
+
+  // 2. Twin Nautical Golden Anchors on head/twintails
+  if (head) {
+    const buildAnchor = (name: string, sign: number) => {
+      let anchor = head.getObjectByName(name) as THREE.Group | undefined
+      if (!anchor) {
+        anchor = new THREE.Group()
+        anchor.name = name
+
+        // Top ring
+        const topRing = new THREE.Mesh(new THREE.TorusGeometry(0.010, 0.0025, 8, 16), goldPbrMat)
+        topRing.position.set(0, 0.022, 0)
+        anchor.add(topRing)
+
+        // Vertical shank
+        const shank = new THREE.Mesh(new THREE.CylinderGeometry(0.0025, 0.0025, 0.036, 8), goldPbrMat)
+        shank.position.set(0, 0.005, 0)
+        anchor.add(shank)
+
+        // Horizontal cross stock
+        const stock = new THREE.Mesh(new THREE.CylinderGeometry(0.0025, 0.0025, 0.024, 8), goldPbrMat)
+        stock.rotation.z = Math.PI / 2
+        stock.position.set(0, 0.012, 0)
+        anchor.add(stock)
+
+        // Curved bottom flukes
+        const flukes = new THREE.Mesh(new THREE.TorusGeometry(0.015, 0.0028, 8, 16, Math.PI), goldPbrMat)
+        flukes.rotation.z = Math.PI
+        flukes.position.set(0, -0.012, 0)
+        anchor.add(flukes)
+
+        // Crimson ribbon bow accent
+        const bow = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.010, 0.006), crimsonSashMat)
+        bow.position.set(0, 0.020, 0.004)
+        anchor.add(bow)
+
+        head.add(anchor)
+      }
+      anchor.position.set(sign * 0.096, 0.075, 0.016)
+      anchor.rotation.y = sign * 0.35
+      anchor.visible = true
+    }
+    buildAnchor('__MIKU_ANCHOR_L__', 1)
+    buildAnchor('__MIKU_ANCHOR_R__', -1)
+  }
+
+  // 3. Golden Pirate Captain Epaulettes on shoulders
+  const buildEpaulette = (shoulder: THREE.Object3D | null | undefined, name: string, isLeft: boolean) => {
+    if (!shoulder) return
+    let ep = shoulder.getObjectByName(name) as THREE.Group | undefined
+    if (!ep) {
+      ep = new THREE.Group()
+      ep.name = name
+
+      const sign = isLeft ? 1 : -1
+      // Gold shoulder crescent plate
+      const crescent = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.038, 0.010, 16), goldPbrMat)
+      crescent.position.set(sign * 0.02, 0.01, 0)
+      ep.add(crescent)
+
+      // Gold bullion hanging fringes
+      for (let f = 0; f < 5; f++) {
+        const fringe = new THREE.Mesh(new THREE.CylinderGeometry(0.0018, 0.0018, 0.026, 6), goldPbrMat)
+        const angle = (f / 4) * Math.PI - Math.PI / 2
+        fringe.position.set(
+          sign * (0.02 + Math.cos(angle) * 0.028),
+          -0.018,
+          Math.sin(angle) * 0.028
+        )
+        ep.add(fringe)
+      }
+      shoulder.add(ep)
+    }
+    ep.visible = true
+  }
+  buildEpaulette(leftShoulder, '__MIKU_EPAULETTE_L__', true)
+  buildEpaulette(rightShoulder, '__MIKU_EPAULETTE_R__', false)
+}
+
 export const AVATAR_SKINS: Record<string, AvatarSkin> = {
   // Hatsune Miku Skins
   'miku-classic-idol': MikuClassicIdolSkin,
+  'miku-golden-pirate': MikuGoldenPirateSkin,
   'miku-magical-mirai': MikuMagicalMiraiSkin,
   'miku-cyber-diva': MikuCyberDivaSkin,
   'miku-sakura': MikuSakuraSkin,

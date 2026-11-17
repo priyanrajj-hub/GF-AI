@@ -716,6 +716,21 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
             <>
               <button
                 onClick={() => {
+                  setSkinId('miku-golden-pirate')
+                  VoiceEngine.speak("Ahoy Captain! Golden Pirate Miku is ready to set sail! We're conquering the charts and the high seas together!", { rate: 1.10, pitch: 1.34 })
+                  setActiveFX(['sparkles', 'confetti', 'stars'])
+                }}
+                className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
+                  skinId === 'miku-golden-pirate'
+                    ? 'bg-amber-500/25 text-amber-200 border border-amber-400/60 shadow-[0_0_10px_rgba(251,191,36,0.3)]'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-amber-200 border border-slate-800'
+                }`}
+                title="Fortnite Collab: Golden Pirate Miku with 24k Gold Trims, Skull Buckle & Anchor Ribbons"
+              >
+                <span>🏴‍☠️</span> Golden Pirate
+              </button>
+              <button
+                onClick={() => {
                   setSkinId('miku-classic-idol')
                   VoiceEngine.speak("Classic V4X Idol outfit equipped! Time for a show-stopping performance!", { rate: 1.10, pitch: 1.34 })
                   setActiveFX(['sparkles', 'music_notes'])

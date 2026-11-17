@@ -268,7 +268,7 @@ function MikuConcertStageEnvironment() {
   const particlesRef = useRef<THREE.Points>(null)
   const spotlightL = useRef<THREE.SpotLight>(null)
   const spotlightR = useRef<THREE.SpotLight>(null)
-  const eqBarsRef = useRef<THREE.Group>(null)
+  const stageRingRef = useRef<THREE.Mesh>(null)
 
   const { particlePositions, particleSpeeds } = useMemo(() => {
     const count = 220
@@ -317,13 +317,10 @@ function MikuConcertStageEnvironment() {
       spotlightR.current.target.updateMatrixWorld()
     }
 
-    // Audio-reactive equalizer towers
-    if (eqBarsRef.current) {
-      eqBarsRef.current.children.forEach((child, idx) => {
-        const bar = child as THREE.Mesh
-        const h = 0.4 + Math.abs(Math.sin(t * 4.0 + idx * 0.6)) * 1.8
-        bar.scale.y = THREE.MathUtils.lerp(bar.scale.y, h, delta * 12.0)
-      })
+    // Audio-reactive pulsing holographic stage ring
+    if (stageRingRef.current) {
+      const pulse = 1.0 + Math.sin(t * 5.0) * 0.035
+      stageRingRef.current.scale.set(pulse, pulse, 1.0)
     }
   })
 
@@ -339,7 +336,7 @@ function MikuConcertStageEnvironment() {
         />
       </mesh>
 
-      {/* Luminous Neon Stage Ring around Miku's Feet */}
+      {/* Luminous Neon Stage Rings around Miku's Feet */}
       <mesh position={[0, -0.725, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.1, 1.16, 48]} />
         <meshBasicMaterial color="#39c5bb" />
@@ -347,6 +344,11 @@ function MikuConcertStageEnvironment() {
       <mesh position={[0, -0.725, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.5, 1.54, 48]} />
         <meshBasicMaterial color="#ff007f" />
+      </mesh>
+      {/* Subtle outer audio-reactive concert floor aura */}
+      <mesh ref={stageRingRef} position={[0, -0.724, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.85, 1.88, 64]} />
+        <meshBasicMaterial color="#00e5ff" transparent opacity={0.6} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Concert Laser Spotlights */}
@@ -369,21 +371,11 @@ function MikuConcertStageEnvironment() {
         castShadow
       />
 
-      {/* Background Cyber Equalizer Synthesizer Columns (Positioned cleanly behind stage left & right) */}
-      <group ref={eqBarsRef} position={[0, -0.6, -3.8]}>
-        {[-3.2, -2.8, -2.4, -2.0, -1.6, 1.6, 2.0, 2.4, 2.8, 3.2].map((x, i) => (
-          <mesh key={`eq-${i}`} position={[x, 0.5, 0]}>
-            <boxGeometry args={[0.24, 1.0, 0.15]} />
-            <meshStandardMaterial
-              color={i % 2 === 0 ? '#39c5bb' : '#ff007f'}
-              emissive={i % 2 === 0 ? '#00e5ff' : '#ff007f'}
-              emissiveIntensity={0.85}
-              roughness={0.2}
-              metalness={0.6}
-            />
-          </mesh>
-        ))}
-      </group>
+      {/* Distant Cyber Holographic Stage Wall Glow */}
+      <mesh position={[0, 1.2, -4.5]}>
+        <planeGeometry args={[14, 5.5]} />
+        <meshBasicMaterial color="#040915" side={THREE.DoubleSide} />
+      </mesh>
 
       {/* Upward Rising Stage Energy Particles */}
       <points ref={particlesRef}>

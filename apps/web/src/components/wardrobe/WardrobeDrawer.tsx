@@ -10,22 +10,28 @@ interface WardrobeDrawerProps {
 }
 
 export const WardrobeDrawer: React.FC<WardrobeDrawerProps> = ({ isOpen, onClose }) => {
-  const { skinId, setSkinId, accessories, setAccessories, setActiveFX, setActiveAction } = useAppStore()
+  const { skinId, setSkinId, accessories, setAccessories, setActiveFX, setActiveAction, activeCharacter } = useAppStore()
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
   if (!isOpen) return null
 
+  const isMiku = activeCharacter === 'mira'
   const outfits = WardrobeProvider.getAllOutfits()
-  const filtered = selectedCategory === 'all' ? outfits : outfits.filter((o) => o.category === selectedCategory || o.tags.includes(selectedCategory))
+  const filtered = selectedCategory === 'all'
+    ? (isMiku ? outfits.filter((o) => o.tags.includes('miku') || o.category === 'cosplay').concat(outfits.filter((o) => !o.tags.includes('miku') && o.category !== 'cosplay')) : outfits)
+    : outfits.filter((o) => o.category === selectedCategory || o.tags.includes(selectedCategory))
 
   const handleSelectOutfit = (outfit: WardrobeOutfit) => {
     // 1. Magical transformation spin with light-burst FX
-    setActiveAction('sassy_hip_pop')
+    setActiveAction(isMiku ? 'spin_twirl' : 'sassy_hip_pop')
     setActiveFX(['sparkles', 'confetti', 'stars'])
     setSkinId(outfit.id)
 
-    // 2. Ada voice response
-    VoiceEngine.speak(outfit.voiceComment)
+    // 2. Character-specific voice response
+    VoiceEngine.speak(outfit.voiceComment, {
+      rate: isMiku ? 1.10 : 1.02,
+      pitch: isMiku ? 1.34 : 1.0,
+    })
 
     setTimeout(() => {
       setActiveFX([])
@@ -33,15 +39,24 @@ export const WardrobeDrawer: React.FC<WardrobeDrawerProps> = ({ isOpen, onClose 
     }, 3200)
   }
 
-  const categories = [
-    { id: 'all', label: 'All Outfits' },
-    { id: 'indian', label: 'Desi / Indian' },
-    { id: 'signature', label: 'Spy-Chic' },
-    { id: 'casual', label: 'Casual' },
-    { id: 'formal', label: 'Office' },
-    { id: 'night', label: 'Bedtime' },
-    { id: 'glamour', label: 'Gala & Festive' },
-  ]
+  const categories = isMiku
+    ? [
+        { id: 'all', label: 'All Costumes' },
+        { id: 'miku', label: 'Vocaloid & Fortnite' },
+        { id: 'cosplay', label: 'Pirate & Cosplay' },
+        { id: 'signature', label: 'Official V4X' },
+        { id: 'glamour', label: 'Concert & Mirai' },
+        { id: 'seasonal', label: 'Sakura & Spring' },
+      ]
+    : [
+        { id: 'all', label: 'All Outfits' },
+        { id: 'indian', label: 'Desi / Indian' },
+        { id: 'signature', label: 'Spy-Chic' },
+        { id: 'casual', label: 'Casual' },
+        { id: 'formal', label: 'Office' },
+        { id: 'night', label: 'Bedtime' },
+        { id: 'glamour', label: 'Gala & Festive' },
+      ]
 
   return (
     <div className="fixed inset-y-0 right-0 w-96 glass-panel border-l border-cyan-500/30 z-40 flex flex-col shadow-2xl bg-slate-950/95 backdrop-blur-2xl">
@@ -49,7 +64,7 @@ export const WardrobeDrawer: React.FC<WardrobeDrawerProps> = ({ isOpen, onClose 
       <div className="px-5 py-4 border-b border-cyan-500/20 flex items-center justify-between bg-slate-950/70">
         <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs font-semibold tracking-wider uppercase">
           <Shirt className="w-4 h-4 text-pink-400" />
-          <span>Ada Wardrobe & Outfits (15+)</span>
+          <span>{isMiku ? 'Hatsune Miku Costumes & Fortnite' : 'Ada Wardrobe & Outfits (20+)'}</span>
         </div>
         <button
           onClick={onClose}

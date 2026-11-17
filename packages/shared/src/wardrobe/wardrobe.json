@@ -315,5 +315,69 @@
       "tactical"
     ],
     "voiceComment": "Cyber Valkyrie online. Ready for battle alongside you!"
+  },
+  {
+    "id": "miku-golden-pirate",
+    "name": "Golden Pirate Miku (Fortnite Edition)",
+    "category": "cosplay",
+    "description": "Fortnite-inspired high-seas cyber pirate diva outfit. Features 24k polished gold filigree pirate captain coat trims, skull & compass crossbones buckle, golden twintail anchor ribbons, and shimmering metallic gold boots.",
+    "dressColor": "#FFD700",
+    "accentColor": "#A30026",
+    "hairColor": "#00E5FF",
+    "tags": [
+      "miku",
+      "pirate",
+      "golden",
+      "fortnite",
+      "vocaloid",
+      "cosplay",
+      "gold",
+      "cyber"
+    ],
+    "voiceComment": "Ahoy Captain! Golden Pirate Miku is ready to set sail! We're conquering the charts and the high seas together!"
+  },
+  {
+    "id": "miku-classic-idol",
+    "name": "Classic Vocaloid Diva (Official V4X Outfit)",
+    "category": "signature",
+    "description": "Signature Hatsune Miku official V4X idol attire: twin cyan pigtails, square ribbons, silver sleeveless top, turquoise necktie, detached synth sleeves, pleated skirt, thigh-high boots, and 01 tattoo.",
+    "dressColor": "#D9DEE8",
+    "accentColor": "#00E5FF",
+    "hairColor": "#00E5FF",
+    "tags": ["miku", "vocaloid", "signature", "idol", "v4x", "classic"],
+    "voiceComment": "Classic V4X idol outfit equipped! Time for a show-stopping performance!"
+  },
+  {
+    "id": "miku-magical-mirai",
+    "name": "Magical Mirai Concert Diva",
+    "category": "glamour",
+    "description": "Concert tour diva edition with iridescent cyan, hot magenta accents, and luminous stage presence.",
+    "dressColor": "#1A1528",
+    "accentColor": "#FF007F",
+    "hairColor": "#00E5FF",
+    "tags": ["miku", "magical mirai", "concert", "glamour", "stage"],
+    "voiceComment": "Magical Mirai concert diva mode active! The lights are dazzling!"
+  },
+  {
+    "id": "miku-cyber-diva",
+    "name": "Cyber Synthwave Diva",
+    "category": "cosplay",
+    "description": "Futuristic holographic synthwave aesthetic with neon cyan and electric violet pulses.",
+    "dressColor": "#0F0F1A",
+    "accentColor": "#00F3FF",
+    "hairColor": "#00F3FF",
+    "tags": ["miku", "cyber", "synthwave", "hologram", "neon"],
+    "voiceComment": "Cyber Synthwave Hologram engaged! Streaming pure digital sound!"
+  },
+  {
+    "id": "miku-sakura",
+    "name": "Sakura Miku (Cherry Blossom)",
+    "category": "seasonal",
+    "description": "Spring cherry blossom edition with delicate pastel pink twintails and floral accents.",
+    "dressColor": "#FFF0F5",
+    "accentColor": "#FFB7C5",
+    "hairColor": "#FFB7C5",
+    "tags": ["miku", "sakura", "spring", "cherry blossom", "pink"],
+    "voiceComment": "Sakura Miku is here! Like cherry blossoms dancing in the spring breeze!"
   }
 ]

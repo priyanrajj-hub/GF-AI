@@ -111,7 +111,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           const isMikuModel = isMiku || metaTitle.includes('ミク') || metaTitle.toLowerCase().includes('miku')
 
           if (isMikuModel) {
-            // Hatsune Miku: Youthful idol proportions
+            // Hatsune Miku: Youthful idol proportions & natural resting arms
             const headBone = loadedVrm.humanoid?.getNormalizedBoneNode('head')
             if (headBone) headBone.scale.set(1.0, 1.0, 1.0)
             const neckBone = loadedVrm.humanoid?.getNormalizedBoneNode('neck')
@@ -120,8 +120,12 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
             if (spineBone) spineBone.scale.set(1.0, 1.0, 1.0)
             const initLArm = loadedVrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
             const initRArm = loadedVrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
-            if (initLArm) initLArm.rotation.set(0, 0, 1.15)
-            if (initRArm) initRArm.rotation.set(0, 0, -1.15)
+            const initLForearm = loadedVrm.humanoid?.getNormalizedBoneNode('leftLowerArm')
+            const initRForearm = loadedVrm.humanoid?.getNormalizedBoneNode('rightLowerArm')
+            if (initLArm) initLArm.rotation.set(0.04, 0.02, 1.38)
+            if (initRArm) initRArm.rotation.set(0.04, -0.02, -1.38)
+            if (initLForearm) initLForearm.rotation.set(-0.06, 0.0, 0.02)
+            if (initRForearm) initRForearm.rotation.set(-0.06, 0.0, -0.02)
           } else {
             // Mature Adult Proportions (Ada Wong):
             const headBone = loadedVrm.humanoid?.getNormalizedBoneNode('head')

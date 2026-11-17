@@ -225,25 +225,32 @@ class VoiceEngineManager {
               source.playbackRate.value = rateMultiplier * (options.rate || 1.0)
 
               // Formant & Air Presence EQ:
-              // Vocaloid Formant Peaking Filter for Hatsune Miku: synthetic idol formant resonance
+              // Multi-Band Vocaloid Formant Filter for Hatsune Miku: synthetic idol formant resonance
               const vocaloidFilter = this.audioContext.createBiquadFilter()
               vocaloidFilter.type = 'peaking'
               vocaloidFilter.frequency.value = isMiku ? 1650 : 2500
               vocaloidFilter.Q.value = isMiku ? 2.6 : 1.0
-              vocaloidFilter.gain.value = isMiku ? 5.2 : 0.0
+              vocaloidFilter.gain.value = isMiku ? 5.8 : 0.0
+
+              const vocaloidPresence = this.audioContext.createBiquadFilter()
+              vocaloidPresence.type = 'peaking'
+              vocaloidPresence.frequency.value = isMiku ? 2850 : 3000
+              vocaloidPresence.Q.value = isMiku ? 2.2 : 1.0
+              vocaloidPresence.gain.value = isMiku ? 4.2 : 0.0
 
               // High-shelf boost for crystalline vocal sparkle
               const highShelf = this.audioContext.createBiquadFilter()
               highShelf.type = 'highshelf'
-              highShelf.frequency.value = isMiku ? 4200 : 3800
-              highShelf.gain.value = isMiku ? 4.2 : airPresenceBoost
+              highShelf.frequency.value = isMiku ? 4600 : 3800
+              highShelf.gain.value = isMiku ? 4.8 : airPresenceBoost
 
               // Gain control
               const gainNode = this.audioContext.createGain()
               gainNode.gain.value = store.audioVolume ?? 0.95
 
               source.connect(vocaloidFilter)
-              vocaloidFilter.connect(highShelf)
+              vocaloidFilter.connect(vocaloidPresence)
+              vocaloidPresence.connect(highShelf)
               highShelf.connect(gainNode)
 
               // Connect to analyser for real-time lip-sync & visualizer rings

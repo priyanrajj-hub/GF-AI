@@ -58,6 +58,11 @@ export class WardrobeProvider {
     const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000
 
     // 1. Direct Voice / Text Command matching (explicit override)
+    if (/pirate|golden pirate|fortnite pirate|buccaneer|high seas/i.test(cmd)) return this.getOutfitById('miku-golden-pirate')
+    if (/miku|vocaloid|classic idol|v4x/i.test(cmd)) return this.getOutfitById('miku-classic-idol')
+    if (/magical mirai/i.test(cmd)) return this.getOutfitById('miku-magical-mirai')
+    if (/cyber diva|synthwave miku/i.test(cmd)) return this.getOutfitById('miku-cyber-diva')
+    if (/sakura miku/i.test(cmd)) return this.getOutfitById('miku-sakura')
     if (/turtleneck|harness|ada original/i.test(cmd)) return this.getOutfitById('crimson_turtleneck')
     if (/stealth|black stealth/i.test(cmd)) return this.getOutfitById('black_stealth')
     if (/jacket|crimson jacket|field jacket/i.test(cmd)) return this.getOutfitById('crimson_jacket')
