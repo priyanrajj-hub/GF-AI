@@ -1,0 +1,22 @@
+# Environment files
+.env
+.env.*
+*.env
+!.env.example
+
+# Dependencies and build
+node_modules/
+dist/
+*.tsbuildinfo
+
+# SQLite databases & temp storage
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+data/
+uploads/
+
+# Logs
+*.log
+npm-debug.log*

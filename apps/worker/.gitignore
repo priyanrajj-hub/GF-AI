@@ -1,0 +1,13 @@
+# Environment files
+.env
+.env.*
+*.env
+!.env.example
+
+# Dependencies and build
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Logs
+*.log

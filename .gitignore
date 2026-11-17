@@ -1,21 +1,36 @@
-# Node & dependencies
+# ─────────────────────────────────────────────────────────────
+# 1. Environment & Secrets (Strict Defense - NEVER COMMIT)
+# ─────────────────────────────────────────────────────────────
+.env
+.env.*
+.env*.local
+*.env
+*.env.*
+**/.env
+**/.env.*
+**/*.env
+!.env.example
+!**/.env.example
+
+# ─────────────────────────────────────────────────────────────
+# 2. Node & Dependencies
+# ─────────────────────────────────────────────────────────────
 node_modules/
 .pnp
 .pnp.js
 
-# Build artifacts
+# ─────────────────────────────────────────────────────────────
+# 3. Build & Cache Artifacts
+# ─────────────────────────────────────────────────────────────
 dist/
 build/
 .vite/
 *.tsbuildinfo
+.vercel/
 
-# Environment and sensitive keys
-.env
-.env.local
-.env.*.local
-*.env
-
-# SQLite databases & temp storage
+# ─────────────────────────────────────────────────────────────
+# 4. Databases & Ephemeral Local Storage
+# ─────────────────────────────────────────────────────────────
 *.sqlite
 *.sqlite3
 *.db
@@ -25,7 +40,9 @@ build/
 server/data/
 server/uploads/
 
-# Logs
+# ─────────────────────────────────────────────────────────────
+# 5. Logs & Debug Reports
+# ─────────────────────────────────────────────────────────────
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -33,7 +50,9 @@ pnpm-debug.log*
 lerna-debug.log*
 *.log
 
-# OS & Editor
+# ─────────────────────────────────────────────────────────────
+# 6. Operating System & IDE Configurations
+# ─────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 *.suo
@@ -41,15 +60,21 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+.idea/
+.vscode/*
+!.vscode/extensions.json
 
-# Training adapter weights
+# ─────────────────────────────────────────────────────────────
+# 7. Model Weights & Private Assets
+# ─────────────────────────────────────────────────────────────
 training/ada-lora-adapter/
 training/ada-dpo-adapter/
-
-# Private local 3D models (Milestone 1 Capcom fan guidelines compliance)
 apps/web/public/models/private/
+*.private.vrm
 
-# Private personal data & PII stores (Strict Privacy Guardrail)
+# ─────────────────────────────────────────────────────────────
+# 8. Private Personal Data & PII Stores (Strict Privacy Guard)
+# ─────────────────────────────────────────────────────────────
 private/
 *.private.json
 training/private/
@@ -58,9 +83,9 @@ scripts/private/
 local_profile.json
 *.local.json
 
-*.private.vrm
-.vercel
+# ─────────────────────────────────────────────────────────────
+# 9. Temporary QA Screenshots & Scratch Media
+# ─────────────────────────────────────────────────────────────
 *.png
-
-
-.vercel
+*.jpg
+*.jpeg
