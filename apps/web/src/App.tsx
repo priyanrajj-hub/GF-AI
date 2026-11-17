@@ -9,6 +9,7 @@ import { MemoryManagerModal } from './components/modals/MemoryManagerModal.js'
 import { MoodJournalModal } from './components/modals/MoodJournalModal.js'
 import { PersonalityStudioModal } from './components/personality/PersonalityStudioModal.js'
 import { PermissionCenterModal } from './components/permissions/PermissionCenterModal.js'
+import { AuthModal } from './components/modals/AuthModal.js'
 import { FirstRunModal } from './components/safety/FirstRunModal.js'
 import { WellbeingDashboardModal } from './components/wellbeing/WellbeingDashboardModal.js'
 import { DebugHUD } from './components/hud/DebugHUD.js'
@@ -49,6 +50,9 @@ export const App: React.FC = () => {
     setShowEnvironmentDrawer,
     showLiveMarketPanel,
     setShowLiveMarketPanel,
+    showAuthModal,
+    setShowAuthModal,
+    setCurrentUser,
   } = useAppStore()
 
   // Task D: Check for hidden /animation-test or /reaction-lab route
@@ -61,10 +65,6 @@ export const App: React.FC = () => {
     typeof window !== 'undefined' &&
     (window.location.pathname === '/reaction-lab' ||
       window.location.search.includes('reaction-lab=1'))
-
-  if (isReactionLab) {
-    return <ReactionLab />
-  }
 
   // 1. Futuristic Boot-Up Animation Sequence
   useEffect(() => {
@@ -121,6 +121,79 @@ export const App: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  // Check URL for magic link verification (#token=... or /login/verify) and session recovery
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const checkVerification = async () => {
+      let token = ''
+      let email = ''
+
+      // 1. Check URL fragment (#token=...&email=...)
+      if (window.location.hash.includes('token=')) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        token = hashParams.get('token') || ''
+        email = hashParams.get('email') || ''
+      }
+
+      // 2. Fallback to query params (?token=...&email=...)
+      if (!token && window.location.search.includes('token=')) {
+        const searchParams = new URLSearchParams(window.location.search)
+        token = searchParams.get('token') || ''
+        email = searchParams.get('email') || ''
+      }
+
+      if (token && email) {
+        try {
+          const res = await fetch(apiUrl('/api/auth/magic-link/verify'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim().toLowerCase(), token: token.trim() }),
+          })
+          const data = await res.json()
+          if (res.ok && data.token) {
+            const { setAuthToken, setRefreshToken } = await import('./utils/api.js')
+            setAuthToken(data.token)
+            if (data.refreshToken) setRefreshToken(data.refreshToken)
+            setCurrentUser(data.user)
+            window.history.replaceState({}, '', '/')
+            addMessage({
+              id: `msg-welcome-${Date.now()}`,
+              role: 'assistant',
+              content: `✨ Welcome back, **${data.user?.userName || 'Partner'}**! Secure cryptographic session initialized.`,
+              speech: `Welcome back! You are securely signed in.`,
+              emotion: 'excited',
+              gesture: 'wave',
+              timestamp: Date.now(),
+            })
+          }
+        } catch (err) {
+          console.error('[Auth Error]', err)
+        }
+      } else {
+        // Check active session on boot
+        try {
+          const res = await apiFetch('/api/auth/me')
+          if (res.ok) {
+            const me = await res.json()
+            if (me.authenticated) {
+              setCurrentUser(me)
+            }
+          }
+        } catch {}
+      }
+    }
+
+    checkVerification()
+
+    const handleAuthExpired = () => {
+      setCurrentUser(null)
+      setShowAuthModal(true)
+    }
+    window.addEventListener('auth:expired', handleAuthExpired)
+    return () => window.removeEventListener('auth:expired', handleAuthExpired)
+  }, [addMessage, setCurrentUser, setShowAuthModal])
 
   // 3. Central voice message dispatcher
   const handleVoiceMessage = async (transcript: string) => {
@@ -214,6 +287,11 @@ export const App: React.FC = () => {
       console.error('[Voice Dispatch Error]', err)
       setSystemState('idle')
     }
+  }
+
+  // If on /reaction-lab route
+  if (isReactionLab) {
+    return <ReactionLab />
   }
 
   // If on /animation-test route
@@ -321,6 +399,7 @@ export const App: React.FC = () => {
       <MoodJournalModal />
       <PersonalityStudioModal />
       <PermissionCenterModal />
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   )
 }

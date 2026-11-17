@@ -89,6 +89,26 @@ export class SqlAdapter {
     if (this.isInitialized) return { success: true, statementsExecuted: 0, engine: this.engine }
 
     try {
+      if (this.engine === 'sqlite_local') {
+        try {
+          await this.query('PRAGMA journal_mode = WAL;')
+          await this.query('PRAGMA busy_timeout = 5000;')
+        } catch {}
+      }
+
+      // Ensure versioned schema_migrations table exists
+      try {
+        await this.query(`
+          CREATE TABLE IF NOT EXISTS schema_migrations (
+            version VARCHAR(64) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            applied_at BIGINT NOT NULL
+          )
+        `)
+      } catch (e: any) {
+        // Table may already exist
+      }
+
       const schemaPath = path.join(process.cwd(), 'apps', 'server', 'src', 'db', 'schema.sql')
       let schemaSql = ''
       if (fs.existsSync(schemaPath)) {
@@ -129,6 +149,16 @@ export class SqlAdapter {
         }
       }
 
+      // Record baseline migration in schema_migrations
+      try {
+        const now = Date.now()
+        await this.query(
+          `INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)
+           ON CONFLICT (version) DO NOTHING`,
+          ['v2.0.0_baseline', 'core_relational_schema', now]
+        )
+      } catch {}
+
       this.isInitialized = true
       console.log(`[SqlAdapter] Relational schema migration complete: ${executed} statements executed (${this.engine})`)
       return { success: true, statementsExecuted: executed, engine: this.engine }
@@ -136,6 +166,65 @@ export class SqlAdapter {
       console.error('[SqlAdapter] Migration failed:', err)
       return { success: false, statementsExecuted: 0, engine: this.engine }
     }
+  }
+
+  /**
+   * Verified database health check
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      const res = await this.query('SELECT 1 as healthy')
+      return Boolean(res && res.rows && res.rows.length > 0)
+    } catch (err: any) {
+      console.error('[SqlAdapter] Health check error:', err.message)
+      return false
+    }
+  }
+
+  /**
+   * Executes operations within an atomic ACID transaction.
+   */
+  async transaction<T>(
+    callback: (tx: { query: (sql: string, params?: any[]) => Promise<SqlQueryResult> }) => Promise<T>
+  ): Promise<T> {
+    if (this.engine === 'postgres' && this.pgPool) {
+      const client = await this.pgPool.connect()
+      try {
+        await client.query('BEGIN')
+        const txQuery = async (sql: string, params: any[] = []): Promise<SqlQueryResult> => {
+          let paramIndex = 1
+          const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`)
+          const res = await client.query(pgSql, params)
+          return { rows: res.rows, rowCount: res.rowCount || 0 }
+        }
+        const result = await callback({ query: txQuery })
+        await client.query('COMMIT')
+        return result
+      } catch (err) {
+        await client.query('ROLLBACK')
+        throw err
+      } finally {
+        client.release()
+      }
+    }
+
+    if (this.libsqlClient) {
+      const tx = await this.libsqlClient.transaction('write')
+      try {
+        const txQuery = async (sql: string, params: any[] = []): Promise<SqlQueryResult> => {
+          const res = await tx.execute({ sql, args: params })
+          return { rows: (res.rows as unknown) as any[], rowCount: res.rowsAffected || res.rows.length }
+        }
+        const result = await callback({ query: txQuery })
+        await tx.commit()
+        return result
+      } catch (err) {
+        await tx.rollback()
+        throw err
+      }
+    }
+
+    throw new Error('[SqlAdapter] No active database engine connected for transaction')
   }
 
   /**
@@ -154,10 +243,22 @@ export class SqlAdapter {
     }
 
     if (this.libsqlClient) {
-      const res = await this.libsqlClient.execute({ sql, args: params })
-      return {
-        rows: (res.rows as unknown) as T[],
-        rowCount: res.rowsAffected || res.rows.length,
+      let retries = 3
+      while (retries >= 0) {
+        try {
+          const res = await this.libsqlClient.execute({ sql, args: params })
+          return {
+            rows: (res.rows as unknown) as T[],
+            rowCount: res.rowsAffected || res.rows.length,
+          }
+        } catch (err: any) {
+          if (retries > 0 && err.message?.includes('database is locked')) {
+            retries--
+            await new Promise((r) => setTimeout(r, 50))
+            continue
+          }
+          throw err
+        }
       }
     }
 

@@ -12,7 +12,7 @@
 > 2. Navigate to **Profile → API Keys**.
 > 3. Click **Delete / Revoke** on the old key.
 > 4. Generate a new secret key.
-> 5. Update `ELEVENLABS_API_KEY` in your [Vercel Project Settings](https://vercel.com/priyanraj/gf-ai/settings/environment-variables) and server `.env`.
+> 5. Update `ELEVENLABS_API_KEY` in your [Vercel Project Settings](https://vercel.com/priyanrajj-hub/gf-ai/settings/environment-variables) and server `.env`.
 
 ---
 

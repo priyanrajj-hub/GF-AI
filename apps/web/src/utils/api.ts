@@ -165,11 +165,10 @@ export async function apiFetch(endpoint: string, init: RequestInit = {}): Promis
     if (!refreshed) {
       setAuthToken(null)
       setRefreshToken(null)
-      const freshToken = await ensureAuthToken()
-      if (freshToken) {
-        headers.set('Authorization', `Bearer ${freshToken}`)
-        response = await fetch(url, { ...init, headers, signal })
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:expired', { detail: { reason: 'session_expired' } }))
       }
+      // Strictly fail closed: do NOT silently bootstrap anonymous guest token for registered user
     }
   }
 

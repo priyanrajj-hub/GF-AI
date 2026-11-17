@@ -60,6 +60,7 @@ export interface MacroIndicatorItem {
 }
 
 export interface MacroDashboardData extends MarketDatumMeta {
+  isStatutoryBenchmark?: boolean
   indicators: MacroIndicatorItem[]
   rbiPolicySummary: {
     repoRate: number
@@ -73,13 +74,17 @@ export interface MacroDashboardData extends MarketDatumMeta {
     nextMpcMeeting: string
   }
   globalLiquiditySummary: {
-    fiiNetInflowCrores: number
-    diiNetInflowCrores: number
+    fiiNetInflowCrores: number | null
+    diiNetInflowCrores: number | null
     usdinr: number
     indiaVix: number
     us10yYield: number
     in10yYield: number
     brentCrudeUsd: number
+    disclosureStatus?: {
+      status: 'live' | 'statutory_benchmark' | 'unavailable'
+      reason?: string
+    }
   }
 }
 
@@ -282,10 +287,11 @@ export class MarketDataService {
     const liveBrent = crudeQuote && crudeQuote.price > 0 ? crudeQuote.price : 73.15
 
     const macro: MacroDashboardData = {
-      source: 'RBI Monetary Policy Committee & Live Market Feeds',
+      source: 'RBI Monetary Policy Resolutions & MoSPI Statutory Disclosures',
       asOf: now,
-      isLive: true,
-      status: 'live',
+      isLive: false,
+      isStatutoryBenchmark: true,
+      status: 'cached',
       rbiPolicySummary: {
         repoRate: 6.50,
         reverseRepoRate: 3.35,
@@ -298,13 +304,17 @@ export class MarketDataService {
         nextMpcMeeting: 'Scheduled Bi-Monthly MPC Meeting',
       },
       globalLiquiditySummary: {
-        fiiNetInflowCrores: -842.5,
-        diiNetInflowCrores: +1954.2,
+        fiiNetInflowCrores: null,
+        diiNetInflowCrores: null,
         usdinr: liveUsdInr,
         indiaVix: liveVix,
         us10yYield: 4.42,
         in10yYield: 6.84,
         brentCrudeUsd: liveBrent,
+        disclosureStatus: {
+          status: 'unavailable',
+          reason: 'Live exchange disclosure feed unavailable for FII/DII net flows',
+        },
       },
       indicators: [
         {

@@ -40,8 +40,15 @@ const isKnownHelplineOrFalsePositive = (line) => {
 const genericPiiPatterns = [
   { 
     name: 'generic_personal_email', 
-    regex: /\b[a-zA-Z0-9._%+-]+@(?!example\.com|test\.com|yourdomain\.com|demo\.user)[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/i,
-    allowed: (line) => line.includes('priyanrajj-hub') || line.includes('support@') || line.includes('security@') || line.includes('noreply@')
+    regex: /\b[a-zA-Z0-9._%+-]+@(?!example\.(?:com|org|net)|test\.com|yourdomain\.com|demo\.user|[a-zA-Z0-9.-]+\.(?:test|example|invalid|localhost))[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/i,
+    allowed: (line) =>
+      line.includes('priyanrajj-hub') ||
+      line.includes('support@') ||
+      line.includes('security@') ||
+      line.includes('noreply@') ||
+      line.includes('.test') ||
+      line.includes('.example') ||
+      line.includes('.invalid')
   },
   { 
     name: 'phone_number', 

@@ -267,14 +267,25 @@ export class JwtService {
       const now = Math.floor(Date.now() / 1000)
       if (!payload.exp || payload.exp < now) return null
 
-      if (payload.jti && this.isRevoked(payload.jti)) return null
-
-      // Check Refresh Token Record & Reuse Detection
+      // 1. Check Refresh Token Record & Reuse Detection FIRST
       const record = db.getRefreshTokenRecord(token)
-      if (record && record.isRevoked) {
+      if (!record) {
+        // Missing database record must fail closed
+        console.warn(`[Security Alert] Refresh token presented without active database record for user ${payload.userId}.`)
+        return null
+      }
+
+      if (record.isRevoked) {
         // REUSE ATTACK DETECTED: Immediately revoke whole family
         console.warn(`[Security Alert] Refresh token reuse detected for user ${payload.userId}, family ${record.familyId}! Revoking entire token family.`)
         db.revokeRefreshTokenFamily(record.familyId)
+        db.recordAuditEvent({
+          userId: payload.userId,
+          ipAddress: '127.0.0.1',
+          eventType: 'REFRESH_TOKEN_REUSE_DETECTED',
+          severity: 'CRITICAL',
+          details: `Reused refresh token presented for family ${record.familyId}, gen ${record.generation}. Entire family revoked.`,
+        }).catch(() => {})
         return {
           userId: payload.userId,
           jti: payload.jti || '',
@@ -283,6 +294,9 @@ export class JwtService {
           reused: true,
         }
       }
+
+      // 2. Check token revocation by jti
+      if (payload.jti && this.isRevoked(payload.jti)) return null
 
       return {
         userId: payload.userId,
