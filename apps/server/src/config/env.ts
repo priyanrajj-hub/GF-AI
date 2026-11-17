@@ -36,8 +36,9 @@ try {
 } catch (error) {
   if (error instanceof z.ZodError) {
     console.error('❌ [CONFIG ERROR] Environment configuration validation failed:')
-    error.errors.forEach((err) => {
-      console.error(`  - ${err.path.join('.')}: ${err.message}`)
+    const issues = error.issues || (error as any).errors || []
+    issues.forEach((err: any) => {
+      console.error(`  - ${Array.isArray(err.path) ? err.path.join('.') : err.path}: ${err.message}`)
     })
     process.exit(1)
   }

@@ -15,7 +15,7 @@ This comprehensive audit inspects the full source tree, configuration files, bac
 1. **SSRF Vulnerabilities:** `/api/web/scrape` accepted arbitrary user-supplied URLs without complete IP-range blocking (decimal/hex/octal notation, link-local, IPv4-mapped IPv6, and redirect chaining).
 2. **Untrusted Data & Prompt Injection:** External scraped web content and financial RSS feeds were ingested into system contexts without explicit `<untrusted_data>` boundaries or instruction-stripping.
 3. **Authentication & Rate Limiting Gaps:** Non-public endpoints (e.g. `/api/web/scrape`, `/api/news`, `/api/trading/*`, `/api/finance/*`) lacked mandatory `requireAuth` protection, and express-rate-limiters were missing per-user token and cost budgets.
-4. **Secrets in Git History:** An exhausted ElevenLabs API test key (`REDACTED_KEY_PREFIX...`) was present in previous commits (`f360bd3`, `664feaf`, `ea10bc6`) despite being removed from the working tree.
+4. **Secrets in Git History:** An exhausted ElevenLabs API test key (`REDACTED_API_KEY`) was present in historical commits (`f360bd3`, `664feaf`, `ea10bc6`) despite being removed from the working tree. Permanently scrubbed from all git commit trees using git-filter-repo.
 5. **Market Data & SIP Integrity:** The SIP compounding calculation was using a nominal interest rate without effective compounding rates `(1 + r)^(1/12) - 1` and lacked an annuity-due option.
 6. **Trading Brain Evolution:** The trading brain requires restructuring into **Jarvis Trade AI** with multi-agent orchestration (Technical, Fundamental, Macro, Sentiment, Risk) and concrete tools (52w screener, swing engine, long-term factor score, intraday setups, IPO module, and live macro dashboard).
 

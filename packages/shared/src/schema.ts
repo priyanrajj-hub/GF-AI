@@ -31,7 +31,7 @@ export const GestureEnum = z.enum([
 
 export const ActionCallSchema = z.object({
   name: z.string(),
-  arguments: z.record(z.any()).default({}),
+  arguments: z.record(z.string(), z.any()).default({}),
 })
 
 export const StructuredReplySchema = z.object({

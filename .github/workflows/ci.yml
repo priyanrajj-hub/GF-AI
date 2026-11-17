@@ -21,49 +21,98 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Dependency Review
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+
       - name: Setup Node.js 20.x
+        if: always()
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
       - name: Install dependencies
+        if: always()
         run: npm ci
 
+      - name: Run Production Dependency Audit
+        if: always()
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Run PII Security Scanner
+        if: always()
         run: npm run scan:pii
 
       - name: Run Secrets Security Scanner
+        if: always()
         run: npm run scan:secrets
 
       - name: Build shared package
+        if: always()
         run: npm run build -w packages/shared
 
       - name: Run Offensive Security & Attack Regression Suite (25 Tests)
+        if: always()
         run: npx tsx scripts/security/attack_suite.mjs
 
       - name: Run Actuarial SIP & Lumpsum Unit Tests
+        if: always()
         run: npx tsx scripts/test_sip_calculator.mjs
 
       - name: Run Security, SSRF & Financial Math Verification (16 Tests)
+        if: always()
         run: npx tsx scripts/test_security_and_financials.mjs
 
       - name: Run CORS & Express Middleware Security Tests
+        if: always()
         run: npx tsx scripts/test_cors_security.mjs
 
       - name: Run Relationship Guardrails & Crisis Evals (120+ Tests)
+        if: always()
         run: npm run test:evals
         env:
           MOCK_PROVIDERS: "true"
 
       - name: Typecheck Web App
+        if: always()
         run: npx tsc --noEmit -p apps/web
 
       - name: Typecheck Server
+        if: always()
         run: npx tsc --noEmit -p apps/server
 
+      - name: Typecheck Worker
+        if: always()
+        run: npx tsc --noEmit -p apps/worker
+
       - name: Build Web Production Bundle
+        if: always()
         run: npm run build -w apps/web
 
       - name: Build Server
+        if: always()
         run: npm run build -w apps/server
+
+      - name: Build Worker
+        if: always()
+        run: npm run build -w apps/worker
+
+  codeql:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
