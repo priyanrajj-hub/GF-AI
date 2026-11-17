@@ -427,56 +427,28 @@ export const SettingsModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* ElevenLabs API Key Configuration */}
-              <div className="p-2.5 rounded-xl bg-slate-950/60 border border-pink-500/20 space-y-2">
-                <div className="text-xs font-mono text-pink-300 flex items-center justify-between">
-                  <span>ELEVENLABS API KEY & VOICE CONFIG</span>
-                  <span className="text-[10px] text-slate-400 font-mono">modelId: eleven_v4</span>
+              {/* Secure Provider Configuration (Zero Client Key Exposure) */}
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-emerald-500/30 space-y-2.5">
+                <div className="text-xs font-mono text-emerald-400 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    SECURE SERVER-MANAGED CREDENTIALS
+                  </span>
+                  <span className="text-[10px] text-emerald-500/80 font-mono">Zero-Trust Environment</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                      ElevenLabs API Key
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="sk_..."
-                      value={settings.elevenlabsApiKey || ''}
-                      onChange={(e) => updateSettings({ elevenlabsApiKey: e.target.value })}
-                      className="w-full bg-slate-900 border border-pink-500/30 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-pink-400 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                      ElevenLabs Voice ID
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="NOpBlnGInO9m6vDvFkFC"
-                      value={settings.elevenlabsVoiceId || 'NOpBlnGInO9m6vDvFkFC'}
-                      onChange={(e) => updateSettings({ elevenlabsVoiceId: e.target.value })}
-                      className="w-full bg-slate-900 border border-pink-500/30 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-pink-400 font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Hugging Face API Configuration */}
-              <div className="p-2.5 rounded-xl bg-slate-950/60 border border-cyan-500/20 space-y-2">
-                <div className="text-xs font-mono text-cyan-300 flex items-center justify-between">
-                  <span>HUGGING FACE API CONFIG (HF_TOKEN)</span>
-                  <span className="text-[10px] text-slate-400 font-mono">Qwen 2.5 / Llama 3.3 / Kokoro</span>
-                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  API keys for ElevenLabs, Hugging Face, and Gemini are securely anchored in server environment variables. Client-side key entry has been purged to protect credentials from browser storage exposure or cross-site leakage.
+                </p>
                 <div>
                   <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                    Hugging Face Token
+                    ElevenLabs Voice ID Override (Optional)
                   </label>
                   <input
-                    type="password"
-                    placeholder="hf_..."
-                    value={settings.huggingfaceApiKey || ''}
-                    onChange={(e) => updateSettings({ huggingfaceApiKey: e.target.value })}
-                    className="w-full bg-slate-900 border border-cyan-500/30 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 font-mono"
+                    type="text"
+                    placeholder="NOpBlnGInO9m6vDvFkFC"
+                    value={settings.elevenlabsVoiceId || 'NOpBlnGInO9m6vDvFkFC'}
+                    onChange={(e) => updateSettings({ elevenlabsVoiceId: e.target.value })}
+                    className="w-full bg-slate-900/80 border border-emerald-500/30 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-400 font-mono"
                   />
                 </div>
               </div>

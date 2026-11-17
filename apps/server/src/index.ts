@@ -833,7 +833,7 @@ app.get('/api/permissions/audit', (_req, res) => {
 app.post('/api/chat', rateLimitChat, requireAuth, async (req, res) => {
   const authReq = req as AuthenticatedRequest
   const userId = authReq.userId
-  const { message, mode, character, sliders, language, stream, llmProvider, huggingfaceApiKey } = req.body
+  const { message, mode, character, sliders, language, stream } = req.body
 
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Message is required' })
@@ -1911,8 +1911,7 @@ app.post('/api/chat', rateLimitChat, requireAuth, async (req, res) => {
     sliders: activeSliders,
     userName: settings.userName,
     language,
-    llmProvider: llmProvider || settings.llmProvider,
-    huggingfaceApiKey: huggingfaceApiKey || settings.huggingfaceApiKey,
+    llmProvider: settings.llmProvider || 'auto',
     liveInternetContext,
   }
 

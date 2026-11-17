@@ -213,10 +213,8 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
   roamEnabled: true,
   liveliness: 70,
   voice: 'en-US-AnaNeural',
-  elevenlabsApiKey: '',
   elevenlabsVoiceId: 'EXAVITQu4vr4xnSDxMaL',
   elevenlabsModelId: 'eleven_multilingual_v2',
-  huggingfaceApiKey: '',
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
