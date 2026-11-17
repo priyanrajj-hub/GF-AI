@@ -179,9 +179,12 @@ export class AppDatabase {
 
   private save(): void {
     try {
-      fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), 'utf-8')
+      const tempPath = `${this.filePath}.tmp.${Date.now()}.${Math.random().toString(36).substring(2, 7)}`
+      const serialized = JSON.stringify(this.data, null, 2)
+      fs.writeFileSync(tempPath, serialized, 'utf-8')
+      fs.renameSync(tempPath, this.filePath)
     } catch (err) {
-      console.error('[DB] Failed to persist data', err)
+      console.error('[DB] Failed to persist data atomically:', err)
     }
   }
 

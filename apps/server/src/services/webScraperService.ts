@@ -1,3 +1,5 @@
+import { validateUrlForSsrf } from '../utils/ssrfValidator.js'
+
 export interface ScrapedWebPage {
   url: string
   title: string
@@ -35,30 +37,65 @@ export class WebScraperService {
 
   /**
    * Scrapes and extracts full structured data from any provided URL.
+   * Hardened against SSRF, internal network exploration, and DNS rebinding.
    */
   static async extractPage(targetUrl: string): Promise<ScrapedWebPage | null> {
     if (!targetUrl || !targetUrl.startsWith('http')) return null
 
+    // 1. SSRF Security Pre-validation
+    const ssrfCheck = await validateUrlForSsrf(targetUrl)
+    if (!ssrfCheck.safe) {
+      console.warn(`[WebScraper] Blocked potential SSRF request to "${targetUrl}": ${ssrfCheck.error}`)
+      return null
+    }
+
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 8000)
+    const timeout = setTimeout(() => controller.abort(), 6000)
 
     try {
-      const res = await fetch(targetUrl, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 AdaBot/2.0',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-        signal: controller.signal,
-      })
+      let currentUrl = targetUrl
+      let redirectHops = 0
+      let res: Response | null = null
 
-      if (!res.ok) {
-        console.warn(`[WebScraper] HTTP ${res.status} when fetching ${targetUrl}`)
+      // Safe fetch loop with manual redirect validation
+      while (redirectHops < 3) {
+        res = await fetch(currentUrl, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 AdaBot/2.0',
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+          signal: controller.signal,
+          redirect: 'manual',
+        })
+
+        // Check if redirect
+        if ([301, 302, 303, 307, 308].includes(res.status)) {
+          const loc = res.headers.get('location')
+          if (!loc) break
+
+          const nextUrl = new URL(loc, currentUrl).toString()
+          const redirectCheck = await validateUrlForSsrf(nextUrl)
+          if (!redirectCheck.safe) {
+            console.warn(`[WebScraper] Blocked SSRF via redirect to "${nextUrl}": ${redirectCheck.error}`)
+            return null
+          }
+          currentUrl = nextUrl
+          redirectHops++
+          continue
+        }
+
+        break
+      }
+
+      if (!res || !res.ok) {
+        console.warn(`[WebScraper] HTTP ${res?.status} when fetching ${currentUrl}`)
         return null
       }
 
-      const html = await res.text()
+      // Enforce max 2MB payload size
+      const html = (await res.text()).slice(0, 2 * 1024 * 1024)
 
       // 1. Extract Title
       const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)

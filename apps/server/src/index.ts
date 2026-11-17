@@ -16,7 +16,8 @@ import {
   POPULAR_SONG_CATALOG,
 } from '@ada/shared'
 import { db } from './db/index.js'
-import { authMiddleware, type AuthenticatedRequest } from './middleware/auth.js'
+import { authMiddleware, requireAuth, requireAdmin, type AuthenticatedRequest } from './middleware/auth.js'
+import { JwtService } from './services/jwtService.js'
 import { ProviderRegistry } from './providers/index.js'
 import { ContextBuilder } from './services/contextBuilder.js'
 import { WebSearchService } from './services/webSearchService.js'
@@ -53,19 +54,39 @@ app.use(
   })
 )
 
-const allowedOrigins = [
+const defaultAllowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-  process.env.CORS_ORIGIN,
-].filter(Boolean) as string[]
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://gf-ai-ochre.vercel.app',
+]
+
+const envAllowed = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+
+const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllowed]))
+
+function isOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) return true // Allow same-origin, curl, serverless internal calls
+  if (allowedOrigins.includes(origin)) return true
+  // Allow official Vercel deployment preview patterns for this project
+  if (/^https:\/\/gf-[a-z0-9-]+\.vercel\.app$/.test(origin)) return true
+  if (isDev && (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin))) return true
+  return false
+}
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || isDev || allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         callback(null, true)
       } else {
-        callback(null, true) // permissive for local dev/preview
+        callback(new Error(`CORS origin "${origin}" rejected by security policy`))
       }
     },
     credentials: true,
@@ -82,12 +103,12 @@ const limiter = rateLimit({
 })
 app.use('/api/', limiter)
 
-// Handle Vercel serverless pre-parsed bodies gracefully
+// Safe JSON body parser with 1 MB limit (mitigates memory exhaustion DoS)
 app.use((req, res, next) => {
   if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
     return next()
   }
-  express.json({ limit: '10mb' })(req, res, next)
+  express.json({ limit: '1mb' })(req, res, next)
 })
 app.use(requestId)
 app.use(sanitizeInput)
@@ -109,8 +130,59 @@ app.get('/api/health', (req, res) => {
     system: 'Ada AI Companion Backend',
     version: '1.0.0',
     userId: authReq.userId,
+    userRole: authReq.userRole || 'guest',
     activeLLM: ProviderRegistry.getLLM().name,
     timestamp: Date.now(),
+  })
+})
+
+// ==========================================
+// AUTHENTICATION & IDENTITY ENDPOINTS
+// ==========================================
+
+// Issue cryptographically verified JWT token
+app.post('/api/auth/token', (req, res) => {
+  const { userId, userName, role } = req.body || {}
+  const safeId = (typeof userId === 'string' && userId.trim()) ? userId.trim() : `user_${Date.now()}`
+  const safeName = (typeof userName === 'string' && userName.trim()) ? userName.trim() : 'Demo User'
+  const safeRole = role === 'admin' ? 'admin' : 'user'
+
+  const token = JwtService.sign({
+    userId: safeId,
+    userName: safeName,
+    role: safeRole,
+  })
+
+  res.json({
+    token,
+    user: {
+      userId: safeId,
+      userName: safeName,
+      role: safeRole,
+    },
+    expiresIn: '7d',
+  })
+})
+
+// Guest session token
+app.post('/api/auth/guest', (_req, res) => {
+  const token = JwtService.createGuestToken()
+  const payload = JwtService.verify(token)
+  res.json({
+    token,
+    user: payload,
+    expiresIn: '24h',
+  })
+})
+
+// Verify authenticated identity
+app.get('/api/auth/me', (req, res) => {
+  const authReq = req as AuthenticatedRequest
+  res.json({
+    authenticated: Boolean(authReq.user && authReq.userRole !== 'guest'),
+    userId: authReq.userId,
+    userName: authReq.userName || 'Demo User',
+    role: authReq.userRole || 'guest',
   })
 })
 
@@ -1447,7 +1519,7 @@ app.post('/api/chat', async (req, res) => {
   // 1c. Query RAG Vector Database for Grounded Lore, Market Mechanics & Formulas
   let ragContext = ''
   try {
-    const ragResult = await buildRagContext(message, character || 'ada', 3)
+    const ragResult = await buildRagContext(message, character || 'ada', 3, authReq.userId)
     if (ragResult.contextText) {
       ragContext = ragResult.contextText
     }
@@ -2085,9 +2157,10 @@ app.get('/api/budget', (req, res) => {
 // 11. RAG VECTOR DATABASE ENDPOINTS
 // ==========================================
 app.get('/api/rag/query', async (req, res) => {
+  const authReq = req as AuthenticatedRequest
   const query = (req.query.q as string) || ''
   const character = (req.query.character as string) || 'ada'
-  const result = await buildRagContext(query, character, 5)
+  const result = await buildRagContext(query, character, 5, authReq.userId)
   res.json(result)
 })
 

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const projectRoot = 'C:\\Users\\PRIYANRAJ J\\.gemini\\antigravity\\scratch\\ai---gf---assistant-';
+const projectRoot = process.env.PROJECT_ROOT || process.cwd();
 
 // 1. Fix HoloScene.tsx: Add OrbitControls and remove fighting CameraRig lerps
 const holoScenePath = path.join(projectRoot, 'apps/web/src/components/scene/HoloScene.tsx');

@@ -3,8 +3,8 @@
 ## Quick Start (Deploy in 5 Minutes)
 
 ### 1. Push to GitHub
-Your repository is hosted at:
-**[https://github.com/priyanrajj-hub/GF-AI](https://github.com/priyanrajj-hub/GF-AI)**
+Your repository is hosted on GitHub:
+**`GF-AI`**
 
 To commit and push the latest changes:
 ```bash
@@ -19,7 +19,7 @@ git push origin main
 
 1. Go to **[vercel.com](https://vercel.com)** and sign in with GitHub.
 2. Click **"Add New..."** → **"Project"**.
-3. Import **`priyanrajj-hub/GF-AI`**.
+3. Import your **`GF-AI`** repository.
 4. Configure the project settings:
    - **Framework Preset**: Other / None
    - **Root Directory**: `./` (leave default)

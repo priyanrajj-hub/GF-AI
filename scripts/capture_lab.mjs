@@ -24,7 +24,8 @@ async function main() {
   // Wait 15 seconds for full stream completion & card render
   await new Promise(r => setTimeout(r, 15000));
 
-  await page.screenshot({ path: 'C:/Users/PRIYANRAJ J/.gemini/antigravity/brain/9dddffaa-28a4-45f4-9190-18cc1e11e741/verify_live_market_hours_rendered.png' });
+  const artifactPath = process.env.ARTIFACT_DIR ? path.join(process.env.ARTIFACT_DIR, 'verify_live_market_hours_rendered.png') : path.resolve('artifacts/verify_live_market_hours_rendered.png');
+  await page.screenshot({ path: artifactPath });
   console.log('Rendered screenshot saved!');
   await browser.close();
 }

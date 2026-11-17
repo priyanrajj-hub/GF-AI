@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const modelsDir = 'C:\\Users\\PRIYANRAJ J\\.gemini\\antigravity\\scratch\\ai---gf---assistant-\\apps\\web\\public\\models';
+const modelsDir = path.resolve('apps/web/public/models');
 
 function parseGLTFHeader(filePath) {
   const buf = fs.readFileSync(filePath);

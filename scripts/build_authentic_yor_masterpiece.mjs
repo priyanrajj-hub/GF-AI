@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const projectRoot = 'C:\\Users\\PRIYANRAJ J\\.gemini\\antigravity\\scratch\\ai---gf---assistant-';
+const projectRoot = process.env.PROJECT_ROOT || process.cwd();
 const adaRedPath = path.join(projectRoot, 'apps/web/src/avatar/skins/ada-red.ts');
 let code = fs.readFileSync(adaRedPath, 'utf8');
 

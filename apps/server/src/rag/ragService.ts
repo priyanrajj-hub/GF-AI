@@ -1,4 +1,4 @@
-import { ragStore } from './vectorStore.js'
+import { ragStore, formatContextWithPromptGuard } from './vectorStore.js'
 
 export interface RagContextResult {
   contextText: string
@@ -12,19 +12,21 @@ export interface RagContextResult {
 
 /**
  * Builds an injected RAG context block based on user query and active character.
- * Retrives top semantic matches from the in-memory vector database.
+ * Retrives top semantic matches from the in-memory vector database with
+ * strict tenant isolation and prompt injection boundary defense.
  */
 export async function buildRagContext(
   userQuery: string,
   character: string = 'ada',
-  topK: number = 4
+  topK: number = 4,
+  userId?: string
 ): Promise<RagContextResult> {
   if (!userQuery || userQuery.trim().length === 0) {
     return { contextText: '', matchedDocs: [] }
   }
 
-  // Query vector store with user prompt
-  const matches = ragStore.query(userQuery, topK)
+  // Query vector store with tenant isolation
+  const matches = ragStore.query(userQuery, userId, topK)
 
   if (matches.length === 0) {
     return { contextText: '', matchedDocs: [] }
@@ -37,14 +39,7 @@ export async function buildRagContext(
     score: Math.round(m.score * 100) / 100,
   }))
 
-  const contextText = [
-    `\n--- RETRIEVED KNOWLEDGE BASE CONTEXT (RAG VECTOR DB) ---`,
-    ...matches.map(
-      (m, idx) =>
-        `[Document ${idx + 1}] Category: ${m.doc.metadata?.category || 'general'} | Topic: ${m.doc.metadata?.topic || m.doc.metadata?.character || 'general'}\n${m.doc.text}`
-    ),
-    `--- END RETRIEVED CONTEXT ---\n`,
-  ].join('\n')
+  const contextText = formatContextWithPromptGuard(matches)
 
   return {
     contextText,

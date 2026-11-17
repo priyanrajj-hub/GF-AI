@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer';
 import path from 'path';
 
-const ARTIFACT_DIR = 'C:/Users/PRIYANRAJ J/.gemini/antigravity/brain/9dddffaa-28a4-45f4-9190-18cc1e11e741';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || path.resolve('artifacts');
 
 async function main() {
   const browser = await puppeteer.launch({

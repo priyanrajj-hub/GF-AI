@@ -19,7 +19,19 @@ export interface MarketQuote {
   volume: number
   currency: string
   timestamp: number
-  source: 'yahoo' | 'binance' | 'coingecko' | 'fallback'
+  source: 'yahoo' | 'binance' | 'coingecko' | 'fallback' | 'unavailable'
+  isLive?: boolean
+  status?: 'ok' | 'unavailable' | 'stale'
+  error?: string
+}
+
+export interface HistoricalCandlesResult {
+  symbol: string
+  closes: number[]
+  timestamps: number[]
+  provider: 'yahoo' | 'binance' | 'none'
+  status: 'ok' | 'insufficient_data' | 'unavailable'
+  error?: string
 }
 
 export interface TechnicalIndicators {
@@ -154,6 +166,84 @@ export function calculateBollingerBands(prices: number[], period: number = 20) {
   }
 }
 
+// ---- Verified Historical Candle Fetcher ----
+
+export async function getHistoricalCandles(symbol: string): Promise<HistoricalCandlesResult> {
+  const clean = symbol.toUpperCase().trim()
+
+  // 1. Try Binance for Crypto
+  const isCrypto = Boolean(clean.match(/^(BTC|ETH|SOL|BNB|XRP|DOGE|ADA)$|BITCOIN|ETHEREUM|SOLANA/i))
+  if (isCrypto) {
+    const binancePair = clean.includes('USDT') ? clean : `${clean === 'BITCOIN' ? 'BTC' : clean === 'ETHEREUM' ? 'ETH' : clean === 'SOLANA' ? 'SOL' : clean}USDT`
+    try {
+      const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binancePair}&interval=1d&limit=30`)
+      if (res.ok) {
+        const klines: any[] = await res.json()
+        if (Array.isArray(klines) && klines.length >= 14) {
+          const closes = klines.map((k) => parseFloat(k[4])).filter((c) => !isNaN(c) && c > 0)
+          const timestamps = klines.map((k) => parseInt(k[0], 10))
+          return {
+            symbol: clean,
+            closes,
+            timestamps,
+            provider: 'binance',
+            status: closes.length >= 20 ? 'ok' : 'insufficient_data',
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn(`[MarketData] Binance klines fetch failed for ${clean}:`, err?.message || err)
+    }
+  }
+
+  // 2. Try Yahoo Finance for Equities, ETFs & Indices
+  const yahooSym = clean === 'NIFTY' || clean === 'NIFTY50' ? '^NSEI' : clean
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=1mo`
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    })
+    if (res.ok) {
+      const data = await res.json()
+      const indicators = data.chart?.result?.[0]?.indicators?.quote?.[0]
+      const rawTimestamps = data.chart?.result?.[0]?.timestamp || []
+      if (indicators && Array.isArray(indicators.close)) {
+        const closes: number[] = []
+        const timestamps: number[] = []
+        indicators.close.forEach((c: any, idx: number) => {
+          if (typeof c === 'number' && !isNaN(c) && c > 0) {
+            closes.push(Math.round(c * 100) / 100)
+            timestamps.push((rawTimestamps[idx] || 0) * 1000)
+          }
+        })
+
+        if (closes.length >= 14) {
+          return {
+            symbol: clean,
+            closes,
+            timestamps,
+            provider: 'yahoo',
+            status: closes.length >= 20 ? 'ok' : 'insufficient_data',
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn(`[MarketData] Yahoo Finance historical candles failed for ${clean}:`, err?.message || err)
+  }
+
+  return {
+    symbol: clean,
+    closes: [],
+    timestamps: [],
+    provider: 'none',
+    status: 'unavailable',
+    error: 'Historical candle data unavailable from verified exchange feeds',
+  }
+}
+
 // ---- Live Market Data Fetchers ----
 
 export async function getStockQuote(rawSymbol: string): Promise<MarketQuote> {
@@ -175,7 +265,7 @@ export async function getStockQuote(rawSymbol: string): Promise<MarketQuote> {
 
       if (meta && indicators) {
         const closes = indicators.close?.filter((c: any) => typeof c === 'number') || []
-        const currentPrice = meta.regularMarketPrice ?? closes[closes.length - 1] ?? 100
+        const currentPrice = meta.regularMarketPrice ?? closes[closes.length - 1] ?? 0
         const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? currentPrice
         const change = currentPrice - prevClose
         const changePercent = prevClose ? (change / prevClose) * 100 : 0
@@ -186,12 +276,14 @@ export async function getStockQuote(rawSymbol: string): Promise<MarketQuote> {
           price: Math.round(currentPrice * 100) / 100,
           change: Math.round(change * 100) / 100,
           changePercent: Math.round(changePercent * 100) / 100,
-          high24h: meta.regularMarketDayHigh ?? currentPrice * 1.01,
-          low24h: meta.regularMarketDayLow ?? currentPrice * 0.99,
+          high24h: meta.regularMarketDayHigh ?? Math.round(currentPrice * 1.01 * 100) / 100,
+          low24h: meta.regularMarketDayLow ?? Math.round(currentPrice * 0.99 * 100) / 100,
           volume: meta.regularMarketVolume ?? 0,
-          currency: meta.currency || 'USD',
+          currency: meta.currency || (symbol.includes('NSE') || symbol === 'NIFTY' ? 'INR' : 'USD'),
           timestamp: Date.now(),
           source: 'yahoo',
+          isLive: true,
+          status: 'ok',
         }
       }
     }
@@ -199,35 +291,22 @@ export async function getStockQuote(rawSymbol: string): Promise<MarketQuote> {
     console.warn(`[MarketData] Yahoo Finance fetch failed for ${symbol}:`, err)
   }
 
-  // Fallback realistic simulation for offline/test environments
-  const defaultPrices: Record<string, number> = {
-    AAPL: 228.45,
-    NVDA: 138.25,
-    TSLA: 260.1,
-    MSFT: 425.8,
-    GOOGL: 182.3,
-    '^NSEI': 24150.0,
-    NIFTY: 24150.0,
-  }
-
-  const basePrice = defaultPrices[cleanSym] || 150.0
-  const randomDrift = (Math.sin(Date.now() / 60000) * 0.8 + (Math.random() - 0.5) * 0.4)
-  const price = Math.round((basePrice * (1 + randomDrift / 100)) * 100) / 100
-  const change = Math.round((price - basePrice) * 100) / 100
-  const changePercent = Math.round((change / basePrice) * 10000) / 100
-
+  // Never synthesize fake prices. Return explicit unavailable status.
   return {
     symbol,
-    name: `${symbol} (Market Sync)`,
-    price,
-    change,
-    changePercent,
-    high24h: Math.round(price * 1.018 * 100) / 100,
-    low24h: Math.round(price * 0.985 * 100) / 100,
-    volume: 1250000,
+    name: `${symbol}`,
+    price: 0,
+    change: 0,
+    changePercent: 0,
+    high24h: 0,
+    low24h: 0,
+    volume: 0,
     currency: symbol.includes('NSE') || symbol === 'NIFTY' ? 'INR' : 'USD',
     timestamp: Date.now(),
-    source: 'fallback',
+    source: 'unavailable',
+    isLive: false,
+    status: 'unavailable',
+    error: 'Market data currently unavailable from upstream exchange feed.',
   }
 }
 
@@ -270,6 +349,8 @@ export async function getCryptoPrice(coinId: string): Promise<MarketQuote> {
           currency: 'USDT',
           timestamp: Date.now(),
           source: 'binance',
+          isLive: true,
+          status: 'ok',
         }
       }
     } catch {
@@ -298,10 +379,12 @@ export async function getCryptoPrice(coinId: string): Promise<MarketQuote> {
           changePercent: Math.round(changePercent * 100) / 100,
           high24h: Math.round(price * 1.02 * 100) / 100,
           low24h: Math.round(price * 0.98 * 100) / 100,
-          volume: Math.round(coin.usd_24h_vol || 50000000),
+          volume: Math.round(coin.usd_24h_vol || 0),
           currency: 'USD',
           timestamp: Date.now(),
           source: 'coingecko',
+          isLive: true,
+          status: 'ok',
         }
       }
     }
@@ -309,58 +392,75 @@ export async function getCryptoPrice(coinId: string): Promise<MarketQuote> {
     console.warn(`[MarketData] Crypto fetch failed for ${cleanId}:`, err)
   }
 
-  // Fallback defaults
-  const cryptoDefaults: Record<string, number> = {
-    bitcoin: 89500.0,
-    btc: 89500.0,
-    ethereum: 3150.0,
-    eth: 3150.0,
-    solana: 198.5,
-    sol: 198.5,
-  }
-  const defaultP = cryptoDefaults[cleanId] || 100.0
+  // Never return fake random prices for crypto
   return {
     symbol: cleanId.toUpperCase(),
     name: cleanId.toUpperCase(),
-    price: defaultP,
+    price: 0,
     change: 0.0,
     changePercent: 0.0,
-    high24h: defaultP * 1.03,
-    low24h: defaultP * 0.97,
-    volume: 10000000,
+    high24h: 0,
+    low24h: 0,
+    volume: 0,
     currency: 'USD',
     timestamp: Date.now(),
-    source: 'fallback',
+    source: 'unavailable',
+    isLive: false,
+    status: 'unavailable',
+    error: 'Crypto live feed currently unavailable.',
   }
 }
 
 // ---- Quantitative Algo Trading Strategy Generator ----
 
 export async function generateAlgoSignal(symbol: string): Promise<AlgoTradingSignal> {
-  const quote = symbol.match(/btc|eth|sol|bitcoin|ethereum/i)
-    ? await getCryptoPrice(symbol)
-    : await getStockQuote(symbol)
+  const isCrypto = Boolean(symbol.match(/^(BTC|ETH|SOL|BNB|XRP|DOGE|ADA)$|BITCOIN|ETHEREUM|SOLANA/i))
+  const quote = isCrypto ? await getCryptoPrice(symbol) : await getStockQuote(symbol)
 
-  // Generate synthetic 30-day price series based on current price and drift for indicators
-  const currentPrice = quote.price
-  const prices: number[] = []
-  let walk = currentPrice * 0.92
+  // Fetch real historical candle series from verified exchange feeds
+  const candleData = await getHistoricalCandles(symbol)
 
-  for (let i = 0; i < 30; i++) {
-    const seed = Math.sin(i * 0.45) * 0.02 + ((i % 5) - 2) * 0.005
-    walk = walk * (1 + seed)
-    prices.push(walk)
+  // If real candles are insufficient (<20), return transparent unavailable notice
+  if (candleData.status !== 'ok' || candleData.closes.length < 20) {
+    const currentPrice = quote.price || 0
+    return {
+      symbol: quote.symbol,
+      signal: 'NEUTRAL',
+      confidence: 0,
+      score: 0,
+      timeframe: 'Daily (Insufficient Candles)',
+      entryPrice: currentPrice,
+      stopLoss: currentPrice,
+      target1: currentPrice,
+      target2: currentPrice,
+      riskRewardRatio: 'N/A',
+      reasons: [
+        `Unable to compute technical indicators: verified historical candle data is currently unavailable for ${symbol}.`,
+        'GF-AI strictly refuses to simulate or fabricate market prices for quantitative signals.',
+      ],
+      indicators: {
+        rsi14: 50,
+        rsiSignal: 'NEUTRAL',
+        macd: { macdLine: 0, signalLine: 0, histogram: 0, crossover: 'NEUTRAL' },
+        bollingerBands: { upper: currentPrice, middle: currentPrice, lower: currentPrice, bandwidth: 0, percentB: 0.5 },
+      },
+      timestamp: new Date().toISOString(),
+    }
   }
-  prices.push(currentPrice)
 
-  // Calculate Real Indicators
+  const prices = candleData.closes
+  const currentPrice = quote.price > 0 ? quote.price : prices[prices.length - 1]
+
+  // Calculate Real Indicators strictly on actual historical candles
   const rsi = calculateRSI(prices, 14)
   const macd = calculateMACD(prices)
   const bb = calculateBollingerBands(prices, 20)
 
   // Scoring Algo Strategy
   let score = 0
-  const reasons: string[] = []
+  const reasons: string[] = [
+    `Calculated across ${prices.length} verified daily candles from ${candleData.provider.toUpperCase()} feed.`,
+  ]
 
   // 1. RSI Factor
   let rsiSignal: 'OVERSOLD' | 'OVERBOUGHT' | 'NEUTRAL' = 'NEUTRAL'
@@ -414,7 +514,7 @@ export async function generateAlgoSignal(symbol: string): Promise<AlgoTradingSig
 
   // Risk & Position Levels
   const isLong = score >= 0
-  const stopLossDistance = currentPrice * (isLong ? 0.025 : 0.025)
+  const stopLossDistance = currentPrice * 0.025
   const stopLoss = Math.round((isLong ? currentPrice - stopLossDistance : currentPrice + stopLossDistance) * 100) / 100
   const target1 = Math.round((isLong ? currentPrice + stopLossDistance * 2 : currentPrice - stopLossDistance * 2) * 100) / 100
   const target2 = Math.round((isLong ? currentPrice + stopLossDistance * 3.5 : currentPrice - stopLossDistance * 3.5) * 100) / 100
@@ -424,7 +524,7 @@ export async function generateAlgoSignal(symbol: string): Promise<AlgoTradingSig
     signal,
     confidence,
     score,
-    timeframe: '4H / Daily Multi-Timeframe',
+    timeframe: 'Daily Multi-Timeframe',
     entryPrice: currentPrice,
     stopLoss,
     target1,

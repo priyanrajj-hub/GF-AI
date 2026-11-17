@@ -61,21 +61,22 @@ export const rateLimitGeneral = rateLimit({
 
 // ─── Input Sanitisation ───────────────────────────────────────────────────────
 
-/** Characters / patterns that indicate injection attempts */
-const SQL_PATTERNS =
-  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|TRUNCATE|UNION|CREATE|ALTER|EXEC|EXECUTE|CAST|CONVERT|DECLARE|WAITFOR|XP_)\b)|('|--|;{2,}|\/\*|\*\/)/gi
-
+/**
+ * XSS and script injection patterns.
+ * Note: SQL injection is defended via parameterized database statements,
+ * NOT naive keyword regex stripping which mutates legitimate user conversations.
+ */
 const XSS_PATTERNS =
-  /<\s*(script|iframe|object|embed|form|input|button|img|svg|math|link|meta|base|style|applet|frame|frameset|layer|ilayer|bgsound|title|marquee)\b[^>]*>/gi
+  /<\s*(script|iframe|object|embed|form|input|button|svg|math|link|meta|base|style|applet|frame|frameset|layer|ilayer|bgsound|marquee)\b[^>]*>/gi
 
 const PATH_TRAVERSAL_PATTERNS = /(\.\.(\/|\\)|%2e%2e(\/|%2f|%5c)|%252e%252e)/gi
 
 /**
- * Strip dangerous content from a single string value.
+ * Strip dangerous active scripts and path traversals while strictly preserving
+ * legitimate conversation vocabulary, quotes, and punctuation.
  */
 function sanitizeString(value: string): string {
   return value
-    .replace(SQL_PATTERNS, '')
     .replace(XSS_PATTERNS, '')
     .replace(PATH_TRAVERSAL_PATTERNS, '')
     .trim()

@@ -67,8 +67,8 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
 
   // Volume formatting
   const formattedVolume =
-    activeStock.volume >= 1000000000
-      ? `${(activeStock.volume / 1000000000).toFixed(2)}B`
+    activeStock.volume >= 1e9
+      ? `${(activeStock.volume / 1e9).toFixed(2)}B`
       : activeStock.volume >= 1000000
       ? `${(activeStock.volume / 1000000).toFixed(2)}M`
       : activeStock.volume.toLocaleString()
