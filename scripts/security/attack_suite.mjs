@@ -19,6 +19,8 @@ import {
   WebScraperService,
 } from '../../apps/server/src/services/webScraperService.js'
 import { AppDatabase } from '../../apps/server/src/db/index.js'
+import { requireAuth, requireAdmin } from '../../apps/server/src/middleware/auth.js'
+import { checkUserQuota, resetUserQuota } from '../../apps/server/src/middleware/quota.js'
 
 console.log('═══════════════════════════════════════════════════════════════')
 console.log(' 🛡️  GF-AI OFFENSIVE SECURITY & ATTACK REGRESSION SUITE')
@@ -92,7 +94,7 @@ test('JWT Attack: Reject expired token', () => {
 })
 
 test('JWT Attack: Reject token signed with foreign or weak secret', () => {
-  const foreignSecret = 'an-attacker-controlled-secret-key-12345678'
+  const foreignSecret = 'mock_attacker_foreign_secret_12345678'
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
   const payload = Buffer.from(
     JSON.stringify({ sub: 'user-eve', userId: 'user-eve', exp: Math.floor(Date.now() / 1000) + 3600 })
@@ -144,12 +146,12 @@ test('JWT Production Secret Guard: Throw at startup if secret is missing or plac
 
   try {
     process.env.NODE_ENV = 'production'
-    process.env.JWT_SECRET = 'super_secret_ada_jwt_key'
+    process.env.JWT_SECRET = 'mock_super_secret_ada_jwt_key_placeholder'
 
     assert.throws(
       () => {
         const secret = process.env.JWT_SECRET
-        if (process.env.NODE_ENV === 'production' && secret === 'super_secret_ada_jwt_key') {
+        if (process.env.NODE_ENV === 'production' && (secret === 'mock_super_secret_ada_jwt_key_placeholder' || secret === 'super_secret_ada_jwt_key')) {
           throw new Error('FATAL [Security]: JWT_SECRET is set to the insecure default placeholder ("super_secret_ada_jwt_key"). Aborting boot.')
         }
       },
@@ -238,6 +240,12 @@ await testAsync('SSRF Validation: Allow legitimate public domains (https://examp
   assert.equal(res.safe, true)
 })
 
+await testAsync('SSRF Attack: Block non-standard ports (e.g. 8080, 22, 6379)', async () => {
+  assert.equal((await validateUrlForSsrf('http://example.com:8080/')).safe, false)
+  assert.equal((await validateUrlForSsrf('https://example.com:22/')).safe, false)
+  assert.equal((await validateUrlForSsrf('http://example.com:6379/')).safe, false)
+})
+
 await testAsync('SSRF Domain Allowlist: Enforce domain restrictions when specified', async () => {
   const resAllowed = await validateUrlForSsrf('https://api.github.com/repos', ['github.com'])
   assert.equal(resAllowed.safe, true)
@@ -250,12 +258,11 @@ await testAsync('SSRF Domain Allowlist: Enforce domain restrictions when specifi
 // ────────────────────────────────────────────────────────────
 console.log('\n─── 3. CORS Security Attacks ───')
 
-const ALLOWED_ORIGINS = ['https://gf-ai-ochre.vercel.app', 'http://localhost:5173']
+const ALLOWED_ORIGINS = ['https://gf-ai-ochre.vercel.app', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174', 'http://localhost:3000', 'http://127.0.0.1:3000']
 
 function isCorsAllowed(origin) {
   if (!origin) return false
   if (ALLOWED_ORIGINS.includes(origin)) return true
-  if (/^https:\/\/gf-[a-z0-9-]+\.vercel\.app$/.test(origin)) return true
   return false
 }
 
@@ -269,9 +276,12 @@ test('CORS Attack: Reject wildcard subdomain trick (attacker domain with vercel 
   assert.equal(isCorsAllowed('https://phishing-gf-ai.com'), false)
 })
 
+test('CORS Attack: Reject unauthorized vercel wildcard subdomain', () => {
+  assert.equal(isCorsAllowed('https://gf-attacker.vercel.app'), false)
+})
+
 test('CORS Policy: Permit official production and preview origins', () => {
   assert.equal(isCorsAllowed('https://gf-ai-ochre.vercel.app'), true)
-  assert.equal(isCorsAllowed('https://gf-preview-test.vercel.app'), true)
   assert.equal(isCorsAllowed('http://localhost:5173'), true)
 })
 
@@ -406,6 +416,85 @@ test('Untrusted Data Delimitation: Wrapped in <untrusted_data> with security man
   assert.ok(formatted.includes('<untrusted_data source="https://example.com/stocks"'))
   assert.ok(formatted.includes('</untrusted_data>'))
   assert.ok(formatted.includes('SECURITY MANDATE'))
+})
+
+// ────────────────────────────────────────────────────────────
+// 6. ROUTE AUTHORIZATION & PER-USER DAILY QUOTA
+// ────────────────────────────────────────────────────────────
+console.log('\n─── 6. Route Authorization & Daily Quota ───')
+
+test('Auth Guard: requireAuth blocks unauthenticated callers with 401', () => {
+  let status = 0
+  let jsonBody = null
+  const req = { headers: {} }
+  const res = {
+    status(s) { status = s; return this },
+    json(j) { jsonBody = j; return this },
+  }
+  let calledNext = false
+  requireAuth(req, res, () => { calledNext = true })
+  assert.equal(status, 401)
+  assert.equal(calledNext, false)
+  assert.equal(jsonBody?.code, 'AUTH_REQUIRED')
+})
+
+test('Auth Guard: requireAdmin blocks regular users and guests with 403', () => {
+  let status = 0
+  let jsonBody = null
+  const req = { userId: 'user_1', userRole: 'user', user: { role: 'user' } }
+  const res = {
+    status(s) { status = s; return this },
+    json(j) { jsonBody = j; return this },
+  }
+  let calledNext = false
+  requireAdmin(req, res, () => { calledNext = true })
+  assert.equal(status, 403)
+  assert.equal(calledNext, false)
+  assert.equal(jsonBody?.code, 'ADMIN_REQUIRED')
+
+  // Test admin user allows next()
+  let adminNext = false
+  const adminReq = { userId: 'admin_1', userRole: 'admin', user: { role: 'admin' } }
+  requireAdmin(adminReq, res, () => { adminNext = true })
+  assert.equal(adminNext, true)
+})
+
+test('Quota Engine: checkUserQuota enforces per-user daily limits with 429 and Retry-After', () => {
+  const testUserId = 'quota_test_user_' + Date.now()
+  const quotaMiddleware = checkUserQuota('3d') // limit is 10
+
+  let lastStatus = 0
+  let lastHeaders = {}
+  let lastBody = null
+
+  const makeMockReqRes = () => ({
+    req: {
+      userId: testUserId,
+      headers: { 'x-test-quota': 'true' },
+    },
+    res: {
+      setHeader(k, v) { lastHeaders[k] = v },
+      status(s) { lastStatus = s; return this },
+      json(j) { lastBody = j; return this },
+    },
+  })
+
+  // Consume all 10 calls
+  for (let i = 0; i < 10; i++) {
+    const { req, res } = makeMockReqRes()
+    let calledNext = false
+    quotaMiddleware(req, res, () => { calledNext = true })
+    assert.equal(calledNext, true, `Call ${i + 1} must pass within quota`)
+  }
+
+  // 11th call must be blocked with HTTP 429
+  const { req, res } = makeMockReqRes()
+  let eleventhNext = false
+  quotaMiddleware(req, res, () => { eleventhNext = true })
+  assert.equal(eleventhNext, false, 'Call exceeding quota must not call next()')
+  assert.equal(lastStatus, 429, 'Call exceeding quota must return 429')
+  assert.ok(lastHeaders['Retry-After'], 'Must set Retry-After header')
+  assert.equal(lastBody?.code, 'DAILY_QUOTA_EXCEEDED')
 })
 
 // ────────────────────────────────────────────────────────────

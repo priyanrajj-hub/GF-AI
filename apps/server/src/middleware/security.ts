@@ -11,17 +11,24 @@ import { randomUUID } from 'node:crypto'
 import type { NextFunction, Request, Response } from 'express'
 import rateLimit from 'express-rate-limit'
 
+// Helper to generate combined userId + IP rate limit key
+const getRateLimitKey = (req: Request): string => {
+  const userId = (req as any).userId ? String((req as any).userId).trim() : ''
+  const ip = req.ip || req.socket.remoteAddress || 'unknown'
+  return userId ? `${userId}:${ip}` : ip
+}
+
 // ─── Rate Limiters ────────────────────────────────────────────────────────────
 
 /**
- * Chat endpoint limiter: 20 requests per 2 minutes per IP
+ * Chat endpoint limiter: 20 requests per 2 minutes per user/IP
  */
 export const rateLimitChat = rateLimit({
   windowMs: 2 * 60 * 1000, // 2 minutes
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip ?? 'unknown',
+  keyGenerator: getRateLimitKey,
   message: {
     error: 'Too many chat requests. Please wait a moment before sending another message.',
   },
@@ -29,14 +36,14 @@ export const rateLimitChat = rateLimit({
 })
 
 /**
- * Voice / TTS endpoint limiter: 10 requests per minute per IP
+ * Voice / TTS endpoint limiter: 10 requests per minute per user/IP
  */
 export const rateLimitVoice = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip ?? 'unknown',
+  keyGenerator: getRateLimitKey,
   message: {
     error: 'Voice synthesis rate limit exceeded. Please slow down.',
   },
@@ -44,7 +51,7 @@ export const rateLimitVoice = rateLimit({
 })
 
 /**
- * General API limiter: 120 requests per minute per IP
+ * General API limiter: 120 requests per minute per user/IP
  * (replaces the inline limiter in index.ts for /api/)
  */
 export const rateLimitGeneral = rateLimit({
@@ -52,7 +59,7 @@ export const rateLimitGeneral = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip ?? 'unknown',
+  keyGenerator: getRateLimitKey,
   message: {
     error: 'Too many requests, please slow down.',
   },
@@ -116,27 +123,15 @@ function sanitizeValue(value: unknown): unknown {
 }
 
 /**
- * Express middleware: sanitizes `req.query` and `req.body` in-place.
- * Logs a warning whenever suspicious content is stripped.
+ * Express middleware: sanitizes parameter path traversals while preserving
+ * user messages, markdown, and conversation text intact.
  */
 export function sanitizeInput(req: Request, _res: Response, next: NextFunction): void {
-  // Sanitise query params
+  // Defend against path traversal in query params
   for (const [key, val] of Object.entries(req.query)) {
-    if (typeof val === 'string') {
-      const clean = sanitizeString(val)
-      if (clean !== val) {
-        console.warn(`[Security] Suspicious query param "${key}" sanitized from "${req.ip}"`)
-      }
-      ;(req.query as Record<string, unknown>)[key] = clean
-    }
-  }
-
-  // Sanitise JSON body
-  if (req.body && typeof req.body === 'object') {
-    const originalStr = JSON.stringify(req.body)
-    req.body = sanitizeValue(req.body)
-    if (JSON.stringify(req.body) !== originalStr) {
-      console.warn(`[Security] Suspicious body content sanitized from "${req.ip}" on ${req.path}`)
+    if (typeof val === 'string' && PATH_TRAVERSAL_PATTERNS.test(val)) {
+      console.warn(`[Security] Path traversal attempt detected in query param "${key}" from "${req.ip}"`)
+      ;(req.query as Record<string, unknown>)[key] = val.replace(PATH_TRAVERSAL_PATTERNS, '')
     }
   }
 

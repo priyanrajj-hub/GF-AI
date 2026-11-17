@@ -19,6 +19,7 @@ import {
 } from '@ada/shared'
 import { db } from './db/index.js'
 import { authMiddleware, requireAuth, requireAdmin, type AuthenticatedRequest } from './middleware/auth.js'
+import { checkUserQuota } from './middleware/quota.js'
 import { JwtService } from './services/jwtService.js'
 import { ProviderRegistry } from './providers/index.js'
 import { ContextBuilder } from './services/contextBuilder.js'
@@ -48,16 +49,17 @@ dotenv.config()
 ProviderRegistry.init()
 
 const app = express()
+app.set('trust proxy', 1)
 const PORT = process.env.PORT || 3001
 const isDev = process.env.NODE_ENV !== 'production'
 
-// Security middleware with Production Content Security Policy (CSP)
+// Security middleware with Production Content Security Policy (CSP - zero unsafe-eval)
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         imgSrc: ["'self'", "data:", "blob:", "https:"],
@@ -90,10 +92,8 @@ const envAllowed = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN || ''
 const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllowed]))
 
 function isOriginAllowed(origin: string | undefined): boolean {
-  if (!origin) return true // Allow same-origin, curl, serverless internal calls
+  if (!origin) return false
   if (allowedOrigins.includes(origin)) return true
-  // Allow official Vercel deployment preview patterns for this project
-  if (/^https:\/\/gf-[a-z0-9-]+\.vercel\.app$/.test(origin)) return true
   if (isDev && (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin))) return true
   return false
 }
@@ -101,11 +101,14 @@ function isOriginAllowed(origin: string | undefined): boolean {
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (isOriginAllowed(origin)) {
-        callback(null, true)
-      } else {
-        callback(new Error(`CORS origin "${origin}" rejected by security policy`))
+      // Allow non-browser requests without origin (health checks, CLI, server-to-server)
+      if (!origin) {
+        return callback(null, true)
       }
+      if (isOriginAllowed(origin)) {
+        return callback(null, true)
+      }
+      callback(new Error(`CORS origin "${origin}" rejected by security policy`))
     },
     credentials: true,
   })
@@ -288,7 +291,14 @@ app.get('/api/internet/status', async (_req, res) => {
 })
 
 // Visual Memes & Online Templates Catalog
-app.get('/api/memes', (_req, res) => {
+app.get('/api/memes', async (req, res) => {
+  const topic = req.query.topic as string | undefined
+  const mood = req.query.mood as string | undefined
+  if (topic || mood) {
+    const memeProvider = ProviderRegistry.getMeme()
+    const meme = await memeProvider.findMeme(topic || 'developer', mood)
+    return res.json({ meme })
+  }
   res.json({
     memes: MemeService.getAllMemes(),
   })
@@ -515,7 +525,7 @@ app.get('/api/music/search', async (req, res) => {
 })
 
 // Real-Time Web Search Endpoint
-app.get('/api/search', async (req, res) => {
+app.get('/api/search', requireAuth, async (req, res) => {
   const q = (req.query.q as string) || ''
   if (!q.trim()) {
     return res.status(400).json({ error: 'Search query q is required' })
@@ -525,7 +535,7 @@ app.get('/api/search', async (req, res) => {
 })
 
 // Real-Time Trading & Stock Quote Endpoint
-app.get('/api/trading/quote', async (req, res) => {
+app.get('/api/trading/quote', requireAuth, async (req, res) => {
   const symbol = (req.query.symbol as string) || (req.query.q as string) || 'RELIANCE'
   const quote = await TradingService.fetchQuote(symbol)
   if (!quote) {
@@ -535,26 +545,26 @@ app.get('/api/trading/quote', async (req, res) => {
 })
 
 // Real-Time Daily Stock Recommendations & Setups
-app.get('/api/trading/recommendations', async (_req, res) => {
+app.get('/api/trading/recommendations', requireAuth, async (_req, res) => {
   const recommendations = await TradingService.getTopRecommendations()
   res.json({ recommendations, count: recommendations.length })
 })
 
 // Real-Time Global Market Operating & Non-Operating Timings Radar
-app.get('/api/trading/market-hours', (_req, res) => {
+app.get('/api/trading/market-hours', requireAuth, (_req, res) => {
   const radar = MarketHoursService.getGlobalMarketHoursRadar()
   res.json({ radar })
 })
 
 // Real-Time Curated Mutual Funds & Analytics
-app.get('/api/finance/mutual-funds', (_req, res) => {
+app.get('/api/finance/mutual-funds', requireAuth, (_req, res) => {
   const category = _req.query.category as string | undefined
   const funds = FinanceAnalystService.getMutualFunds(category)
   res.json({ count: funds.length, category: category || 'all', funds })
 })
 
 // Systematic Investment Plan (SIP) Compounding Calculator
-app.get('/api/finance/sip-calc', (req, res) => {
+app.get('/api/finance/sip-calc', requireAuth, (req, res) => {
   const monthly = parseFloat((req.query.monthly as string) || '5000')
   const rate = parseFloat((req.query.rate as string) || '15')
   const years = parseFloat((req.query.years as string) || '5')
@@ -563,7 +573,7 @@ app.get('/api/finance/sip-calc', (req, res) => {
 })
 
 // Portfolio Hedging & Capital Preservation Strategies ("he feature" / "hedging")
-app.get('/api/finance/hedging', (_req, res) => {
+app.get('/api/finance/hedging', requireAuth, (_req, res) => {
   const strategies = FinanceAnalystService.getHedgingStrategies()
   res.json({ strategies })
 })
@@ -573,7 +583,7 @@ app.get('/api/finance/hedging', (_req, res) => {
 // ==========================================
 
 // 1. 52-Week High Breakout & Low Rebound Screener
-app.get('/api/trading/screener/52week', async (req, res) => {
+app.get('/api/trading/screener/52week', requireAuth, async (req, res) => {
   const type = req.query.type as 'high' | 'low' | 'all' | undefined
   const maxDistancePct = req.query.maxDistancePct ? parseFloat(req.query.maxDistancePct as string) : undefined
   const screener = await JarvisTradeService.screen52Week({ type, maxDistancePct })
@@ -581,7 +591,7 @@ app.get('/api/trading/screener/52week', async (req, res) => {
 })
 
 // 2. Swing Trading Engine (EMA20/50/200, MACD, RSI, Bollinger Squeeze, ATR stops)
-app.get('/api/trading/swing/:symbol', async (req, res) => {
+app.get('/api/trading/swing/:symbol', requireAuth, async (req, res) => {
   const symbol = String(req.params.symbol)
   const portfolio = req.query.portfolio ? parseFloat(req.query.portfolio as string) : undefined
   const risk = req.query.risk ? parseFloat(req.query.risk as string) : undefined
@@ -590,14 +600,14 @@ app.get('/api/trading/swing/:symbol', async (req, res) => {
 })
 
 // 3. Long-Term Multi-Factor Score & DCF Sanity Check
-app.get('/api/trading/longterm/:symbol', async (req, res) => {
+app.get('/api/trading/longterm/:symbol', requireAuth, async (req, res) => {
   const symbol = String(req.params.symbol)
   const factors = await JarvisTradeService.analyzeLongTermFactors(symbol)
   res.json({ factors })
 })
 
 // 4. Intraday 15m Execution Engine (VWAP, ORB, Pivots, F&O Analytics, Long AND Short)
-app.get('/api/trading/intraday/:symbol', async (req, res) => {
+app.get('/api/trading/intraday/:symbol', requireAuth, async (req, res) => {
   const symbol = String(req.params.symbol)
   const direction = req.query.direction as 'LONG' | 'SHORT' | undefined
   const intraday = await JarvisTradeService.analyzeIntradaySetup(symbol, direction)
@@ -605,59 +615,59 @@ app.get('/api/trading/intraday/:symbol', async (req, res) => {
 })
 
 // 5. Institutional IPO Intelligence & GMP Radar (with GMP disclaimer)
-app.get('/api/trading/ipo', (_req, res) => {
+app.get('/api/trading/ipo', requireAuth, (_req, res) => {
   const ipos = JarvisTradeService.getIpoAnalysis()
   res.json(ipos)
 })
 
 // 6. Macroeconomic Dashboard (Live RBI repo rate, MPC, CPI, GDP, FII/DII)
-app.get('/api/trading/macro', async (_req, res) => {
+app.get('/api/trading/macro', requireAuth, async (_req, res) => {
   const macro = await MarketDataService.getMacroDashboard()
   res.json(macro)
 })
 
 // 7. Multi-Agent Supervisor Consensus & Verdict
-app.get('/api/trading/verdict/:symbol', async (req, res) => {
+app.get('/api/trading/verdict/:symbol', requireAuth, async (req, res) => {
   const symbol = String(req.params.symbol)
   const verdict = await JarvisTradeService.getJarvisTradeVerdict(symbol)
   res.json({ verdict })
 })
 
 // 8. Financial News & FinBERT Sentiment Analysis
-app.get('/api/trading/news/sentiment', (_req, res) => {
+app.get('/api/trading/news/sentiment', requireAuth, (_req, res) => {
   const sentiment = JarvisTradeService.getFinancialNewsSentiment()
   res.json(sentiment)
 })
 
 // 9. Portfolio Risk, Performance & Rebalancing Tracker (XIRR, VaR 95%, Max Drawdown)
-app.post('/api/trading/portfolio/analyze', (req, res) => {
+app.post('/api/trading/portfolio/analyze', requireAuth, (req, res) => {
   const holdings = req.body?.holdings || []
   const report = JarvisTradeService.analyzePortfolio(holdings)
   res.json({ report })
 })
 
 // 10. Systematic Investment Plan (SIP) Actuarial Compounding Calculator (POST)
-app.post('/api/finance/sip', (req, res) => {
+app.post('/api/finance/sip', requireAuth, (req, res) => {
   const result = SipCalculator.calculate(req.body || {})
   res.json({ result })
 })
 
 // 11. Investments Advisor & Budget 2024 Tax Blueprint
-app.get('/api/finance/investments', (req, res) => {
+app.get('/api/finance/investments', requireAuth, (req, res) => {
   const riskProfile = (req.query.riskProfile as any) || 'moderate'
   const advice = JarvisTradeService.getInvestmentsAdvice(riskProfile)
   res.json({ advice })
 })
 
 // Live News Gatherer across AI, Technology, Education, and Finance
-app.get('/api/news', async (req, res) => {
+app.get('/api/news', requireAuth, async (req, res) => {
   const category = (req.query.category as any) || 'all'
   const news = await NewsGathererService.getNews(category)
   res.json({ category, count: news.length, news })
 })
 
 // Universal Website Extractor & Scraper (Protected & SSRF-Hardened)
-app.post('/api/web/scrape', requireAuth, async (req, res) => {
+app.post('/api/web/scrape', requireAuth, checkUserQuota('scrape'), async (req, res) => {
   const { url, domainAllowlist } = req.body
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'Valid URL is required' })
@@ -726,16 +736,16 @@ app.get('/api/models/config', (_req, res) => {
   res.json({ registry: MODEL_REGISTRY })
 })
 
-// Private Mode Toggle (Zero cloud leakage)
-app.post('/api/providers/private-mode', (req, res) => {
+// Private Mode Toggle (Zero cloud leakage - Admin Only)
+app.post('/api/providers/private-mode', requireAuth, requireAdmin, (req, res) => {
   const { enabled } = req.body
   const router = ProviderRegistry.getRouter()
   router.setPrivateMode(Boolean(enabled))
   res.json({ success: true, privateMode: router.getPrivateMode() })
 })
 
-// Router Usage & Cost/Token Stats
-app.get('/api/providers/router-stats', (_req, res) => {
+// Router Usage & Cost/Token Stats (Admin Only)
+app.get('/api/providers/router-stats', requireAuth, requireAdmin, (_req, res) => {
   res.json(ProviderRegistry.getRouter().getStats())
 })
 
@@ -807,21 +817,21 @@ app.delete('/api/memory/rag/:id', requireAuth, (req, res) => {
 })
 
 // Policy Engine Check
-app.post('/api/permissions/policy/check', (req, res) => {
+app.post('/api/permissions/policy/check', requireAuth, (req, res) => {
   const { integrationId, actionType, payloadDescription, sourceChannel } = req.body
   const decision = PolicyEngine.evaluateAction(integrationId, actionType, payloadDescription, sourceChannel)
   res.json({ decision })
 })
 
-// Master Killswitch: Pause All Integrations
-app.post('/api/permissions/pause-all', (req, res) => {
+// Master Killswitch: Pause All Integrations (Admin Only)
+app.post('/api/permissions/pause-all', requireAuth, requireAdmin, (req, res) => {
   const { paused } = req.body
   PolicyEngine.setAllPaused(Boolean(paused))
   res.json({ allPaused: PolicyEngine.isAllPaused() })
 })
 
-// Permissions Audit Log
-app.get('/api/permissions/audit', (_req, res) => {
+// Permissions Audit Log (Admin Only)
+app.get('/api/permissions/audit', requireAuth, requireAdmin, (_req, res) => {
   res.json({ auditLog: PolicyEngine.getAuditLog() })
 })
 
@@ -830,7 +840,7 @@ app.get('/api/permissions/audit', (_req, res) => {
 // ==========================================
 // 2. CHAT & LLM STREAMING
 // ==========================================
-app.post('/api/chat', rateLimitChat, requireAuth, async (req, res) => {
+app.post('/api/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), async (req, res) => {
   const authReq = req as AuthenticatedRequest
   const userId = authReq.userId
   const { message, mode, character, sliders, language, stream } = req.body
@@ -2128,14 +2138,13 @@ app.post('/api/chat/vision', upload.single('file'), requireAuth, async (req, res
 // ==========================================
 // 3.5. NEURAL AI VOICE SYNTHESIS (GIRL VOICE)
 // ==========================================
-app.post('/api/tts', rateLimitVoice, async (req, res) => {
+app.post('/api/tts', rateLimitVoice, requireAuth, checkUserQuota('tts'), async (req, res) => {
   const {
     text,
     voice,
     provider = 'auto',
     language,
     character,
-    elevenlabsApiKey,
     elevenlabsVoiceId,
     elevenlabsModelId,
   } = req.body
@@ -2185,7 +2194,8 @@ app.post('/api/tts', rateLimitVoice, async (req, res) => {
 
   // Check for ElevenLabs voice request (for English / explicit user choice)
   const isInvalidDemoKey = (key?: string) => !key || key.trim().length < 20 || key.trim().startsWith('placeholder')
-  const hasValidElevenKey = Boolean(elevenlabsApiKey && !isInvalidDemoKey(elevenlabsApiKey))
+  const elevenlabsKey = process.env.ELEVENLABS_API_KEY
+  const hasValidElevenKey = Boolean(elevenlabsKey && !isInvalidDemoKey(elevenlabsKey))
 
   const isElevenLabs =
     (provider === 'elevenlabs' ||
@@ -2214,10 +2224,10 @@ app.post('/api/tts', rateLimitVoice, async (req, res) => {
   try {
     // 3. ElevenLabs Ultra-Realistic Expressive Girl Voice (Non-Tamil, Non-Stark)
     const elevenlabs = ProviderRegistry.getElevenLabs()
-    if (isElevenLabs || (elevenlabsApiKey && elevenlabsApiKey.trim()) || (provider === 'auto' && elevenlabs.isConfigured())) {
-      if (elevenlabs.isConfigured() || (elevenlabsApiKey && elevenlabsApiKey.trim())) {
+    if (isElevenLabs || hasValidElevenKey || (provider === 'auto' && elevenlabs.isConfigured())) {
+      if (elevenlabs.isConfigured() || hasValidElevenKey) {
         try {
-          const result = await elevenlabs.generateTTS(text, elevenVoiceId, elevenModel, elevenlabsApiKey)
+          const result = await elevenlabs.generateTTS(text, elevenVoiceId, elevenModel, elevenlabsKey)
           return res.json({ ...result, provider: 'elevenlabs', voice: elevenVoiceId, model: elevenModel })
         } catch (elErr: any) {
           console.warn('[ElevenLabs TTS Failed, falling back to High-Fidelity Neural Voice]:', elErr.message)
@@ -2274,9 +2284,9 @@ app.post('/api/tts', rateLimitVoice, async (req, res) => {
     }
 
     return res.status(503).json({
-      error: 'No TTS provider configured. Add ELEVENLABS_API_KEY, GEMINI_API_KEY, or HF_TOKEN in .env or settings.',
+      error: 'No TTS provider configured. Add ELEVENLABS_API_KEY, GEMINI_API_KEY, or HF_TOKEN in server environment variables.',
       availableProviders: {
-        elevenlabs: elevenlabs.isConfigured() || Boolean(elevenlabsApiKey),
+        elevenlabs: elevenlabs.isConfigured() || Boolean(elevenlabsKey),
         gemini: gemini.isConfigured(),
         huggingface: hf.isConfigured(),
       },
@@ -2331,7 +2341,7 @@ app.get('/api/3d/status', (_req, res) => {
   })
 })
 
-app.post('/api/3d/generate', async (req, res) => {
+app.post('/api/3d/generate', requireAuth, checkUserQuota('3d'), async (req, res) => {
   const { prompt, imageUrl, pipeline = 'triposr' } = req.body
 
   if (!prompt && !imageUrl) {
@@ -2530,25 +2540,9 @@ app.post('/api/journal', requireAuth, (req, res) => {
 })
 
 // ==========================================
-// 9. AGENT TOOLS: WEB SEARCH & MEMES
+// 9. AGENT TOOLS: MEME GENERATION
 // ==========================================
-app.get('/api/search', async (req, res) => {
-  const query = req.query.q as string
-  if (!query) return res.status(400).json({ error: 'Search query required' })
-  const searchProvider = ProviderRegistry.getSearch()
-  const results = await searchProvider.search(query)
-  res.json({ results })
-})
-
-app.get('/api/memes', async (req, res) => {
-  const topic = (req.query.topic as string) || 'developer'
-  const mood = req.query.mood as string
-  const memeProvider = ProviderRegistry.getMeme()
-  const meme = await memeProvider.findMeme(topic, mood)
-  res.json({ meme })
-})
-
-app.post('/api/memes/generate', async (req, res) => {
+app.post('/api/memes/generate', requireAuth, async (req, res) => {
   const { templateId = 'standard', topText = '', bottomText = '' } = req.body
   const memeProvider = ProviderRegistry.getMeme()
   const meme = await memeProvider.generateMeme(templateId, topText, bottomText)
@@ -2603,22 +2597,22 @@ app.get('/api/rag/query', requireAuth, async (req, res) => {
 // ==========================================
 // 12. QUANTITATIVE ALGOTRADING & MARKET DATA
 // ==========================================
-app.get('/api/market/quote/:symbol', async (req, res) => {
-  const quote = await getStockQuote(req.params.symbol)
+app.get('/api/market/quote/:symbol', requireAuth, async (req, res) => {
+  const quote = await getStockQuote(String(req.params.symbol))
   res.json({ quote })
 })
 
-app.get('/api/market/crypto/:coinId', async (req, res) => {
-  const quote = await getCryptoPrice(req.params.coinId)
+app.get('/api/market/crypto/:coinId', requireAuth, async (req, res) => {
+  const quote = await getCryptoPrice(String(req.params.coinId))
   res.json({ quote })
 })
 
-app.get('/api/market/algo/:symbol', async (req, res) => {
-  const signal = await generateAlgoSignal(req.params.symbol)
+app.get('/api/market/algo/:symbol', requireAuth, async (req, res) => {
+  const signal = await generateAlgoSignal(String(req.params.symbol))
   res.json({ signal })
 })
 
-app.get('/api/market/radar', async (_req, res) => {
+app.get('/api/market/radar', requireAuth, async (_req, res) => {
   const [btc, eth, sol, nvda, aapl, nifty] = await Promise.all([
     getCryptoPrice('bitcoin'),
     getCryptoPrice('ethereum'),

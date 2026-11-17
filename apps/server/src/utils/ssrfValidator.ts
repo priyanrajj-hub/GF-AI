@@ -184,6 +184,15 @@ export async function validateUrlForSsrf(
     }
   }
 
+  // 1.5. Disallow non-standard ports (strictly permit 80 and 443)
+  const port = parsed.port ? parseInt(parsed.port, 10) : (parsed.protocol === 'https:' ? 443 : 80)
+  if (port !== 80 && port !== 443) {
+    return {
+      safe: false,
+      error: `Unauthorized port "${port}". Only standard web ports (80, 443) are permitted.`,
+    }
+  }
+
   const hostname = parsed.hostname.toLowerCase()
 
   // 2. Reject explicit prohibited hostnames

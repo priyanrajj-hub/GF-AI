@@ -63,5 +63,5 @@ This operation immediately deletes all messages, memories, settings, and life fa
 ## 5. Contact Information
 
 For any privacy-related questions, audits, or data requests:
-- **Email:** [priyanrajj.hub@gmail.com](mailto:priyanrajj.hub@gmail.com)
+- **Email:** [support@gf-ai.app](mailto:support@gf-ai.app)
 - **Repository:** [https://github.com/priyanrajj-hub/GF-AI](https://github.com/priyanrajj-hub/GF-AI)

@@ -1,3 +1,4 @@
+import { Agent } from 'undici'
 import { validateUrlForSsrf } from '../utils/ssrfValidator.js'
 
 export interface ScrapedWebPage {
@@ -73,10 +74,23 @@ export class WebScraperService {
       let currentUrl = targetUrl
       let redirectHops = 0
       let res: Response | null = null
+      let currentCheck = ssrfCheck
 
-      // Safe fetch loop with manual redirect validation after every hop (max 3 redirects)
+      // Safe fetch loop with manual redirect validation and pinned DNS lookup after every hop (max 3 redirects)
       while (redirectHops < 3) {
+        const safeIp = currentCheck.resolvedIps && currentCheck.resolvedIps[0]
+        const customAgent = safeIp
+          ? new Agent({
+              connect: {
+                lookup: (_hostname, _options, callback) => {
+                  callback(null, [{ address: safeIp, family: safeIp.includes(':') ? 6 : 4 }])
+                },
+              },
+            })
+          : undefined
+
         res = await fetch(currentUrl, {
+          dispatcher: customAgent,
           headers: {
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 AdaBot/2.0',
@@ -85,7 +99,7 @@ export class WebScraperService {
           },
           signal: controller.signal,
           redirect: 'manual',
-        })
+        } as RequestInit & { dispatcher?: any })
 
         // Check if redirect
         if ([301, 302, 303, 307, 308].includes(res.status)) {
@@ -99,6 +113,7 @@ export class WebScraperService {
             return null
           }
           currentUrl = nextUrl
+          currentCheck = redirectCheck
           redirectHops++
           continue
         }
@@ -118,9 +133,36 @@ export class WebScraperService {
         return null
       }
 
-      // 3. Enforce max 2MB payload size
-      const rawText = await res.text()
-      const html = rawText.slice(0, 2 * 1024 * 1024)
+      // 3. Enforce max 2MB payload size via streaming reader (abort immediately when exceeded)
+      const MAX_PAYLOAD_BYTES = 2 * 1024 * 1024 // 2MB
+      let totalBytes = 0
+      const chunks: Uint8Array[] = []
+
+      if (!res.body) {
+        return null
+      }
+
+      const reader = res.body.getReader()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        if (value) {
+          totalBytes += value.length
+          if (totalBytes > MAX_PAYLOAD_BYTES) {
+            controller.abort()
+            console.warn(`[WebScraper] Blocked: Response exceeded 2MB limit from ${currentUrl}`)
+            return null
+          }
+          chunks.push(value)
+        }
+      }
+
+      const decoder = new TextDecoder('utf-8')
+      let html = ''
+      for (const chunk of chunks) {
+        html += decoder.decode(chunk, { stream: true })
+      }
+      html += decoder.decode()
 
       // Extract Title
       const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)

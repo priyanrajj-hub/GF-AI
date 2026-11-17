@@ -10,7 +10,7 @@ Security is a foundational pillar of **GF-AI**. We adhere to zero-trust principl
 
 If you discover a security vulnerability within GF-AI, please report it immediately:
 
-- **Security Contact:** [priyanrajj.hub@gmail.com](mailto:priyanrajj.hub@gmail.com)
+- **Security Contact:** [security@gf-ai.app](mailto:security@gf-ai.app)
 - **Subject:** `[SECURITY] GF-AI Vulnerability Report`
 - **Response SLA:** Within 24 hours of receipt.
 - **Remediation SLA:** Critical patches deployed to production within 48 hours.
@@ -55,6 +55,7 @@ If you discover a security vulnerability within GF-AI, please report it immediat
 - **JSON Body Limiting:** 1MB ceiling to prevent memory exhaustion DoS.
 
 ### 3.5. Secrets & Privacy Compliance
+- **Key Rotation Mandate:** Any API keys (e.g., ElevenLabs, Hugging Face, Gemini) created during testing must be rotated in the provider dashboards prior to production deployment. All historical commits containing early test keys have been irreversibly scrubbed via `git filter-repo`, and client-side credential storage has been eliminated in favor of strictly server-managed environment variables.
 - **Boot Validation:** Fail-fast Zod schema validation in `apps/server/src/config/env.ts` halts startup in production if mandatory security variables (`JWT_SECRET`, etc.) are missing or insecure.
 - **Zero Secrets in Bundles:** API keys and provider tokens are handled exclusively server-side and never injected into client Vite bundles.
 - **GDPR & CCPA Compliance:** Full data portability (`GET /api/user/data/export`) and right-to-be-forgotten deletion (`DELETE /api/user/data`).
