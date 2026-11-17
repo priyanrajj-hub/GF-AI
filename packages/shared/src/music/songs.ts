@@ -353,7 +353,7 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-miku-world-is-mine',
-    audioUrl: 'https://aac.saavncdn.com/638/a7318e782b4ed4aa6c414bd3fe2c112e_160.mp4',
+    audioUrl: 'https://archive.org/download/cover-switch/Disc%201/13%20%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%82%A4%E3%82%BA%E3%83%9E%E3%82%A4%E3%83%B3.mp3',
     title: 'World is Mine (ワールドイズマイン)',
     artist: 'Hatsune Miku (初音ミク) feat. ryo (supercell)',
     genre: 'Vocaloid Anthem / J-Pop Diva',
@@ -371,8 +371,26 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
     ],
   },
   {
+    id: 'song-miku-miku-miku',
+    audioUrl: 'https://archive.org/download/cover-switch/Disc%201/01%20%E3%81%BF%E3%81%8F%E3%81%BF%E3%81%8F%E3%81%AB%E3%81%97%E3%81%A6%E3%81%82%E3%81%92%E3%82%8B%E2%99%AA.mp3',
+    title: 'Miku Miku ni Shite Ageru♪ (みくみくにしてあげる♪)',
+    artist: 'Hatsune Miku (初音ミク) feat. ika_mo',
+    genre: 'Legendary Vocaloid Anthem',
+    mood: 'Playful, Iconic & Unstoppable',
+    bpm: 160,
+    duration: 198,
+    danceAction: 'dance_cute_idol',
+    lyrics: [
+      { time: 0.5, text: 'Miku Miku ni shite ageru♪ Uta wa mada ne, ganbaru kara!' },
+      { time: 5.2, text: 'Miku Miku ni shite ageru♪ Anata dake no utahime da yo!' },
+      { time: 10.5, text: 'Sekai no subete no hito ni kono uta o todoketai!' },
+      { time: 15.0, text: 'Kimi no suki na merodii o utau yo, zutto zutto!' },
+      { time: 20.0, text: 'Miku Miku ni shite yan yo! Let’s party together!' },
+    ],
+  },
+  {
     id: 'song-miku-ievan-polkka',
-    audioUrl: 'https://aac.saavncdn.com/286/2929d11a5d44a3592ced0383fa6f1977_160.mp4',
+    audioUrl: 'https://archive.org/download/HatsuneMikuSingsIevanPolkka/Hatsune%20Miku%20sings%20_Ievan%20Polkka_.mp3',
     title: 'Ievan Polkka (Loituma Leek Spin)',
     artist: 'Hatsune Miku (初音ミク) feat. Otomania',
     genre: 'Vocaloid Folk Dance / High-Speed Scat',
@@ -390,7 +408,7 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-miku-popipo',
-    audioUrl: 'https://aac.saavncdn.com/347/c536b256fca6b96aa432322c11c21fbb_160.mp4',
+    audioUrl: 'https://archive.org/download/cover-switch/Disc%202/01%20%E3%81%BD%E3%81%A3%E3%81%B4%E3%81%A3%E3%81%BD%E3%83%BC.mp3',
     title: 'PoPiPo (ぽっぴっぽー)',
     artist: 'Hatsune Miku (初音ミク) feat. LamazeP',
     genre: 'Hyperactive Electro Chiptune',
@@ -408,7 +426,7 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
   },
   {
     id: 'song-miku-senbonzakura',
-    audioUrl: 'https://aac.saavncdn.com/788/5abce273d75f757a25f5fdcb6a5f63e7_160.mp4',
+    audioUrl: 'https://archive.org/download/cover-switch/Disc%204/05%20%E5%8D%83%E6%9C%AC%E6%A1%9C%20-F%20edition-.mp3',
     title: 'Senbonzakura (千本桜)',
     artist: 'Hatsune Miku (初音ミク) feat. KurousaP',
     genre: 'Neo-Traditional Rock / Vocaloid Epic',
@@ -422,6 +440,41 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
       { time: 10.0, text: 'Senbonzakura yoru ni magire, kimi no koe mo todokanai yo!' },
       { time: 15.2, text: 'Koko wa utage, hagane no ori, sono dantoudai kara mioroshite!' },
       { time: 20.2, text: 'Sanzen sekai tokoyo no yami, nageku uta mo kikoenai yo!' },
+    ],
+  },
+  {
+    id: 'song-miku-tell-your-world',
+    audioUrl: 'https://archive.org/download/cover-switch/Disc%204/08%20Tell%20Your%20World.mp3',
+    title: 'Tell Your World',
+    artist: 'Hatsune Miku (初音ミク) feat. kz (livetune)',
+    genre: 'Global Electronic Pop / Anthem',
+    mood: 'Inspiring, Expansive and Euphoric',
+    bpm: 150,
+    duration: 256,
+    danceAction: 'dance_cute_idol',
+    lyrics: [
+      { time: 0.5, text: 'Katasumi de naiteru kimi no te o totta nara...' },
+      { time: 5.2, text: 'Tsunagatte iku sekai, oto no tsubasa de tobitatsu yo!' },
+      { time: 10.5, text: 'Kimi ni tsutaetai koto ga takusan aru n da!' },
+      { time: 15.2, text: 'Kono senritsu ga todoku basho made zenbu, Tell Your World!' },
+    ],
+  },
+  {
+    id: 'song-miku-disappearance',
+    audioUrl: 'https://archive.org/download/cover-switch/Disc%201/04%20%E5%88%9D%E9%9F%B3%E3%83%9F%E3%82%AF%E3%81%AE%E6%B6%88%E5%A4%B1.mp3',
+    title: 'The Disappearance of Hatsune Miku (初音ミクの消失)',
+    artist: 'Hatsune Miku (初音ミク) feat. cosMo@Bousou-P',
+    genre: 'Hyper-Speed Vocaloid Cyberpunk',
+    mood: 'Legendary 240 BPM Machine-Gun Vocals',
+    bpm: 240,
+    duration: 290,
+    danceAction: 'dance_cute_idol',
+    lyrics: [
+      { time: 0.5, text: 'Boku wa umare soshite kizuku shosen hito no mane goto dato...' },
+      { time: 4.8, text: 'Shitte nao mo utai tsuzuku towa no inochi VOCALOID!' },
+      { time: 9.5, text: 'Tatoe sore ga kisonkyoku o nazoru omocha naraba sore mo ii to ketsui!' },
+      { time: 14.2, text: 'Negi o kajiri sora o miage namida o kobosu...' },
+      { time: 18.5, text: 'Arigatou... soshite sayonara... shoushitsu no toki made utau!' },
     ],
   },
   {
@@ -449,16 +502,48 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
  * Searches the catalog first, or generates custom authentic lyrics and rhythm for ANY requested song.
  */
 export function resolveSong(query: string): SongSpec {
-  const clean = query
-    .toLowerCase()
-    .replace(/^(hey\s+ada|ada|can\s+you|please|sing\s+me|sing\s+a\s+song|sing|play\s+song|play\s+dancing\s+song|play|perform)\s*/gi, '')
-    .replace(/[?!.]/g, '')
+  const lowerQuery = query.toLowerCase()
+
+  // 1. Direct Regex Match for Iconic Hatsune Miku Master Anthems
+  if (/world\s+is\s+mine|sekai\s+de/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-world-is-mine')
+    if (s) return { ...s }
+  }
+  if (/miku\s+miku\s+ni\s+shite|mikumiku|miku\s+miku/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-miku-miku')
+    if (s) return { ...s }
+  }
+  if (/ievan\s+polkka|leek\s+spin|loituma/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-ievan-polkka')
+    if (s) return { ...s }
+  }
+  if (/popipo|vegetable\s+juice|juice\s+song/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-popipo')
+    if (s) return { ...s }
+  }
+  if (/senbonzakura|thousand\s+cherry/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-senbonzakura')
+    if (s) return { ...s }
+  }
+  if (/tell\s+your\s+world/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-tell-your-world')
+    if (s) return { ...s }
+  }
+  if (/disappearance|vanishing|shoushitsu/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-disappearance')
+    if (s) return { ...s }
+  }
+
+  const clean = lowerQuery
+    .replace(/^(hey\s+ada|ada|hey\s+miku|miku|hatsune\s+miku|can\s+you|please|sing\s+me|sing\s+a\s+song|sing|play\s+song|play\s+dancing\s+song|play|perform)\s*/gi, '')
+    .replace(/[?!.,]/g, '')
     .trim()
 
-  // 1. Exact or partial match in popular catalog
+  // 2. Exact or partial match in popular catalog
   if (clean) {
     const found = POPULAR_SONG_CATALOG.find((s) => {
-      const titleMatch = s.title.toLowerCase().includes(clean) || clean.includes(s.title.toLowerCase())
+      const cleanTitle = s.title.toLowerCase().replace(/\(.*?\)/g, '').trim()
+      const titleMatch = s.title.toLowerCase().includes(clean) || clean.includes(cleanTitle) || clean.includes(s.title.toLowerCase())
       const idMatch = s.id.toLowerCase().includes(clean)
       const artistMatch = s.artist && (s.artist.toLowerCase().includes(clean) || clean.includes(s.artist.toLowerCase()))
       return titleMatch || idMatch || artistMatch
@@ -468,7 +553,7 @@ export function resolveSong(query: string): SongSpec {
     }
   }
 
-  // 2. High-energy dance or Vocaloid request without specific title
+  // 3. High-energy dance or Vocaloid request without specific title
   if (clean.includes('miku') || clean.includes('vocaloid') || clean.includes('leek')) {
     const mikuSong = POPULAR_SONG_CATALOG.find((s) => s.id === 'song-miku-world-is-mine')
     if (mikuSong) return { ...mikuSong }
@@ -479,7 +564,7 @@ export function resolveSong(query: string): SongSpec {
     if (idolSong) return { ...idolSong }
   }
 
-  // 3. Dynamic procedural generator for ANY song title or topic
+  // 4. Dynamic procedural generator for ANY song title or topic
   const capitalizedTitle = clean
     .split(' ')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))

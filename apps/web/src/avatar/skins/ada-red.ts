@@ -694,8 +694,11 @@ export const MikuGoldenPirateSkin: AvatarSkin = {
 
           // For native Tda Miku V4X:
           if (isNativeMiku) {
-            // Preserve pristine skin, face, eyes, and textures
-            if (['0', '1', '2', '6', '7', '8', '9', '10', '13', '14'].includes(mat.name)) {
+            // Preserve pristine anime skin, face, eyes, and expressions:
+            // Mat 0 = Body skin (arms, shoulders, thighs, hands)
+            // Mat 2 = Face & neck skin
+            // Mat 7, 8, 9, 10, 13, 14, 16, 17 = Eyes, brows, facial expressions
+            if (['0', '2', '7', '8', '9', '10', '13', '14', '16', '17'].includes(mat.name)) {
               if (mat.color) mat.color.set('#FFFFFF')
               mat.transparent = true
               mat.depthWrite = true
@@ -705,14 +708,20 @@ export const MikuGoldenPirateSkin: AvatarSkin = {
               return
             }
 
-            // Accent materials -> 24k Polished Gold (Fortnite Golden Edition)
-            if (['3', '4', '5', '15'].includes(mat.name)) {
+            // Outfit materials -> 24k Polished Liquid Gold (Fortnite Golden Pirate Edition):
+            // Mat 1 = Full clothing mesh (vest/shirt, pleated skirt, detached sleeves, boots)
+            // Mat 3 = Tie & hair ribbons
+            // Mat 4 = Headset & clips
+            // Mat 5 = Skirt pleats / secondary trims
+            // Mat 6 = Belt buckle & waist trims
+            // Mat 15 = Arm display console & sleeve trims
+            if (['1', '3', '4', '5', '6', '15'].includes(mat.name)) {
               if (mat.color) mat.color.set('#FFD700')
-              if (mat.roughness !== undefined) mat.roughness = 0.16
-              if (mat.metalness !== undefined) mat.metalness = 0.94
+              if (mat.roughness !== undefined) mat.roughness = 0.14
+              if (mat.metalness !== undefined) mat.metalness = 0.96
               if (mat.emissive) {
-                mat.emissive.set('#FFB700')
-                mat.emissiveIntensity = 0.40
+                mat.emissive.set('#FFA500')
+                mat.emissiveIntensity = 0.42
               }
               mat.needsUpdate = true
             } else if (mat.name === '11' || mat.name === '12') {
@@ -1807,6 +1816,8 @@ export function attachGoldenPirateAccessories(vrm: VRM, visible: boolean = true)
       if (aL) aL.visible = false
       const aR = head.getObjectByName('__MIKU_ANCHOR_R__')
       if (aR) aR.visible = false
+      const hat = head.getObjectByName('__FORTNITE_PIRATE_HAT__')
+      if (hat) hat.visible = false
     }
     if (leftShoulder) {
       const epL = leftShoulder.getObjectByName('__MIKU_EPAULETTE_L__')
@@ -1815,6 +1826,11 @@ export function attachGoldenPirateAccessories(vrm: VRM, visible: boolean = true)
     if (rightShoulder) {
       const epR = rightShoulder.getObjectByName('__MIKU_EPAULETTE_R__')
       if (epR) epR.visible = false
+    }
+    const neckOrChest = vrm.humanoid?.getNormalizedBoneNode('neck') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
+    if (neckOrChest) {
+      const cr = neckOrChest.getObjectByName('__PIRATE_CRAVAT__')
+      if (cr) cr.visible = false
     }
     return
   }
@@ -1918,6 +1934,115 @@ export function attachGoldenPirateAccessories(vrm: VRM, visible: boolean = true)
   }
   buildEpaulette(leftShoulder, '__MIKU_EPAULETTE_L__', true)
   buildEpaulette(rightShoulder, '__MIKU_EPAULETTE_R__', false)
+
+  // 4. Fortnite Gold Hatsune Miku Pirate Captain Tricorn Hat
+  if (head) {
+    let hat = head.getObjectByName('__FORTNITE_PIRATE_HAT__') as THREE.Group | undefined
+    if (!hat) {
+      hat = new THREE.Group()
+      hat.name = '__FORTNITE_PIRATE_HAT__'
+
+      // Solid Oval Crown Dome (Polished 24k Gold)
+      const crown = new THREE.Mesh(
+        new THREE.SphereGeometry(0.082, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.50),
+        goldPbrMat
+      )
+      crown.position.set(0, 0.016, 0)
+      crown.scale.set(1.0, 0.82, 1.12)
+      hat.add(crown)
+
+      // Solid Wide Tricorn Brim Base
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.142, 0.152, 0.016, 36), goldPbrMat)
+      brim.position.set(0, 0.018, 0)
+      hat.add(brim)
+
+      // Front Upturned Flap (Solid curved plate tilted outward)
+      const frontFlap = new THREE.Mesh(new THREE.BoxGeometry(0.128, 0.076, 0.015), goldPbrMat)
+      frontFlap.position.set(0, 0.052, 0.102)
+      frontFlap.rotation.x = -0.36
+      hat.add(frontFlap)
+
+      // Left Upturned Flap
+      const leftFlap = new THREE.Mesh(new THREE.BoxGeometry(0.118, 0.072, 0.015), goldPbrMat)
+      leftFlap.position.set(-0.096, 0.050, -0.038)
+      leftFlap.rotation.set(0.16, -Math.PI / 3, 0.36)
+      hat.add(leftFlap)
+
+      // Right Upturned Flap
+      const rightFlap = new THREE.Mesh(new THREE.BoxGeometry(0.118, 0.072, 0.015), goldPbrMat)
+      rightFlap.position.set(0.096, 0.050, -0.038)
+      rightFlap.rotation.set(0.16, Math.PI / 3, -0.36)
+      hat.add(rightFlap)
+
+      // Big Iconic Golden Pirate Skull & Crossed Bones Emblem (Fortnite poster signature)
+      const skullGroup = new THREE.Group()
+      skullGroup.position.set(0, 0.055, 0.112)
+
+      // Cranium
+      const cranium = new THREE.Mesh(new THREE.SphereGeometry(0.020, 20, 20), goldPbrMat)
+      cranium.scale.set(1.0, 1.25, 0.85)
+      skullGroup.add(cranium)
+
+      // Jaw
+      const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.012, 0.012), goldPbrMat)
+      jaw.position.set(0, -0.016, 0.004)
+      skullGroup.add(jaw)
+
+      // Deep Dark Eye Sockets
+      const eyeMat = new THREE.MeshBasicMaterial({ color: 0x150A00 })
+      const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.0048, 14, 14), eyeMat)
+      eyeL.position.set(-0.007, 0.004, 0.016)
+      skullGroup.add(eyeL)
+
+      const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.0048, 14, 14), eyeMat)
+      eyeR.position.set(0.007, 0.004, 0.016)
+      skullGroup.add(eyeR)
+
+      // Crossed Bones with Knuckle Ends
+      const addBone = (rotZ: number) => {
+        const boneGrp = new THREE.Group()
+        boneGrp.rotation.z = rotZ
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, 0.062, 10), goldPbrMat)
+        boneGrp.add(shaft)
+        const k1 = new THREE.Mesh(new THREE.SphereGeometry(0.005, 10, 10), goldPbrMat)
+        k1.position.set(0, 0.031, 0)
+        boneGrp.add(k1)
+        const k2 = new THREE.Mesh(new THREE.SphereGeometry(0.005, 10, 10), goldPbrMat)
+        k2.position.set(0, -0.031, 0)
+        boneGrp.add(k2)
+        return boneGrp
+      }
+      const b1 = addBone(Math.PI / 4)
+      b1.position.set(0, 0, -0.006)
+      skullGroup.add(b1)
+      const b2 = addBone(-Math.PI / 4)
+      b2.position.set(0, 0, -0.006)
+      skullGroup.add(b2)
+
+      hat.add(skullGroup)
+
+      // Sweeping Golden Feather Plume on Right Side (Gracefully sweeping backward)
+      const feather = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.022, 0.160, 16), goldPbrMat)
+      feather.position.set(0.108, 0.075, 0.010)
+      feather.rotation.set(-0.55, -0.15, 0.40)
+      feather.scale.set(0.38, 1.0, 1.35)
+      hat.add(feather)
+
+      head.add(hat)
+    }
+    hat.scale.set(1.20, 1.15, 1.20)
+    hat.position.set(0, 0.180, 0.005)
+    hat.rotation.set(-0.12, 0, 0)
+    hat.visible = true
+  }
+
+  // Remove any legacy cravat so Miku's face and anime lips remain 100% unobstructed
+  if (head) {
+    const oldCravat = head.getObjectByName('__PIRATE_CRAVAT__')
+    if (oldCravat) {
+      head.remove(oldCravat)
+    }
+  }
 }
 
 export const AVATAR_SKINS: Record<string, AvatarSkin> = {

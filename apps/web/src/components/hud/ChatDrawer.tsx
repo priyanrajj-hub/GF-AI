@@ -1366,10 +1366,26 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
         {activeCharacter === 'mira' && (
           <>
             <button
+              onClick={() => {
+                setSkinId('miku-golden-pirate')
+                VoiceEngine.speak("Ahoy Captain! Fortnite Golden Pirate Miku reporting for duty! All sails set, let's make magic!", { rate: 1.10, pitch: 1.35 })
+                setActiveFX(['sparkles', 'confetti', 'stars'])
+              }}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-amber-950/70 border border-amber-400/60 text-amber-300 hover:bg-amber-900/70 shadow-[0_0_10px_rgba(251,191,36,0.3)] transition-colors cursor-pointer font-bold"
+            >
+              🏴‍☠️ Fortnite Golden Miku
+            </button>
+            <button
               onClick={() => handleSendMessage('Sing World is Mine, Hatsune Miku!')}
               className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-teal-950/60 border border-teal-500/40 text-teal-300 hover:bg-teal-900/60 transition-colors cursor-pointer font-medium"
             >
               👑 World is Mine
+            </button>
+            <button
+              onClick={() => handleSendMessage('Sing Miku Miku ni Shite Ageru♪!')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-colors cursor-pointer font-medium"
+            >
+              ✨ Miku Miku ni Shite Ageru♪
             </button>
             <button
               onClick={() => handleSendMessage('Sing Ievan Polkka and do the twintail leek spin!')}
@@ -1388,6 +1404,18 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
               className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 transition-colors cursor-pointer font-medium"
             >
               🌸 Senbonzakura
+            </button>
+            <button
+              onClick={() => handleSendMessage('Sing Tell Your World by kz (livetune)!')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-blue-950/60 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition-colors cursor-pointer font-medium"
+            >
+              🌐 Tell Your World
+            </button>
+            <button
+              onClick={() => handleSendMessage('Sing The Disappearance of Hatsune Miku at 240 BPM!')}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-violet-950/60 border border-violet-500/40 text-violet-300 hover:bg-violet-900/60 transition-colors cursor-pointer font-medium"
+            >
+              ⚡ Disappearance of Miku
             </button>
             <button
               onClick={() => handleSendMessage('Do your signature idol stage pose and greet your fans!')}
