@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import type { TradingCardData } from '@ada/shared'
+import { apiFetch } from '../../utils/api.js'
 
 interface TradingCardProps {
   card: TradingCardData
@@ -37,7 +38,7 @@ export const TradingCard: React.FC<TradingCardProps> = ({ card, onActionClick })
   // Lazy fetch market hours if not already supplied
   React.useEffect(() => {
     if (!marketHoursData) {
-      fetch('/api/trading/market-hours')
+      apiFetch('/api/trading/market-hours')
         .then((r) => r.json())
         .then((d) => {
           if (d && d.radar) {

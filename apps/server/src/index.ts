@@ -18,6 +18,7 @@ import {
   POPULAR_SONG_CATALOG,
 } from '@ada/shared'
 import { db } from './db/index.js'
+import { EmailService } from './services/emailService.js'
 import { authMiddleware, requireAuth, requireAdmin, type AuthenticatedRequest } from './middleware/auth.js'
 import { checkUserQuota } from './middleware/quota.js'
 import { JwtService } from './services/jwtService.js'
@@ -53,13 +54,13 @@ app.set('trust proxy', 1)
 const PORT = process.env.PORT || 3001
 const isDev = process.env.NODE_ENV !== 'production'
 
-// Security middleware with Production Content Security Policy (CSP - zero unsafe-eval)
+// Security middleware with Production Content Security Policy (CSP - zero unsafe-inline for scripts)
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         imgSrc: ["'self'", "data:", "blob:", "https:"],
@@ -166,20 +167,45 @@ app.post('/api/auth/guest', rateLimitAuth, (_req, res) => {
 })
 
 // Request Magic Link / Email Login
-app.post('/api/auth/magic-link/request', rateLimitAuth, (req, res) => {
+app.post('/api/auth/magic-link/request', rateLimitAuth, async (req, res) => {
   const { email } = req.body || {}
   if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
     return res.status(400).json({ error: 'Valid email address is required', code: 'INVALID_EMAIL' })
   }
   const cleanEmail = email.trim().toLowerCase()
+
+  if (db.isEmailLocked(cleanEmail)) {
+    return res.status(429).json({
+      error: 'Too many failed verification attempts. Please wait 15 minutes before requesting a new login link.',
+      code: 'AUTH_LOCKED',
+    })
+  }
+
   const token = randomBytes(32).toString('hex')
   const expiresAt = Date.now() + 15 * 60 * 1000 // 15 minutes
   db.saveMagicToken(cleanEmail, token, expiresAt)
 
+  // Dispatch email
+  const origin = (req.headers.origin as string) || (req.headers.referer as string) || 'https://gf-ai-ochre.vercel.app'
+  try {
+    await EmailService.sendMagicLink(cleanEmail, token, origin)
+  } catch (err: any) {
+    console.error('[Auth] Failed to dispatch magic link email:', err.message)
+    if (process.env.NODE_ENV === 'production' && process.env.ENABLE_TEST_AUTH !== 'true') {
+      return res.status(503).json({ error: 'Email delivery service temporarily unavailable', code: 'EMAIL_SERVICE_ERROR' })
+    }
+  }
+
+  // Never reveal testToken unless explicitly enabled in non-production environments
+  const allowTestToken =
+    process.env.ENABLE_TEST_AUTH === 'true' &&
+    process.env.NODE_ENV !== 'production' &&
+    !process.env.VERCEL
+
   res.json({
     success: true,
-    message: 'Magic login link dispatched to email',
-    ...(process.env.NODE_ENV !== 'production' ? { testToken: token, testEmail: cleanEmail } : {}),
+    message: 'If this email address is registered, a magic login link has been dispatched.',
+    ...(allowTestToken ? { testToken: token, testEmail: cleanEmail } : {}),
   })
 })
 
@@ -195,12 +221,17 @@ app.post('/api/auth/magic-link/verify', rateLimitAuth, (req, res) => {
     return res.status(401).json({ error: 'Invalid or expired magic link verification token', code: 'AUTH_FAILED' })
   }
 
-  // Issue verified session token — role and userId come strictly from DB record!
-  const accessToken = JwtService.sign({
-    userId: account.id,
-    userName: account.email.split('@')[0],
-    role: account.role || 'user',
-  })
+  // Issue verified session token (Strict type: 'access', 15-minute validity)
+  const accessToken = JwtService.sign(
+    {
+      userId: account.id,
+      userName: account.email.split('@')[0],
+      role: account.role || 'user',
+    },
+    15 * 60
+  )
+
+  // Issue family-tracked refresh token
   const refreshToken = JwtService.createRefreshToken(account.id)
   db.setRefreshToken(account.id, refreshToken)
 
@@ -213,7 +244,7 @@ app.post('/api/auth/magic-link/verify', rateLimitAuth, (req, res) => {
       userName: account.email.split('@')[0],
       role: account.role || 'user',
     },
-    expiresIn: '7d',
+    expiresIn: '15m',
   })
 })
 
@@ -225,16 +256,8 @@ app.post('/api/auth/refresh', rateLimitAuth, (req, res) => {
   }
 
   const verified = JwtService.verifyRefreshToken(refreshToken)
-  if (!verified) {
-    return res.status(401).json({ error: 'Invalid or expired refresh token', code: 'INVALID_REFRESH_TOKEN' })
-  }
-
-  const storedToken = db.getRefreshToken(verified.userId)
-  if (!storedToken || storedToken !== refreshToken) {
-    // Possible token reuse attack — revoke token family
-    JwtService.revokeToken(verified.jti)
-    db.setRefreshToken(verified.userId, null)
-    return res.status(401).json({ error: 'Refresh token has been reused or revoked', code: 'TOKEN_REVOKED' })
+  if (!verified || verified.reused) {
+    return res.status(401).json({ error: 'Invalid, expired, or revoked refresh token', code: 'TOKEN_REVOKED' })
   }
 
   const account = db.getAccountById(verified.userId)
@@ -242,22 +265,27 @@ app.post('/api/auth/refresh', rateLimitAuth, (req, res) => {
     return res.status(401).json({ error: 'User account not found', code: 'USER_NOT_FOUND' })
   }
 
-  // Revoke old refresh token jti
+  // Revoke presented refresh token
   JwtService.revokeToken(verified.jti)
+  db.revokeRefreshToken(refreshToken)
 
-  // Rotate tokens
-  const newAccessToken = JwtService.sign({
-    userId: account.id,
-    userName: account.email.split('@')[0],
-    role: account.role || 'user',
-  })
-  const newRefreshToken = JwtService.createRefreshToken(account.id)
+  // Rotate tokens with incremented generation within the same family
+  const newAccessToken = JwtService.sign(
+    {
+      userId: account.id,
+      userName: account.email.split('@')[0],
+      role: account.role || 'user',
+    },
+    15 * 60
+  )
+
+  const newRefreshToken = JwtService.createRefreshToken(account.id, verified.familyId, verified.generation + 1)
   db.setRefreshToken(account.id, newRefreshToken)
 
   res.json({
     token: newAccessToken,
     refreshToken: newRefreshToken,
-    expiresIn: '7d',
+    expiresIn: '15m',
   })
 })
 
@@ -2101,7 +2129,7 @@ app.post('/api/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), async 
 // ==========================================
 // 3. VISION & FILE INSPECTION
 // ==========================================
-app.post('/api/chat/vision', upload.single('file'), requireAuth, async (req, res) => {
+app.post('/api/chat/vision', requireAuth, upload.single('file'), async (req, res) => {
   const { prompt = 'Explain and analyze this file/image in detail.' } = req.body
   const file = req.file
 

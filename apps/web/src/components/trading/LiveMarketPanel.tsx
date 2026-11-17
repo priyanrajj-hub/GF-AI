@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { apiUrl, apiFetch } from '../../utils/api.js'
+import { apiUrl, apiFetch, extractQuote } from '../../utils/api.js'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -159,20 +159,21 @@ export const LiveMarketPanel: React.FC<{ onClose?: () => void }> = ({ onClose })
     setFetchFailed(false)
 
     try {
-      // Fetch crypto
+      // Fetch crypto with unified { quote } contract unwrapping and auth injection
       const cryptoIds = ['bitcoin', 'ethereum', 'solana', 'binancecoin', 'ripple']
       const cryptoResults: CryptoItem[] = []
       for (const id of cryptoIds) {
         try {
-          const res = await fetch(apiUrl(`/api/market/crypto/${id}`))
+          const res = await apiFetch(`/api/market/crypto/${id}`)
           if (res.ok) {
-            const data = await res.json()
+            const rawData = await res.json()
+            const data = extractQuote(rawData)
             cryptoResults.push({
               id,
               symbol: data.symbol?.toUpperCase() ?? id.substring(0, 3).toUpperCase(),
               name: data.name ?? id,
               price: data.price ?? data.current_price ?? 0,
-              changePct24h: data.changePct24h ?? data.price_change_percentage_24h ?? 0,
+              changePct24h: data.changePct24h ?? data.percentChange ?? data.price_change_percentage_24h ?? 0,
             })
           }
         } catch {
@@ -181,22 +182,23 @@ export const LiveMarketPanel: React.FC<{ onClose?: () => void }> = ({ onClose })
       }
       if (cryptoResults.length > 0) setCrypto(cryptoResults)
 
-      // Fetch stocks
+      // Fetch stocks with unified { quote } unwrapping
       const stockSymbols = ['AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN']
       const stockResults: MarketItem[] = []
       for (const sym of stockSymbols) {
         try {
-          const res = await fetch(apiUrl(`/api/market/quote/${sym}`))
+          const res = await apiFetch(`/api/market/quote/${sym}`)
           if (res.ok) {
-            const data = await res.json()
+            const rawData = await res.json()
+            const data = extractQuote(rawData)
             stockResults.push({
               symbol: sym,
               name: data.name ?? sym,
               price: data.price ?? 0,
               change: data.change ?? 0,
-              changePct: data.changePct ?? data.changePercent ?? 0,
-              rsi: data.rsi ?? undefined,
-              signal: data.signal ?? undefined,
+              changePct: data.changePct ?? data.percentChange ?? 0,
+              rsi: data.rsi ?? data.indicators?.rsi14 ?? undefined,
+              signal: data.signal ?? data.setup?.action ?? undefined,
             })
           }
         } catch {
@@ -210,17 +212,18 @@ export const LiveMarketPanel: React.FC<{ onClose?: () => void }> = ({ onClose })
       const niftyResults: MarketItem[] = []
       for (const sym of niftySymbols) {
         try {
-          const res = await fetch(apiUrl(`/api/market/quote/${sym}`))
+          const res = await apiFetch(`/api/market/quote/${sym}`)
           if (res.ok) {
-            const data = await res.json()
+            const rawData = await res.json()
+            const data = extractQuote(rawData)
             niftyResults.push({
               symbol: sym,
               name: data.name ?? sym,
               price: data.price ?? 0,
               change: data.change ?? 0,
-              changePct: data.changePct ?? 0,
-              rsi: data.rsi ?? undefined,
-              signal: data.signal ?? undefined,
+              changePct: data.changePct ?? data.percentChange ?? 0,
+              rsi: data.rsi ?? data.indicators?.rsi14 ?? undefined,
+              signal: data.signal ?? data.setup?.action ?? undefined,
             })
           }
         } catch {

@@ -194,8 +194,10 @@ export class DatabaseMigrationUtility {
     }
     report.tables['relationship_journals'] = { count: validRelJournal, status: 'SUCCESS' }
 
-    // 7. Verify Integrity
-    report.integrityCheckPassed = (report.conflictRecordsCount === 0 || report.validRecordsCount > 0)
+    // 7. Verify Integrity: strict zero-conflict and 100% record validity requirement
+    report.integrityCheckPassed =
+      report.conflictRecordsCount === 0 &&
+      (report.totalRecordsScanned === 0 || report.validRecordsCount === report.totalRecordsScanned)
 
     console.log(`[Migration] Scan Complete: ${report.validRecordsCount} valid / ${report.totalRecordsScanned} total records.`)
     console.log(`[Migration] Integrity Status: ${report.integrityCheckPassed ? 'PASSED' : 'FAILED'}`)

@@ -74,6 +74,7 @@ export function requireRegisteredUser(req: Request, res: Response, next: NextFun
 
 /**
  * Route guard: Requires administrator role.
+ * Derived strictly from ADMIN_EMAILS environment allowlist; logs all administrative operations.
  */
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   const authReq = req as AuthenticatedRequest
@@ -84,5 +85,10 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     })
     return
   }
+
+  // Audit logging of all administrative operations (non-repudiation)
+  console.log(
+    `[SECURITY AUDIT] Admin operation executed: user=${authReq.userId} role=admin ip=${req.ip || req.socket?.remoteAddress || '127.0.0.1'} method=${req.method} path=${req.originalUrl || req.path} timestamp=${new Date().toISOString()}`
+  )
   next()
 }
