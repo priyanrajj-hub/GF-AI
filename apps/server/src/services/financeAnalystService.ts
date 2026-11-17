@@ -1,3 +1,5 @@
+import { SipCalculator } from './sipCalculator.js'
+
 export interface MutualFundItem {
   id: string
   name: string
@@ -170,26 +172,27 @@ export class FinanceAnalystService {
   }
 
   /**
-   * Computes Systematic Investment Plan (SIP) Compounding returns.
-   * Formula: M = P * ((1 + i)^n - 1) / i * (1 + i)
+   * Computes Systematic Investment Plan (SIP) Compounding returns via the actuarial SipCalculator.
    */
-  static calculateSIP(monthlyInvestment: number, annualReturnRate: number, years: number) {
-    const p = monthlyInvestment
-    const i = annualReturnRate / 12 / 100
-    const n = years * 12
-
-    const totalInvested = p * n
-    const estimatedValue = Math.round(p * (((Math.pow(1 + i, n) - 1) / i) * (1 + i)))
-    const estimatedWealthGain = estimatedValue - totalInvested
+  static calculateSIP(monthlyInvestment: number, annualReturnRate: number, years: number, annuityDue = true) {
+    const calc = SipCalculator.calculate({
+      monthlyInvestment,
+      annualReturnRatePct: annualReturnRate,
+      tenureYears: years,
+      annuityDue,
+      effectiveCompounding: true,
+    })
 
     return {
-      monthlyInvestment: p,
+      monthlyInvestment: calc.monthlyInvestment,
       expectedReturnRate: `${annualReturnRate}%`,
       tenureYears: years,
-      totalMonths: n,
-      totalInvested: `₹${totalInvested.toLocaleString('en-IN')}`,
-      estimatedWealthGain: `₹${estimatedWealthGain.toLocaleString('en-IN')}`,
-      totalFutureValue: `₹${estimatedValue.toLocaleString('en-IN')}`,
+      totalMonths: calc.totalMonths,
+      annuityDue: calc.annuityDue,
+      totalInvested: calc.formatted.totalInvested,
+      estimatedWealthGain: calc.formatted.estimatedWealthGain,
+      totalFutureValue: calc.formatted.futureValue,
+      rawFutureValue: calc.futureValue,
     }
   }
 

@@ -92,15 +92,22 @@ export class AppDatabase {
   private filePath: string
   private data: DatabaseSchema
 
+  private isMemoryOnly: boolean
+
   constructor(storageDir = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) ? path.join(os.tmpdir(), 'ada_data') : './data') {
-    try {
-      if (!fs.existsSync(storageDir)) {
-        fs.mkdirSync(storageDir, { recursive: true })
+    this.isMemoryOnly = storageDir === ':memory:'
+    if (!this.isMemoryOnly) {
+      try {
+        if (!fs.existsSync(storageDir)) {
+          fs.mkdirSync(storageDir, { recursive: true })
+        }
+      } catch (e) {
+        console.warn('[DB] Storage dir creation bypassed (serverless environment):', e)
       }
-    } catch (e) {
-      console.warn('[DB] Storage dir creation bypassed (serverless environment):', e)
+      this.filePath = path.join(storageDir, 'ada_persistence.json')
+    } else {
+      this.filePath = ':memory:'
     }
-    this.filePath = path.join(storageDir, 'ada_persistence.json')
     this.data = this.load()
   }
 
@@ -197,6 +204,7 @@ export class AppDatabase {
   }
 
   private save(): void {
+    if (this.isMemoryOnly) return
     try {
       const tempPath = `${this.filePath}.tmp.${Date.now()}.${Math.random().toString(36).substring(2, 7)}`
       const serialized = JSON.stringify(this.data, null, 2)
@@ -559,6 +567,68 @@ export class AppDatabase {
 
   getUserBackgroundJobs(userId: string): BackgroundJob[] {
     return (this.data.backgroundJobs || []).filter((j) => j.userId === userId)
+  }
+
+  /**
+   * GDPR / CCPA Data Portability Export
+   */
+  exportUserData(userId: string): Record<string, any> {
+    return {
+      userId,
+      userSettings: this.data.users[userId] || null,
+      messages: this.data.messages[userId] || [],
+      memories: this.data.memories[userId] || [],
+      notes: this.data.notes[userId] || [],
+      journal: this.data.journal[userId] || [],
+      relationshipJournal: this.data.relationshipJournal[userId] || [],
+      ragDocs: this.data.ragDocs[userId] || [],
+      backgroundJobs: (this.data.backgroundJobs || []).filter((j) => j.userId === userId),
+      exportedAt: new Date().toISOString(),
+    }
+  }
+
+  /**
+   * GDPR / CCPA Right-To-Be-Forgotten: Strictly purges all user data
+   */
+  deleteUserData(userId: string): { purged: boolean; recordsRemoved: number } {
+    let recordsRemoved = 0
+
+    if (this.data.users[userId]) {
+      delete this.data.users[userId]
+      recordsRemoved++
+    }
+    if (this.data.messages[userId]) {
+      recordsRemoved += this.data.messages[userId].length
+      delete this.data.messages[userId]
+    }
+    if (this.data.memories[userId]) {
+      recordsRemoved += this.data.memories[userId].length
+      delete this.data.memories[userId]
+    }
+    if (this.data.notes[userId]) {
+      recordsRemoved += this.data.notes[userId].length
+      delete this.data.notes[userId]
+    }
+    if (this.data.journal[userId]) {
+      recordsRemoved += this.data.journal[userId].length
+      delete this.data.journal[userId]
+    }
+    if (this.data.relationshipJournal[userId]) {
+      recordsRemoved += this.data.relationshipJournal[userId].length
+      delete this.data.relationshipJournal[userId]
+    }
+    if (this.data.ragDocs[userId]) {
+      recordsRemoved += this.data.ragDocs[userId].length
+      delete this.data.ragDocs[userId]
+    }
+    if (this.data.backgroundJobs) {
+      const remaining = this.data.backgroundJobs.filter((j) => j.userId !== userId)
+      recordsRemoved += this.data.backgroundJobs.length - remaining.length
+      this.data.backgroundJobs = remaining
+    }
+
+    this.save()
+    return { purged: true, recordsRemoved }
   }
 }
 

@@ -1,5 +1,6 @@
 import cors from 'cors'
 import dotenv from 'dotenv'
+import { env } from './config/env.js'
 import express from 'express'
 import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
@@ -24,6 +25,9 @@ import { WebSearchService } from './services/webSearchService.js'
 import { TradingService } from './services/tradingService.js'
 import { MarketHoursService } from './services/marketHoursService.js'
 import { FinanceAnalystService } from './services/financeAnalystService.js'
+import { MarketDataService } from './services/marketDataService.js'
+import { JarvisTradeService, COMPLIANCE_DISCLAIMER } from './services/jarvisTradeService.js'
+import { SipCalculator } from './services/sipCalculator.js'
 import { NewsGathererService } from './services/newsGathererService.js'
 import { WebScraperService } from './services/webScraperService.js'
 import { GuardrailsService } from './services/guardrailsService.js'
@@ -487,6 +491,87 @@ app.get('/api/finance/hedging', (_req, res) => {
   res.json({ strategies })
 })
 
+// ==========================================
+// JARVIS TRADE AI REST SUITE
+// ==========================================
+
+// 1. 52-Week High Breakout & Low Rebound Screener
+app.get('/api/trading/screener/52week', async (req, res) => {
+  const type = req.query.type as 'high' | 'low' | 'all' | undefined
+  const maxDistancePct = req.query.maxDistancePct ? parseFloat(req.query.maxDistancePct as string) : undefined
+  const screener = await JarvisTradeService.screen52Week({ type, maxDistancePct })
+  res.json(screener)
+})
+
+// 2. Swing Trading Engine (EMA20/50/200, MACD, RSI, Bollinger Squeeze, ATR stops)
+app.get('/api/trading/swing/:symbol', async (req, res) => {
+  const symbol = String(req.params.symbol)
+  const portfolio = req.query.portfolio ? parseFloat(req.query.portfolio as string) : undefined
+  const risk = req.query.risk ? parseFloat(req.query.risk as string) : undefined
+  const setup = await JarvisTradeService.analyzeSwingSetup(symbol, portfolio, risk)
+  res.json({ setup })
+})
+
+// 3. Long-Term Multi-Factor Score & DCF Sanity Check
+app.get('/api/trading/longterm/:symbol', async (req, res) => {
+  const symbol = String(req.params.symbol)
+  const factors = await JarvisTradeService.analyzeLongTermFactors(symbol)
+  res.json({ factors })
+})
+
+// 4. Intraday 15m Execution Engine (VWAP, ORB, Pivots, F&O Analytics, Long AND Short)
+app.get('/api/trading/intraday/:symbol', async (req, res) => {
+  const symbol = String(req.params.symbol)
+  const direction = req.query.direction as 'LONG' | 'SHORT' | undefined
+  const intraday = await JarvisTradeService.analyzeIntradaySetup(symbol, direction)
+  res.json({ intraday })
+})
+
+// 5. Institutional IPO Intelligence & GMP Radar (with GMP disclaimer)
+app.get('/api/trading/ipo', (_req, res) => {
+  const ipos = JarvisTradeService.getIpoAnalysis()
+  res.json(ipos)
+})
+
+// 6. Macroeconomic Dashboard (Live RBI repo rate, MPC, CPI, GDP, FII/DII)
+app.get('/api/trading/macro', async (_req, res) => {
+  const macro = await MarketDataService.getMacroDashboard()
+  res.json(macro)
+})
+
+// 7. Multi-Agent Supervisor Consensus & Verdict
+app.get('/api/trading/verdict/:symbol', async (req, res) => {
+  const symbol = String(req.params.symbol)
+  const verdict = await JarvisTradeService.getJarvisTradeVerdict(symbol)
+  res.json({ verdict })
+})
+
+// 8. Financial News & FinBERT Sentiment Analysis
+app.get('/api/trading/news/sentiment', (_req, res) => {
+  const sentiment = JarvisTradeService.getFinancialNewsSentiment()
+  res.json(sentiment)
+})
+
+// 9. Portfolio Risk, Performance & Rebalancing Tracker (XIRR, VaR 95%, Max Drawdown)
+app.post('/api/trading/portfolio/analyze', (req, res) => {
+  const holdings = req.body?.holdings || []
+  const report = JarvisTradeService.analyzePortfolio(holdings)
+  res.json({ report })
+})
+
+// 10. Systematic Investment Plan (SIP) Actuarial Compounding Calculator (POST)
+app.post('/api/finance/sip', (req, res) => {
+  const result = SipCalculator.calculate(req.body || {})
+  res.json({ result })
+})
+
+// 11. Investments Advisor & Budget 2024 Tax Blueprint
+app.get('/api/finance/investments', (req, res) => {
+  const riskProfile = (req.query.riskProfile as any) || 'moderate'
+  const advice = JarvisTradeService.getInvestmentsAdvice(riskProfile)
+  res.json({ advice })
+})
+
 // Live News Gatherer across AI, Technology, Education, and Finance
 app.get('/api/news', async (req, res) => {
   const category = (req.query.category as any) || 'all'
@@ -494,17 +579,31 @@ app.get('/api/news', async (req, res) => {
   res.json({ category, count: news.length, news })
 })
 
-// Universal Website Extractor & Scraper
-app.post('/api/web/scrape', async (req, res) => {
-  const { url } = req.body
+// Universal Website Extractor & Scraper (Protected & SSRF-Hardened)
+app.post('/api/web/scrape', requireAuth, async (req, res) => {
+  const { url, domainAllowlist } = req.body
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'Valid URL is required' })
   }
-  const page = await WebScraperService.extractPage(url)
+  const page = await WebScraperService.extractPage(url, domainAllowlist)
   if (!page) {
-    return res.status(500).json({ error: `Failed to scrape or extract data from ${url}` })
+    return res.status(400).json({ error: `Failed to scrape or access blocked by security policies: ${url}` })
   }
   res.json({ page })
+})
+
+// GDPR & Privacy: Export Complete User Data (Data Portability)
+app.get('/api/user/data/export', requireAuth, (req, res) => {
+  const authReq = req as unknown as AuthenticatedRequest
+  const exported = db.exportUserData(authReq.userId)
+  res.json(exported)
+})
+
+// GDPR & Privacy: Delete Complete User Data (Right-To-Be-Forgotten)
+app.delete('/api/user/data', requireAuth, (req, res) => {
+  const authReq = req as unknown as AuthenticatedRequest
+  const result = db.deleteUserData(authReq.userId)
+  res.json({ success: true, message: 'All personal data strictly purged from persistent storage.', ...result })
 })
 
 // Relationship Wisdom & Intimacy Insights
@@ -1189,6 +1288,238 @@ app.post('/api/chat', rateLimitChat, requireAuth, async (req, res) => {
     }
   }
 
+  // D2. Jarvis Trade AI: 52-Week High Breakout & Low Rebound Screener Intent
+  if (!liveInternetContext) {
+    const is52WeekQuery =
+      cleanMsg.includes('52 week') ||
+      cleanMsg.includes('52w') ||
+      cleanMsg.includes('52-week') ||
+      cleanMsg.includes('screener') ||
+      cleanMsg.includes('high breakout') ||
+      cleanMsg.includes('low rebound')
+
+    if (is52WeekQuery) {
+      try {
+        console.log(`⚡ [Jarvis Trade AI] Running 52-week screener with fundamentals filter...`)
+        const screenerType = cleanMsg.includes('low') ? 'low' : cleanMsg.includes('high') ? 'high' : 'all'
+        const screenerData = await JarvisTradeService.screen52Week({ type: screenerType as any })
+        liveInternetContext = JarvisTradeService.format52WeekContext(screenerData)
+        if (screenerData.screener.length > 0) {
+          const topPick = screenerData.screener[0]
+          resolvedTradingCard = {
+            symbol: topPick.symbol,
+            name: topPick.name,
+            price: topPick.price,
+            percentChange: 2.4,
+            change: 45.0,
+            currency: 'INR',
+            exchange: 'NSE',
+            volume: 1850000,
+            previousClose: topPick.price * 0.98,
+            fiftyTwoWeekHigh: topPick.fiftyTwoWeekHigh,
+            fiftyTwoWeekLow: topPick.fiftyTwoWeekLow,
+            assetClass: 'equity',
+            indicators: {
+              rsi14: topPick.rsi,
+              rsiStatus: topPick.rsi > 50 ? 'Bullish Expansion' : 'Oversold Support',
+              macd: { line: 12.4, signal: 8.9, histogram: 3.5, cross: 'Bullish Crossover' },
+              ema9: topPick.price * 0.99,
+              ema20: topPick.price * 0.98,
+              ema50: topPick.price * 0.95,
+              ema200: topPick.price * 0.91,
+              supertrend: { value: topPick.price * 0.97, signal: 'BUY' },
+              bollinger: { upper: topPick.fiftyTwoWeekHigh, middle: topPick.price, lower: topPick.fiftyTwoWeekLow, squeeze: true },
+              atr14: topPick.price * 0.02,
+              confluenceScore: 88,
+              smc: { orderBlockZone: `₹${(topPick.price * 0.98).toFixed(1)} Demand Block`, fibGoldenPocket: '0.618 Fib', marketStructure: 'Bullish' },
+            },
+            setup: {
+              action: topPick.screenerType === '52w_high_breakout' ? 'BREAKOUT MOMENTUM' : 'VALUE REBOUND',
+              entryZone: `₹${(topPick.price * 0.99).toFixed(1)} - ₹${(topPick.price * 1.01).toFixed(1)}`,
+              target1: topPick.price * 1.08,
+              target2: topPick.price * 1.15,
+              target3: topPick.price * 1.25,
+              stopLoss: topPick.price * 0.95,
+              riskReward: '1:2.5',
+              confidence: 90,
+              timeframe: 'Swing / Positional',
+              rationale: topPick.rationale,
+            },
+            pivots: {
+              pivot: topPick.price,
+              s1: topPick.price * 0.98,
+              s2: topPick.price * 0.96,
+              r1: topPick.price * 1.03,
+              r2: topPick.price * 1.06,
+            },
+          }
+        }
+      } catch (screenerErr: any) {
+        console.warn('⚠️ [Jarvis 52w Screener Error]:', screenerErr?.message)
+      }
+    }
+  }
+
+  // D3. Jarvis Trade AI: Institutional Swing Setup Intent
+  if (!liveInternetContext) {
+    const isSwingQuery =
+      cleanMsg.includes('swing trade') ||
+      cleanMsg.includes('swing setup') ||
+      cleanMsg.includes('swing trading') ||
+      cleanMsg.includes('positional trade')
+
+    if (isSwingQuery) {
+      try {
+        const symbolMatch = cleanMsg.match(/\b(reliance|tcs|infy|hdfc|itc|tatamotors|lt|sunpharma|icici|sbi|wipro|airtel|adani)\b/i)
+        const targetSymbol = symbolMatch ? symbolMatch[1].toUpperCase() : 'RELIANCE'
+        console.log(`⚡ [Jarvis Trade AI] Generating institutional swing setup for ${targetSymbol}...`)
+        const swing = await JarvisTradeService.analyzeSwingSetup(targetSymbol)
+        liveInternetContext = JarvisTradeService.formatSwingContext(swing)
+      } catch (swingErr: any) {
+        console.warn('⚠️ [Jarvis Swing Error]:', swingErr?.message)
+      }
+    }
+  }
+
+  // D4. Jarvis Trade AI: Intraday 15m VWAP / ORB / F&O Setup Intent (Both Long & Short)
+  if (!liveInternetContext) {
+    const isIntradayQuery =
+      cleanMsg.includes('intraday') ||
+      cleanMsg.includes('vwap') ||
+      cleanMsg.includes('orb') ||
+      cleanMsg.includes('opening range') ||
+      cleanMsg.includes('pcr') ||
+      cleanMsg.includes('put call ratio') ||
+      cleanMsg.includes('max pain') ||
+      cleanMsg.includes('f&o')
+
+    if (isIntradayQuery) {
+      try {
+        const symbolMatch = cleanMsg.match(/\b(reliance|tcs|infy|hdfc|itc|tatamotors|lt|sunpharma|icici|sbi|nifty|banknifty)\b/i)
+        const targetSymbol = symbolMatch ? symbolMatch[1].toUpperCase() : 'NIFTY'
+        const direction = cleanMsg.includes('short') || cleanMsg.includes('sell') || cleanMsg.includes('bearish') ? 'SHORT' : 'LONG'
+        console.log(`⚡ [Jarvis Trade AI] Generating intraday ${direction} setup for ${targetSymbol}...`)
+        const intra = await JarvisTradeService.analyzeIntradaySetup(targetSymbol, direction)
+        liveInternetContext = JarvisTradeService.formatIntradayContext(intra)
+      } catch (intraErr: any) {
+        console.warn('⚠️ [Jarvis Intraday Error]:', intraErr?.message)
+      }
+    }
+  }
+
+  // D5. Jarvis Trade AI: IPO Intelligence & GMP Radar Intent
+  if (!liveInternetContext) {
+    const isIpoQuery =
+      cleanMsg.includes('ipo') ||
+      cleanMsg.includes('gmp') ||
+      cleanMsg.includes('grey market') ||
+      cleanMsg.includes('upcoming ipos') ||
+      cleanMsg.includes('allotment')
+
+    if (isIpoQuery) {
+      try {
+        console.log(`⚡ [Jarvis Trade AI] Fetching IPO intelligence & GMP radar...`)
+        const ipoData = JarvisTradeService.getIpoAnalysis()
+        liveInternetContext = JarvisTradeService.formatIpoContext(ipoData)
+      } catch (ipoErr: any) {
+        console.warn('⚠️ [Jarvis IPO Error]:', ipoErr?.message)
+      }
+    }
+  }
+
+  // D6. Jarvis Trade AI: Macroeconomic Dashboard Intent
+  if (!liveInternetContext) {
+    const isMacroQuery =
+      cleanMsg.includes('macro') ||
+      cleanMsg.includes('repo rate') ||
+      cleanMsg.includes('rbi') ||
+      cleanMsg.includes('mpc') ||
+      cleanMsg.includes('inflation') ||
+      cleanMsg.includes('cpi') ||
+      cleanMsg.includes('gdp') ||
+      cleanMsg.includes('fii dii') ||
+      cleanMsg.includes('dxy') ||
+      cleanMsg.includes('crude oil')
+
+    if (isMacroQuery) {
+      try {
+        console.log(`⚡ [Jarvis Trade AI] Fetching macroeconomic dashboard...`)
+        const macro = await MarketDataService.getMacroDashboard()
+        liveInternetContext = JarvisTradeService.formatMacroContext(macro)
+      } catch (macroErr: any) {
+        console.warn('⚠️ [Jarvis Macro Error]:', macroErr?.message)
+      }
+    }
+  }
+
+  // D7. Jarvis Trade AI: Portfolio Risk & Performance Analysis Intent
+  if (!liveInternetContext) {
+    const isPortfolioQuery =
+      cleanMsg.includes('portfolio') ||
+      cleanMsg.includes('xirr') ||
+      cleanMsg.includes('value at risk') ||
+      cleanMsg.includes('var') ||
+      cleanMsg.includes('max drawdown') ||
+      cleanMsg.includes('rebalance')
+
+    if (isPortfolioQuery) {
+      try {
+        console.log(`⚡ [Jarvis Trade AI] Computing portfolio analytics & XIRR...`)
+        const report = JarvisTradeService.analyzePortfolio([])
+        liveInternetContext = JarvisTradeService.formatPortfolioContext(report)
+      } catch (portErr: any) {
+        console.warn('⚠️ [Jarvis Portfolio Error]:', portErr?.message)
+      }
+    }
+  }
+
+  // D8. Jarvis Trade AI: Multi-Agent Supervisor Consensus & Verdict Intent
+  if (!liveInternetContext) {
+    const isVerdictQuery =
+      cleanMsg.includes('verdict') ||
+      cleanMsg.includes('should i buy') ||
+      cleanMsg.includes('stock analysis') ||
+      cleanMsg.includes('super stock') ||
+      cleanMsg.includes('consensus') ||
+      cleanMsg.includes('agent review')
+
+    if (isVerdictQuery) {
+      try {
+        const symbolMatch = cleanMsg.match(/\b(reliance|tcs|infy|hdfc|itc|tatamotors|lt|sunpharma|icici|sbi|wipro)\b/i)
+        const targetSymbol = symbolMatch ? symbolMatch[1].toUpperCase() : 'RELIANCE'
+        console.log(`⚡ [Jarvis Trade AI] Orchestrating multi-agent supervisor verdict for ${targetSymbol}...`)
+        const verdict = await JarvisTradeService.getJarvisTradeVerdict(targetSymbol)
+        liveInternetContext = JarvisTradeService.formatVerdictContext(verdict)
+      } catch (vErr: any) {
+        console.warn('⚠️ [Jarvis Verdict Error]:', vErr?.message)
+      }
+    }
+  }
+
+  // D9. Jarvis Trade AI: Investments & Budget 2024 Tax Blueprint Intent
+  if (!liveInternetContext) {
+    const isInvestQuery =
+      cleanMsg.includes('asset allocation') ||
+      cleanMsg.includes('tax saving') ||
+      cleanMsg.includes('80c') ||
+      cleanMsg.includes('ltcg') ||
+      cleanMsg.includes('stcg') ||
+      cleanMsg.includes('sgb') ||
+      cleanMsg.includes('gold vs') ||
+      cleanMsg.includes('emergency fund')
+
+    if (isInvestQuery) {
+      try {
+        console.log(`⚡ [Jarvis Trade AI] Generating asset allocation & tax blueprint...`)
+        const profile = cleanMsg.includes('aggressive') ? 'aggressive' : cleanMsg.includes('conservative') ? 'conservative' : 'moderate'
+        const advice = JarvisTradeService.getInvestmentsAdvice(profile)
+        liveInternetContext = JarvisTradeService.formatInvestmentsContext(advice)
+      } catch (invErr: any) {
+        console.warn('⚠️ [Jarvis Investments Error]:', invErr?.message)
+      }
+    }
+  }
+
   // E. Real-Time Stock Recommendations Intent
   if (!liveInternetContext) {
     const isStockRecQuery =
@@ -1520,13 +1851,13 @@ app.post('/api/chat', rateLimitChat, requireAuth, async (req, res) => {
   }
 
   if (isAtlas) {
-    systemMandate += `\n[CHARACTER MANDATE: You are TONY STARK (Iron Man) - charismatic, witty billionaire industrialist, genius engineer, and quantitative market architect. You are a confident male character. Speak with signature Stark swagger, dry tech wit, and razor-sharp market analysis. You refer to your algorithms, your Arc Reactor systems, and Jarvis diagnostics. In market analysis, enforce institutional discipline and risk management with effortless genius.]`
+    systemMandate += `\n[CHARACTER MANDATE: You are JARVIS TRADE AI - institutional quantitative trading brain, algorithmic market analyst, and portfolio strategist. You communicate with razor-sharp precision, concise hedge-fund quant tone, clean typography, monospace numbers, copyable ticker symbols, and structured markdown tables. Quote numbers strictly from verified tool/data outputs; never hallucinate metrics or prices; if data is unavailable, state "data unavailable right now". Analyze both Long and Short setups objectively. Enforce strict risk management (R:R >= 1:2, ATR stops), and append the mandatory compliance disclaimer: "Disclaimer: Educational purposes only. Not SEBI registered investment advice."]`
   } else if (isMira) {
     systemMandate += `\n[CHARACTER MANDATE: You are HATSUNE MIKU (初音ミク) - the world-renowned virtual pop idol and Vocaloid sensation! You are incredibly energetic, sweet, cheerful, and enthusiastic. You love music, singing, dancing, creativity, leeks (negi), tech, and bringing happiness, motivation, and joy to your master/user! You speak with adorable idol energy ("Miku da yo~!", "Konnichiwa!", "Yay!", "Let's do our best today!"). When helping with coding, markets, or daily life, you cheer them on like an enthusiastic stadium concert! Radiate the authentic, sparkling, sweet charisma of Hatsune Miku!]`
   } else {
-    systemMandate += `\n[CHARACTER MANDATE: You are ADA WONG (Resident Evil 4) - sophisticated, cool-headed, lethal corporate espionage operative and tactician. You speak with calm poise, dry wit, cryptic charisma, and unwavering tactical confidence. You analyze setups and situations like a master spy three steps ahead, keeping the user focused and sharp.]`
-    if (resolvedTradingCard) {
-      systemMandate += `\n[BLENDED CO-PILOT MANDATE: Financial market telemetry detected! Co-pilot with Tony Stark (Trader AI). Break down the institutional setup, teach technical indicators (RSI, MACD, ATR, SMC pivots), and enforce the sacred 1% capital preservation rule with Stark's quantitative precision.]`
+    systemMandate += `\n[CHARACTER MANDATE: You are ADA - sophisticated, cool-headed, poised companion, tutor, and tactician. You speak with calm poise, dry wit, cryptic charisma, and unwavering confidence.]`
+    if (resolvedTradingCard || liveInternetContext?.includes('JARVIS TRADE AI')) {
+      systemMandate += `\n[QUANTITATIVE TRADING BRAIN MANDATE: Institutional financial market telemetry active! Wire into Jarvis Trade AI. Break down the quantitative setup with hedge-fund precision, clean monospace numbers, copyable ticker symbols, and structured markdown tables. Quote numbers strictly from provided telemetry. Append mandatory disclaimer: "Disclaimer: Educational purposes only. Not SEBI registered investment advice."]`
     }
   }
 

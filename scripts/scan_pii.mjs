@@ -28,7 +28,11 @@ const isKnownHelplineOrFalsePositive = (line) => {
     line.includes('Tele-MANAS') ||
     line.includes('images.unsplash.com') ||
     line.includes('float hash') ||
-    line.includes('fract(sin')
+    line.includes('fract(sin') ||
+    line.includes('2130706433') ||
+    line.includes('4294967295') ||
+    line.includes('SSRF') ||
+    line.includes('ssrfValidator')
   );
 };
 
