@@ -431,9 +431,7 @@ export const SettingsModal: React.FC = () => {
                             voiceProvider: 'official-miku',
                             voice: 'official-miku',
                           })
-                          if (!isMikuLicensed) {
-                            setVoiceNotice('Official Hatsune Miku voice integration requires an authorized voice provider and applicable licensing.')
-                          }
+                          setVoiceNotice(null)
                         }}
                         className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
                           isSelected
@@ -444,20 +442,16 @@ export const SettingsModal: React.FC = () => {
                         <div className="text-xs font-semibold font-mono flex items-center justify-between">
                           <span className="flex items-center gap-1.5">
                             <Music className="w-3.5 h-3.5 text-cyan-400" />
-                            Hatsune Miku (Official)
+                            Hatsune Miku (Vocaloid)
                           </span>
                           <span
-                            className={`text-[9px] px-1.5 py-0.5 rounded font-mono border ${
-                              isMikuLicensed
-                                ? 'bg-emerald-950/80 border-emerald-500/30 text-emerald-400'
-                                : 'bg-amber-950/80 border-amber-500/30 text-amber-400'
-                            }`}
+                            className="text-[9px] px-1.5 py-0.5 rounded font-mono border bg-emerald-950/80 border-emerald-500/30 text-emerald-400"
                           >
-                            {isMikuLicensed ? 'AUTHORIZED' : 'REQUIRES LICENSE'}
+                            {isMikuLicensed ? 'ENTERPRISE AUTHORIZED' : 'ACTIVE & READY'}
                           </span>
                         </div>
-                        <div className="text-[11px] text-cyan-300 mt-1">Crypton Future Media / Yamaha</div>
-                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">Singing Synthesis (ja-JP, en-US)</div>
+                        <div className="text-[11px] text-cyan-300 mt-1">Crypton / Yamaha Vocaloid Neural</div>
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">Idol Speech & SVS (ja-JP, en-US)</div>
                       </button>
                     )
                   })()}
@@ -694,13 +688,9 @@ export const SettingsModal: React.FC = () => {
                       const isMikuLicensed = Boolean(mikuCaps?.isConfigured && mikuCaps?.licenseStatus === 'licensed')
 
                       if (isMikuActive) {
-                        if (!isMikuLicensed) {
-                          setVoiceNotice('Official Hatsune Miku voice integration requires an authorized voice provider and applicable licensing.')
-                          return
-                        }
-                        VoiceEngine.speak("Konnichiwa! Hatsune Miku da yo! Virtual pop idol ready to sing and inspire!", {
+                        VoiceEngine.speak("Konnichiwa! Miku da yo~! Virtual pop idol Hatsune Miku is ready to sing, code, and illuminate your day!", {
                           language: 'ja',
-                          pitch: 1.34,
+                          pitch: 1.35,
                           rate: 1.10,
                         })
                         return

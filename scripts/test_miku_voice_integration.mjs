@@ -106,7 +106,7 @@ await asyncTest('Provider configuration valid (Capabilities & Metadata)', async 
 
   try {
     process.env.MIKU_VOICE_ENABLED = 'true'
-    process.env.MIKU_VOICE_API_KEY = 'vocaloid_ent_auth_token_9876543210'
+    process.env.MIKU_VOICE_API_KEY = 'mock_vocaloid_ent_auth_token_9876543210'
     process.env.MIKU_VOICE_API_URL = 'https://api.vocaloid.crypton.co.jp/v1/synthesize'
     process.env.MIKU_VOICE_MODEL = 'vocaloid6-miku-official'
     process.env.MIKU_VOICE_LICENSE_STATUS = 'licensed'
@@ -134,7 +134,7 @@ await asyncTest('Provider configuration valid (Capabilities & Metadata)', async 
 await asyncTest('Official voice synthesis successful (Authorized Gateway Mock)', async () => {
   // Spawn local test HTTP server to simulate official licensed gateway endpoint
   const mockServer = http.createServer((req, res) => {
-    assert.strictEqual(req.headers['authorization'], 'Bearer vocaloid_ent_auth_token_9876543210')
+    assert.strictEqual(req.headers['authorization'], 'Bearer mock_vocaloid_ent_auth_token_9876543210')
     assert.strictEqual(req.headers['x-voice-provider'], 'Crypton-Yamaha-Vocaloid')
 
     let body = ''
@@ -154,7 +154,7 @@ await asyncTest('Official voice synthesis successful (Authorized Gateway Mock)',
 
   try {
     process.env.MIKU_VOICE_ENABLED = 'true'
-    process.env.MIKU_VOICE_API_KEY = 'vocaloid_ent_auth_token_9876543210'
+    process.env.MIKU_VOICE_API_KEY = 'mock_vocaloid_ent_auth_token_9876543210'
     process.env.MIKU_VOICE_API_URL = `http://127.0.0.1:${port}/synthesize`
     process.env.MIKU_VOICE_MODEL = 'vocaloid6-miku-official'
     process.env.MIKU_VOICE_LICENSE_STATUS = 'licensed'
@@ -180,7 +180,7 @@ await asyncTest('Official voice synthesis successful (Authorized Gateway Mock)',
 // ─── 4. Unsupported language ───────────────────────────────────
 await asyncTest('Unsupported language (Rejection of non-ja/en scripts)', async () => {
   process.env.MIKU_VOICE_ENABLED = 'true'
-  process.env.MIKU_VOICE_API_KEY = 'vocaloid_ent_auth_token_9876543210'
+  process.env.MIKU_VOICE_API_KEY = 'mock_vocaloid_ent_auth_token_9876543210'
   process.env.MIKU_VOICE_API_URL = 'http://127.0.0.1:9999/synthesize'
   process.env.MIKU_VOICE_LICENSE_STATUS = 'licensed'
 
@@ -207,7 +207,7 @@ await asyncTest('Unsupported language (Rejection of non-ja/en scripts)', async (
 // ─── 5. Empty response ─────────────────────────────────────────
 await asyncTest('Empty response (Strict input validation)', async () => {
   process.env.MIKU_VOICE_ENABLED = 'true'
-  process.env.MIKU_VOICE_API_KEY = 'vocaloid_ent_auth_token_9876543210'
+  process.env.MIKU_VOICE_API_KEY = 'mock_vocaloid_ent_auth_token_9876543210'
   process.env.MIKU_VOICE_API_URL = 'http://127.0.0.1:9999/synthesize'
   process.env.MIKU_VOICE_LICENSE_STATUS = 'licensed'
 
@@ -232,7 +232,7 @@ await asyncTest('Empty response (Strict input validation)', async () => {
 // ─── 6. Long AI response ───────────────────────────────────────
 await asyncTest('Long AI response (Text length limit enforcement)', async () => {
   process.env.MIKU_VOICE_ENABLED = 'true'
-  process.env.MIKU_VOICE_API_KEY = 'vocaloid_ent_auth_token_9876543210'
+  process.env.MIKU_VOICE_API_KEY = 'mock_vocaloid_ent_auth_token_9876543210'
   process.env.MIKU_VOICE_API_URL = 'http://127.0.0.1:9999/synthesize'
   process.env.MIKU_VOICE_LICENSE_STATUS = 'licensed'
 
@@ -258,7 +258,7 @@ await asyncTest('Long AI response (Text length limit enforcement)', async () => 
 // ─── 7. Network failure ─────────────────────────────────────────
 await asyncTest('Network failure (Clean error handling without leaking secrets)', async () => {
   process.env.MIKU_VOICE_ENABLED = 'true'
-  process.env.MIKU_VOICE_API_KEY = 'vocaloid_secret_private_key_xyz_999'
+  process.env.MIKU_VOICE_API_KEY = 'mock_vocaloid_secret_private_key_xyz_999'
   // Use closed port on localhost to trigger connection failure
   process.env.MIKU_VOICE_API_URL = 'http://127.0.0.1:65530/synthesize'
   process.env.MIKU_VOICE_LICENSE_STATUS = 'licensed'
@@ -294,7 +294,7 @@ await asyncTest('Provider timeout (AbortController timeout defense)', async () =
 
   try {
     process.env.MIKU_VOICE_ENABLED = 'true'
-    process.env.MIKU_VOICE_API_KEY = 'vocaloid_ent_auth_token_9876543210'
+    process.env.MIKU_VOICE_API_KEY = 'mock_vocaloid_ent_auth_token_9876543210'
     process.env.MIKU_VOICE_API_URL = `http://127.0.0.1:${port}/synthesize`
     process.env.MIKU_VOICE_LICENSE_STATUS = 'licensed'
 
@@ -408,7 +408,7 @@ await asyncTest('Invalid API credentials (401/403 handling without key disclosur
 
   try {
     process.env.MIKU_VOICE_ENABLED = 'true'
-    process.env.MIKU_VOICE_API_KEY = 'invalid_secret_key_example_1234'
+    process.env.MIKU_VOICE_API_KEY = 'mock_invalid_key_1234567890'
     process.env.MIKU_VOICE_API_URL = `http://127.0.0.1:${port}/synthesize`
     process.env.MIKU_VOICE_LICENSE_STATUS = 'licensed'
 
@@ -419,7 +419,7 @@ await asyncTest('Invalid API credentials (401/403 handling without key disclosur
     } catch (err) {
       threw = true
       assert.ok(err.message.includes('Invalid or expired Hatsune Miku enterprise voice authorization credentials'))
-      assert.strictEqual(err.message.includes('invalid_secret_key_example_1234'), false)
+      assert.strictEqual(err.message.includes('mock_invalid_key_1234567890'), false)
     }
     assert.strictEqual(threw, true, 'Should reject invalid credentials securely')
   } finally {
