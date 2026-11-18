@@ -1,0 +1,37 @@
+global:
+  environment: staging
+  domain: staging.gf-ai.example.com
+
+api:
+  replicaCount: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+
+worker:
+  replicaCount: 1
+
+web:
+  replicaCount: 2
+
+ingress:
+  enabled: true
+  hosts:
+    - host: staging.gf-ai.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          backend: api
+        - path: /
+          pathType: Prefix
+          backend: web
+  tls:
+    - secretName: gf-ai-staging-tls
+      hosts:
+        - staging.gf-ai.example.com
+
+env:
+  NODE_ENV: "staging"
+  CORS_ORIGIN: "https://staging.gf-ai.example.com"
+  ENABLE_TEST_AUTH: "false"

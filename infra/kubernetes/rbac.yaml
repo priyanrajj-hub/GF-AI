@@ -1,0 +1,27 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gf-ai-role
+  namespace: gf-ai
+  labels:
+    app.kubernetes.io/name: gf-ai
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gf-ai-rolebinding
+  namespace: gf-ai
+  labels:
+    app.kubernetes.io/name: gf-ai
+subjects:
+  - kind: ServiceAccount
+    name: gf-ai-sa
+    namespace: gf-ai
+roleRef:
+  kind: Role
+  name: gf-ai-role
+  apiGroup: rbac.authorization.k8s.io

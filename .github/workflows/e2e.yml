@@ -1,0 +1,40 @@
+name: E2E Integration Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    name: End-to-End Pipeline
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared and server workspaces
+        run: |
+          npm run build -w packages/shared
+          npm run build -w apps/server
+
+      - name: Execute End-to-End Integration Flow
+        run: npm run test:e2e
+        env:
+          NODE_ENV: test
+          MOCK_PROVIDERS: "true"
+          PORT: 3001
+          JWT_SECRET: e2e-testing-jwt-secret-min-32-chars-guaranteed-secure-1234
+          REFRESH_SECRET: e2e-testing-refresh-secret-min-32-chars-guaranteed-secure-5678

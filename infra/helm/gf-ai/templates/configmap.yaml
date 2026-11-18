@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "gf-ai.fullname" . }}-config
+  labels:
+    {{- include "gf-ai.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.env.NODE_ENV | quote }}
+  PORT: {{ .Values.env.PORT | quote }}
+  CORS_ORIGIN: {{ .Values.env.CORS_ORIGIN | quote }}
+  DATABASE_ENGINE: {{ .Values.env.DATABASE_ENGINE | quote }}
+  REDIS_URL: {{ .Values.env.REDIS_URL | quote }}
+  GEMINI_MODEL: {{ .Values.env.GEMINI_MODEL | quote }}
+  ELEVENLABS_VOICE_ID: {{ .Values.env.ELEVENLABS_VOICE_ID | quote }}
+  ENABLE_TEST_AUTH: {{ .Values.env.ENABLE_TEST_AUTH | quote }}

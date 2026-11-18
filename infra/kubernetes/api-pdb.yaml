@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gf-api-pdb
+  namespace: gf-ai
+  labels:
+    app.kubernetes.io/name: gf-ai
+    app.kubernetes.io/component: api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gf-ai
+      app.kubernetes.io/component: api

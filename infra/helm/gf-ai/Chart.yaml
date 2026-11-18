@@ -1,0 +1,14 @@
+apiVersion: v2
+name: gf-ai
+description: Helm chart for GF-AI Autonomous Companion and Quantitative Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - ai-companion
+  - trading-platform
+  - webgl-vrm
+  - institutional
+maintainers:
+  - name: GF-AI Engineering Team
+    email: engineering@example.com

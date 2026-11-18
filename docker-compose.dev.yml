@@ -1,0 +1,55 @@
+version: '3.8'
+
+# Development Compose Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    command: ["npm", "run", "dev", "-w", "apps/server"]
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - JWT_SECRET=development-only-jwt-secret-do-not-use-in-production-1234
+      - REFRESH_SECRET=development-only-refresh-secret-do-not-use-in-production-5678
+      - ENABLE_TEST_AUTH=true
+      - MOCK_PROVIDERS=true
+    volumes:
+      - ./packages/shared:/app/packages/shared
+      - ./apps/server:/app/apps/server
+      - /app/apps/server/node_modules
+      - /app/node_modules
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    command: ["npm", "run", "dev", "-w", "apps/worker"]
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=development-only-jwt-secret-do-not-use-in-production-1234
+    volumes:
+      - ./packages/shared:/app/packages/shared
+      - ./apps/worker:/app/apps/worker
+      - /app/apps/worker/node_modules
+      - /app/node_modules
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    command: ["npm", "run", "dev", "-w", "apps/web", "--", "--host", "0.0.0.0"]
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3001
+    volumes:
+      - ./packages/shared:/app/packages/shared
+      - ./apps/web:/app/apps/web
+      - /app/apps/web/node_modules
+      - /app/node_modules

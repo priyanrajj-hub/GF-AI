@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gf-ai.fullname" . }}-web
+  labels:
+    {{- include "gf-ai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  type: {{ .Values.web.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.web.service.port }}
+      targetPort: 80
+      protocol: TCP
+  selector:
+    {{- include "gf-ai.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: web
