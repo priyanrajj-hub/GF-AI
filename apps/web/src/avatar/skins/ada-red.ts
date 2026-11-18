@@ -1805,6 +1805,7 @@ export function attachGoldenPirateAccessories(vrm: VRM, visible: boolean = true)
   const head = vrm.humanoid?.getNormalizedBoneNode('head')
   const leftShoulder = vrm.humanoid?.getNormalizedBoneNode('leftShoulder') || vrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
   const rightShoulder = vrm.humanoid?.getNormalizedBoneNode('rightShoulder') || vrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
+  const upperChest = vrm.humanoid?.getNormalizedBoneNode('upperChest') || vrm.humanoid?.getNormalizedBoneNode('chest')
 
   if (!visible) {
     if (hips) {
@@ -1816,6 +1817,10 @@ export function attachGoldenPirateAccessories(vrm: VRM, visible: boolean = true)
       if (aL) aL.visible = false
       const aR = head.getObjectByName('__MIKU_ANCHOR_R__')
       if (aR) aR.visible = false
+      const bL = head.getObjectByName('__MIKU_GOLD_BOW_L__')
+      if (bL) bL.visible = false
+      const bR = head.getObjectByName('__MIKU_GOLD_BOW_R__')
+      if (bR) bR.visible = false
       const hat = head.getObjectByName('__FORTNITE_PIRATE_HAT__')
       if (hat) hat.visible = false
     }
@@ -1827,10 +1832,9 @@ export function attachGoldenPirateAccessories(vrm: VRM, visible: boolean = true)
       const epR = rightShoulder.getObjectByName('__MIKU_EPAULETTE_R__')
       if (epR) epR.visible = false
     }
-    const neckOrChest = vrm.humanoid?.getNormalizedBoneNode('neck') || vrm.humanoid?.getNormalizedBoneNode('upperChest')
-    if (neckOrChest) {
-      const cr = neckOrChest.getObjectByName('__PIRATE_CRAVAT__')
-      if (cr) cr.visible = false
+    if (upperChest) {
+      const jb = upperChest.getObjectByName('__FORTNITE_PIRATE_JABOT__')
+      if (jb) jb.visible = false
     }
     return
   }
@@ -1849,13 +1853,45 @@ export function attachGoldenPirateAccessories(vrm: VRM, visible: boolean = true)
     metalness: 0.20,
   })
 
-  // 1. Golden Pirate Belt Buckle (clean up any legacy buckle if present)
+  // 1. Golden Pirate Belt Buckle with Crossed Cutlasses & Skull Insignia at waist
   if (hips) {
-    const buckle = hips.getObjectByName('__MIKU_PIRATE_BUCKLE__')
-    if (buckle) {
-      buckle.visible = false
-      hips.remove(buckle)
+    let buckle = hips.getObjectByName('__MIKU_PIRATE_BUCKLE__') as THREE.Group | undefined
+    if (!buckle) {
+      buckle = new THREE.Group()
+      buckle.name = '__MIKU_PIRATE_BUCKLE__'
+
+      // Gold rectangular buckle frame
+      const frameGeom = new THREE.BoxGeometry(0.065, 0.046, 0.012)
+      const frame = new THREE.Mesh(frameGeom, goldPbrMat)
+      buckle.add(frame)
+
+      // Inner buckle plate
+      const innerGeom = new THREE.BoxGeometry(0.052, 0.034, 0.014)
+      const innerMat = new THREE.MeshStandardMaterial({ color: 0x1A1408, roughness: 0.6 })
+      const inner = new THREE.Mesh(innerGeom, innerMat)
+      buckle.add(inner)
+
+      // Center gold skull pin
+      const skull = new THREE.Mesh(new THREE.SphereGeometry(0.010, 12, 12), goldPbrMat)
+      skull.position.set(0, 0, 0.008)
+      skull.scale.set(1.0, 1.2, 0.8)
+      buckle.add(skull)
+
+      // Crossed cutlasses behind skull
+      const cutlass1 = new THREE.Mesh(new THREE.CylinderGeometry(0.0016, 0.0016, 0.040, 6), goldPbrMat)
+      cutlass1.rotation.z = Math.PI / 4
+      cutlass1.position.set(0, 0, 0.006)
+      buckle.add(cutlass1)
+
+      const cutlass2 = new THREE.Mesh(new THREE.CylinderGeometry(0.0016, 0.0016, 0.040, 6), goldPbrMat)
+      cutlass2.rotation.z = -Math.PI / 4
+      cutlass2.position.set(0, 0, 0.006)
+      buckle.add(cutlass2)
+
+      hips.add(buckle)
     }
+    buckle.position.set(0, 0.045, 0.118)
+    buckle.visible = true
   }
 
   // 2. Twin Nautical Golden Anchors on head/twintails
@@ -1901,6 +1937,52 @@ export function attachGoldenPirateAccessories(vrm: VRM, visible: boolean = true)
     }
     buildAnchor('__MIKU_ANCHOR_L__', 1)
     buildAnchor('__MIKU_ANCHOR_R__', -1)
+
+    // Twin Shimmering Golden Bow Ribbons on Twintails (Fortnite News Signature Art)
+    const buildTwintailBow = (name: string, sign: number) => {
+      let bowGroup = head.getObjectByName(name) as THREE.Group | undefined
+      if (!bowGroup) {
+        bowGroup = new THREE.Group()
+        bowGroup.name = name
+
+        // Center knot
+        const knot = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 12), goldPbrMat)
+        knot.scale.set(1.2, 1.0, 0.9)
+        bowGroup.add(knot)
+
+        // Left bow wing loop
+        const wingL = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.009, 8, 16), goldPbrMat)
+        wingL.position.set(-0.026, 0.006, 0)
+        wingL.rotation.set(0, 0.35, 0.25)
+        wingL.scale.set(1.3, 0.8, 0.5)
+        bowGroup.add(wingL)
+
+        // Right bow wing loop
+        const wingR = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.009, 8, 16), goldPbrMat)
+        wingR.position.set(0.026, 0.006, 0)
+        wingR.rotation.set(0, -0.35, -0.25)
+        wingR.scale.set(1.3, 0.8, 0.5)
+        bowGroup.add(wingR)
+
+        // Trailing ribbon tails fluttering downwards
+        const ribbonTail1 = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.065, 0.003), goldPbrMat)
+        ribbonTail1.position.set(-0.012, -0.038, 0.004)
+        ribbonTail1.rotation.set(0.12, 0, 0.22)
+        bowGroup.add(ribbonTail1)
+
+        const ribbonTail2 = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.075, 0.003), goldPbrMat)
+        ribbonTail2.position.set(0.014, -0.042, 0.004)
+        ribbonTail2.rotation.set(0.12, 0, -0.25)
+        bowGroup.add(ribbonTail2)
+
+        head.add(bowGroup)
+      }
+      bowGroup.position.set(sign * 0.24, -0.15, -0.06)
+      bowGroup.rotation.set(0.15, sign * 0.25, sign * -0.20)
+      bowGroup.visible = true
+    }
+    buildTwintailBow('__MIKU_GOLD_BOW_L__', 1)
+    buildTwintailBow('__MIKU_GOLD_BOW_R__', -1)
   }
 
   // 3. Golden Pirate Captain Epaulettes on shoulders
@@ -1935,7 +2017,72 @@ export function attachGoldenPirateAccessories(vrm: VRM, visible: boolean = true)
   buildEpaulette(leftShoulder, '__MIKU_EPAULETTE_L__', true)
   buildEpaulette(rightShoulder, '__MIKU_EPAULETTE_R__', false)
 
-  // 4. Fortnite Gold Hatsune Miku Pirate Captain Tricorn Hat
+  // 4. White Frilly Pirate Cravat / Jabot with Radiant Golden Heart Gem (Fortnite Collab Signature)
+  if (upperChest) {
+    let jabot = upperChest.getObjectByName('__FORTNITE_PIRATE_JABOT__') as THREE.Group | undefined
+    if (!jabot) {
+      jabot = new THREE.Group()
+      jabot.name = '__FORTNITE_PIRATE_JABOT__'
+
+      const frillWhiteMat = new THREE.MeshStandardMaterial({
+        color: 0xFAFAFA,
+        roughness: 0.40,
+        metalness: 0.05,
+      })
+
+      // Layer 1 (Top frill collar band)
+      const frill1 = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.042, 0.014, 16, 1, true), frillWhiteMat)
+      frill1.position.set(0, 0.052, 0.065)
+      frill1.rotation.x = 0.25
+      frill1.scale.set(1.1, 1.0, 0.7)
+      jabot.add(frill1)
+
+      // Layer 2 (Middle ruffled tier)
+      const frill2 = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.048, 0.018, 16, 1, true), frillWhiteMat)
+      frill2.position.set(0, 0.036, 0.070)
+      frill2.rotation.x = 0.22
+      frill2.scale.set(1.15, 1.0, 0.75)
+      jabot.add(frill2)
+
+      // Layer 3 (Bottom pleated cascade frill)
+      const frill3 = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.044, 0.022, 16, 1, true), frillWhiteMat)
+      frill3.position.set(0, 0.018, 0.072)
+      frill3.rotation.x = 0.18
+      frill3.scale.set(1.0, 1.0, 0.7)
+      jabot.add(frill3)
+
+      // 24k Radiant Gold Heart Brooch Gem (Centerpiece)
+      const heartGroup = new THREE.Group()
+      heartGroup.position.set(0, 0.046, 0.088)
+
+      const heartMat = new THREE.MeshStandardMaterial({
+        color: 0xFFD700,
+        metalness: 0.95,
+        roughness: 0.12,
+        emissive: new THREE.Color(0xFFA500),
+        emissiveIntensity: 0.45,
+      })
+
+      const heartL = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 12, 12), heartMat)
+      heartL.position.set(-0.004, 0.003, 0)
+      heartGroup.add(heartL)
+
+      const heartR = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 12, 12), heartMat)
+      heartR.position.set(0.004, 0.003, 0)
+      heartGroup.add(heartR)
+
+      const heartBase = new THREE.Mesh(new THREE.ConeGeometry(0.0075, 0.010, 12), heartMat)
+      heartBase.rotation.x = Math.PI
+      heartBase.position.set(0, -0.0035, 0)
+      heartGroup.add(heartBase)
+
+      jabot.add(heartGroup)
+      upperChest.add(jabot)
+    }
+    jabot.visible = true
+  }
+
+  // 5. Fortnite Gold Hatsune Miku Pirate Captain Tricorn Hat
   if (head) {
     let hat = head.getObjectByName('__FORTNITE_PIRATE_HAT__') as THREE.Group | undefined
     if (!hat) {
