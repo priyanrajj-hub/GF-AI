@@ -10,9 +10,17 @@ async function getApp() {
 }
 
 export default async function handler(req: any, res: any) {
-  const app = await getApp()
-  if (req.url && !req.url.startsWith('/api')) {
-    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url)
+  try {
+    const app = await getApp()
+    if (req.url && !req.url.startsWith('/api')) {
+      req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url)
+    }
+    return app(req, res)
+  } catch (err: any) {
+    console.error('[Vercel Serverless Error]:', err)
+    return res.status(500).json({
+      error: 'Serverless invocation error',
+      message: err?.message || String(err),
+    })
   }
-  return app(req, res)
 }

@@ -2779,15 +2779,16 @@ async function bootServer() {
   try {
     await db.init()
     const healthy = await db.healthCheck()
-    if (!healthy && (process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL))) {
+    if (!healthy && !isServerless && process.env.NODE_ENV === 'production') {
       console.error('FATAL [Startup]: Relational database health check failed in production mode. Aborting boot.')
       process.exit(1)
     }
   } catch (err: any) {
-    if (process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)) {
+    if (!isServerless && process.env.NODE_ENV === 'production') {
       console.error('FATAL [Startup]: Relational database migration failed in production mode:', err.message)
       process.exit(1)
     }
+    console.warn('[Startup]: DB initialization notice:', err.message)
   }
 
   if (process.env.NODE_ENV !== 'test' && !isServerless) {
