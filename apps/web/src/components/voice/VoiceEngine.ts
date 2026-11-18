@@ -118,6 +118,77 @@ class VoiceEngineManager {
       return
     }
 
+    // Determine active voice provider & configuration
+    const userVoice = store.settings.voice || ''
+    const userProvider = store.settings.voiceProvider || (userVoice === 'official-miku' ? 'official-miku' : userVoice === 'system' ? 'system' : 'default-gf')
+
+    // 1. System / Browser Voice (Web Speech API)
+    if (userProvider === 'system' || userVoice === 'system') {
+      this.speakWebSpeech(cleanSpeech, options, myLockId)
+      return
+    }
+
+    // 2. Official Hatsune Miku Voice (Crypton Future Media / Yamaha VOCALOID)
+    if (userProvider === 'official-miku' || userVoice === 'official-miku') {
+      try {
+        this.initAudioContext()
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+          await this.audioContext.resume().catch(() => {})
+        }
+
+        const res = await apiFetch('/api/tts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: cleanSpeech,
+            voice: 'official-miku',
+            provider: 'official-miku',
+            language: options.language || store.settings.language || 'ja',
+            character: activeChar,
+            pitch: options.pitch,
+            rate: options.rate,
+          }),
+        })
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}))
+          const noticeMsg = errData.error || errData.statusMessage || 'Official Hatsune Miku voice integration requires an authorized voice provider and applicable licensing.'
+          console.warn('[Official Miku Voice Notice]:', noticeMsg)
+          
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('ada:voice_notice', {
+                detail: {
+                  message: noticeMsg,
+                  code: errData.code || 'MIKU_VOICE_UNLICENSED',
+                  licenseStatus: errData.licenseStatus || 'not_configured',
+                },
+              })
+            )
+          }
+
+          // Do NOT substitute with an imitation voice
+          if (options.onEnd) options.onEnd()
+          store.setSystemState('idle')
+          return
+        }
+
+        const data = await res.json()
+        if (data.audioBase64) {
+          await this.playAudioBase64(data.audioBase64, data.mimeType || 'audio/mpeg', myLockId, options, true)
+          return
+        }
+      } catch (mikuErr: any) {
+        console.warn('[Official Miku Voice Network Error]:', mikuErr)
+        if (options.onEnd) options.onEnd()
+        store.setSystemState('idle')
+        return
+      }
+    }
+
+    // 3. Default GF-AI Studio Voice (Microsoft Edge Neural / ElevenLabs / Gemini / Kokoro)
     const isTamil = (options.language || store.settings.language) === 'ta' || /[\u0B80-\u0BFF]/.test(cleanSpeech)
     const isTanglish = (options.language || store.settings.language) === 'tanglish'
     const isAtlas = activeChar === 'atlas'
@@ -127,26 +198,20 @@ class VoiceEngineManager {
     let isElevenLabs = false
 
     if (isTamil) {
-      // Pure Tamil: Strictly use Microsoft Edge Neural Tamil voices
-      // Absolutely bypass ElevenLabs English girl voices so Tamil sounds 100% native!
       voiceSetting = isAtlas ? 'ta-IN-ValluvarNeural' : 'ta-IN-PallaviNeural'
       isElevenLabs = false
     } else if (isAtlas) {
-      // Atlas / Tony Stark: Strictly use charismatic male neural voices
       voiceSetting = isTanglish ? 'en-IN-PrabhatNeural' : 'en-US-ChristopherNeural'
       isElevenLabs = false
     } else if (activeChar === 'ada') {
-      // Ada Coach/Tutor: Clear, articulate educator voice
       voiceSetting = isTanglish ? 'en-IN-NeerjaExpressiveNeural' : 'en-US-JennyNeural'
       isElevenLabs = false
     } else {
-      // Mira (Hatsune Miku): Sweet, energetic Vocaloid cyber idol voice
       const isJapanese = options.language === 'ja' || /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(cleanSpeech)
       voiceSetting = isJapanese ? 'ja-JP-NanamiNeural' : 'en-US-AnaNeural'
       isElevenLabs = false
     }
 
-    // 1. Try High-Fidelity Studio Neural Voice
     try {
       this.initAudioContext()
       if (this.audioContext && this.audioContext.state === 'suspended') {
@@ -178,145 +243,158 @@ class VoiceEngineManager {
       if (res.ok) {
         const data = await res.json()
         if (data.audioBase64) {
-          this.initAudioContext()
-          if (this.audioContext) {
-            try {
-              if (this.audioContext.state === 'suspended') {
-                await this.audioContext.resume().catch(() => {})
-              }
-
-              const binary = atob(data.audioBase64)
-              const bytes = new Uint8Array(binary.length)
-              for (let i = 0; i < binary.length; i++) {
-                bytes[i] = binary.charCodeAt(i)
-              }
-
-              const audioBuffer = await this.audioContext.decodeAudioData(bytes.buffer.slice(0))
-              const source = this.audioContext.createBufferSource()
-              source.buffer = audioBuffer
-
-              // Emotional Prosody Tuning (Playback rate, pitch & air presence)
-              const emotion = store.currentEmotion || 'calm'
-              let rateMultiplier = 1.0
-              let airPresenceBoost = 2.2
-
-              if (emotion === 'happy') {
-                rateMultiplier = 1.04
-                airPresenceBoost = 2.8
-              } else if (emotion === 'playful') {
-                rateMultiplier = 1.06
-                airPresenceBoost = 3.0
-              } else if (emotion === 'concerned') {
-                rateMultiplier = 0.95
-                airPresenceBoost = 2.5
-              } else if (emotion === 'thinking') {
-                rateMultiplier = 0.98
-                airPresenceBoost = 1.9
-              } else if (emotion === 'motivated') {
-                rateMultiplier = 1.07
-                airPresenceBoost = 2.6
-              }
-
-              const isMiku = activeChar === 'mira'
-              if (isMiku) {
-                rateMultiplier *= 1.08 // Sweet, brisk Vocaloid idol speed
-              }
-
-              source.playbackRate.value = rateMultiplier * (options.rate || 1.0)
-
-              // Formant & Air Presence EQ:
-              // Multi-Band Vocaloid Formant Filter for Hatsune Miku: synthetic idol formant resonance
-              const vocaloidFilter = this.audioContext.createBiquadFilter()
-              vocaloidFilter.type = 'peaking'
-              vocaloidFilter.frequency.value = isMiku ? 1650 : 2500
-              vocaloidFilter.Q.value = isMiku ? 2.6 : 1.0
-              vocaloidFilter.gain.value = isMiku ? 5.8 : 0.0
-
-              const vocaloidPresence = this.audioContext.createBiquadFilter()
-              vocaloidPresence.type = 'peaking'
-              vocaloidPresence.frequency.value = isMiku ? 2850 : 3000
-              vocaloidPresence.Q.value = isMiku ? 2.2 : 1.0
-              vocaloidPresence.gain.value = isMiku ? 4.2 : 0.0
-
-              // High-shelf boost for crystalline vocal sparkle
-              const highShelf = this.audioContext.createBiquadFilter()
-              highShelf.type = 'highshelf'
-              highShelf.frequency.value = isMiku ? 4600 : 3800
-              highShelf.gain.value = isMiku ? 4.8 : airPresenceBoost
-
-              // Gain control
-              const gainNode = this.audioContext.createGain()
-              gainNode.gain.value = store.audioVolume ?? 0.95
-
-              source.connect(vocaloidFilter)
-              vocaloidFilter.connect(vocaloidPresence)
-              vocaloidPresence.connect(highShelf)
-              highShelf.connect(gainNode)
-
-              // Connect to analyser for real-time lip-sync & visualizer rings
-              if (this.analyser) {
-                gainNode.connect(this.analyser)
-                this.analyser.connect(this.audioContext.destination)
-              } else {
-                gainNode.connect(this.audioContext.destination)
-              }
-
-              // Check lock before committing to play (another speak() may have fired)
-              if (this._speakLockId !== myLockId) return
-
-              this.currentAudioSource = source
-              this.isNeuralPlaying = true
-
-              source.onended = () => {
-                if (this._speakLockId !== myLockId) return // stale — a newer speak() already running
-                this.isNeuralPlaying = false
-                this.currentAudioSource = null
-                const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
-                if (!isSinging) {
-                  store.setSystemState('idle')
-                }
-                if (options.onEnd) options.onEnd()
-              }
-
-              store.setSystemState('speaking')
-              store.triggerGlitch()
-              source.start(0)
-              return  // ← Neural Web Audio playing — DO NOT fall through to Web Speech
-            } catch (decodeErr) {
-              console.warn('[Web Audio Decode Error, attempting HTMLAudio fallback]:', decodeErr)
-            }
-          }
-
-          // HTMLAudioElement Fallback for guaranteed playback in any browser context
-          if (this._speakLockId !== myLockId) return // lock check before fallback
-          try {
-            const audioElem = new Audio(`data:${data.mimeType || 'audio/mpeg'};base64,${data.audioBase64}`)
-            this.currentHtmlAudio = audioElem
-            audioElem.volume = store.audioVolume ?? 0.95
-            audioElem.onended = () => {
-              if (this._speakLockId !== myLockId) return
-              this.currentHtmlAudio = null
-              const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
-              if (!isSinging) {
-                store.setSystemState('idle')
-              }
-              if (options.onEnd) options.onEnd()
-            }
-            store.setSystemState('speaking')
-            await audioElem.play()
-            return  // ← HTMLAudio playing — DO NOT fall through to Web Speech
-          } catch (audioElemErr) {
-            console.warn('[HTMLAudio Fallback Failed]:', audioElemErr)
-          }
+          await this.playAudioBase64(data.audioBase64, data.mimeType || 'audio/mpeg', myLockId, options, activeChar === 'mira')
+          return
         }
       }
     } catch (err) {
       console.warn('[Neural TTS] Server voice synthesis failed, falling back to Web Speech:', err)
     }
 
-    // 2. Web Speech API Fallback — ONLY if neural TTS truly failed (no audio was started)
-    if (this._speakLockId !== myLockId) return // another speak() fired while we were awaiting
+    // 4. Web Speech API Fallback — ONLY if default neural TTS truly failed
+    if (this._speakLockId !== myLockId) return
     this.speakWebSpeech(cleanSpeech, options, myLockId)
+  }
+
+  /**
+   * Helper: Plays decoded audio buffer through Web Audio graph with analyser and visceral EQ
+   */
+  private async playAudioBase64(
+    audioBase64: string,
+    mimeType: string,
+    myLockId: number,
+    options: { rate?: number; pitch?: number; language?: string; onEnd?: () => void } = {},
+    isMiku = false
+  ): Promise<void> {
+    const store = useAppStore.getState()
+    const activeChar = store.activeCharacter || 'ada'
+
+    this.initAudioContext()
+    if (this.audioContext) {
+      try {
+        if (this.audioContext.state === 'suspended') {
+          await this.audioContext.resume().catch(() => {})
+        }
+
+        const binary = atob(audioBase64)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i)
+        }
+
+        const audioBuffer = await this.audioContext.decodeAudioData(bytes.buffer.slice(0))
+        const source = this.audioContext.createBufferSource()
+        source.buffer = audioBuffer
+
+        // Emotional Prosody Tuning
+        const emotion = store.currentEmotion || 'calm'
+        let rateMultiplier = 1.0
+        let airPresenceBoost = 2.2
+
+        if (emotion === 'happy') {
+          rateMultiplier = 1.04
+          airPresenceBoost = 2.8
+        } else if (emotion === 'playful') {
+          rateMultiplier = 1.06
+          airPresenceBoost = 3.0
+        } else if (emotion === 'concerned') {
+          rateMultiplier = 0.95
+          airPresenceBoost = 2.5
+        } else if (emotion === 'thinking') {
+          rateMultiplier = 0.98
+          airPresenceBoost = 1.9
+        } else if (emotion === 'motivated') {
+          rateMultiplier = 1.07
+          airPresenceBoost = 2.6
+        }
+
+        if (isMiku) {
+          rateMultiplier *= 1.08 // Sweet, brisk Vocaloid idol speed
+        }
+
+        source.playbackRate.value = rateMultiplier * (options.rate || 1.0)
+
+        // Formant & Air Presence EQ
+        const vocaloidFilter = this.audioContext.createBiquadFilter()
+        vocaloidFilter.type = 'peaking'
+        vocaloidFilter.frequency.value = isMiku ? 1650 : 2500
+        vocaloidFilter.Q.value = isMiku ? 2.6 : 1.0
+        vocaloidFilter.gain.value = isMiku ? 5.8 : 0.0
+
+        const vocaloidPresence = this.audioContext.createBiquadFilter()
+        vocaloidPresence.type = 'peaking'
+        vocaloidPresence.frequency.value = isMiku ? 2850 : 3000
+        vocaloidPresence.Q.value = isMiku ? 2.2 : 1.0
+        vocaloidPresence.gain.value = isMiku ? 4.2 : 0.0
+
+        const highShelf = this.audioContext.createBiquadFilter()
+        highShelf.type = 'highshelf'
+        highShelf.frequency.value = isMiku ? 4600 : 3800
+        highShelf.gain.value = isMiku ? 4.8 : airPresenceBoost
+
+        const gainNode = this.audioContext.createGain()
+        gainNode.gain.value = store.audioVolume ?? 0.95
+
+        source.connect(vocaloidFilter)
+        vocaloidFilter.connect(vocaloidPresence)
+        vocaloidPresence.connect(highShelf)
+        highShelf.connect(gainNode)
+
+        // Connect to analyser for real-time lip-sync & visualizer rings
+        if (this.analyser) {
+          gainNode.connect(this.analyser)
+          this.analyser.connect(this.audioContext.destination)
+        } else {
+          gainNode.connect(this.audioContext.destination)
+        }
+
+        if (this._speakLockId !== myLockId) return
+
+        this.currentAudioSource = source
+        this.isNeuralPlaying = true
+
+        source.onended = () => {
+          if (this._speakLockId !== myLockId) return
+          this.isNeuralPlaying = false
+          this.currentAudioSource = null
+          const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
+          if (!isSinging) {
+            store.setSystemState('idle')
+          }
+          if (options.onEnd) options.onEnd()
+        }
+
+        store.setSystemState('speaking')
+        store.triggerGlitch()
+        source.start(0)
+        return
+      } catch (decodeErr) {
+        console.warn('[Web Audio Decode Error, attempting HTMLAudio fallback]:', decodeErr)
+      }
+    }
+
+    // HTMLAudioElement Fallback for guaranteed playback in any browser context
+    if (this._speakLockId !== myLockId) return
+    try {
+      const audioElem = new Audio(`data:${mimeType || 'audio/mpeg'};base64,${audioBase64}`)
+      this.currentHtmlAudio = audioElem
+      audioElem.volume = store.audioVolume ?? 0.95
+      audioElem.onended = () => {
+        if (this._speakLockId !== myLockId) return
+        this.currentHtmlAudio = null
+        const isSinging = typeof window !== 'undefined' && Boolean((window as any).__IS_SINGING__)
+        if (!isSinging) {
+          store.setSystemState('idle')
+        }
+        if (options.onEnd) options.onEnd()
+      }
+      store.setSystemState('speaking')
+      await audioElem.play()
+    } catch (audioElemErr) {
+      console.warn('[HTMLAudio Fallback Failed]:', audioElemErr)
+      if (options.onEnd) options.onEnd()
+      store.setSystemState('idle')
+    }
   }
 
   private speakWebSpeech(

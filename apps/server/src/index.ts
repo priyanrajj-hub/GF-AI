@@ -41,6 +41,7 @@ import { UserLifeMemoryService } from './services/userLifeMemoryService.js'
 import { TutorStudyService } from './services/tutorStudyService.js'
 // Neural TTS Provider for high-fidelity human girl voice (zero robotic fallback - v3)
 import { NeuralTTSProvider } from './providers/neuralTtsProvider.js'
+import { VoiceRegistry } from './providers/voice/index.js'
 import { buildRagContext } from './rag/ragService.js'
 import CryptoJS from 'crypto-js'
 import { getStockQuote, getCryptoPrice, generateAlgoSignal } from './market/marketDataService.js'
@@ -2193,6 +2194,14 @@ app.post('/api/chat/vision', requireAuth, upload.single('file'), async (req, res
 })
 
 // ==========================================
+// 3.4. MODULAR VOICE PROVIDERS & CAPABILITIES
+// ==========================================
+app.get('/api/voice/providers', (_req, res) => {
+  const providers = VoiceRegistry.getInstance().getAllCapabilities()
+  res.json({ providers })
+})
+
+// ==========================================
 // 3.5. NEURAL AI VOICE SYNTHESIS (GIRL VOICE)
 // ==========================================
 app.post('/api/tts', rateLimitVoice, requireAuth, checkUserQuota('tts'), async (req, res) => {
@@ -2204,10 +2213,60 @@ app.post('/api/tts', rateLimitVoice, requireAuth, checkUserQuota('tts'), async (
     character,
     elevenlabsVoiceId,
     elevenlabsModelId,
+    pitch,
+    rate,
   } = req.body
 
   if (!text || typeof text !== 'string') {
     return res.status(400).json({ error: 'Text is required for TTS synthesis' })
+  }
+
+  // 0. OFFICIAL HATSUNE MIKU ROUTING (Crypton Future Media / Yamaha VOCALOID)
+  // Strictly verifies official enterprise licensing and never uses unofficial fan clones or generic voices!
+  const isOfficialMikuRequested =
+    provider === 'official-miku' ||
+    voice === 'official-miku' ||
+    voice === 'miku-official' ||
+    ((character === 'mira' || character === 'miku') && provider === 'official')
+
+  if (isOfficialMikuRequested) {
+    const mikuProvider = VoiceRegistry.getInstance().getMikuProvider()
+    const caps = mikuProvider.getCapabilities()
+
+    if (!caps.isConfigured || caps.licenseStatus !== 'licensed') {
+      return res.status(403).json({
+        error: 'Official Hatsune Miku voice integration requires an authorized voice provider and applicable licensing.',
+        code: 'MIKU_VOICE_UNLICENSED',
+        isAuthenticMiku: false,
+        licenseStatus: caps.licenseStatus,
+        statusMessage: caps.statusMessage,
+        supportedLanguages: caps.supportedLanguages,
+        provider: caps.provider,
+        requiresAuthorization: true,
+      })
+    }
+
+    try {
+      const result = await mikuProvider.synthesizeSpeech(text, {
+        language,
+        pitch,
+        rate,
+      })
+      return res.json({
+        ...result,
+        provider: 'official-miku',
+      })
+    } catch (mikuErr: any) {
+      console.warn('[Official Miku Voice Synthesis Error]', mikuErr.message)
+      const isBadLang = mikuErr.message?.includes('Unsupported language')
+      const isTimeout = mikuErr.message?.includes('timed out')
+      const statusCode = isBadLang ? 400 : isTimeout ? 504 : 502
+      return res.status(statusCode).json({
+        error: mikuErr.message || 'Official Hatsune Miku synthesis gateway error',
+        code: isBadLang ? 'UNSUPPORTED_LANGUAGE' : isTimeout ? 'GATEWAY_TIMEOUT' : 'GATEWAY_ERROR',
+        isAuthenticMiku: false,
+      })
+    }
   }
 
   const isTamilScript = /[\u0B80-\u0BFF]/.test(text)
@@ -2285,7 +2344,7 @@ app.post('/api/tts', rateLimitVoice, requireAuth, checkUserQuota('tts'), async (
       if (elevenlabs.isConfigured() || hasValidElevenKey) {
         try {
           const result = await elevenlabs.generateTTS(text, elevenVoiceId, elevenModel, elevenlabsKey)
-          return res.json({ ...result, provider: 'elevenlabs', voice: elevenVoiceId, model: elevenModel })
+          return res.json({ ...result, provider: 'elevenlabs', voice: elevenVoiceId, model: elevenModel, isAuthenticMiku: false })
         } catch (elErr: any) {
           console.warn('[ElevenLabs TTS Failed, falling back to High-Fidelity Neural Voice]:', elErr.message)
         }
@@ -2300,7 +2359,7 @@ app.post('/api/tts', rateLimitVoice, requireAuth, checkUserQuota('tts'), async (
       if (isTanglish) {
         neuralVoice = 'en-IN-NeerjaExpressiveNeural'
       } else if (isMikuVoice) {
-        neuralVoice = language === 'ja' ? 'ja-JP-NanamiNeural' : 'en-US-AnaNeural' // Sweet idol voice for Hatsune Miku
+        neuralVoice = language === 'ja' ? 'ja-JP-NanamiNeural' : 'en-US-AnaNeural'
       } else if (isAdaVoice) {
         neuralVoice = 'en-US-JennyNeural'
       } else {
@@ -2312,6 +2371,7 @@ app.post('/api/tts', rateLimitVoice, requireAuth, checkUserQuota('tts'), async (
         ...neuralResult,
         provider: 'neural',
         model: 'msedge-neural-v2',
+        isAuthenticMiku: false,
       })
     } catch (neuralErr: any) {
       console.warn('[NeuralTTSProvider Fallback]', neuralErr.message)

@@ -15,6 +15,11 @@ const envSchema = z.object({
   FINNHUB_API_KEY: z.string().optional(),
   DATABASE_URL: z.string().optional(),
   DATA_FILE_PATH: z.string().optional(),
+  MIKU_VOICE_ENABLED: z.string().optional(),
+  MIKU_VOICE_API_KEY: z.string().optional(),
+  MIKU_VOICE_API_URL: z.string().optional(),
+  MIKU_VOICE_MODEL: z.string().optional(),
+  MIKU_VOICE_LICENSE_STATUS: z.string().optional(),
 })
 
 export type EnvConfig = z.infer<typeof envSchema>

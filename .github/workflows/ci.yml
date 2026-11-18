@@ -64,6 +64,9 @@ jobs:
       - name: Run Round 4 Production Integration Suite (13 Tests)
         run: npx tsx scripts/test_round4_integration.mjs
 
+      - name: Run Hatsune Miku Voice Integration Suite (15 Tests)
+        run: npx tsx scripts/test_miku_voice_integration.mjs
+
       - name: Run Relationship Guardrails & Crisis Evals (121 Tests)
         run: npm run test:evals
         env:
