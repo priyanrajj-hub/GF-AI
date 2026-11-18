@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gf-web-service
+  namespace: gf-ai
+  labels:
+    app.kubernetes.io/name: gf-ai
+    app.kubernetes.io/component: web
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: gf-ai
+    app.kubernetes.io/component: web

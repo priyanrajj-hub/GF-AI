@@ -1,25 +1,125 @@
 version: '3.8'
 
 services:
-  ada-app:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gf-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in environment}
+      POSTGRES_DB: ${POSTGRES_DB:-gf_ai}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-gf_ai}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gf-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: gf-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gf-network
+
+  api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ada-companion
-    ports:
-      - '3001:3001'
-    environment:
-      - PORT=3001
-      - NODE_ENV=production
-      - JWT_SECRET=${JWT_SECRET:-production-ready-jwt-secret-min-32-chars-for-full-security}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
-      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
-      - DATA_DIR=/app/data
-    volumes:
-      - ada-data:/app/data
+      target: api
+    container_name: gf-api
     restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gf_ai}
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+      - REFRESH_SECRET=${REFRESH_SECRET:?REFRESH_SECRET must be set}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY:-}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:80,http://localhost:3000}
+    volumes:
+      - apidata:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - gf-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    container_name: gf-worker
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gf_ai}
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - gf-network
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    container_name: gf-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - gf-network
 
 volumes:
-  ada-data:
-    driver: local
+  pgdata:
+  redisdata:
+  apidata:
+
+networks:
+  gf-network:
+    driver: bridge

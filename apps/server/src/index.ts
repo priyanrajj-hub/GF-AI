@@ -145,16 +145,41 @@ const upload = multer({
   },
 })
 
+// Metrics storage
+const appMetrics = {
+  totalRequests: 0,
+  requestDurationSum: 0,
+  requestsByStatus: new Map<number, number>(),
+  requestsByRoute: new Map<string, number>(),
+  startTime: Date.now(),
+}
+
+// Global metrics interceptor
+app.use((req, res, next) => {
+  const start = Date.now()
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000
+    appMetrics.totalRequests++
+    appMetrics.requestDurationSum += duration
+    appMetrics.requestsByStatus.set(res.statusCode, (appMetrics.requestsByStatus.get(res.statusCode) || 0) + 1)
+    const route = req.route?.path || req.path
+    appMetrics.requestsByRoute.set(route, (appMetrics.requestsByRoute.get(route) || 0) + 1)
+  })
+  next()
+})
+
 // ==========================================
-// 1. HEALTH & SYSTEM DIAGNOSTICS
+// 1. HEALTH, PROBES & PROMETHEUS METRICS
 // ==========================================
-app.get('/api/health', async (_req, res) => {
+
+const handleHealth = async (_req: express.Request, res: express.Response) => {
   const isHealthy = await db.healthCheck()
   if (!isHealthy) {
     return res.status(503).json({
       status: 'unhealthy',
       database: 'disconnected',
       engine: db.getEngine(),
+      uptimeSeconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
     })
   }
@@ -162,8 +187,86 @@ app.get('/api/health', async (_req, res) => {
     status: 'ok',
     database: 'connected',
     engine: db.getEngine(),
+    uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
   })
+}
+
+app.get('/health', handleHealth)
+app.get('/api/health', handleHealth)
+
+// Kubernetes Liveness Probe: validates event loop responsiveness
+app.get('/health/live', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    alive: true,
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  })
+})
+
+// Kubernetes Readiness Probe: validates DB & downstream service availability
+app.get('/health/ready', async (_req, res) => {
+  const isHealthy = await db.healthCheck()
+  if (!isHealthy) {
+    return res.status(503).json({
+      status: 'unavailable',
+      ready: false,
+      reason: 'Database connectivity probe failed',
+      timestamp: new Date().toISOString(),
+    })
+  }
+  res.status(200).json({
+    status: 'ok',
+    ready: true,
+    engine: db.getEngine(),
+    timestamp: new Date().toISOString(),
+  })
+})
+
+// Prometheus Metrics Endpoint
+app.get('/metrics', async (_req, res) => {
+  const isHealthy = await db.healthCheck()
+  const uptime = Math.floor(process.uptime())
+  const memoryUsage = process.memoryUsage()
+
+  let statusLines = ''
+  for (const [status, count] of appMetrics.requestsByStatus.entries()) {
+    statusLines += `gf_ai_http_requests_total{status="${status}"} ${count}\n`
+  }
+  if (!statusLines) {
+    statusLines = `gf_ai_http_requests_total{status="200"} 0\n`
+  }
+
+  const prometheusBody = [
+    '# HELP gf_ai_uptime_seconds Application uptime in seconds',
+    '# TYPE gf_ai_uptime_seconds counter',
+    `gf_ai_uptime_seconds ${uptime}`,
+    '',
+    '# HELP gf_ai_http_requests_total Total number of HTTP requests processed',
+    '# TYPE gf_ai_http_requests_total counter',
+    statusLines.trim(),
+    '',
+    '# HELP gf_ai_http_request_duration_seconds_total Total duration of all requests',
+    '# TYPE gf_ai_http_request_duration_seconds_total counter',
+    `gf_ai_http_request_duration_seconds_total ${appMetrics.requestDurationSum.toFixed(4)}`,
+    '',
+    '# HELP gf_ai_database_connected Relational database connection health state',
+    '# TYPE gf_ai_database_connected gauge',
+    `gf_ai_database_connected ${isHealthy ? 1 : 0}`,
+    '',
+    '# HELP gf_ai_process_memory_rss_bytes Resident Set Size memory usage in bytes',
+    '# TYPE gf_ai_process_memory_rss_bytes gauge',
+    `gf_ai_process_memory_rss_bytes ${memoryUsage.rss}`,
+    '',
+    '# HELP gf_ai_process_memory_heap_used_bytes Heap memory used in bytes',
+    '# TYPE gf_ai_process_memory_heap_used_bytes gauge',
+    `gf_ai_process_memory_heap_used_bytes ${memoryUsage.heapUsed}`,
+    '',
+  ].join('\n')
+
+  res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
+  res.send(prometheusBody)
 })
 
 // ==========================================
@@ -2182,10 +2285,10 @@ app.post('/api/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), async 
     })
 
     if (stream) {
-      res.write(`data: ${JSON.stringify({ complete: true, reply })}\n\n`)
+      res.write(`data: ${JSON.stringify({ complete: true, reply, metadata: reply.metadata })}\n\n`)
       res.end()
     } else {
-      res.json({ reply })
+      res.json({ reply, metadata: reply.metadata })
     }
   } catch (err: unknown) {
     const error = err as Error

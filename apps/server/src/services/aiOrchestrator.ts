@@ -160,47 +160,53 @@ export class AiOrchestrator {
     // 2. Select Candidate Providers in Priority Order
     const providersToTry: { name: string; getProvider: () => any }[] = []
 
-    // Check user preference
-    const requested = (options.llmProvider || '').toLowerCase()
-    const gemini = ProviderRegistry.getGemini()
-    const groq = ProviderRegistry.getGroq()
-    const openrouter = ProviderRegistry.getOpenRouter()
-    const hf = ProviderRegistry.getHuggingFace()
-    const ollama = ProviderRegistry.getOllama()
+    const isMockMode = process.env.MOCK_PROVIDERS === 'true' || process.env.NODE_ENV === 'test'
 
-    if (requested === 'groq' && groq.isConfigured()) {
-      providersToTry.push({ name: 'groq', getProvider: () => groq })
-    } else if (requested === 'openrouter' && openrouter.isConfigured()) {
-      providersToTry.push({ name: 'openrouter', getProvider: () => openrouter })
-    } else if (requested === 'huggingface' && hf.isConfigured()) {
-      providersToTry.push({ name: 'huggingface', getProvider: () => hf })
-    } else if (requested === 'ollama' && ollama.isConfigured()) {
-      providersToTry.push({ name: 'ollama', getProvider: () => ollama })
-    }
+    if (isMockMode) {
+      providersToTry.push({ name: 'mock', getProvider: () => ProviderRegistry.getMockLLM() })
+    } else {
+      // Check user preference
+      const requested = (options.llmProvider || '').toLowerCase()
+      const gemini = ProviderRegistry.getGemini()
+      const groq = ProviderRegistry.getGroq()
+      const openrouter = ProviderRegistry.getOpenRouter()
+      const hf = ProviderRegistry.getHuggingFace()
+      const ollama = ProviderRegistry.getOllama()
 
-    // Primary reasoning/financial/coding candidate: Gemini Multi-Key Rotation
-    if (gemini.isConfigured()) {
-      providersToTry.push({ name: 'gemini', getProvider: () => gemini })
-    }
-    // High-speed low-latency candidate: Groq
-    if (groq.isConfigured()) {
-      providersToTry.push({ name: 'groq', getProvider: () => groq })
-    }
-    // Gateway fallback: OpenRouter
-    if (openrouter.isConfigured()) {
-      providersToTry.push({ name: 'openrouter', getProvider: () => openrouter })
-    }
-    // Serverless fallback: Hugging Face
-    if (hf.isConfigured()) {
-      providersToTry.push({ name: 'huggingface', getProvider: () => hf })
-    }
-    // Local offline candidate: Ollama
-    if (ollama.isConfigured()) {
-      providersToTry.push({ name: 'ollama', getProvider: () => ollama })
-    }
+      if (requested === 'groq' && groq.isConfigured()) {
+        providersToTry.push({ name: 'groq', getProvider: () => groq })
+      } else if (requested === 'openrouter' && openrouter.isConfigured()) {
+        providersToTry.push({ name: 'openrouter', getProvider: () => openrouter })
+      } else if (requested === 'huggingface' && hf.isConfigured()) {
+        providersToTry.push({ name: 'huggingface', getProvider: () => hf })
+      } else if (requested === 'ollama' && ollama.isConfigured()) {
+        providersToTry.push({ name: 'ollama', getProvider: () => ollama })
+      }
 
-    // Fallback safe mock provider (guarantees zero crash in offline test / mock environments)
-    providersToTry.push({ name: 'mock', getProvider: () => ProviderRegistry.getMockLLM() })
+      // Primary reasoning/financial/coding candidate: Gemini Multi-Key Rotation
+      if (gemini.isConfigured()) {
+        providersToTry.push({ name: 'gemini', getProvider: () => gemini })
+      }
+      // High-speed low-latency candidate: Groq
+      if (groq.isConfigured()) {
+        providersToTry.push({ name: 'groq', getProvider: () => groq })
+      }
+      // Gateway fallback: OpenRouter
+      if (openrouter.isConfigured()) {
+        providersToTry.push({ name: 'openrouter', getProvider: () => openrouter })
+      }
+      // Serverless fallback: Hugging Face
+      if (hf.isConfigured()) {
+        providersToTry.push({ name: 'huggingface', getProvider: () => hf })
+      }
+      // Local offline candidate: Ollama
+      if (ollama.isConfigured()) {
+        providersToTry.push({ name: 'ollama', getProvider: () => ollama })
+      }
+
+      // Fallback safe mock provider (guarantees zero crash in offline test / mock environments)
+      providersToTry.push({ name: 'mock', getProvider: () => ProviderRegistry.getMockLLM() })
+    }
 
     // Build synthesized generation options
     const defaultSliders: PersonalitySliders = {

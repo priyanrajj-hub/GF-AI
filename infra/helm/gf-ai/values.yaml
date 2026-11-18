@@ -1,0 +1,117 @@
+# Default values for gf-ai Helm chart.
+
+global:
+  environment: production
+  domain: gf-ai.example.com
+
+api:
+  replicaCount: 3
+  image:
+    repository: ghcr.io/priyanrajj-hub/gf-ai-api
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 3001
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  pdb:
+    enabled: true
+    minAvailable: 1
+
+worker:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/priyanrajj-hub/gf-ai-worker
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+web:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/priyanrajj-hub/gf-ai-web
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+  hosts:
+    - host: gf-ai.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          backend: api
+        - path: /
+          pathType: Prefix
+          backend: web
+  tls:
+    - secretName: gf-ai-tls-secret
+      hosts:
+        - gf-ai.example.com
+
+env:
+  NODE_ENV: "production"
+  PORT: "3001"
+  CORS_ORIGIN: "https://gf-ai.example.com"
+  DATABASE_ENGINE: "postgres"
+  REDIS_URL: "redis://gf-redis-master:6379"
+  GEMINI_MODEL: "gemini-2.0-flash"
+  ELEVENLABS_VOICE_ID: "pFZP5JQG7iQjIQuC4Bku"
+  ENABLE_TEST_AUTH: "false"
+
+secrets:
+  # In production, inject via External Secrets Operator or SealedSecrets
+  jwtSecret: ""
+  refreshSecret: ""
+  databaseUrl: ""
+  geminiApiKey: ""
+  elevenlabsApiKey: ""
+  groqApiKey: ""
+  openrouterApiKey: ""
+  huggingfaceApiKey: ""
+
+networkPolicy:
+  enabled: true
+
+serviceAccount:
+  create: true
+  name: "gf-ai-sa"
