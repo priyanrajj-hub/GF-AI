@@ -115,6 +115,7 @@ export interface StructuredReply {
   tradingCard?: TradingCardData
   marketHoursCard?: GlobalMarketHoursRadar
   speaker?: 'ada' | 'mira' | 'atlas'
+  metadata?: Record<string, any>
 }
 
 export interface MarketSessionInfo {
@@ -289,11 +290,15 @@ export interface MemoryItem {
   id: string
   userId: string
   key: string
-  category: 'preference' | 'goal' | 'fact' | 'date' | 'habit' | 'person'
+  category: 'preference' | 'goal' | 'fact' | 'date' | 'habit' | 'person' | 'project'
   content: string
   importance: number // 1-5
   pinned: boolean
   source?: string // e.g. 'conversation', 'portfolio', or target URL
+  expiresAt?: number
+  relevanceScore?: number
+  projectTag?: string
+  tags?: string[]
   createdAt: number
   updatedAt: number
 }
