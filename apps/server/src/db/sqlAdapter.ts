@@ -10,6 +10,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { Pool } from 'pg'
 import { createClient, type Client as LibsqlClient } from '@libsql/client'
@@ -66,7 +67,8 @@ export class SqlAdapter {
       console.log('[SqlAdapter] Configured Turso/libSQL client')
     } else {
       this.engine = 'sqlite_local'
-      const storageDir = './data'
+      const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY)
+      const storageDir = isServerless ? path.join(os.tmpdir(), 'ada_data') : './data'
       try {
         if (!fs.existsSync(storageDir)) fs.mkdirSync(storageDir, { recursive: true })
       } catch {}
