@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:4d4c5d2c695bc3d84fae2bf4b3a4a9eb482eb4e5e4de88c4d293d3b74dfb249a
     container_name: gf-postgres
     restart: unless-stopped
     environment:
@@ -20,7 +20,7 @@ services:
       - gf-network
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:6e75b9f7d45e07a3c3c137452d19efcb8a101b0b4e287b46ff0b6b2803b07044
     container_name: gf-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
@@ -41,12 +41,15 @@ services:
       target: api
     container_name: gf-api
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gf_ai}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-gf_ai}
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
       - REFRESH_SECRET=${REFRESH_SECRET:?REFRESH_SECRET must be set}
@@ -79,11 +82,16 @@ services:
       target: worker
     container_name: gf-worker
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gf_ai}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-gf_ai}
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+    volumes:
+      - apidata:/app/data
     depends_on:
       postgres:
         condition: service_healthy

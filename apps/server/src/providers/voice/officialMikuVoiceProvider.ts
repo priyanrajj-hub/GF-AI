@@ -11,18 +11,19 @@ import {
  * 
  * Crypton Future Media / Yamaha VOCALOID Authorized Voice Gateway.
  * 
- * LEGAL & ARCHITECTURAL MANDATE:
- * - Hatsune Miku voicebanks are copyrighted properties of Crypton Future Media, INC. (CV: Saki Fujita).
- * - Official voice libraries (V2, V3, V4X, NT) are singing voice synthesizers requiring licensed DAW runtimes.
- * - Integration into third-party cloud applications requires an authorized enterprise API agreement or
- *   commercial integration license from Crypton Future Media / Yamaha Corporation.
- * - This provider strictly connects to authorized enterprise endpoints and never uses unauthorized voice clones,
- *   scraped fan audio, or pirated voicebanks.
+ * @deprecated UNIMPLEMENTED ENTERPRISE SPECIFICATION
+ * Status: Unimplemented — Crypton Future Media does not provide a commercial
+ * third-party conversational TTS API for Hatsune Miku. Official voice libraries
+ * (V2, V3, V4X, NT) are singing voice synthesizers requiring licensed DAW runtimes.
+ * 
+ * For conversational idol motivation and singing, GF-AI uses authorized Edge TTS /
+ * ElevenLabs neural voice engines with authentic persona and character choreography.
  */
 export class OfficialMikuVoiceProvider implements VoiceProvider {
   readonly id = 'official-miku'
-  readonly name = 'Hatsune Miku (Official)'
+  readonly name = 'Hatsune Miku (Official - Unimplemented)'
   readonly providerName = 'Crypton Future Media / Yamaha VOCALOID'
+  readonly isImplemented = false
 
   private initialized = false
   private activeAbortControllers: Set<AbortController> = new Set()

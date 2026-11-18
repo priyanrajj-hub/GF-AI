@@ -1,0 +1,14 @@
+apiVersion: v2
+name: ada
+description: Cloud-Native Helm Chart for Ada AI & Jarvis Trade Quantitative Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - ai
+  - trading
+  - fintech
+  - institutional
+maintainers:
+  - name: Engineering Architecture Team
+    email: dev@ada-ai.internal

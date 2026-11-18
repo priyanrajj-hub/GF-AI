@@ -1,0 +1,46 @@
+global:
+  environment: production
+  domain: gf-ai.example.com
+
+api:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  pdb:
+    enabled: true
+    minAvailable: 2
+
+worker:
+  replicaCount: 2
+
+web:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+
+ingress:
+  enabled: true
+  hosts:
+    - host: gf-ai.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          backend: api
+        - path: /
+          pathType: Prefix
+          backend: web
+  tls:
+    - secretName: gf-ai-tls-secret
+      hosts:
+        - gf-ai.example.com
+
+env:
+  NODE_ENV: "production"
+  CORS_ORIGIN: "https://gf-ai.example.com"
+  ENABLE_TEST_AUTH: "false"

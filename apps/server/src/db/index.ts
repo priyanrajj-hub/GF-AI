@@ -139,20 +139,9 @@ export class AppDatabase {
   private data: DatabaseSchema
   private isMemoryOnly: boolean
 
-  constructor(storageDir = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) ? path.join(os.tmpdir(), 'ada_data') : './data') {
-    this.isMemoryOnly = storageDir === ':memory:'
-    if (!this.isMemoryOnly) {
-      try {
-        if (!fs.existsSync(storageDir)) {
-          fs.mkdirSync(storageDir, { recursive: true })
-        }
-      } catch (e) {
-        console.warn('[DB] Storage dir creation bypassed (serverless environment):', e)
-      }
-      this.filePath = path.join(storageDir, 'ada_persistence.json')
-    } else {
-      this.filePath = ':memory:'
-    }
+  constructor(_storageDir = '') {
+    this.isMemoryOnly = true
+    this.filePath = ':memory:'
     this.data = this.load()
 
     // Trigger async relational migration in background
@@ -194,28 +183,6 @@ export class AppDatabase {
   }
 
   private load(): DatabaseSchema {
-    if (fs.existsSync(this.filePath)) {
-      try {
-        const raw = fs.readFileSync(this.filePath, 'utf-8')
-        const parsed = JSON.parse(raw)
-        if (parsed.users) {
-          for (const u of Object.values(parsed.users as Record<string, any>)) {
-            if (!u.userName || u.userName === 'Operator' || u.userName === 'Partner') {
-              u.userName = 'Demo User'
-            }
-          }
-        }
-        if (!Array.isArray(parsed.backgroundJobs)) parsed.backgroundJobs = []
-        if (!parsed.accounts) parsed.accounts = {}
-        if (!parsed.revokedTokens) parsed.revokedTokens = {}
-        if (!parsed.refreshTokens) parsed.refreshTokens = {}
-        if (!parsed.magicLinks) parsed.magicLinks = {}
-        if (!Array.isArray(parsed.tokenLogs)) parsed.tokenLogs = []
-        return parsed
-      } catch (err) {
-        console.warn('[DB] Could not parse existing DB file, starting fresh', err)
-      }
-    }
     return {
       accounts: {},
       users: { 'default-user-1': DEFAULT_SETTINGS },
@@ -272,15 +239,7 @@ export class AppDatabase {
   }
 
   private save(): void {
-    if (this.isMemoryOnly) return
-    try {
-      const tempPath = `${this.filePath}.tmp.${Date.now()}.${Math.random().toString(36).substring(2, 7)}`
-      const serialized = JSON.stringify(this.data, null, 2)
-      fs.writeFileSync(tempPath, serialized, 'utf-8')
-      fs.renameSync(tempPath, this.filePath)
-    } catch (err) {
-      console.error('[DB] Failed to persist data atomically:', err)
-    }
+    // Durable SQL persistence: operations are committed to relational tables via sqlDb and redis
   }
 
   // --- Users & Settings ---

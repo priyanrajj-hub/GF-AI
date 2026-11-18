@@ -89,3 +89,14 @@ local_profile.json
 *.png
 *.jpg
 *.jpeg
+
+# ─────────────────────────────────────────────────────────────
+# 7. Heavy 3D Assets (Excluded from Git — Served via Object Storage)
+# ─────────────────────────────────────────────────────────────
+apps/web/public/models/*.glb
+apps/web/public/models/*.vrm
+!apps/web/public/models/.gitkeep
+
+# Software Bill of Materials (generated in CI / local build)
+sbom.spdx.json
+

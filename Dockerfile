@@ -1,12 +1,13 @@
 # ==============================================================================
 # GF-AI MULTI-STAGE HIGH-PERFORMANCE CONTAINER SPECIFICATION
 # Production Targets: builder, api, worker, web
+# Base Images pinned to immutable cryptographic digests
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
 # STAGE 1: Monorepo Compilation & Asset Builder
 # ------------------------------------------------------------------------------
-FROM node:22-alpine AS builder
+FROM node:22-alpine@sha256:d9e32b6e16d44db9f91a03a731efbd9e7b79b291d2c67672ec1d44ea1d5eb876 AS builder
 
 WORKDIR /app
 
@@ -20,7 +21,7 @@ COPY apps/server/package.json ./apps/server/
 COPY apps/worker/package.json ./apps/worker/
 COPY apps/web/package.json ./apps/web/
 
-# Install dependencies across all workspaces
+# Deterministic build install across all workspaces
 RUN npm ci
 
 # Copy full source trees
@@ -36,16 +37,16 @@ RUN npm run build -w apps/worker
 RUN npm run build -w apps/web
 
 # ------------------------------------------------------------------------------
-# STAGE 2: Production API Microservice
+# STAGE 2: Production API Microservice (Hardened, Non-Root)
 # ------------------------------------------------------------------------------
-FROM node:22-alpine AS api
+FROM node:22-alpine@sha256:d9e32b6e16d44db9f91a03a731efbd9e7b79b291d2c67672ec1d44ea1d5eb876 AS api
 
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3001
 
 # Create secure application and data directory
-RUN mkdir -p /app/data && chown -R node:node /app
+RUN mkdir -p /app/data /tmp && chown -R node:node /app /tmp
 
 COPY --from=builder --chown=node:node /app/package.json /app/package-lock.json ./
 COPY --from=builder --chown=node:node /app/packages/shared/dist ./packages/shared/dist
@@ -67,14 +68,14 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 CMD ["node", "apps/server/dist/index.js"]
 
 # ------------------------------------------------------------------------------
-# STAGE 3: Background Worker & Autonomous Task Scheduler
+# STAGE 3: Background Worker & Autonomous Task Scheduler (Hardened, Non-Root)
 # ------------------------------------------------------------------------------
-FROM node:22-alpine AS worker
+FROM node:22-alpine@sha256:d9e32b6e16d44db9f91a03a731efbd9e7b79b291d2c67672ec1d44ea1d5eb876 AS worker
 
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN mkdir -p /app/data && chown -R node:node /app
+RUN mkdir -p /app/data /tmp && chown -R node:node /app /tmp
 
 COPY --from=builder --chown=node:node /app/package.json /app/package-lock.json ./
 COPY --from=builder --chown=node:node /app/packages/shared/dist ./packages/shared/dist
@@ -92,9 +93,9 @@ HEALTHCHECK --interval=60s --timeout=10s --retries=2 \
 CMD ["node", "apps/worker/dist/index.js"]
 
 # ------------------------------------------------------------------------------
-# STAGE 4: Web Frontend & NGINX Edge Distribution
+# STAGE 4: Web Frontend & NGINX Edge Distribution (Hardened)
 # ------------------------------------------------------------------------------
-FROM nginx:alpine AS web
+FROM nginx:alpine@sha256:28402db69fec7c17e179ea87882667f1e054391138f77ffd0b4a3441fbda43be AS web
 
 # Remove default nginx distribution files
 RUN rm -rf /usr/share/nginx/html/*

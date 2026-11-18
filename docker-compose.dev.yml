@@ -1,9 +1,30 @@
 version: '3.8'
 
 # Development Compose Override
+# Runs: API + Worker + Web + Postgres + Redis + Mailpit
 # Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 services:
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: gf-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP Port
+    networks:
+      - gf-network
+
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: development_postgres_password_1234
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
   api:
     build:
       context: .
@@ -13,6 +34,10 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3001
+      - DATABASE_URL=postgresql://postgres:development_postgres_password_1234@postgres:5432/gf_ai
+      - REDIS_URL=redis://redis:6379
+      - SMTP_HOST=mailpit
+      - SMTP_PORT=1025
       - JWT_SECRET=development-only-jwt-secret-do-not-use-in-production-1234
       - REFRESH_SECRET=development-only-refresh-secret-do-not-use-in-production-5678
       - ENABLE_TEST_AUTH=true
@@ -31,6 +56,8 @@ services:
     command: ["npm", "run", "dev", "-w", "apps/worker"]
     environment:
       - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:development_postgres_password_1234@postgres:5432/gf_ai
+      - REDIS_URL=redis://redis:6379
       - JWT_SECRET=development-only-jwt-secret-do-not-use-in-production-1234
     volumes:
       - ./packages/shared:/app/packages/shared

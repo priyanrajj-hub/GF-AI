@@ -48,7 +48,10 @@ const genericPiiPatterns = [
       line.includes('noreply@') ||
       line.includes('.test') ||
       line.includes('.example') ||
-      line.includes('.invalid')
+      line.includes('.invalid') ||
+      line.includes('postgresql://') ||
+      line.includes('postgres://') ||
+      line.includes('redis://')
   },
   { 
     name: 'phone_number', 

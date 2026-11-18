@@ -1,0 +1,93 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "System & API Health",
+      "type": "row"
+    },
+    {
+      "id": 2,
+      "title": "HTTP Request Throughput",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "expr": "rate(http_requests_total[1m])",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Database Connection Health",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "expr": "gf_ai_database_connected"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Active Live Signal Subscribers",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 1 },
+      "targets": [
+        {
+          "expr": "active_websockets"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 5,
+      "title": "Jarvis Trade AI & Financial Feeds",
+      "type": "row"
+    },
+    {
+      "id": 6,
+      "title": "Market Feed Latency",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "expr": "market_feed_latency_seconds",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Jarvis Signals Generated Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "targets": [
+        {
+          "expr": "rate(signals_generated_total[5m])",
+          "legendFormat": "{{strategy}}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["ada", "jarvis", "fintech"],
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "title": "Ada AI & Jarvis Trade Platform Dashboard",
+  "uid": "ada-platform-overview"
+}

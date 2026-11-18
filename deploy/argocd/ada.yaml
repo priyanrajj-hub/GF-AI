@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ada-production
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: ada
+    environment: production
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/priyanrajj-hub/GF-AI.git
+    targetRevision: main
+    path: charts/ada
+    helm:
+      valueFiles:
+        - values.yaml
+        - values.production.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ada
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

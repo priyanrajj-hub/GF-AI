@@ -107,6 +107,7 @@ export interface LongTermFactorScore {
     debtToEquity: number
     operatingMarginPct: number
     earningsConsistency: string
+    piotroskiFScore: number
   }
   valueScore: {
     score: number
@@ -596,7 +597,7 @@ export class JarvisTradeService {
         currentPrice: 0,
         overallScore: 0,
         verdict: 'UNAVAILABLE',
-        qualityScore: { score: 0, rocePct: 0, debtToEquity: 0, operatingMarginPct: 0, earningsConsistency: 'Unavailable' },
+        qualityScore: { score: 0, rocePct: 0, debtToEquity: 0, operatingMarginPct: 0, earningsConsistency: 'Unavailable', piotroskiFScore: 0 },
         valueScore: { score: 0, peRatio: 0, fiveYearMedianPe: 0, pegRatio: 0, priceToBook: 0 },
         momentumScore: { score: 0, sixMonthReturnPct: 0, twelveMonthReturnPct: 0 },
         dcfSanityCheck: { intrinsicValueEstimate: 0, marginOfSafetyPct: 0, terminalGrowthRatePct: 0, waccPct: 0 },
@@ -663,6 +664,7 @@ export class JarvisTradeService {
           debtToEquity: 0,
           operatingMarginPct: 0,
           earningsConsistency: 'Unavailable - requires live audited corporate filings',
+          piotroskiFScore: 0,
         },
         valueScore: {
           score: 0,
@@ -722,6 +724,7 @@ export class JarvisTradeService {
         debtToEquity: audited.debtToEquity,
         operatingMarginPct: audited.operatingMarginPct,
         earningsConsistency: audited.earningsConsistency,
+        piotroskiFScore: audited.rocePct >= 18 && audited.debtToEquity <= 0.6 ? 8 : (audited.debtToEquity <= 1.2 ? 7 : 5),
       },
       valueScore: {
         score: valueScore,

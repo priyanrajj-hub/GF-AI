@@ -1,0 +1,33 @@
+{{- if .Values.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "ada.fullname" . }}-worker-keda
+  labels:
+    {{- include "ada.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "ada.fullname" . }}-worker
+  minReplicaCount: {{ .Values.worker.replicaCount | default 1 }}
+  maxReplicaCount: {{ .Values.keda.maxReplicaCount | default 10 }}
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: {{ .Values.kafka.bootstrapServers | default "redpanda:9092" | quote }}
+        consumerGroup: {{ .Values.kafka.consumerGroup | default "indicator-engine" | quote }}
+        topic: market.ticks
+        lagThreshold: {{ .Values.keda.lagThreshold | default "50" | quote }}
+        offsetResetPolicy: latest
+    - type: kafka
+      metadata:
+        bootstrapServers: {{ .Values.kafka.bootstrapServers | default "redpanda:9092" | quote }}
+        consumerGroup: {{ .Values.kafka.consumerGroup | default "signal-engine" | quote }}
+        topic: market.ohlcv.1m
+        lagThreshold: {{ .Values.keda.lagThreshold | default "25" | quote }}
+        offsetResetPolicy: latest
+{{- end }}
