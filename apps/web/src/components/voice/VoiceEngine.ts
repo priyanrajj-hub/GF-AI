@@ -13,6 +13,8 @@ class VoiceEngineManager {
   private isNeuralPlaying = false
   // Lock ID: incremented each speak() call; callbacks check against it to prevent stale double-play
   private _speakLockId = 0
+  // In-memory audio response cache for repeated utterances
+  private audioCache = new Map<string, { audioBase64: string; mimeType: string }>()
 
   getAudioContext(): AudioContext | null {
     this.initAudioContext()
@@ -223,6 +225,13 @@ class VoiceEngineManager {
           ? 'EXAVITQu4vr4xnSDxMaL'
           : store.settings.elevenlabsVoiceId
 
+      const cacheKey = `${activeChar}:${voiceSetting}:${options.language || store.settings.language}:${cleanSpeech}`
+      const cached = this.audioCache.get(cacheKey)
+      if (cached) {
+        await this.playAudioBase64(cached.audioBase64, cached.mimeType, myLockId, options, activeChar === 'mira')
+        return
+      }
+
       const res = await apiFetch('/api/tts', {
         method: 'POST',
         headers: {
@@ -243,6 +252,11 @@ class VoiceEngineManager {
       if (res.ok) {
         const data = await res.json()
         if (data.audioBase64) {
+          if (this.audioCache.size >= 50) {
+            const oldestKey = this.audioCache.keys().next().value
+            if (oldestKey) this.audioCache.delete(oldestKey)
+          }
+          this.audioCache.set(cacheKey, { audioBase64: data.audioBase64, mimeType: data.mimeType || 'audio/mpeg' })
           await this.playAudioBase64(data.audioBase64, data.mimeType || 'audio/mpeg', myLockId, options, activeChar === 'mira')
           return
         }

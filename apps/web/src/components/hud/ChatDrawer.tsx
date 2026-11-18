@@ -14,6 +14,9 @@ import {
   Smile,
   Maximize2,
   Minimize2,
+  RefreshCw,
+  Square,
+  Pencil,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -35,6 +38,33 @@ import { performAction } from '../../avatar/motion/performAction.js'
 import { globalSongEngine } from '../../avatar/engine/singer.js'
 import { TradingCard } from '../trading/TradingCard.js'
 import { apiUrl, apiFetch } from '../../utils/api.js'
+
+const CodeBlock: React.FC<{ language: string; value: string }> = ({ language, value }) => {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <div className="relative rounded-xl border border-cyan-500/30 bg-slate-950/95 overflow-hidden my-2 shadow-lg">
+      <div className="flex items-center justify-between px-3 py-1 bg-slate-900/90 border-b border-cyan-500/20 text-[10px] font-mono text-cyan-300">
+        <span className="uppercase tracking-wider font-semibold">{language || 'CODE'}</span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 text-slate-400 hover:text-cyan-200 transition-colors cursor-pointer"
+          title="Copy Code"
+        >
+          {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+          <span>{copied ? 'Copied' : 'Copy'}</span>
+        </button>
+      </div>
+      <pre className="p-3 text-[11px] font-mono text-slate-100 overflow-x-auto leading-relaxed scrollbar-thin">
+        <code>{value}</code>
+      </pre>
+    </div>
+  )
+}
 
 export const ChatDrawer: React.FC = () => {
   const {
@@ -66,8 +96,58 @@ export const ChatDrawer: React.FC = () => {
   const [showStickerTray, setShowStickerTray] = useState(false)
   const [stickerTab, setStickerTab] = useState<'stickers' | 'memes'>('stickers')
   const [isExpanded, setIsExpanded] = useState(false)
+  const [toolStatus, setToolStatus] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    setIsSending(false)
+    setToolStatus(null)
+    setSystemState('idle')
+  }
+
+  const handleRegenerateMessage = (assistantMsgId: string) => {
+    const idx = messages.findIndex((m) => m.id === assistantMsgId)
+    if (idx === -1) return
+    for (let i = idx - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        handleSendMessage(messages[i].content)
+        break
+      }
+    }
+  }
+
+  const handleEditUserMessage = (content: string) => {
+    setInput(content)
+  }
+
+  const getDynamicSuggestions = (): string[] => {
+    const lastMsg = messages[messages.length - 1]
+    if (!lastMsg) {
+      if (activeCharacter === 'atlas') {
+        return ['📈 Top stock breakout candidates', '💰 1% risk management calculator', '📊 Nifty 50 institutional levels']
+      } else if (activeCharacter === 'mira') {
+        return ['🌐 Sing Tell Your World', '🥤 Dance to PoPiPo', '🏴‍☠️ Switch to Golden Pirate skin']
+      }
+      return ['📝 Help me organize today\'s tasks', '⏱️ Start a 25-minute Pomodoro', '🎓 Tutor me on React hooks']
+    }
+    const txt = (lastMsg.content || '').toLowerCase()
+    if (txt.includes('stock') || txt.includes('nifty') || txt.includes('trade') || lastMsg.tradingCard) {
+      return ['💰 Calculate 1% risk position size', '🎯 What is the stop loss and target?', '🔬 Show technical indicator breakdown']
+    }
+    if (txt.includes('sing') || txt.includes('dance') || txt.includes('miku') || lastMsg.musicTrack) {
+      return ['👑 Sing World is Mine', '✨ Do your signature idol pose', '🏴‍☠️ Switch to Golden Pirate outfit']
+    }
+    if (txt.includes('code') || txt.includes('function') || txt.includes('react') || txt.includes('algorithm')) {
+      return ['💻 Can you provide an example?', '🔬 What are the edge cases?', '⚡ How do I optimize performance?']
+    }
+    return ['💬 Can you elaborate on that?', '📋 Give me a quick action summary', '🎯 What should we do next?']
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -152,8 +232,20 @@ export const ChatDrawer: React.FC = () => {
     if (!text || isSending) return
 
     setInput('')
+    abortControllerRef.current = new AbortController()
     setIsSending(true)
     setSystemState('thinking')
+
+    const lower = text.toLowerCase()
+    if (/stock|trade|trading|buy|target|stop\s*loss|nifty|market|quote/i.test(lower)) {
+      setToolStatus('📈 Calculating technical indicators & order blocks...')
+    } else if (/code|python|react|typescript|function|bug|api/i.test(lower)) {
+      setToolStatus('💻 Analyzing syntax & algorithmic patterns...')
+    } else if (/sing|song|music|dance/i.test(lower)) {
+      setToolStatus('🎵 Orchestrating choreography & vocal harmony...')
+    } else {
+      setToolStatus('🧠 Retrieving semantic memories & context...')
+    }
 
     // Add user message to UI
     const userMsg: ChatMessage = {
@@ -173,6 +265,7 @@ export const ChatDrawer: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           message: text,
           mode: activeMode,
@@ -284,7 +377,12 @@ export const ChatDrawer: React.FC = () => {
           setSystemState('idle')
         }
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === 'AbortError' || err?.message?.includes('aborted')) {
+        console.log('[Chat] Generation aborted by user.')
+        setSystemState('idle')
+        return
+      }
       console.warn('[Chat Send Network Fallback]', err)
 
       const lower = text.toLowerCase()
@@ -411,6 +509,8 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
       setSystemState('idle')
     } finally {
       setIsSending(false)
+      setToolStatus(null)
+      abortControllerRef.current = null
     }
   }
 
@@ -863,18 +963,38 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                   : 'max-w-[90%] bg-slate-900/80 border border-cyan-500/20 text-slate-100 rounded-bl-none shadow-lg'
               }`}
             >
-              {/* Copy Button */}
-              <button
-                onClick={() => handleCopyMessage(msg.id, msg.content)}
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 rounded bg-slate-950/70 text-slate-400 hover:text-cyan-300 transition-opacity cursor-pointer"
-                title="Copy Message"
-              >
-                {copiedId === msg.id ? (
-                  <Check className="w-3 h-3 text-emerald-400" />
-                ) : (
-                  <Copy className="w-3 h-3" />
+              {/* Action Buttons: Copy, Edit for user, Regenerate for assistant */}
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                {msg.role === 'user' && (
+                  <button
+                    onClick={() => handleEditUserMessage(msg.content)}
+                    className="p-1 rounded bg-slate-950/70 text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer"
+                    title="Edit Message"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
                 )}
-              </button>
+                {msg.role === 'assistant' && (
+                  <button
+                    onClick={() => handleRegenerateMessage(msg.id)}
+                    className="p-1 rounded bg-slate-950/70 text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer"
+                    title="Regenerate Response"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                  </button>
+                )}
+                <button
+                  onClick={() => handleCopyMessage(msg.id, msg.content)}
+                  className="p-1 rounded bg-slate-950/70 text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer"
+                  title="Copy Message"
+                >
+                  {copiedId === msg.id ? (
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-3 h-3" />
+                  )}
+                </button>
+              </div>
 
               {/* Speaker Persona Tag for Assistant Messages */}
               {msg.role === 'assistant' && (
@@ -1140,6 +1260,18 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                     td: ({ node, ...props }) => (
                       <td {...props} className="px-2.5 py-1.5 border-b border-slate-800/60 text-slate-200" />
                     ),
+                    code: ({ node, inline, className, children, ...props }: any) => {
+                      const match = /language-(\w+)/.exec(className || '')
+                      const codeString = String(children).replace(/\n$/, '')
+                      if (!inline && (match || codeString.includes('\n'))) {
+                        return <CodeBlock language={match ? match[1] : 'code'} value={codeString} />
+                      }
+                      return (
+                        <code className="bg-slate-950 px-1.5 py-0.5 rounded text-cyan-300 font-mono text-[11px]" {...props}>
+                          {children}
+                        </code>
+                      )
+                    },
                   }}
                 >
                   {msg.role === 'assistant' ? sanitizeBubbleText(msg.content, { userName: settings.userName }) : msg.content}
@@ -1187,9 +1319,19 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
         ))}
 
         {isSending && (
-          <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 animate-pulse">
-            <Sparkles className="w-3.5 h-3.5 animate-spin" />
-            <span>Ada synthesizing neural response...</span>
+          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-cyan-950/70 border border-cyan-500/40 text-xs font-mono text-cyan-300 shadow-lg animate-pulse">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+              <span>{toolStatus || (activeCharacter === 'atlas' ? 'Jarvis analyzing quantitative models...' : activeCharacter === 'mira' ? 'Miku tuning stage & vocals...' : 'Ada synthesizing neural response...')}</span>
+            </div>
+            <button
+              onClick={handleStopGeneration}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[10px] cursor-pointer transition-all"
+              title="Stop generation"
+            >
+              <Square className="w-2.5 h-2.5 fill-current" />
+              <span>Stop</span>
+            </button>
           </div>
         )}
 
@@ -1275,6 +1417,24 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Context-Aware Follow-Up Suggestions */}
+      {!isSending && messages.length > 0 && (
+        <div className="px-3 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[11px] font-mono border-t border-cyan-500/15 bg-slate-950/75 shrink-0">
+          <span className="text-[10px] text-cyan-400/80 font-bold uppercase tracking-wider shrink-0 flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-cyan-400" /> Suggestions:
+          </span>
+          {getDynamicSuggestions().map((suggestion, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleSendMessage(suggestion.replace(/^[^a-zA-Z0-9]+/, '').trim())}
+              className="whitespace-nowrap px-2.5 py-0.5 rounded-full bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-200 hover:text-white transition-all cursor-pointer text-[10px]"
+            >
+              {suggestion}
+            </button>
+          ))}
         </div>
       )}
 

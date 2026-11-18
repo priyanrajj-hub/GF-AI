@@ -109,13 +109,21 @@ export class UserLifeMemoryService {
     return this.DEMO_BIO
   }
 
-  public static formatUserLifeContext(userId: string = 'default-user'): string {
+  public static formatUserLifeContext(userId: string = 'default-user', currentMessage?: string): string {
     const bio = this.getBio()
-    const memoryFacts = db.getMemories(userId).slice(-8)
+    
+    // Semantic relevance retrieval if current query is provided, else recency-weighted slice
+    let relevantMemories = currentMessage
+      ? db.searchMemories(userId, currentMessage, 6).map((s) => s.item)
+      : []
+
+    if (relevantMemories.length === 0) {
+      relevantMemories = db.getMemories(userId).slice(-6)
+    }
 
     const factsFormatted =
-      memoryFacts.length > 0
-        ? memoryFacts.map((m) => `• [${m.category}] ${m.content}`).join('\n')
+      relevantMemories.length > 0
+        ? relevantMemories.map((m) => `• [${m.category}] ${m.content}`).join('\n')
         : '• No specific interaction memories recorded yet.'
 
     return `

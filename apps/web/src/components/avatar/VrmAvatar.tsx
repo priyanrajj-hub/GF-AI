@@ -47,7 +47,25 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     setActiveFX,
   } = useAppStore()
 
-  const { pointer, camera, raycaster, scene: threeScene } = useThree()
+  const { pointer, camera, raycaster, scene: threeScene, gl } = useThree()
+
+  // WebGL context loss recovery listener
+  useEffect(() => {
+    const canvas = gl.domElement
+    const handleContextLost = (e: Event) => {
+      e.preventDefault()
+      console.warn('[WebGL] Context lost detected, pausing 3D avatar rendering.')
+    }
+    const handleContextRestored = () => {
+      console.log('[WebGL] Context restored, re-syncing 3D avatar scene.')
+    }
+    canvas.addEventListener('webglcontextlost', handleContextLost)
+    canvas.addEventListener('webglcontextrestored', handleContextRestored)
+    return () => {
+      canvas.removeEventListener('webglcontextlost', handleContextLost)
+      canvas.removeEventListener('webglcontextrestored', handleContextRestored)
+    }
+  }, [gl])
 
   // Engines
   const animatorRef = useRef<ProceduralAnimator | null>(null)
@@ -55,6 +73,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
   const navigatorRef = useMemo(() => new RoamNavigator(new THREE.Vector3(0, 0, 0)), [])
   const [avatarWorldPos, setAvatarWorldPos] = useState<[number, number, number]>([0, -0.72, 0])
   const [clickMarker, setClickMarker] = useState<[number, number, number] | null>(null)
+  const currentModelRef = useRef<{ vrm?: VRM | null; glb?: THREE.Group | null }>({})
 
   // 1. Load 3D Model (VRM or GLB)
   useEffect(() => {
@@ -185,6 +204,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           animatorRef.current = new ProceduralAnimator(loadedVrm, activeAction || 'idle')
           expressionEngineRef.current = new ExpressionEngine(loadedVrm)
 
+          currentModelRef.current.vrm = loadedVrm
           setVrm(loadedVrm)
           ;(window as any).__ADA_VRM__ = loadedVrm
           setGlbScene(null)
@@ -245,6 +265,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           }
 
           container.add(scene)
+          currentModelRef.current.glb = container
           setGlbScene(container)
           setVrm(null)
           ;(window as any).__GLB_MODEL__ = container
@@ -259,8 +280,34 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     )
 
     return () => {
-      if (vrm) {
-        VRMUtils.deepDispose(vrm.scene)
+      if (currentModelRef.current.vrm) {
+        try {
+          VRMUtils.deepDispose(currentModelRef.current.vrm.scene)
+        } catch { /* ignore */ }
+        currentModelRef.current.vrm = null
+      }
+      if (currentModelRef.current.glb) {
+        try {
+          currentModelRef.current.glb.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+              const mesh = child as THREE.Mesh
+              if (mesh.geometry) mesh.geometry.dispose()
+              if (mesh.material) {
+                if (Array.isArray(mesh.material)) {
+                  mesh.material.forEach((m: any) => {
+                    if (m?.map) m.map.dispose()
+                    m?.dispose()
+                  })
+                } else {
+                  const m = mesh.material as any
+                  if (m?.map) m.map.dispose()
+                  m?.dispose()
+                }
+              }
+            }
+          })
+        } catch { /* ignore */ }
+        currentModelRef.current.glb = null
       }
     }
   }, [activeCharacter, modelUrl, renderMode, hologramColor])

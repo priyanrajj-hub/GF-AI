@@ -39,6 +39,7 @@ import { AdaSelfKnowledgeService } from './services/adaSelfKnowledgeService.js'
 import { GirlBehaviorService } from './services/girlBehaviorService.js'
 import { UserLifeMemoryService } from './services/userLifeMemoryService.js'
 import { TutorStudyService } from './services/tutorStudyService.js'
+import { AiOrchestrator } from './services/aiOrchestrator.js'
 // Neural TTS Provider for high-fidelity human girl voice (zero robotic fallback - v3)
 import { NeuralTTSProvider } from './providers/neuralTtsProvider.js'
 import { VoiceRegistry } from './providers/voice/index.js'
@@ -2026,26 +2027,63 @@ app.post('/api/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), async 
 
   try {
     let reply: StructuredReply
+    let orchestrationMeta: any = null
     try {
       if (stream) {
         res.setHeader('Content-Type', 'text/event-stream')
         res.setHeader('Cache-Control', 'no-cache')
         res.setHeader('Connection', 'keep-alive')
 
-        reply = await (llm.stream
-          ? llm.stream(history, effectiveMessage, genOptions, (chunk) => {
+        const orchestrated = await AiOrchestrator.getInstance().orchestrate(
+          userId,
+          history,
+          effectiveMessage,
+          {
+            mode: activeMode,
+            character: character || 'ada',
+            sliders: activeSliders,
+            userName: settings.userName,
+            language,
+            llmProvider: settings.llmProvider || 'auto',
+            liveInternetContext,
+            onChunk: (chunk) => {
               res.write(`data: ${JSON.stringify({ chunk })}\n\n`)
-            })
-          : llm.generate(history, effectiveMessage, genOptions))
+            },
+          }
+        )
+        reply = orchestrated.reply
+        orchestrationMeta = orchestrated.metadata
       } else {
-        reply = await llm.generate(history, effectiveMessage, genOptions)
+        const orchestrated = await AiOrchestrator.getInstance().orchestrate(
+          userId,
+          history,
+          effectiveMessage,
+          {
+            mode: activeMode,
+            character: character || 'ada',
+            sliders: activeSliders,
+            userName: settings.userName,
+            language,
+            llmProvider: settings.llmProvider || 'auto',
+            liveInternetContext,
+          }
+        )
+        reply = orchestrated.reply
+        orchestrationMeta = orchestrated.metadata
       }
     } catch (llmErr) {
-      console.warn('⚠️ [Primary LLM Failed, Falling back to MockLLMProvider]:', (llmErr as Error).message)
+      console.warn('⚠️ [AiOrchestrator Failover]:', (llmErr as Error).message)
       const mockLLM = ProviderRegistry.getMockLLM()
       reply = await mockLLM.generate(history, message, genOptions)
       if (stream) {
         res.write(`data: ${JSON.stringify({ chunk: reply.display_text })}\n\n`)
+      }
+    }
+
+    if (orchestrationMeta) {
+      reply.metadata = {
+        ...(reply.metadata || {}),
+        ...orchestrationMeta,
       }
     }
 

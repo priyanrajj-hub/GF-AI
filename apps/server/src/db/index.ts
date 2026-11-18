@@ -578,8 +578,9 @@ export class AppDatabase {
     this.save()
   }
 
-  // --- Memories (Consented Long-Term Memory) ---
+  // --- Memories (Consented Long-Term Memory with Deduplication & Semantic Relevance) ---
   getMemories(userId: string): MemoryItem[] {
+    this.purgeExpiredMemories(userId)
     return this.data.memories[userId] || []
   }
 
@@ -587,6 +588,30 @@ export class AppDatabase {
     if (!this.data.memories[userId]) {
       this.data.memories[userId] = []
     }
+    const list = this.data.memories[userId]
+
+    // 1. Deduplication Gate: Check if memory with identical or near-identical content exists
+    const cleanContent = item.content.trim().toLowerCase()
+    const existingIndex = list.findIndex(
+      (m) =>
+        m.content.trim().toLowerCase() === cleanContent ||
+        (m.key === item.key && m.key !== 'general' && m.category === item.category)
+    )
+
+    if (existingIndex !== -1) {
+      // Update existing item with newer content, refreshed timestamp and importance
+      const existing = list[existingIndex]
+      existing.content = item.content
+      existing.importance = Math.max(existing.importance, item.importance)
+      existing.pinned = item.pinned || existing.pinned
+      existing.updatedAt = Date.now()
+      if (item.expiresAt) existing.expiresAt = item.expiresAt
+      if (item.projectTag) existing.projectTag = item.projectTag
+      if (item.tags) existing.tags = Array.from(new Set([...(existing.tags || []), ...item.tags]))
+      this.save()
+      return existing
+    }
+
     const fullItem: MemoryItem = {
       ...item,
       id: `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -594,9 +619,59 @@ export class AppDatabase {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
-    this.data.memories[userId].push(fullItem)
+    list.push(fullItem)
     this.save()
     return fullItem
+  }
+
+  searchMemories(userId: string, query: string, limit: number = 8): { item: MemoryItem; score: number }[] {
+    const memories = this.getMemories(userId)
+    if (!query || memories.length === 0) return []
+
+    const qTerms = query.toLowerCase().split(/[\s,.;!?]+/).filter((t) => t.length > 2)
+    if (qTerms.length === 0) return []
+
+    const scored = memories.map((item) => {
+      let score = 0
+      const contentLower = item.content.toLowerCase()
+      const keyLower = (item.key || '').toLowerCase()
+      const catLower = (item.category || '').toLowerCase()
+
+      qTerms.forEach((term) => {
+        if (contentLower.includes(term)) score += 3.0
+        if (keyLower.includes(term)) score += 2.0
+        if (catLower.includes(term)) score += 1.0
+      })
+
+      // Pinned memories receive a relevance boost
+      if (item.pinned) score += 2.5
+      // Importance multiplier (1 to 5)
+      score += (item.importance || 1) * 0.5
+      // Recency decay: slightly favor fresher memories (within 7 days)
+      const daysOld = (Date.now() - (item.updatedAt || item.createdAt)) / (1000 * 60 * 60 * 24)
+      if (daysOld < 7) score += 1.0
+
+      return { item, score }
+    })
+
+    return scored
+      .filter((s) => s.score > 1.0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+  }
+
+  purgeExpiredMemories(userId: string): number {
+    const list = this.data.memories[userId]
+    if (!list || list.length === 0) return 0
+
+    const now = Date.now()
+    const active = list.filter((m) => !m.expiresAt || m.expiresAt > now)
+    const purged = list.length - active.length
+    if (purged > 0) {
+      this.data.memories[userId] = active
+      this.save()
+    }
+    return purged
   }
 
   updateMemory(userId: string, id: string, partial: Partial<MemoryItem>): MemoryItem | null {

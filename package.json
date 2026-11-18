@@ -19,7 +19,7 @@
     "test:voice": "npx tsx scripts/test_miku_voice_integration.mjs",
     "test:sip": "npx tsx scripts/test_sip_calculator.mjs",
     "test": "npm run test:security && npm run test:integration && npm run test:voice && npm run test:sip && npm run scan:secrets && npm run scan:pii",
-    "typecheck": "npx tsc --noEmit -p packages/shared && npx tsc --noEmit -p apps/server && npx tsc --noEmit -p apps/web",
+    "typecheck": "npx tsc --noEmit -p packages/shared && npx tsc --noEmit -p apps/server && npx tsc --noEmit -p apps/web && npx tsc --noEmit -p apps/worker",
     "lint": "oxlint -A no-unused-vars apps packages",
     "scan:pii": "node scripts/scan_pii.mjs",
     "scan:secrets": "node scripts/scan_secrets.mjs",
@@ -34,5 +34,9 @@
   },
   "overrides": {
     "zod": "^4.6.7"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   }
 }
