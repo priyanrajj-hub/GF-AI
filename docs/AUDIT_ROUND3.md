@@ -49,7 +49,7 @@ Round 3 completes the deep transformation of GF-AI from an experimental prototyp
 ### P0-1: Permanent Purge of Leaked ElevenLabs Secret from Git History
 - **Finding**: Commit history (including tags `v0.7.0`, `v0.8.0`, `v1.0.0` and commits `27561c0`, `2ef6926`, `664feaf`) contained references to an ElevenLabs API key substring (`[REDACTED_ELEVENLABS_KEY]`). Because tags pointed to the old commit blobs, standard Gitleaks CI scans checking out `--depth 0` flagged the repository.
 - **Remediation**:
-  1. Ran `git filter-repo --replace-text` across all 117 commits and tags, scrubbed `docs/` and `scripts/`.
+  1. Ran `git filter-repo --replace-text` across all commits and tags, scrubbed `docs/` and `scripts/`.
   2. Verified repository commit tree with `git rev-list --all | ForEach-Object { git grep -i "[REDACTED_ELEVENLABS_KEY]" $_ }`, confirming **0 matches** across all git objects.
   3. Force-pushed `main` and all tags (`--tags --force`) to GitHub, completely orphaning the tainted blobs.
   4. Published [docs/SECURITY.md](file:///C:/Users/PRIYANRAJ%20J/.gemini/antigravity/scratch/ai---gf---assistant-/docs/SECURITY.md) mandating immediate revocation and re-issuance of the ElevenLabs API key in the provider console.

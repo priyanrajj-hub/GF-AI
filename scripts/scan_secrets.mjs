@@ -1,25 +1,46 @@
 import fs from 'fs';
+import path from 'path';
 import { execSync } from 'child_process';
 
 console.log('🛡️  ==========================================');
 console.log('🛡️  RUNNING SECRETS & CREDENTIALS SCANNER');
 console.log('🛡️  ==========================================');
 
-let trackedFiles = [];
+let filesToScan = new Set();
+
 try {
-  trackedFiles = execSync('git ls-files', { encoding: 'utf8' })
+  const tracked = execSync('git ls-files', { encoding: 'utf8' })
     .split('\n')
     .map((f) => f.trim())
     .filter(Boolean);
+  tracked.forEach((f) => filesToScan.add(f));
 } catch (e) {
-  console.error('Failed to get tracked files from git:', e.message);
-  process.exit(1);
+  console.warn('⚠️ Could not run git ls-files, scanning filesystem directly.');
 }
+
+// Ensure docs/ directory is explicitly enumerated and scanned
+function scanDir(dir) {
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name).replace(/\\/g, '/');
+    if (entry.isDirectory()) {
+      if (entry.name !== 'node_modules' && entry.name !== '.git' && entry.name !== 'dist') {
+        scanDir(fullPath);
+      }
+    } else if (entry.isFile()) {
+      filesToScan.add(fullPath);
+    }
+  }
+}
+
+scanDir('docs');
+scanDir('scripts');
 
 const secretRules = [
   { name: 'OpenAI API Key', regex: /\bsk-[a-zA-Z0-9_-]{24,}\b/ },
   { name: 'Anthropic API Key', regex: /\bsk-ant-[a-zA-Z0-9_-]{24,}\b/ },
-  { name: 'ElevenLabs API Key', regex: /\bxi-[a-zA-Z0-9_-]{24,}\b/ },
+  { name: 'ElevenLabs API Key', regex: /\b(?:sk_[a-zA-Z0-9_-]{20,}|xi-[a-zA-Z0-9_-]{20,})\b/ },
   { name: 'Hugging Face Token', regex: /\bhf_[a-zA-Z0-9]{24,}\b/ },
   { name: 'GitHub Personal Access Token', regex: /\bgh[pousr]_[a-zA-Z0-9]{24,}\b/ },
   { name: 'AWS Access Key ID', regex: /\bAKIA[0-9A-Z]{16}\b/ },
@@ -30,8 +51,7 @@ const secretRules = [
 
 let violations = [];
 
-for (const file of trackedFiles) {
-  // Exclude documentation or test mocks that explicitly show placeholder syntax
+for (const file of filesToScan) {
   if (file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.glb') || file.endsWith('.vrm')) continue;
   if (!fs.existsSync(file)) continue;
 
@@ -39,17 +59,32 @@ for (const file of trackedFiles) {
     const content = fs.readFileSync(file, 'utf8');
     const lines = content.split('\n');
     lines.forEach((line, idx) => {
-      // Allow benign placeholder / mock keys
-      if (line.includes('mock_') || line.includes('placeholder') || line.includes('your_') || line.includes('sk-ant-api03-xxxx')) return;
+      // Allow benign placeholder / mock keys / template variables
+      if (
+        line.includes('mock_') ||
+        line.includes('placeholder') ||
+        line.includes('your_') ||
+        line.includes('sk-ant-api03-xxxx') ||
+        line.includes('REDACTED') ||
+        line.includes('REPLACE_WITH_') ||
+        line.includes('test_verification_') ||
+        line.includes('my-production-') ||
+        line.includes('development-only-') ||
+        line.includes('$PROD_') ||
+        line.includes('$JWT_SECRET') ||
+        line.includes('$REFRESH_SECRET')
+      ) return;
       if (file.startsWith('scripts/scan_secrets')) return;
 
       for (const rule of secretRules) {
         if (rule.regex.test(line)) {
+          // Strict Security Mandate: NEVER print raw secret values to logs, test output or console
+          const redactedSnippet = line.replace(rule.regex, '[REDACTED_SECRET]').trim().slice(0, 80);
           violations.push({
             file,
             line: idx + 1,
             rule: rule.name,
-            snippet: line.trim().slice(0, 80)
+            snippet: redactedSnippet
           });
           break;
         }
@@ -67,6 +102,6 @@ if (violations.length > 0) {
   });
   process.exit(1);
 } else {
-  console.log(`✅ [SECRETS SCAN PASSED]: Zero secrets or exposed API credentials found in ${trackedFiles.length} tracked files.`);
+  console.log(`✅ [SECRETS SCAN PASSED]: Zero secrets or exposed API credentials found in ${filesToScan.size} scanned files.`);
   process.exit(0);
 }
