@@ -10,6 +10,7 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:unit": "vitest run --coverage",
+    "test:live": "node scripts/run_live_test.mjs",
     "test:evals": "tsx src/evals/runEvals.ts"
   },
   "dependencies": {

@@ -76,6 +76,20 @@ for (const file of filesToScan) {
       ) return;
       if (file.startsWith('scripts/scan_secrets')) return;
 
+      // Zero-tolerance rule: flag ANY sk_ prefix in docs/ documentation
+      if (file.startsWith('docs/') || file.includes('/docs/')) {
+        const docsKeyPrefixRegex = /\bsk_[a-zA-Z0-9_-]+/i;
+        if (docsKeyPrefixRegex.test(line)) {
+          violations.push({
+            file,
+            line: idx + 1,
+            rule: 'Exposed sk_ Secret Prefix in Docs',
+            snippet: '[REDACTED_SECRET_IN_DOCS]'
+          });
+          return;
+        }
+      }
+
       for (const rule of secretRules) {
         if (rule.regex.test(line)) {
           // Strict Security Mandate: NEVER print raw secret values to logs, test output or console

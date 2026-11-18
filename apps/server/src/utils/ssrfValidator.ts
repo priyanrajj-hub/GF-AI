@@ -157,13 +157,17 @@ export function tryParseIntegerIp(hostname: string): string | null {
   return null
 }
 
+export type DnsLookupEntry = { address: string; family: number }
+export type DnsResolverFn = (hostname: string) => Promise<Array<DnsLookupEntry | string>>
+
 /**
  * Validates a target URL against SSRF vulnerabilities.
  * Performs protocol checks, hostname inspection, IP normalization, and DNS pre-resolution.
  */
 export async function validateUrlForSsrf(
   targetUrl: string,
-  domainAllowlist?: string[]
+  domainAllowlist?: string[],
+  resolver?: DnsResolverFn
 ): Promise<SsrfValidationResult> {
   if (!targetUrl || typeof targetUrl !== 'string') {
     return { safe: false, error: 'Empty or non-string URL provided' }
@@ -237,7 +241,20 @@ export async function validateUrlForSsrf(
 
   // 6. Perform DNS pre-lookup to prevent DNS rebinding to internal addresses
   try {
-    const lookupResults = await dns.lookup(hostname, { all: true })
+    let lookupResults: Array<{ address: string; family: number }> = []
+
+    if (resolver) {
+      const raw = await resolver(hostname)
+      lookupResults = (raw || []).map((item) => {
+        if (typeof item === 'string') {
+          return { address: item, family: isIP(item) || 4 }
+        }
+        return item
+      })
+    } else {
+      lookupResults = await dns.lookup(hostname, { all: true })
+    }
+
     if (!lookupResults || lookupResults.length === 0) {
       return { safe: false, error: `Could not resolve hostname "${hostname}" via DNS` }
     }

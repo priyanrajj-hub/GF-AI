@@ -120,7 +120,8 @@ await asyncTest('SSRF blocks unauthorized non-HTTP protocols (file:, ftp:, gophe
 })
 
 await asyncTest('SSRF permits legitimate public domain (https://example.com)', async () => {
-  const res = await validateUrlForSsrf('https://example.com/page')
+  const fakePublicResolver = async () => [{ address: '93.184.216.34', family: 4 }]
+  const res = await validateUrlForSsrf('https://example.com/page', undefined, fakePublicResolver)
   assert.equal(res.safe, true, 'Legitimate public domain must be permitted')
 })
 

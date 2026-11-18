@@ -1,19 +1,171 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../src/app.js'
 import { db } from '../src/db/index.js'
 import { JwtService } from '../src/services/jwtService.js'
+
+const mockChartResponse = {
+  chart: {
+    result: [
+      {
+        meta: {
+          currency: 'INR',
+          symbol: 'RELIANCE.NS',
+          exchangeName: 'NSE',
+          instrumentType: 'EQUITY',
+          firstTradeDate: 1041393 * 1000,
+          regularMarketTime: 1700000 * 1000,
+          gmtoffset: 19800,
+          timezone: 'IST',
+          exchangeTimezoneName: 'Asia/Kolkata',
+          regularMarketPrice: 2450.5,
+          chartPreviousClose: 2430.0,
+          previousClose: 2430.0,
+          regularMarketDayHigh: 2480.0,
+          regularMarketDayLow: 2420.0,
+          regularMarketVolume: 5000000,
+        },
+        timestamp: [1, 2, 3, 4, 5, 6].map((i) => 1700000 * 1000 + i * 86400),
+        indicators: {
+          quote: [
+            {
+              open: [2400, 2410, 2420, 2430, 2440, 2450],
+              high: [2415, 2425, 2435, 2445, 2455, 2480],
+              low: [2390, 2400, 2410, 2420, 2430, 2420],
+              close: [2410, 2420, 2430, 2440, 2450, 2450.5],
+              volume: [1200000, 1300000, 1400000, 1500000, 1600000, 5000000],
+            },
+          ],
+        },
+      },
+    ],
+    error: null,
+  },
+}
+
+const mockQuoteSummaryResponse = {
+  quoteSummary: {
+    result: [
+      {
+        financialData: {
+          numberOfAnalystOpinions: { raw: 32 },
+          recommendationKey: 'buy',
+          targetMeanPrice: { raw: 2850.0 },
+          targetHighPrice: { raw: 3100.0 },
+          targetLowPrice: { raw: 2500.0 },
+        },
+      },
+    ],
+  },
+}
+
+const mockCoinGeckoResponse = {
+  id: 'bitcoin',
+  symbol: 'btc',
+  name: 'Bitcoin',
+  market_data: {
+    current_price: { usd: 92000, inr: 7800000 },
+    price_change_percentage_24h: 2.5,
+    high_24h: { usd: 93500, inr: 7900000 },
+    low_24h: { usd: 90500, inr: 7700000 },
+    total_volume: { usd: 35e9, inr: 2975e9 },
+  },
+}
+
+const mockBinanceKlines = [
+  [1700000 * 1000, '91000.00', '92500.00', '90500.00', '92000.00', '1500.00', 1700086 * 1000],
+]
+
+const mockBinance24hr = {
+  symbol: 'BTCUSDT',
+  lastPrice: '92000.00',
+  priceChangePercent: '2.50',
+}
+
+const mockFearAndGreed = {
+  data: [{ value: '75', value_classification: 'Greed' }],
+}
+
+const mockFetch = vi.fn().mockImplementation(async (input: any) => {
+  const url = typeof input === 'string' ? input : input?.url || input?.toString() || ''
+
+  if (url.includes('query1.finance.yahoo.com/v8/finance/chart')) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => mockChartResponse,
+      text: async () => JSON.stringify(mockChartResponse),
+    }
+  }
+
+  if (url.includes('query1.finance.yahoo.com/v10/finance/quoteSummary')) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => mockQuoteSummaryResponse,
+      text: async () => JSON.stringify(mockQuoteSummaryResponse),
+    }
+  }
+
+  if (url.includes('api.coingecko.com')) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => mockCoinGeckoResponse,
+      text: async () => JSON.stringify(mockCoinGeckoResponse),
+    }
+  }
+
+  if (url.includes('api.binance.com/api/v3/klines')) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => mockBinanceKlines,
+      text: async () => JSON.stringify(mockBinanceKlines),
+    }
+  }
+
+  if (url.includes('api.binance.com/api/v3/ticker')) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => mockBinance24hr,
+      text: async () => JSON.stringify(mockBinance24hr),
+    }
+  }
+
+  if (url.includes('api.alternative.me/fng')) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => mockFearAndGreed,
+      text: async () => JSON.stringify(mockFearAndGreed),
+    }
+  }
+
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({}),
+    text: async () => '{}',
+  }
+})
 
 describe('Trading & Jarvis Trade AI Routes (/api/trading/*, /api/market/*)', () => {
   const app = createApp()
   let authToken: string
 
   beforeAll(async () => {
+    vi.stubGlobal('fetch', mockFetch)
     process.env.ENABLE_TEST_AUTH = 'true'
     process.env.NODE_ENV = 'test'
     process.env.JWT_SECRET = 'test_verification_jwt_secret_key_min_32_bytes'
     await db.init()
     authToken = JwtService.createGuestToken()
+  })
+
+  afterAll(() => {
+    vi.unstubAllGlobals()
   })
 
   it('GET /api/trading/quote should return valid quote with provenance', async () => {

@@ -8,7 +8,9 @@ on:
 
 jobs:
   test-and-eval:
+    name: Comprehensive Test & Quality Pipeline
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repository
@@ -25,83 +27,103 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/dependency-review-action@v4
 
-      - name: Setup Node.js 20.x
+      - name: Setup Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Production Dependency Audit
-        run: npm audit --omit=dev --audit-level=high
-
-      - name: Run Monorepo Linter
-        run: npm run lint
-
-      - name: Run PII Security Scanner
-        run: npm run scan:pii
-
-      - name: Run Secrets Security Scanner
-        run: npm run scan:secrets
-
       - name: Build shared package
         run: npm run build -w packages/shared
 
+      - name: Run Production Dependency Audit
+        if: always()
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Run Monorepo Linter
+        if: always()
+        run: npm run lint
+
+      - name: Run PII Security Scanner
+        if: always()
+        run: npm run scan:pii
+
+      - name: Run Secrets Security Scanner
+        if: always()
+        run: npm run scan:secrets
+
       - name: Run Vitest Unit & Coverage Suite (>= 70% Gate on Auth, Scraper, Trading, SIP)
+        if: always()
         run: npm run test:server
 
       - name: Run Offensive Security & Attack Regression Suite (49 Tests)
+        if: always()
         run: npx tsx scripts/security/attack_suite.mjs
 
       - name: Run Actuarial SIP & Lumpsum Unit Tests (5 Tests)
+        if: always()
         run: npx tsx scripts/test_sip_calculator.mjs
 
       - name: Run Security, SSRF & Financial Math Verification (16 Tests)
+        if: always()
         run: npx tsx scripts/test_security_and_financials.mjs
 
       - name: Run CORS & Express Middleware Security Tests (6 Tests)
+        if: always()
         run: npx tsx scripts/test_cors_security.mjs
 
       - name: Run Round 4 Production Integration Suite (13 Tests)
+        if: always()
         run: npx tsx scripts/test_round4_integration.mjs
 
       - name: Run Hatsune Miku Voice Integration Suite (15 Tests)
+        if: always()
         run: npx tsx scripts/test_miku_voice_integration.mjs
 
       - name: Run Relationship Guardrails & Crisis Evals (121 Tests)
+        if: always()
         run: npm run test:evals
         env:
           MOCK_PROVIDERS: "true"
 
       - name: Run Comprehensive End-to-End User Flow (10 Tests)
+        if: always()
         run: npm run test:e2e
         env:
           NODE_ENV: test
           MOCK_PROVIDERS: "true"
 
       - name: Typecheck Web App
+        if: always()
         run: npx tsc --noEmit -p apps/web
 
       - name: Typecheck Server
+        if: always()
         run: npx tsc --noEmit -p apps/server
 
       - name: Typecheck Worker
+        if: always()
         run: npx tsc --noEmit -p apps/worker
 
       - name: Build Web Production Bundle
+        if: always()
         run: npm run build -w apps/web
 
       - name: Build Server
+        if: always()
         run: npm run build -w apps/server
 
       - name: Build Worker
+        if: always()
         run: npm run build -w apps/worker
 
   codeql:
     name: CodeQL Security Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       security-events: write
       actions: read
@@ -121,6 +143,7 @@ jobs:
   trivy-scan:
     name: Trivy Container Image Vulnerability Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -139,17 +162,18 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: 'gf-ai-api:ci'
           format: 'table'
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'
 
   supply-chain:
     name: Supply Chain Security (Syft SBOM & Cosign)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
       packages: write
@@ -170,4 +194,3 @@ jobs:
       - name: Verify SBOM Generation
         run: |
           test -f sbom.spdx.json && echo "✓ SPDX SBOM successfully generated"
-

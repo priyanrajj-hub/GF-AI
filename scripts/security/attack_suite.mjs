@@ -238,21 +238,23 @@ await testAsync('SSRF Attack: Reject non-HTTP protocols (file:, ftp:, gopher:)',
   assert.equal((await validateUrlForSsrf('ftp://public.server/')).safe, false)
 })
 
+const fakePublicResolver = async () => [{ address: '93.184.216.34', family: 4 }]
+
 await testAsync('SSRF Validation: Allow legitimate public domains (https://example.com)', async () => {
-  const res = await validateUrlForSsrf('https://example.com')
+  const res = await validateUrlForSsrf('https://example.com', undefined, fakePublicResolver)
   assert.equal(res.safe, true)
 })
 
 await testAsync('SSRF Attack: Block non-standard ports (e.g. 8080, 22, 6379)', async () => {
-  assert.equal((await validateUrlForSsrf('http://example.com:8080/')).safe, false)
-  assert.equal((await validateUrlForSsrf('https://example.com:22/')).safe, false)
-  assert.equal((await validateUrlForSsrf('http://example.com:6379/')).safe, false)
+  assert.equal((await validateUrlForSsrf('http://example.com:8080/', undefined, fakePublicResolver)).safe, false)
+  assert.equal((await validateUrlForSsrf('https://example.com:22/', undefined, fakePublicResolver)).safe, false)
+  assert.equal((await validateUrlForSsrf('http://example.com:6379/', undefined, fakePublicResolver)).safe, false)
 })
 
 await testAsync('SSRF Domain Allowlist: Enforce domain restrictions when specified', async () => {
-  const resAllowed = await validateUrlForSsrf('https://api.github.com/repos', ['github.com'])
+  const resAllowed = await validateUrlForSsrf('https://api.github.com/repos', ['github.com'], fakePublicResolver)
   assert.equal(resAllowed.safe, true)
-  const resDenied = await validateUrlForSsrf('https://example.com/test', ['github.com'])
+  const resDenied = await validateUrlForSsrf('https://example.com/test', ['github.com'], fakePublicResolver)
   assert.equal(resDenied.safe, false)
 })
 

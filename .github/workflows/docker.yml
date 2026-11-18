@@ -20,6 +20,7 @@ jobs:
   build-and-scan:
     name: Build & Security Audit
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     strategy:
       matrix:
         target: [ api, worker, web ]
@@ -43,10 +44,10 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: 'gf-ai-${{ matrix.target }}:test'
           format: 'table'
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'

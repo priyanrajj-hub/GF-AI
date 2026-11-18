@@ -1,19 +1,80 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../src/app.js'
 import { db } from '../src/db/index.js'
 import { JwtService } from '../src/services/jwtService.js'
+
+const mockNewsData = {
+  hits: [
+    { title: 'Tech Innovation in AI 2026', url: 'https://example.com/tech-news', points: 180, num_comments: 50, objectID: 'hn-001' },
+    { title: 'Market Trends and Global Finance', url: 'https://example.com/finance-news', points: 220, num_comments: 65, objectID: 'hn-002' },
+  ],
+}
+
+const mockWikiData = {
+  query: {
+    pages: {
+      '1': {
+        title: 'Artificial Intelligence',
+        extract: 'Artificial intelligence (AI) is intelligence demonstrated by machines.',
+      },
+    },
+  },
+}
+
+const mockFetch = vi.fn().mockImplementation(async (input: any) => {
+  const url = typeof input === 'string' ? input : input?.url || input?.toString() || ''
+
+  if (url.includes('hn.algolia.com')) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => mockNewsData,
+      text: async () => JSON.stringify(mockNewsData),
+    }
+  }
+
+  if (url.includes('wikipedia.org')) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => mockWikiData,
+      text: async () => JSON.stringify(mockWikiData),
+    }
+  }
+
+  if (url.includes('duckduckgo.com') || url.includes('goodreturns.in') || url.includes('wttr.in')) {
+    return {
+      ok: true,
+      status: 200,
+      text: async () => '<html><body><a class="result__url" href="https://example.com/result">Result</a><h2 class="result__title">AI Overview</h2><div class="result__snippet">AI overview snippet</div></body></html>',
+      json: async () => ({}),
+    }
+  }
+
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({}),
+    text: async () => '{}',
+  }
+})
 
 describe('Scraper & Search Routes (/api/web/scrape, /api/news, /api/search)', () => {
   const app = createApp()
   let authToken: string
 
   beforeAll(async () => {
+    vi.stubGlobal('fetch', mockFetch)
     process.env.ENABLE_TEST_AUTH = 'true'
     process.env.NODE_ENV = 'test'
     process.env.JWT_SECRET = 'test_verification_jwt_secret_key_min_32_bytes'
     await db.init()
     authToken = JwtService.createGuestToken()
+  })
+
+  afterAll(() => {
+    vi.unstubAllGlobals()
   })
 
   it('POST /api/web/scrape should reject unauthenticated requests', async () => {

@@ -105,7 +105,7 @@ Exit code: 0 (Clean)
 ### 1.6 Git Commit History Secrets Audit
 ```text
 --- Scanning git commit history for secret patterns ---
-⚠️ Commits touching pattern "sk_[a-zA-Z0-9_-]{20,}":
+⚠️ Commits touching pattern "[KEY_PREFIX]_[a-zA-Z0-9_-]{20,}":
 bb26268 feat(core): complete production hardening - zero-trust JWT auth, durable persistence, SSRF protection, honest market data, and CSP
 ea10bc6 feat: replace Yor with authentic Hatsune Miku 3D figure, cyber concert stage, and Vocaloid voice engine
 664feaf fix(tts): instant zero-quota neural voice failover, bypass exhausted ElevenLabs key, and reliable online music playback

@@ -26,6 +26,8 @@ node_modules/
 # ─────────────────────────────────────────────────────────────
 dist/
 build/
+coverage/
+*.lcov
 .vite/
 *.tsbuildinfo
 .vercel/

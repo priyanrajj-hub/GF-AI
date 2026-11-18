@@ -18,6 +18,9 @@
  */
 
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import os from 'node:os'
 import { JwtService } from '../apps/server/src/services/jwtService.js'
 import { EmailService, getCanonicalAppUrl, escapeHtml } from '../apps/server/src/services/emailService.js'
 import { db } from '../apps/server/src/db/index.js'
@@ -272,10 +275,49 @@ async function runSuite() {
   // ─── 9. Database Migration Utility ───
   console.log('\n─── 9. Transactional Database Migration Utility ───')
   await asyncTest('DatabaseMigrationUtility imports records and reconciles counts', async () => {
-    const migration = await DatabaseMigrationUtility.executeSqlMigration({ dryRun: false })
-    assert.ok(migration.success, 'Migration utility must succeed')
-    assert.equal(migration.rowsReconciled?.matched, true, 'All table counts must reconcile')
-    assert.equal(migration.conflicts.length, 0, 'Must have zero errors')
+    // 9a. Test missing source file (must return success=true, integrityCheckPassed=true, rowsReconciled.matched=true)
+    const missingFileMigration = await DatabaseMigrationUtility.executeSqlMigration({
+      sourcePath: path.join(os.tmpdir(), `non_existent_fixture_${Date.now()}.json`),
+      dryRun: false,
+    })
+    assert.equal(missingFileMigration.success, true, 'Missing source file must return success=true')
+    assert.equal(missingFileMigration.integrityCheckPassed, true, 'Missing source file must pass integrity')
+    assert.equal(missingFileMigration.rowsReconciled?.matched, true, 'Rows reconciled matched must be true')
+
+    // 9b. Seed temp fixture to truly exercise the migration and reconciliation path
+    const tempFixturePath = path.join(os.tmpdir(), `test_migration_fixture_${Date.now()}.json`)
+    const fixtureData = {
+      accounts: {
+        mig_user_alpha: { email: 'alpha@example.test', role: 'user', createdAt: Date.now() },
+      },
+      users: {
+        mig_user_alpha: { userId: 'mig_user_alpha', userName: 'Alpha User', language: 'en', mode: 'companion' },
+      },
+      messages: {
+        mig_user_alpha: [
+          { id: 'mig_msg_001', role: 'user', content: 'Integration test message', createdAt: Date.now() },
+        ],
+      },
+      memories: {
+        mig_user_alpha: [
+          { id: 'mig_mem_001', userId: 'mig_user_alpha', key: 'preferred_currency', category: 'finance', content: 'INR', importance: 4 },
+        ],
+      },
+    }
+
+    try {
+      fs.writeFileSync(tempFixturePath, JSON.stringify(fixtureData), 'utf-8')
+      const migration = await DatabaseMigrationUtility.executeSqlMigration({ sourcePath: tempFixturePath, dryRun: false })
+      assert.ok(migration.success, 'Migration utility must succeed on seeded fixture')
+      assert.equal(migration.integrityCheckPassed, true, 'Integrity check must pass')
+      assert.equal(migration.rowsReconciled?.matched, true, 'All table counts must reconcile')
+      assert.ok(migration.rowsReconciled.destination >= 4, 'Must import seeded accounts, users, messages, and memories')
+      assert.equal(migration.conflicts.length, 0, 'Must have zero conflicts')
+    } finally {
+      if (fs.existsSync(tempFixturePath)) {
+        fs.unlinkSync(tempFixturePath)
+      }
+    }
   })
 
   // ─── 10. Multi-Tenant SQL Isolation ───
