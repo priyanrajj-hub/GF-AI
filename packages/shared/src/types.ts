@@ -345,7 +345,8 @@ export interface UserSettings {
   skinId?: string // 'ada-red' | 'cozy-night' | 'original-pastel'
   roamEnabled?: boolean // default true
   liveliness?: number // 0-100, default 70
-  voice?: string // 'NOpBlnGInO9m6vDvFkFC' | 'Aoede' | 'Kore' | 'hexgrad/Kokoro-82M'
+  voice?: string // 'NOpBlnGInO9m6vDvFkFC' | 'Aoede' | 'Kore' | 'hexgrad/Kokoro-82M' | 'official-miku' | 'system'
+  voiceProvider?: 'default-gf' | 'official-miku' | 'system'
   llmProvider?: 'gemini' | 'huggingface' | 'auto'
   elevenlabsApiKey?: string
   elevenlabsVoiceId?: string
