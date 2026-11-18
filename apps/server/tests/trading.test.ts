@@ -11,7 +11,7 @@ describe('Trading & Jarvis Trade AI Routes (/api/trading/*, /api/market/*)', () 
   beforeAll(async () => {
     process.env.ENABLE_TEST_AUTH = 'true'
     process.env.NODE_ENV = 'test'
-    process.env.JWT_SECRET = 'test-secret-key-that-is-at-least-32-characters-long'
+    process.env.JWT_SECRET = 'test_verification_jwt_secret_key_min_32_bytes'
     await db.init()
     authToken = JwtService.createGuestToken()
   })
