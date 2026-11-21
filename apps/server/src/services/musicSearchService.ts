@@ -1,4 +1,5 @@
 import CryptoJS from 'crypto-js'
+import { resolveSong } from '@ada/shared'
 
 export interface MusicTrackResult {
   title: string
@@ -49,6 +50,20 @@ export async function searchRealSongTrack(query: string, language?: string): Pro
     const isTamilRequest =
       language === 'ta' ||
       /\b(?:tamil|paatu|paattu|podu|paadu)\b/i.test(query)
+
+    // Master Match: If query targets Hatsune Miku or legendary Vocaloid anthems, return authentic master directly
+    if (/world\s+is\s+mine|sekai\s+de|miku|vocaloid|ievan|polkka|popipo|senbonzakura|tell\s+your\s+world|disappearance|shoushitsu/i.test(clean)) {
+      const mikuSong = resolveSong(clean, 'mira')
+      if (mikuSong && mikuSong.audioUrl && !mikuSong.id.startsWith('custom-song-')) {
+        return {
+          title: mikuSong.title,
+          artist: mikuSong.artist || 'Hatsune Miku (初音ミク)',
+          audioUrl: mikuSong.audioUrl,
+          artworkUrl: mikuSong.artworkUrl,
+          duration: mikuSong.duration || 210,
+        }
+      }
+    }
 
     if (
       !clean ||

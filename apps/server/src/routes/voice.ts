@@ -39,7 +39,9 @@ voiceRouter.post(
       provider === 'official-miku' ||
       voice === 'official-miku' ||
       voice === 'miku-official' ||
-      ((character === 'mira' || character === 'miku') && provider === 'official')
+      character === 'mira' ||
+      character === 'miku' ||
+      (voice && typeof voice === 'string' && voice.toLowerCase().includes('miku'))
 
     if (isOfficialMikuRequested) {
       const mikuProvider = VoiceRegistry.getInstance().getMikuProvider()

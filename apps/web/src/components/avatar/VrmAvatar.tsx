@@ -11,6 +11,7 @@ import { ExpressionEngine } from '../../avatar/engine/expressions.js'
 import { RoamNavigator } from '../../avatar/roam/navigator.js'
 import { AnimeFXLayer } from '../../avatar/engine/fx.js'
 import { VoiceEngine } from '../voice/VoiceEngine.js'
+import { ProceduralAvatarFallback } from './ProceduralAvatarFallback.js'
 
 interface VrmAvatarProps {
   modelUrl: string
@@ -573,7 +574,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
   return (
     <group>
-      {/* 1. VRM Character Scene (Ada & Yor: fully rigged, expressive, animated) */}
+      {/* 1. VRM Character Scene (Ada & Miku: fully rigged, expressive, animated) */}
       {vrm && activeCharacter !== 'atlas' && (
         <group onClick={handleAvatarClick}>
           <primitive object={vrm.scene} />
@@ -586,6 +587,15 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           <primitive object={glbScene} />
         </group>
       )}
+
+      {/* 3. High-Fidelity Procedural 3D Avatar Fallback (Visible instantly while loading or on network loss) */}
+      {(!vrm && activeCharacter !== 'atlas') || (!glbScene && activeCharacter === 'atlas') ? (
+        <ProceduralAvatarFallback
+          character={activeCharacter}
+          systemState={systemState}
+          onClick={handleAvatarClick}
+        />
+      ) : null}
 
       {/* 3. Anime FX Layer */}
       <AnimeFXLayer

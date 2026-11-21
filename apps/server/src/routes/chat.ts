@@ -30,6 +30,8 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
   const authReq = req as AuthenticatedRequest
   const userId = authReq.userId
   const { message, mode, character, sliders, language, stream } = req.body
+  const normalizedChar: 'ada' | 'mira' | 'atlas' =
+    character === 'miku' || character === 'mira' ? 'mira' : character === 'atlas' ? 'atlas' : 'ada'
 
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Message is required' })
@@ -57,7 +59,7 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
   const cleanMsg = message.toLowerCase().trim()
 
   // Check direct immediate actions (meme, song/dance, pomodoro, todo)
-  const directAction = await handleDirectActions(userId, message, language, cleanMsg)
+  const directAction = await handleDirectActions(userId, message, language, cleanMsg, normalizedChar)
   if (directAction) {
     if (stream) {
       res.setHeader('Content-Type', 'text/event-stream')
@@ -87,8 +89,8 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
   }
 
   const isTamilMode = language === 'ta' || /[\u0B80-\u0BFF]/.test(message)
-  const isAtlas = (character || 'ada') === 'atlas'
-  const isMira = (character || 'ada') === 'mira'
+  const isAtlas = normalizedChar === 'atlas'
+  const isMira = normalizedChar === 'mira'
 
   let systemMandate = ''
   if (isTamilMode) {
@@ -111,7 +113,7 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
   // Query RAG Vector Database
   let ragContext = ''
   try {
-    const ragResult = await buildRagContext(message, character || 'ada', 3, authReq.userId)
+    const ragResult = await buildRagContext(message, normalizedChar, 3, authReq.userId)
     if (ragResult.contextText) {
       ragContext = ragResult.contextText
     }
@@ -143,7 +145,7 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
           effectiveMessage,
           {
             mode: activeMode,
-            character: character || 'ada',
+            character: normalizedChar,
             sliders: activeSliders,
             userName: settings.userName,
             language,
@@ -163,7 +165,7 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
           effectiveMessage,
           {
             mode: activeMode,
-            character: character || 'ada',
+            character: normalizedChar,
             sliders: activeSliders,
             userName: settings.userName,
             language,
@@ -179,7 +181,7 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
       const mockLLM = ProviderRegistry.getMockLLM()
       reply = await mockLLM.generate(history, message, {
         mode: activeMode,
-        character: character || 'ada',
+        character: normalizedChar,
         sliders: activeSliders,
         userName: settings.userName,
         language,
@@ -257,7 +259,7 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
       reply.speech = GuardrailsService.verifyFactGrounding(reply.speech, resolvedTradingCard)
     }
 
-    const resolvedSpeaker: 'ada' | 'mira' | 'atlas' = (character as 'ada' | 'mira' | 'atlas') || 'ada'
+    const resolvedSpeaker: 'ada' | 'mira' | 'atlas' = normalizedChar
     reply.speaker = resolvedSpeaker
 
     // Save Assistant response

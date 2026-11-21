@@ -265,16 +265,12 @@ export class SongEngine {
       console.warn('[SongEngine WebAudio Synth]', e)
     }
 
-    // Schedule vocals for procedural track
+    // Schedule karaoke subtitles & visual lyrics (pure audio playback without robotic TTS overlay)
     song.lyrics.forEach((line) => {
       const delayMs = line.time * 1000
       const timerId = window.setTimeout(() => {
         if (!this.isPlaying) return
         useAppStore.getState().setKaraokeLine(line.text)
-        VoiceEngine.speak(line.text, {
-          rate: Math.min(1.2, Math.max(0.95, song.bpm / 105)),
-          pitch: 1.25,
-        })
         if (onProgress) {
           onProgress(line.text, line.time / song.duration)
         }

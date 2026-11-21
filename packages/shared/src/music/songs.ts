@@ -501,8 +501,9 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
  * Resolves a song query into a high-fidelity SongSpec.
  * Searches the catalog first, or generates custom authentic lyrics and rhythm for ANY requested song.
  */
-export function resolveSong(query: string): SongSpec {
+export function resolveSong(query: string, character?: string): SongSpec {
   const lowerQuery = query.toLowerCase()
+  const isMikuActive = character === 'mira' || character === 'miku'
 
   // 1. Direct Regex Match for Iconic Hatsune Miku Master Anthems
   if (/world\s+is\s+mine|sekai\s+de/i.test(lowerQuery)) {
@@ -554,7 +555,7 @@ export function resolveSong(query: string): SongSpec {
   }
 
   // 3. High-energy dance or Vocaloid request without specific title
-  if (clean.includes('miku') || clean.includes('vocaloid') || clean.includes('leek')) {
+  if (isMikuActive || clean.includes('miku') || clean.includes('vocaloid') || clean.includes('leek')) {
     const mikuSong = POPULAR_SONG_CATALOG.find((s) => s.id === 'song-miku-world-is-mine')
     if (mikuSong) return { ...mikuSong }
   }

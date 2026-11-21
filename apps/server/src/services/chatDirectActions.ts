@@ -17,7 +17,8 @@ export async function handleDirectActions(
   userId: string,
   message: string,
   language?: string,
-  cleanMsg: string = message.toLowerCase().trim()
+  cleanMsg: string = message.toLowerCase().trim(),
+  character: string = 'ada'
 ): Promise<DirectActionResult | null> {
   // 1. Meme Engine Intent
   const isMemeQuery =
@@ -96,49 +97,75 @@ export async function handleDirectActions(
     const isTamilRequest =
       language === 'ta' ||
       /\b(?:tamil|paatu|paattu|podu|paadu)\b/i.test(cleanMsg)
+    const isMiku = character === 'mira' || character === 'miku' || /miku|vocaloid|leek/i.test(cleanMsg)
+    const isStark = character === 'atlas'
 
     let song: any = null
-    const realTrack = await searchRealSongTrack(cleanMsg, language)
-    if (realTrack && realTrack.audioUrl) {
-      song = {
-        id: `song-${Date.now()}`,
-        title: realTrack.title,
-        artist: realTrack.artist,
-        audioUrl: realTrack.audioUrl,
-        artworkUrl: realTrack.artworkUrl,
-        danceAction: 'dance_pop_groove',
-        bpm: 120,
-        duration: realTrack.duration || 210,
-      }
-    } else {
-      const catalogCandidate = POPULAR_SONG_CATALOG.find(
-        (t) =>
-          cleanMsg.includes(t.title.toLowerCase()) ||
-          (t.artist && cleanMsg.includes(t.artist.toLowerCase())) ||
-          (isTamilRequest && t.id === 'vaathi')
-      )
-      song = catalogCandidate || resolveSong(cleanMsg)
+
+    // 1. Check Authentic Catalog FIRST (Prioritizing Miku Master Anthems & Top Hits)
+    const catalogCandidate = resolveSong(cleanMsg, isMiku ? 'mira' : character)
+    if (catalogCandidate && catalogCandidate.audioUrl && (
+      !catalogCandidate.id.startsWith('custom-song-') || isMiku
+    )) {
+      song = { ...catalogCandidate }
     }
 
-    const danceAction = song?.danceAction || 'dance_pop_groove'
+    // 2. If not found in catalog, search real global streaming tracks (JioSaavn/Audius)
+    if (!song) {
+      const realTrack = await searchRealSongTrack(cleanMsg, language)
+      if (realTrack && realTrack.audioUrl) {
+        song = {
+          id: `song-${Date.now()}`,
+          title: realTrack.title,
+          artist: realTrack.artist,
+          audioUrl: realTrack.audioUrl,
+          artworkUrl: realTrack.artworkUrl,
+          danceAction: isMiku ? 'dance_cute_idol' : 'dance_pop_groove',
+          bpm: 120,
+          duration: realTrack.duration || 210,
+        }
+      } else {
+        const fallback = POPULAR_SONG_CATALOG.find(
+          (t) =>
+            cleanMsg.includes(t.title.toLowerCase()) ||
+            (t.artist && cleanMsg.includes(t.artist.toLowerCase())) ||
+            (isTamilRequest && t.id === 'vaathi') ||
+            (isMiku && t.id.startsWith('song-miku'))
+        ) || (isMiku ? POPULAR_SONG_CATALOG.find((s) => s.id === 'song-miku-world-is-mine') : POPULAR_SONG_CATALOG[0])
+        song = { ...fallback }
+      }
+    }
+
+    const danceAction = song?.danceAction || (isMiku ? 'dance_cute_idol' : 'dance_pop_groove')
     const songTitle = song?.title || 'Selected Track'
-    const artistName = song?.artist || 'Ada Live Audio'
+    const artistName = song?.artist || (isMiku ? 'Hatsune Miku (初音ミク)' : 'Live Audio')
 
     let speech = isTamilRequest
       ? `நிச்சயமாக! ${songTitle} பாடலை உங்களுக்காகப் பாடி ஆடுகிறேன். ரசித்து மகிழுங்கள்!`
+      : isMiku
+      ? `Miku da yo~! Performing "${songTitle}" by ${artistName} for you right now! Let's sing and dance together~!`
+      : isStark
+      ? `Jarvis Trade AI audio telemetry online. Initiating acoustic playback for "${songTitle}" by ${artistName}.`
       : `I'd love to! Performing "${songTitle}" by ${artistName} for you right now. Watch this!`
 
     let displayText = isTamilRequest
       ? `🎶 **இப்போது இசைக்கப்படுகிறது & நடனம்:** **${songTitle}**\n🎤 கலைஞர்: ${artistName}\n\n*உங்களுக்காக பிரத்யேகமாக பாடி ஆடுகிறேன்!* ✨`
+      : isMiku
+      ? `🎶 **Now Performing:** **${songTitle}** by *${artistName}*\n\n🎤 *Virtual Pop Idol Hatsune Miku concert stage live in session... enjoy the show!* ✨`
+      : isStark
+      ? `🎶 **Now Performing:** **${songTitle}** by *${artistName}*\n\n⚡ *Jarvis acoustic telemetry engaged... playback active.*`
       : `🎶 **Now Performing:** **${songTitle}** by *${artistName}*\n\n💃 *Syncing 3D avatar animations and studio audio stream... enjoy the show!* ✨`
 
+    const resolvedSpeaker: 'ada' | 'mira' | 'atlas' = isMiku ? 'mira' : isStark ? 'atlas' : 'ada'
+
     const reply: StructuredReply = {
+      speaker: resolvedSpeaker,
       speech,
       display_text: displayText,
-      emotion: 'playful',
+      emotion: isMiku ? 'excited' : 'playful',
       intensity: 0.95,
-      gesture: 'celebrate',
-      voice_style: { rate: 1.05, pitch: 1.05, style: 'cheerful' },
+      gesture: isMiku ? 'wave' : 'celebrate',
+      voice_style: { rate: isMiku ? 1.10 : 1.05, pitch: isMiku ? 1.35 : 1.05, style: isMiku ? 'cheerful' : 'playful' },
       musicTrack: song,
       actions: [
         {
@@ -159,6 +186,7 @@ export async function handleDirectActions(
     const assistantMsgObj: ChatMessage = {
       id: `msg-${Date.now()}-assistant`,
       role: 'assistant',
+      speaker: resolvedSpeaker,
       content: reply.display_text,
       speech: reply.speech,
       emotion: reply.emotion,

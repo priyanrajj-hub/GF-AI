@@ -37,6 +37,7 @@ export const App: React.FC = () => {
   const {
     settings,
     activeMode,
+    activeCharacter,
     addMessage,
     setSystemState,
     setEmotionAndGesture,
@@ -221,8 +222,11 @@ export const App: React.FC = () => {
         body: JSON.stringify({
           message: transcript,
           mode: activeMode,
+          character: activeCharacter,
           sliders: settings.sliders,
           language: settings.language,
+          llmProvider: settings.llmProvider,
+          huggingfaceApiKey: settings.huggingfaceApiKey,
           stream: false,
         }),
       })
@@ -238,9 +242,13 @@ export const App: React.FC = () => {
       // 3. Schedule streaming inline cues along speech timeline
       globalCueScheduler.scheduleFromText(parsedReply.display_text, parsedReply.voice_style?.rate || 1.0)
 
+      const isMiku = activeCharacter === 'mira'
+      const isStark = activeCharacter === 'atlas'
+
       const assistantMsg: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,
         role: 'assistant',
+        speaker: parsedReply.speaker || (parsedReply.tradingCard ? 'atlas' : (activeCharacter as 'ada' | 'mira' | 'atlas') || 'ada'),
         content: sanitizeBubbleText(parsedReply.display_text, { userName: settings.userName }),
         speech: parsedReply.speech,
         emotion: parsedReply.emotion,
@@ -276,8 +284,8 @@ export const App: React.FC = () => {
         globalSongEngine.playSong(detectedTitle)
       } else if (parsedReply.speech) {
         VoiceEngine.speak(parsedReply.speech, {
-          rate: parsedReply.voice_style?.rate || 1.05,
-          pitch: parsedReply.voice_style?.pitch || 1.0,
+          rate: isMiku ? 1.10 : (parsedReply.voice_style?.rate || (isStark ? 1.05 : 1.02)),
+          pitch: isMiku ? 1.35 : (parsedReply.voice_style?.pitch || (isStark ? 0.94 : 1.04)),
           language: settings.language,
         })
       } else {

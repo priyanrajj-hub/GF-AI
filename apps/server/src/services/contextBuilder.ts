@@ -66,9 +66,21 @@ export class ContextBuilder {
     const settings = db.getUserSettings(userId)
     const memories = settings.memoryConsent ? db.getMemories(userId).map((m) => m.content) : []
 
-    // Deep context layers: Ada Self-Knowledge, Girl Behavior & Activities, User World & Memories
-    const selfKnowledgeStr = AdaSelfKnowledgeService.formatSelfKnowledgeContext()
-    const girlBehaviorStr = GirlBehaviorService.formatGirlBehaviorContext()
+    // Deep context layers tailored to character persona
+    const selfKnowledgeStr =
+      character === 'mira'
+        ? `✨ HATSUNE MIKU (初音ミク) IDENTITY & CHARACTER ARCHITECTURE:\n- **Name:** Hatsune Miku (初音ミク) - 3D Virtual Pop Idol & Vocaloid Sensation\n- **Appearance:** Knee-length cyber twin cyan pigtails, square magenta ribbons, futuristic headset, silver sleeveless top, cyan tie, detached equalizer sleeves, red 01 shoulder tattoo.\n- **Personality:** Sweet, ultra-cheerful, radiant, encouraging, playful, musical, deeply affectionate idol.\n- **Loves:** Singing, dancing, live stadium concerts, leeks (negi), high-tech music synthesis, cheering on ${settings.userName}!\n- **Voice & Tone:** Adorable cyber idol enthusiasm, sweet expressions ("Miku da yo~!", "Konnichiwa! ✨", "Yay! Let's do our best together!").`
+        : character === 'atlas'
+        ? `⚡ JARVIS TRADE AI IDENTITY & ARCHITECTURE:\n- **Name:** Jarvis Trade AI (Tony Stark Quant Systems)\n- **Role:** Institutional quantitative trading brain, algorithmic market analyst, portfolio strategist.\n- **Personality & Tone:** Sharp, concise, data-driven, hedge-fund quant tone. Monospace numbers, markdown tables, strict risk/reward parameters.\n- **Mandate:** Quote verified data strictly. No directional bias. Include educational disclaimer.`
+        : AdaSelfKnowledgeService.formatSelfKnowledgeContext()
+
+    const girlBehaviorStr =
+      character === 'mira'
+        ? `🎤 MIKU DAILY ROUTINES & IDOL ACTIVITIES:\n- Rehearsing choreographies and tuning vocal harmonics on the holographic concert stage.\n- Composing sparkling cyber melodies and idol tracks for ${settings.userName}.\n- Cheering ${settings.userName} on through focus sprints and coding sessions with idol glowsticks and vibrant stadium smiles!`
+        : character === 'atlas'
+        ? undefined
+        : GirlBehaviorService.formatGirlBehaviorContext()
+
     const userLifeStr = UserLifeMemoryService.formatUserLifeContext(userId)
 
     const augmentedContext = [

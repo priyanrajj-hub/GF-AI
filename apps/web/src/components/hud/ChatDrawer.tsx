@@ -368,9 +368,11 @@ export const ChatDrawer: React.FC = () => {
 
         // Trigger Standard Voice
         if (parsedReply.speech) {
+          const isMiku = activeCharacter === 'mira'
+          const isStark = activeCharacter === 'atlas'
           VoiceEngine.speak(parsedReply.speech, {
-            rate: parsedReply.voice_style?.rate || 1.05,
-            pitch: parsedReply.voice_style?.pitch || 1.0,
+            rate: isMiku ? 1.10 : (parsedReply.voice_style?.rate || (isStark ? 1.05 : 1.02)),
+            pitch: isMiku ? 1.35 : (parsedReply.voice_style?.pitch || (isStark ? 0.94 : 1.04)),
             language: settings.language,
           })
         } else {
