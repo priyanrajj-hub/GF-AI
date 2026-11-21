@@ -78,6 +78,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
   // 1. Load 3D Model (VRM or GLB)
   useEffect(() => {
+    let isCancelled = false
     setIsLoading(true)
     setLoadError(null)
 
@@ -92,16 +93,6 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       setGlbScene(null)
     }
 
-    const loader = new GLTFLoader()
-    try {
-      if (MeshoptDecoder) {
-        loader.setMeshoptDecoder(MeshoptDecoder)
-      }
-    } catch (e) {
-      console.warn('[3D Avatar] MeshoptDecoder initialization skipped:', e)
-    }
-    loader.register((parser) => new VRMLoaderPlugin(parser))
-
     const defaultUrl = isAtlas
       ? '/models/ironman.glb'
       : isExplicitTripo
@@ -112,11 +103,32 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
     const activeUrl = modelUrl || defaultUrl
 
-    loader.load(
-      activeUrl,
-      (gltf) => {
-        setIsLoading(false)
-        const loadedVrm: VRM | undefined = gltf.userData.vrm
+    const loadAsync = async () => {
+      try {
+        if (MeshoptDecoder && (MeshoptDecoder as any).ready) {
+          await (MeshoptDecoder as any).ready
+        }
+      } catch (e) {
+        console.warn('[3D Avatar] MeshoptDecoder ready check error:', e)
+      }
+      if (isCancelled) return
+
+      const loader = new GLTFLoader()
+      try {
+        if (MeshoptDecoder) {
+          loader.setMeshoptDecoder(MeshoptDecoder)
+        }
+      } catch (e) {
+        console.warn('[3D Avatar] MeshoptDecoder initialization skipped:', e)
+      }
+      loader.register((parser) => new VRMLoaderPlugin(parser))
+
+      loader.load(
+        activeUrl,
+        (gltf) => {
+          if (isCancelled) return
+          setIsLoading(false)
+          const loadedVrm: VRM | undefined = gltf.userData.vrm
 
         if (loadedVrm) {
           // --- VRM Humanoid Model ---
@@ -291,13 +303,18 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       },
       undefined,
       (err) => {
+        if (isCancelled) return
         console.warn(`[3D Avatar] Failed to load model from ${activeUrl}:`, err)
         setIsLoading(false)
         setLoadError(`Failed to load ${activeUrl}`)
       }
     )
+    }
+
+    loadAsync()
 
     return () => {
+      isCancelled = true
       if (currentModelRef.current.vrm) {
         try {
           VRMUtils.deepDispose(currentModelRef.current.vrm.scene)
@@ -591,28 +608,28 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
   return (
     <group>
-      {/* 1. VRM Character Scene (Ada & Miku: fully rigged, expressive, animated) */}
-      {vrm && activeCharacter !== 'atlas' && (
+      {/* 1. VRM Character Scene (Miku or Ada VRM: fully rigged, expressive, animated) */}
+      {vrm && (
         <group onClick={handleAvatarClick}>
           <primitive object={vrm.scene} />
         </group>
       )}
 
-      {/* 2. Standard GLB Scene (Iron Man Mark Armor) */}
+      {/* 2. Standard GLB Scene (Ada 1M-vertex Photoreal Scan or Iron Man Mark 85 Armor) */}
       {glbScene && (
         <group onClick={handleAvatarClick}>
           <primitive object={glbScene} />
         </group>
       )}
 
-      {/* 3. High-Fidelity Procedural 3D Avatar Fallback (Visible instantly while loading or on network loss) */}
-      {(!vrm && activeCharacter !== 'atlas') || (!glbScene && activeCharacter === 'atlas') ? (
+      {/* 3. High-Fidelity Holographic Quantum Sync Beam (ONLY visible while model is downloading) */}
+      {!vrm && !glbScene && (
         <ProceduralAvatarFallback
           character={activeCharacter}
           systemState={systemState}
           onClick={handleAvatarClick}
         />
-      ) : null}
+      )}
 
       {/* 3. Anime FX Layer */}
       <AnimeFXLayer
