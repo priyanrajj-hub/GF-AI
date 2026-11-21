@@ -93,7 +93,13 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     }
 
     const loader = new GLTFLoader()
-    loader.setMeshoptDecoder(MeshoptDecoder)
+    try {
+      if (MeshoptDecoder) {
+        loader.setMeshoptDecoder(MeshoptDecoder)
+      }
+    } catch (e) {
+      console.warn('[3D Avatar] MeshoptDecoder initialization skipped:', e)
+    }
     loader.register((parser) => new VRMLoaderPlugin(parser))
 
     const defaultUrl = isAtlas

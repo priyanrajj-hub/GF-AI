@@ -29,12 +29,12 @@ export function createApp(): Application {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'"],
+          scriptSrc: ["'self'", "'wasm-unsafe-eval'", "'unsafe-eval'"],
           styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
           mediaSrc: ["'self'", 'data:', 'blob:', 'https:'],
-          connectSrc: ["'self'", 'https:', 'wss:', 'ws:'],
+          connectSrc: ["'self'", 'blob:', 'data:', 'https:', 'wss:', 'ws:'],
           workerSrc: ["'self'", 'blob:'],
           objectSrc: ["'none'"],
         },
