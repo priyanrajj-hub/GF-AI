@@ -81,10 +81,10 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     setIsLoading(true)
     setLoadError(null)
 
-    // Character boundaries: Tony Stark loads ironman.glb, Ada & Miku load fully rigged expressive VRM
+    // Character boundaries: Tony Stark loads ironman.glb, Ada loads photoreal RE4 scan, Miku loads Tda VRM
     const isAtlas = activeCharacter === 'atlas' || (modelUrl || '').includes('ironman')
     const isMiku = activeCharacter === 'mira' || (modelUrl || '').includes('miku')
-    const isExplicitTripo = (modelUrl || '').includes('tripo')
+    const isExplicitTripo = (modelUrl || '').includes('tripo') || ((activeCharacter === 'ada' || !activeCharacter) && !(modelUrl || '').includes('ada.vrm'))
 
     if (isAtlas || isExplicitTripo) {
       setVrm(null)
@@ -108,7 +108,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       ? '/models/ada_fullbody_tripo.glb'
       : isMiku
       ? '/models/miku.vrm'
-      : '/models/ada.vrm'
+      : '/models/ada_fullbody_tripo.glb'
 
     const activeUrl = modelUrl || defaultUrl
 
@@ -257,6 +257,17 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                     m.depthWrite = true
                     if (m.metalness !== undefined) m.metalness = Math.max(0.65, m.metalness || 0.7)
                     if (m.roughness !== undefined) m.roughness = Math.min(0.35, m.roughness || 0.3)
+                  }
+                })
+              } else if (isTripo && mesh.material) {
+                const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+                mats.forEach((m: any) => {
+                  if (m) {
+                    m.transparent = false
+                    m.opacity = 1.0
+                    m.depthWrite = true
+                    if (m.roughness !== undefined) m.roughness = 0.42
+                    if (m.metalness !== undefined) m.metalness = 0.08
                   }
                 })
               }

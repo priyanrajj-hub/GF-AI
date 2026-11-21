@@ -218,7 +218,7 @@ export const HoloScene: React.FC = () => {
           powerPreference: 'high-performance',
           alpha: false,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 0.88,
+          toneMappingExposure: 0.96,
           outputColorSpace: THREE.SRGBColorSpace,
         }}
       >
@@ -259,10 +259,10 @@ export const HoloScene: React.FC = () => {
                   ? '/models/ironman.glb'
                   : activeCharacter === 'mira'
                   ? '/models/miku.vrm'
-                  : settings.avatarModelUrl || '/models/ada.vrm'
+                  : settings.avatarModelUrl || '/models/ada_fullbody_tripo.glb'
               }
               hologramColor={activeCharacter === 'mira' ? '#39c5bb' : activeColor}
-              renderMode={activeCharacter === 'atlas' || activeCharacter === 'mira' ? 'solid' : (settings.renderMode || 'holo-lite')}
+              renderMode={activeCharacter === 'atlas' || activeCharacter === 'mira' || (settings.avatarModelUrl || '').includes('tripo') || (!settings.avatarModelUrl && activeCharacter === 'ada') ? 'solid' : (settings.renderMode || 'solid')}
             />
           </group>
 
@@ -271,7 +271,7 @@ export const HoloScene: React.FC = () => {
 
           {/* Post-Processing Bloom */}
           {!settings.lowPerformanceMode && (
-            <EffectComposer multisampling={0}>
+            <EffectComposer multisampling={4}>
               <Bloom
                 intensity={activeCharacter === 'mira' ? 0.12 : 0.28}
                 luminanceThreshold={activeCharacter === 'mira' ? 0.98 : 0.90}
