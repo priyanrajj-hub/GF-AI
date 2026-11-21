@@ -168,7 +168,8 @@ await asyncTest('Official voice synthesis successful (Authorized Gateway Mock)',
     assert.strictEqual(result.licenseStatus, 'licensed')
     assert.strictEqual(result.provider, 'Crypton Future Media / Yamaha VOCALOID')
   } finally {
-    mockServer.close()
+    mockServer.closeAllConnections?.()
+    await new Promise((resolve) => mockServer.close(resolve))
     delete process.env.MIKU_VOICE_ENABLED
     delete process.env.MIKU_VOICE_API_KEY
     delete process.env.MIKU_VOICE_API_URL
@@ -312,7 +313,8 @@ await asyncTest('Provider timeout (AbortController timeout defense)', async () =
     }
     assert.strictEqual(threw, true, 'Should abort request on timeout or stop()')
   } finally {
-    hangingServer.close()
+    hangingServer.closeAllConnections?.()
+    await new Promise((resolve) => hangingServer.close(resolve))
     delete process.env.MIKU_VOICE_ENABLED
     delete process.env.MIKU_VOICE_API_KEY
     delete process.env.MIKU_VOICE_API_URL
@@ -423,7 +425,8 @@ await asyncTest('Invalid API credentials (401/403 handling without key disclosur
     }
     assert.strictEqual(threw, true, 'Should reject invalid credentials securely')
   } finally {
-    authRejectServer.close()
+    authRejectServer.closeAllConnections?.()
+    await new Promise((resolve) => authRejectServer.close(resolve))
     delete process.env.MIKU_VOICE_ENABLED
     delete process.env.MIKU_VOICE_API_KEY
     delete process.env.MIKU_VOICE_API_URL

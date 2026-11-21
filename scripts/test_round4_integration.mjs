@@ -468,7 +468,11 @@ async function runSuite() {
   console.log('═══════════════════════════════════════════════════════════════\n')
 }
 
-runSuite().catch((err) => {
-  console.error('\n❌ Integration Suite Failed:', err)
-  process.exit(1)
-})
+runSuite()
+  .then(() => {
+    process.exit(0)
+  })
+  .catch((err) => {
+    console.error('\n❌ Integration Suite Failed:', err)
+    process.exit(1)
+  })

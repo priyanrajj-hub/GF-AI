@@ -728,8 +728,10 @@ console.log('\n═════════════════════�
 console.log(` RESULTS: ${passed} / ${passed + failed} TESTS PASSED (${((passed / (passed + failed)) * 100).toFixed(1)}%)`)
 if (failed === 0) {
   console.log(' 🎉 ALL ATTACK DEFENSES & REGRESSION CHECKS VERIFIED!')
+  console.log('═══════════════════════════════════════════════════════════════\n')
+  process.exit(0)
 } else {
   console.error(` ❌ ${failed} VULNERABILITIES DETECTED!`)
+  console.log('═══════════════════════════════════════════════════════════════\n')
   process.exit(1)
 }
-console.log('═══════════════════════════════════════════════════════════════\n')

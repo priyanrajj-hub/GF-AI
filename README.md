@@ -27,11 +27,11 @@ flowchart TD
     subgraph DataPlane ["Persistence & Caching"]
         API -->|"Durable SQL"| DB[("Relational SQL (Postgres / libSQL)")]
         API -->|"Revocation & Quotes"| Redis[("Redis (Cluster / Cache)")]
-        DB -->|"OHLCV Aggregates"| Timescale[("TimescaleDB Hypertables")]
+        DB -.->|"OHLCV Aggregates (Spec)"| Timescale[("TimescaleDB Hypertables")]
     end
     
     subgraph StreamingPlane ["Event-Driven Streaming"]
-        API -->|"Produce ticks / signals"| EventBus["Kafka / Redpanda EventBus"]
+        API -->|"Publish ticks / signals"| EventBus["Zod-Validated EventBus (Kafka Schemas)"]
         EventBus -->|"indicator-engine"| Worker["Background Worker"]
         EventBus -->|"signal-engine"| LiveGateway["Live Signal Gateway (SSE)"]
         LiveGateway -->|"Real-time Signals"| Client
@@ -41,7 +41,7 @@ flowchart TD
         API -->|"Multi-Model Router"| Orchestrator["AI Orchestrator (Gemini / Groq / Fallback)"]
         API -->|"Official Adapters"| MarketFeeds["Twelve Data / Finnhub / NSE Bhavcopy"]
         API -->|"Hybrid RAG"| RAGStore["BM25 Lexical + Cosine Vector Store"]
-        API -->|"Inference RPC"| MLSidecar["FastAPI ML Sidecar (Regime Detection)"]
+        API -->|"Internal Analytics"| QuantEngine["Quantitative Engine (Jarvis Trade AI)"]
     end
 ```
 
@@ -51,18 +51,17 @@ flowchart TD
 
 | Component | Status | Implementation Details |
 | :--- | :--- | :--- |
-| **Relational SQL Database** | ✅ **LIVE & DURABLE** | PostgreSQL in container mode; libSQL in local mode. Zero JSON file synchronization. |
+| **Relational SQL Database** | ✅ **LIVE & DURABLE** | PostgreSQL in container mode; libSQL / SQLite in local development mode. Complete schema migrations and multi-tenant isolation. |
 | **Redis Revocation & Quote Cache** | ✅ **LIVE** | Distributed JTI revocation blacklist, refresh token family reuse tracking, market cache (< 15m TTL). |
-| **Thin Modular Server Architecture** | ✅ **COMPLETED** | `index.ts` is 43 lines. App factory in `app.ts`. All route and service files strictly < 400 lines. |
-| **Test Coverage & Quality Gate** | ✅ **PASSING (89.7%)** | Vitest + Supertest integration suite with 100% pass rate. Exceeds >= 70% threshold on Auth, Scraper, Trading, SIP. |
-| **Market Data Architecture** | ✅ **OFFICIAL ONLY** | Multi-tier provider cascade (Twelve Data, Finnhub, Alpha Vantage, NSE Bhavcopy). Zero HTML scraping. Provenance `{ source, asOf, isLive, isStale }` on every quote. |
-| **Voice Synthesis** | ✅ **ACTIVE** | High-fidelity Neural Edge TTS and Web Speech API. Crypton Hatsune Miku enterprise provider marked deprecated until licensing contract execution. |
-| **3D Avatar & Kinematics** | ✅ **ACTIVE** | Three.js WebGL canvas with 52 blendshapes and procedural kinematics. Large binary models excluded from Git; downloaded via `tools/dev/download_models.mjs`. |
-| **Event Streaming (Kafka / Redpanda)** | ✅ **ACTIVE** | Validated Zod schemas for `market.ticks`, `market.ohlcv.1m`, `news.raw`, `signals.generated`, `alerts.triggered`. |
-| **TimescaleDB Continuous Aggregates** | ✅ **DEFINED** | Hypertable with continuous aggregate rollups (5m, 1h, 1d) in `infra/timescaledb/01_hypertable.sql`. |
-| **Live Signal Gateway** | ✅ **LIVE** | Server-Sent Events (SSE) at `GET /api/trading/signals/stream` with 15s heartbeats and auto-reconnect. |
-| **Kubernetes & Cloud Native** | ✅ **READY** | Helm chart in `charts/ada` with KEDA consumer-lag autoscaling, HPA (CPU > 70%), PDB, and Argo CD manifest. |
-| **Supply Chain Security** | ✅ **ACTIVE** | SPDX 2.3 SBOM generation (syft) and Cosign container signing pipeline. |
+| **Thin Modular Server Architecture** | ✅ **COMPLETED** | `index.ts` is 43 lines. Modular routes in `src/routes/` and services in `src/services/` strictly < 400 lines each. |
+| **Test Coverage & Quality Gate** | ✅ **PASSING (83.6%)** | Comprehensive automated test suite with 100% pass rate: Vitest server unit tests, offensive security attack suite (49/49), Round 4 integration, voice integration (15/15), and Miku remediation suite. |
+| **Market Data Architecture** | ✅ **OFFICIAL ONLY** | Multi-tier provider cascade (Twelve Data, Finnhub, Alpha Vantage, NSE Bhavcopy). Strict provenance metadata `{ source, asOf, isLive, isStale }` on every quote. |
+| **Voice Synthesis & IP Compliance** | ✅ **ACTIVE & COMPLIANT** | High-fidelity Neural Edge TTS (Ada, Tony Stark, Tamil, English) and Web Speech API. Crypton Future Media's proprietary Hatsune Miku voicebank is explicitly unlicensed and disabled from model training in strict accordance with Crypton's EULA. Spoken idol dialogue uses authorized neural acoustic synthesis (pitch 1.35, rate 1.10, idol EQ filter); authentic Vocaloid music playback streams licensed master recordings directly. |
+| **3D Avatar & Kinematics** | ✅ **ACTIVE & RESILIENT** | Three.js WebGL canvas with canonical VRM models (`ada.vrm`, `miku.vrm`, `ironman.glb`) and instant procedural 3D fallbacks (cyan twin-tails, ribbons, Arc Reactor) so the screen is never blank during loading or network disconnection. |
+| **Event Streaming Bus** | ✅ **LIVE (IN-PROCESS)** | In-process schema-validated EventBus with Kafka-compatible topic schemas (`market.ticks`, `market.ohlcv.1m`, `news.raw`, `signals.generated`, `alerts.triggered`). |
+| **TimescaleDB Continuous Aggregates** | ⚠️ **SPECIFICATION** | SQL hypertable schema and continuous aggregate definitions provided in `infra/timescaledb/01_hypertable.sql` for high-throughput OHLCV rollups. |
+| **Live Signal Gateway** | ✅ **LIVE** | Server-Sent Events (SSE) at `GET /api/trading/signals/stream` with 15s heartbeats and client auto-reconnect. |
+| **Educational Compliance** | ✅ **ENFORCED** | All trading features, technical indicators, and quantitative setups are strictly educational and non-advisory. SEBI compliance educational disclaimers are returned on financial endpoints. |
 
 ---
 

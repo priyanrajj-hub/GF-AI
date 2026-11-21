@@ -9,6 +9,7 @@ import { eventBus } from '../streaming/eventBus.js'
 import { TOPICS } from '../streaming/schemas.js'
 
 export const tradingRouter = Router()
+const COMPLIANCE_DISCLAIMER = 'Educational purposes only. Not SEBI registered investment advice.'
 
 // Live Signal Gateway (Server-Sent Events streaming with heartbeat and auto-reconnect)
 tradingRouter.get('/api/trading/signals/stream', requireAuth, (req: Request, res: Response) => {
@@ -54,7 +55,7 @@ tradingRouter.get('/api/trading/quote', requireAuth, async (req: Request, res: R
 // Real-Time Daily Stock Recommendations & Setups
 tradingRouter.get('/api/trading/recommendations', requireAuth, async (_req: Request, res: Response) => {
   const recommendations = await TradingService.getTopRecommendations()
-  return res.json({ recommendations, count: recommendations.length })
+  return res.json({ recommendations, count: recommendations.length, disclaimer: COMPLIANCE_DISCLAIMER })
 })
 
 // Real-Time Global Market Operating & Non-Operating Timings Radar
@@ -77,7 +78,7 @@ tradingRouter.get('/api/trading/swing/:symbol', requireAuth, async (req: Request
   const portfolio = req.query.portfolio ? parseFloat(req.query.portfolio as string) : undefined
   const risk = req.query.risk ? parseFloat(req.query.risk as string) : undefined
   const setup = await JarvisTradeService.analyzeSwingSetup(symbol, portfolio, risk)
-  return res.json({ setup })
+  return res.json({ setup, disclaimer: COMPLIANCE_DISCLAIMER })
 })
 
 // 3. Long-Term Multi-Factor Score & DCF Sanity Check
@@ -92,7 +93,7 @@ tradingRouter.get('/api/trading/intraday/:symbol', requireAuth, async (req: Requ
   const symbol = String(req.params.symbol)
   const direction = req.query.direction as 'LONG' | 'SHORT' | undefined
   const intraday = await JarvisTradeService.analyzeIntradaySetup(symbol, direction)
-  return res.json({ intraday })
+  return res.json({ intraday, disclaimer: COMPLIANCE_DISCLAIMER })
 })
 
 // 5. Institutional IPO Intelligence & GMP Radar
@@ -111,7 +112,7 @@ tradingRouter.get('/api/trading/macro', requireAuth, async (_req: Request, res: 
 tradingRouter.get('/api/trading/verdict/:symbol', requireAuth, async (req: Request, res: Response) => {
   const symbol = String(req.params.symbol)
   const verdict = await JarvisTradeService.getJarvisTradeVerdict(symbol)
-  return res.json({ verdict })
+  return res.json({ verdict, disclaimer: COMPLIANCE_DISCLAIMER })
 })
 
 // 8. Financial News & FinBERT Sentiment Analysis
