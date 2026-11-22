@@ -35,7 +35,20 @@ export const ActionCallSchema = z.object({
 })
 
 export const TaskActionCardSchema = z.object({
-  type: z.enum(['youtube', 'web_search', 'open_url', 'timer', 'todo', 'character_switch', 'wardrobe', 'market']),
+  type: z.enum([
+    'youtube',
+    'web_search',
+    'open_url',
+    'timer',
+    'todo',
+    'character_switch',
+    'wardrobe',
+    'market',
+    'calculator',
+    'weather',
+    'maps',
+    'deliverable',
+  ]),
   title: z.string(),
   subtitle: z.string().optional(),
   url: z.string().optional(),

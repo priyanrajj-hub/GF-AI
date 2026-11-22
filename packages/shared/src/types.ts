@@ -66,7 +66,7 @@ export interface VoiceStyle {
 }
 
 export interface TaskActionCard {
-  type: 'youtube' | 'web_search' | 'open_url' | 'timer' | 'todo' | 'character_switch' | 'wardrobe' | 'market'
+  type: 'youtube' | 'web_search' | 'open_url' | 'timer' | 'todo' | 'character_switch' | 'wardrobe' | 'market' | 'calculator' | 'weather' | 'maps' | 'deliverable'
   title: string
   subtitle?: string
   url?: string

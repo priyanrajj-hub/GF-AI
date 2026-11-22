@@ -88,6 +88,13 @@ export const ChatDrawer: React.FC = () => {
     setActiveFX,
     skinId,
     setSkinId,
+    startPomodoro,
+    pausePomodoro,
+    resetPomodoro,
+    isPomodoroActive,
+    pomodoroSecondsLeft,
+    notes,
+    setNotes,
   } = useAppStore()
 
   const [input, setInput] = useState('')
@@ -322,7 +329,7 @@ export const ChatDrawer: React.FC = () => {
       }
       addMessage(assistantMsg)
 
-      // Execute direct task actions or automation calls (YouTube, Web Search, External URLs, Character Switch)
+      // Execute direct task actions or automation calls (YouTube, Web Search, External URLs, Character Switch, Timer, Wardrobe, Todo)
       if (parsedReply.actions && Array.isArray(parsedReply.actions)) {
         for (const act of parsedReply.actions) {
           if (act.name === 'open_youtube' || act.name === 'open_url' || act.name === 'web_search') {
@@ -339,12 +346,43 @@ export const ChatDrawer: React.FC = () => {
             if (char === 'ada' || char === 'mira' || char === 'atlas') {
               setActiveCharacter(char)
             }
+          } else if (act.name === 'start_timer') {
+            const duration = (act.arguments as any)?.durationMinutes || 25
+            startPomodoro(duration)
+          } else if (act.name === 'add_todo') {
+            const title = (act.arguments as any)?.title
+            if (title) {
+              setNotes([
+                {
+                  id: `note-${Date.now()}`,
+                  userId: settings.userId,
+                  title,
+                  content: '',
+                  completed: false,
+                  category: 'todo' as const,
+                  createdAt: Date.now(),
+                },
+                ...notes,
+              ])
+            }
+          } else if (act.name === 'change_wardrobe') {
+            const skin = (act.arguments as any)?.skinId
+            if (skin) {
+              setSkinId(skin)
+            }
           }
         }
       }
 
       if (parsedReply.taskAction) {
-        if (parsedReply.taskAction.url && (parsedReply.taskAction.type === 'youtube' || parsedReply.taskAction.type === 'open_url' || parsedReply.taskAction.type === 'web_search')) {
+        if (
+          parsedReply.taskAction.url &&
+          (parsedReply.taskAction.type === 'youtube' ||
+            parsedReply.taskAction.type === 'open_url' ||
+            parsedReply.taskAction.type === 'web_search' ||
+            parsedReply.taskAction.type === 'maps' ||
+            parsedReply.taskAction.type === 'weather')
+        ) {
           try {
             window.open(parsedReply.taskAction.url, '_blank', 'noopener,noreferrer')
           } catch (e) {
@@ -355,6 +393,25 @@ export const ChatDrawer: React.FC = () => {
           if (char === 'ada' || char === 'mira' || char === 'atlas') {
             setActiveCharacter(char)
           }
+        } else if (parsedReply.taskAction.type === 'timer') {
+          const duration = parsedReply.taskAction.data?.durationMinutes || 25
+          startPomodoro(duration)
+        } else if (parsedReply.taskAction.type === 'todo' && parsedReply.taskAction.data?.taskText) {
+          const title = parsedReply.taskAction.data.taskText
+          setNotes([
+            {
+              id: `note-${Date.now()}`,
+              userId: settings.userId,
+              title,
+              content: '',
+              completed: false,
+              category: 'todo' as const,
+              createdAt: Date.now(),
+            },
+            ...notes,
+          ])
+        } else if (parsedReply.taskAction.type === 'wardrobe' && parsedReply.taskAction.data?.skinId) {
+          setSkinId(parsedReply.taskAction.data.skinId)
         }
       }
 
@@ -1373,6 +1430,18 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                           ? '🔗'
                           : msg.taskAction.type === 'character_switch'
                           ? '🎭'
+                          : msg.taskAction.type === 'maps'
+                          ? '🗺️'
+                          : msg.taskAction.type === 'weather'
+                          ? '🌤️'
+                          : msg.taskAction.type === 'timer'
+                          ? '⏱️'
+                          : msg.taskAction.type === 'todo'
+                          ? '📝'
+                          : msg.taskAction.type === 'calculator'
+                          ? '🧮'
+                          : msg.taskAction.type === 'wardrobe'
+                          ? '👗'
                           : '⚡'}
                       </div>
                       <div>
@@ -1400,6 +1469,34 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                     </div>
                   )}
 
+                  {/* Calculator Result Box */}
+                  {msg.taskAction.type === 'calculator' && msg.taskAction.data?.result !== undefined && (
+                    <div className="my-2 p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/30 flex items-center justify-between text-xs font-mono">
+                      <span className="text-slate-300">{msg.taskAction.data.expression} =</span>
+                      <span className="text-amber-300 font-bold text-sm bg-slate-950/80 px-2.5 py-1 rounded-lg border border-amber-400/40">
+                        {msg.taskAction.data.result}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Timer Quick Control */}
+                  {msg.taskAction.type === 'timer' && (
+                    <div className="my-2 p-2.5 rounded-xl bg-purple-950/30 border border-purple-500/30 flex items-center justify-between text-xs font-mono">
+                      <span className="text-purple-200">
+                        ⏱️ {isPomodoroActive ? `${Math.floor(pomodoroSecondsLeft / 60)}:${(pomodoroSecondsLeft % 60).toString().padStart(2, '0')} Active` : `${msg.taskAction.data?.durationMinutes || 25}m Protocol Armed`}
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (isPomodoroActive) pausePomodoro()
+                          else startPomodoro(msg.taskAction?.data?.durationMinutes || 25)
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-purple-500/30 hover:bg-purple-500/50 border border-purple-400/50 text-purple-200 text-[10px] font-mono cursor-pointer"
+                      >
+                        {isPomodoroActive ? 'Pause ⏸' : 'Start Focus ▶'}
+                      </button>
+                    </div>
+                  )}
+
                   {/* External Launch & Interaction Button */}
                   {msg.taskAction.url && (
                     <div className="mt-2 pt-2 border-t border-cyan-500/20 flex items-center justify-between">
@@ -1412,13 +1509,31 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-200 text-[11px] font-semibold transition-all shadow-md hover:scale-[1.02]"
                       >
-                        {msg.taskAction.type === 'youtube'
-                          ? '▶️ Watch on YouTube'
-                          : msg.taskAction.type === 'web_search'
-                          ? '🔍 Open Google Results'
-                          : '🚀 Launch Destination'}
+                        {msg.taskAction.buttonText ||
+                          (msg.taskAction.type === 'youtube'
+                            ? '▶️ Watch on YouTube'
+                            : msg.taskAction.type === 'web_search'
+                            ? '🔍 Open Google Results'
+                            : msg.taskAction.type === 'maps'
+                            ? '🗺️ View in Google Maps'
+                            : msg.taskAction.type === 'weather'
+                            ? '🌤️ View Weather Radar'
+                            : '🚀 Launch Destination')}
                         <span className="text-xs">↗</span>
                       </a>
+                    </div>
+                  )}
+
+                  {/* Wardrobe Quick Toggle */}
+                  {msg.taskAction.type === 'wardrobe' && msg.taskAction.data?.skinId && (
+                    <div className="mt-2 pt-2 border-t border-pink-500/20 flex items-center justify-between text-[11px]">
+                      <span className="text-pink-200 font-mono">Outfit: {msg.taskAction.data.outfitName}</span>
+                      <button
+                        onClick={() => setSkinId(msg.taskAction?.data?.skinId)}
+                        className="px-2.5 py-1 rounded-lg bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400/40 text-pink-200 text-[10px] font-mono cursor-pointer"
+                      >
+                        Re-equip 👗
+                      </button>
                     </div>
                   )}
 
@@ -1639,6 +1754,74 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
           ))}
         </div>
       )}
+
+      {/* Universal Omnitask Quick Commander: Do All Tasks I Say */}
+      <div className="px-3 py-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[11px] font-mono border-t border-cyan-500/20 bg-slate-950/80 shrink-0">
+        <span className="text-cyan-400 font-bold flex items-center gap-1 shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+          ⚡ TASKS:
+        </span>
+        <button
+          onClick={() => handleSendMessage('open youtube: play a miku video')}
+          className="px-2 py-0.5 rounded-lg bg-red-950/60 border border-red-500/40 text-red-300 hover:bg-red-900/60 transition-all shrink-0 cursor-pointer"
+        >
+          ▶️ YouTube
+        </button>
+        <button
+          onClick={() => handleSendMessage('search google for latest AI innovations')}
+          className="px-2 py-0.5 rounded-lg bg-blue-950/60 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition-all shrink-0 cursor-pointer"
+        >
+          🌐 Search
+        </button>
+        <button
+          onClick={() => handleSendMessage('start timer 25 minutes')}
+          className="px-2 py-0.5 rounded-lg bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 transition-all shrink-0 cursor-pointer"
+        >
+          ⏱️ Timer (25m)
+        </button>
+        <button
+          onClick={() => handleSendMessage('add todo: complete high-leverage milestones')}
+          className="px-2 py-0.5 rounded-lg bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 transition-all shrink-0 cursor-pointer"
+        >
+          📝 Add To-Do
+        </button>
+        <button
+          onClick={() => handleSendMessage('what is the weather in Tokyo today?')}
+          className="px-2 py-0.5 rounded-lg bg-sky-950/60 border border-sky-500/40 text-sky-300 hover:bg-sky-900/60 transition-all shrink-0 cursor-pointer"
+        >
+          🌤️ Weather
+        </button>
+        <button
+          onClick={() => handleSendMessage('open maps to New York Times Square')}
+          className="px-2 py-0.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition-all shrink-0 cursor-pointer"
+        >
+          🗺️ Maps
+        </button>
+        <button
+          onClick={() => handleSendMessage('calculate 125 * 85')}
+          className="px-2 py-0.5 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 transition-all shrink-0 cursor-pointer"
+        >
+          🧮 Math
+        </button>
+        <button
+          onClick={() => handleSendMessage('wear saree')}
+          className="px-2 py-0.5 rounded-lg bg-pink-950/60 border border-pink-500/40 text-pink-300 hover:bg-pink-900/60 transition-all shrink-0 cursor-pointer"
+        >
+          👗 Saree
+        </button>
+        <button
+          onClick={() => handleSendMessage('switch to miku')}
+          className="px-2 py-0.5 rounded-lg bg-teal-950/60 border border-teal-500/40 text-teal-300 hover:bg-teal-900/60 transition-all shrink-0 cursor-pointer"
+        >
+          🎤 Switch Miku
+        </button>
+        <button
+          onClick={() => handleSendMessage('switch to tony stark')}
+          className="px-2 py-0.5 rounded-lg bg-amber-950/60 border border-amber-400/50 text-amber-300 hover:bg-amber-900/60 transition-all shrink-0 cursor-pointer"
+        >
+          ⚡ Switch Stark
+        </button>
+      </div>
 
       {/* Blended Quick Action Chips: Unified across Ada Tutor & Stark Trader AI */}
       <div className="px-3 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs border-t border-cyan-500/10 bg-slate-950/60 shrink-0">

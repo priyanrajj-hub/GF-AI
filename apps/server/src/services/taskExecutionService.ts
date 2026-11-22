@@ -198,7 +198,403 @@ export class TaskExecutionService {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 3. Direct Website / Platform Launch Tasks
+    // 3. Google Maps & Location Navigation Tasks
+    // ─────────────────────────────────────────────────────────────
+    const isMapTask =
+      /\b(?:maps?\s+to|directions?\s+to|where\s+is|navigate\s+to|map\s+of|route\s+to)\s+([^\n\r?]+)/i.test(cleanMsg) ||
+      /^open\s+maps?\b/i.test(cleanMsg)
+
+    if (isMapTask) {
+      let destination = cleanMsg
+        .replace(/^(?:please\s+)?(?:open\s+maps?\s*(?:to|for)?|directions?\s+to|where\s+is|navigate\s+to|map\s+of|route\s+to)\s*/i, '')
+        .trim()
+      if (!destination || destination === 'maps' || destination === 'map') {
+        destination = 'Current Location'
+      }
+
+      const encodedDest = encodeURIComponent(destination)
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedDest}`
+
+      const taskAction: TaskActionCard = {
+        type: 'maps',
+        title: `Maps: ${destination}`,
+        subtitle: `Navigation Route & Location Search`,
+        url: mapsUrl,
+        query: destination,
+        buttonText: 'Open in Google Maps',
+        status: 'ready',
+        icon: 'map-pin',
+      }
+
+      const reply: StructuredReply = {
+        speaker: resolvedSpeaker,
+        speech: `Plotting coordinates for ${destination}. Navigation link initialized.`,
+        display_text: `### 🗺️ Navigation: Task Executed\n\n**Destination:** ${destination}\n**Platform:** Google Maps Live Coordinates\n\n*Click below to launch turn-by-turn navigation.*`,
+        emotion: 'thinking',
+        intensity: 0.85,
+        gesture: 'nod',
+        voice_style: { rate: 1.02, pitch: isStark ? 0.95 : 1.0, style: 'calm' },
+        taskAction,
+        actions: [{ name: 'open_url', arguments: { url: mapsUrl, name: `Maps: ${destination}` } }],
+      }
+
+      const assistantMsgObj: ChatMessage = {
+        id: `msg-${Date.now()}-assistant`,
+        role: 'assistant',
+        speaker: resolvedSpeaker,
+        content: reply.display_text,
+        speech: reply.speech,
+        emotion: reply.emotion,
+        gesture: reply.gesture,
+        taskAction: reply.taskAction,
+        timestamp: Date.now(),
+      }
+      db.addMessage(userId, assistantMsgObj)
+      return { reply }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 4. Live Weather & Atmospheric Forecast Tasks
+    // ─────────────────────────────────────────────────────────────
+    const isWeatherTask =
+      /\b(?:weather\s+(?:in|for|at)|forecast\s+(?:in|for|at)|what(?:'s|\s+is)\s+the\s+weather(?:\s+in)?)\s*([^\n\r?]*)/i.test(cleanMsg) ||
+      cleanMsg === 'weather' ||
+      cleanMsg === 'weather forecast'
+
+    if (isWeatherTask) {
+      let location = cleanMsg
+        .replace(/^(?:please\s+)?(?:what(?:'s|\s+is)\s+the\s+weather(?:\s+in)?|weather\s+(?:in|for|at)?|forecast\s+(?:in|for|at)?)\s*/i, '')
+        .trim()
+      if (!location || location === 'weather' || location === 'today') {
+        location = 'Local Weather Forecast'
+      }
+
+      const encodedLoc = encodeURIComponent(location)
+      const weatherUrl = `https://www.google.com/search?q=weather+${encodedLoc}`
+
+      const taskAction: TaskActionCard = {
+        type: 'weather',
+        title: `Weather: ${location}`,
+        subtitle: `Atmospheric Conditions & Radar`,
+        url: weatherUrl,
+        query: location,
+        buttonText: 'View Live Radar & Forecast',
+        status: 'ready',
+        icon: 'cloud-sun',
+      }
+
+      const reply: StructuredReply = {
+        speaker: resolvedSpeaker,
+        speech: `Checking meteorological sensors for ${location}. Telemetry synchronized.`,
+        display_text: `### 🌤️ Weather Telemetry: Task Executed\n\n**Location:** ${location}\n**System:** Atmospheric Sensor Radar\n\n*Live weather telemetry and hourly forecast are ready.*`,
+        emotion: 'happy',
+        intensity: 0.85,
+        gesture: 'nod',
+        voice_style: { rate: 1.02, pitch: isStark ? 0.95 : 1.0, style: 'cheerful' },
+        taskAction,
+        actions: [{ name: 'open_url', arguments: { url: weatherUrl, name: `Weather: ${location}` } }],
+      }
+
+      const assistantMsgObj: ChatMessage = {
+        id: `msg-${Date.now()}-assistant`,
+        role: 'assistant',
+        speaker: resolvedSpeaker,
+        content: reply.display_text,
+        speech: reply.speech,
+        emotion: reply.emotion,
+        gesture: reply.gesture,
+        taskAction: reply.taskAction,
+        timestamp: Date.now(),
+      }
+      db.addMessage(userId, assistantMsgObj)
+      return { reply }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 5. Focus Timer / Pomodoro Protocol Tasks
+    // ─────────────────────────────────────────────────────────────
+    const isTimerTask =
+      /\b(?:start\s+)?(?:focus\s+)?timer\s+(?:for\s+)?(\d+)\s*(?:m|min|mins|minutes?)?/i.test(cleanMsg) ||
+      /\b(?:pomodoro|focus\s+session)\s*(?:for\s+)?(\d+)?/i.test(cleanMsg) ||
+      cleanMsg === 'start timer' ||
+      cleanMsg === 'pomodoro'
+
+    if (isTimerTask) {
+      const match = cleanMsg.match(/\b(?:timer|pomodoro|focus)\s*(?:for\s+)?(\d+)/i)
+      const duration = match && match[1] ? Math.max(1, parseInt(match[1], 10)) : 25
+      const goal = 'Deep Focus & Task Execution'
+
+      const taskAction: TaskActionCard = {
+        type: 'timer',
+        title: `Focus Protocol: ${duration} Minutes`,
+        subtitle: goal,
+        buttonText: 'Start Timer Protocol',
+        status: 'running',
+        icon: 'clock',
+        data: { durationMinutes: duration, goal },
+      }
+
+      const reply: StructuredReply = {
+        speaker: resolvedSpeaker,
+        speech: `Focus protocol initialized for ${duration} minutes. Eliminate distractions and let us execute.`,
+        display_text: `### ⏱️ Focus Protocol: Task Executed\n\n**Duration:** **${duration} Minutes**  \n**Objective:** ${goal}  \n**Status:** Timer armed & HUD synchronized.`,
+        emotion: isStark ? 'motivated' : isMiku ? 'excited' : 'thinking',
+        intensity: 0.9,
+        gesture: 'nod',
+        voice_style: { rate: 1.05, pitch: isStark ? 0.95 : 1.0, style: 'authoritative' },
+        taskAction,
+        studyFocus: {
+          goal,
+          durationMinutes: duration,
+          remainingSeconds: duration * 60,
+          isActive: true,
+          mode: 'pomodoro',
+        },
+        actions: [{ name: 'start_timer', arguments: { durationMinutes: duration, goal } }],
+      }
+
+      const assistantMsgObj: ChatMessage = {
+        id: `msg-${Date.now()}-assistant`,
+        role: 'assistant',
+        speaker: resolvedSpeaker,
+        content: reply.display_text,
+        speech: reply.speech,
+        emotion: reply.emotion,
+        gesture: reply.gesture,
+        taskAction: reply.taskAction,
+        studyFocus: reply.studyFocus,
+        timestamp: Date.now(),
+      }
+      db.addMessage(userId, assistantMsgObj)
+      return { reply }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 6. To-Do List & Reminder Tasks
+    // ─────────────────────────────────────────────────────────────
+    const isTodoAdd = /\b(?:add\s+to-?do|remind\s+me\s+to|add\s+task|new\s+task)\s*[:,-]?\s*([^\n\r]+)/i.test(cleanMsg)
+    const isTodoList = /\b(?:show\s+(?:my\s+)?tasks|list\s+(?:my\s+)?to-?dos|my\s+to-?dos|view\s+tasks)\b/i.test(cleanMsg)
+
+    if (isTodoAdd || isTodoList) {
+      let taskText = 'Review strategic priorities'
+      if (isTodoAdd) {
+        const m = cleanMsg.match(/\b(?:add\s+to-?do|remind\s+me\s+to|add\s+task|new\s+task)\s*[:,-]?\s*([^\n\r]+)/i)
+        if (m && m[1]) taskText = m[1].trim()
+      }
+
+      const taskAction: TaskActionCard = {
+        type: 'todo',
+        title: isTodoAdd ? `To-Do Added: ${taskText}` : 'Active Priority Targets',
+        subtitle: isTodoAdd ? 'Saved to Holographic Mission Briefing' : 'Current task registry',
+        buttonText: 'View All Tasks',
+        status: 'executed',
+        icon: 'check-square',
+        data: { taskText, action: isTodoAdd ? 'added' : 'list' },
+      }
+
+      const reply: StructuredReply = {
+        speaker: resolvedSpeaker,
+        speech: isTodoAdd
+          ? `Added "${taskText}" to your mission briefing and priority targets.`
+          : 'Displaying your active priorities and task registry.',
+        display_text: isTodoAdd
+          ? `### 📝 Task Registry: Target Logged\n\n**New Priority:** **${taskText}**  \n**Status:** Scheduled in HUD & Mission Briefing  \n\n*Check off items in the Mission Briefing when completed.*`
+          : `### 📝 Priority Targets: Active To-Dos\n\nReview your current objectives in the HUD panel on the left.`,
+        emotion: 'happy',
+        intensity: 0.85,
+        gesture: 'nod',
+        voice_style: { rate: 1.02, pitch: isStark ? 0.95 : 1.0, style: 'cheerful' },
+        taskAction,
+        todoCard: {
+          action: isTodoAdd ? 'added' : 'list',
+          item: isTodoAdd ? { id: `todo-${Date.now()}`, title: taskText, completed: false } : undefined,
+          pendingCount: 1,
+        },
+        actions: [{ name: 'add_todo', arguments: { title: taskText } }],
+      }
+
+      const assistantMsgObj: ChatMessage = {
+        id: `msg-${Date.now()}-assistant`,
+        role: 'assistant',
+        speaker: resolvedSpeaker,
+        content: reply.display_text,
+        speech: reply.speech,
+        emotion: reply.emotion,
+        gesture: reply.gesture,
+        taskAction: reply.taskAction,
+        todoCard: reply.todoCard,
+        timestamp: Date.now(),
+      }
+      db.addMessage(userId, assistantMsgObj)
+      return { reply }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 7. Math & Arithmetic Calculation Tasks
+    // ─────────────────────────────────────────────────────────────
+    const isMathTask =
+      /\b(?:calculate|compute|solve|math|what\s+is)\s+([0-9\s+\-*\/^%().]+)\b/i.test(cleanMsg) ||
+      /^([0-9\s+\-*\/^%().]+)\s*=?\s*$/.test(cleanMsg)
+
+    if (isMathTask) {
+      const match = cleanMsg.match(/(?:calculate|compute|solve|math|what\s+is)?\s*([0-9\s+\-*\/^%().]{3,})/i)
+      if (match && match[1]) {
+        const rawExpr = match[1].trim()
+        const sanitized = rawExpr.replace(/[^0-9+\-*\/().%^]/g, '').trim()
+        if (sanitized && /[0-9]/.test(sanitized)) {
+          try {
+            const pyExp = sanitized.replace(/\^/g, '**')
+            const fn = new Function(`return (${pyExp})`)
+            const res = fn()
+            if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
+              const formattedRes = Math.round(res * 100000) / 100000
+
+              const taskAction: TaskActionCard = {
+                type: 'calculator',
+                title: `${rawExpr} = ${formattedRes}`,
+                subtitle: `Precision Arithmetic Calculation`,
+                buttonText: 'Result Verified',
+                status: 'executed',
+                icon: 'calculator',
+                data: { expression: rawExpr, result: formattedRes },
+              }
+
+              const reply: StructuredReply = {
+                speaker: resolvedSpeaker,
+                speech: `The calculation for ${rawExpr} equals ${formattedRes}.`,
+                display_text: `### 🧮 Quantitative Calculation: Task Executed\n\n**Expression:** \`${rawExpr}\`  \n**Result:** **\`${formattedRes}\`**  \n\n*Calculated with high precision.*`,
+                emotion: 'thinking',
+                intensity: 0.85,
+                gesture: 'nod',
+                voice_style: { rate: 1.02, pitch: isStark ? 0.95 : 1.0, style: 'calm' },
+                taskAction,
+                actions: [{ name: 'calculate', arguments: { expression: rawExpr, result: formattedRes } }],
+              }
+
+              const assistantMsgObj: ChatMessage = {
+                id: `msg-${Date.now()}-assistant`,
+                role: 'assistant',
+                speaker: resolvedSpeaker,
+                content: reply.display_text,
+                speech: reply.speech,
+                emotion: reply.emotion,
+                gesture: reply.gesture,
+                taskAction: reply.taskAction,
+                timestamp: Date.now(),
+              }
+              db.addMessage(userId, assistantMsgObj)
+              return { reply }
+            }
+          } catch {
+            // pass to LLM
+          }
+        }
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 8. Wardrobe & 3D Costume Outfits Tasks
+    // ─────────────────────────────────────────────────────────────
+    const isWardrobeTask =
+      /\b(?:wear|equip|change\s+(?:outfit\s+to|dress\s+to|into)|put\s+on)\s+(saree|red\s+dress|black\s+dress|stealth\s+armor|nanotech\s+armor|silver\s+centurion|swimsuit|bikini|default)/i.test(cleanMsg) ||
+      cleanMsg === 'wear saree' ||
+      cleanMsg === 'wear red dress'
+
+    if (isWardrobeTask) {
+      let skinId = 'ada-red'
+      let outfitName = 'Signature Red Spy Dress'
+      if (/saree/i.test(cleanMsg)) {
+        skinId = 'ada-saree'
+        outfitName = 'Royal Holographic Saree'
+      } else if (/black|trench|stealth/i.test(cleanMsg)) {
+        skinId = isStark ? 'stark-stealth' : 'ada-trench'
+        outfitName = isStark ? 'Stealth Strike Armor' : 'Noir Tactical Trench'
+      } else if (/nanotech|stark|silver/i.test(cleanMsg)) {
+        skinId = 'stark-nano'
+        outfitName = 'Mark Nanotech Armor'
+      }
+
+      const taskAction: TaskActionCard = {
+        type: 'wardrobe',
+        title: `Wardrobe: ${outfitName}`,
+        subtitle: `Equipped ${outfitName} on 3D Stage`,
+        buttonText: 'Equipped',
+        status: 'executed',
+        icon: 'shirt',
+        data: { skinId, outfitName },
+      }
+
+      const reply: StructuredReply = {
+        speaker: resolvedSpeaker,
+        speech: `Transforming avatar outfit to ${outfitName}. Textures and kinematics updated.`,
+        display_text: `### 👗 Holographic Wardrobe: Task Executed\n\n**Outfit:** **${outfitName}**  \n**Status:** 3D Shader Textures Applied  \n\n*Wardrobe telemetry synchronized on stage.*`,
+        emotion: 'excited',
+        intensity: 0.9,
+        gesture: 'celebrate',
+        voice_style: { rate: 1.05, pitch: isMiku ? 1.34 : (isStark ? 0.95 : 1.0), style: 'cheerful' },
+        taskAction,
+        actions: [{ name: 'change_wardrobe', arguments: { skinId, outfitName } }],
+      }
+
+      const assistantMsgObj: ChatMessage = {
+        id: `msg-${Date.now()}-assistant`,
+        role: 'assistant',
+        speaker: resolvedSpeaker,
+        content: reply.display_text,
+        speech: reply.speech,
+        emotion: reply.emotion,
+        gesture: reply.gesture,
+        taskAction: reply.taskAction,
+        timestamp: Date.now(),
+      }
+      db.addMessage(userId, assistantMsgObj)
+      return { reply }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 9. Stage Choreography & 3D Motion Tasks
+    // ─────────────────────────────────────────────────────────────
+    const isDanceTask = /\b(?:dance|cute\s+dance|hip\s+hop|idol\s+dance|sing\s+and\s+dance)\b/i.test(cleanMsg)
+    if (isDanceTask) {
+      const danceName = isMiku ? 'dance_cute_idol' : 'dance_pop_groove'
+      const taskAction: TaskActionCard = {
+        type: 'deliverable',
+        title: 'Stage Choreography: Dance Performance',
+        subtitle: 'Live 3D motion executed on stage',
+        buttonText: 'Performing',
+        status: 'executed',
+        icon: 'activity',
+      }
+
+      const reply: StructuredReply = {
+        speaker: resolvedSpeaker,
+        speech: isMiku ? `Miku da yo~! Taking the stage right now!` : `Choreography protocol engaged. Watch this.`,
+        display_text: `### 💃 Stage Motion: Task Executed\n\n**Action:** Live Choreography (${danceName})\n**Status:** Motion kinematics active on 3D stage.`,
+        emotion: 'excited',
+        intensity: 0.95,
+        gesture: 'celebrate',
+        voice_style: { rate: 1.05, pitch: isMiku ? 1.34 : 1.0, style: 'cheerful' },
+        taskAction,
+        actions: [{ name: 'dance', arguments: { name: danceName } }],
+      }
+
+      const assistantMsgObj: ChatMessage = {
+        id: `msg-${Date.now()}-assistant`,
+        role: 'assistant',
+        speaker: resolvedSpeaker,
+        content: reply.display_text,
+        speech: reply.speech,
+        emotion: reply.emotion,
+        gesture: reply.gesture,
+        taskAction: reply.taskAction,
+        timestamp: Date.now(),
+      }
+      db.addMessage(userId, assistantMsgObj)
+      return { reply }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 10. Direct Website / Universal Platform Launch Tasks
     // ─────────────────────────────────────────────────────────────
     const directWebsites: Record<string, { name: string; url: string }> = {
       github: { name: 'GitHub', url: 'https://github.com' },
@@ -214,6 +610,9 @@ export class TaskExecutionService {
       linkedin: { name: 'LinkedIn', url: 'https://www.linkedin.com' },
       instagram: { name: 'Instagram', url: 'https://www.instagram.com' },
       vercel: { name: 'Vercel', url: 'https://vercel.com' },
+      gmail: { name: 'Gmail', url: 'https://mail.google.com' },
+      tradingview: { name: 'TradingView', url: 'https://www.tradingview.com' },
+      discord: { name: 'Discord', url: 'https://discord.com' },
     }
 
     const openMatch = cleanMsg.match(/^(?:please\s+)?(?:open|launch|visit|go\s+to)\s+([a-zA-Z0-9-._]+(?:\.[a-zA-Z]{2,})?|[a-z]+)/i)
@@ -267,7 +666,7 @@ export class TaskExecutionService {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 4. Character Switch Tasks
+    // 11. Character Switch Tasks
     // ─────────────────────────────────────────────────────────────
     const isCharSwitch =
       /\b(?:switch\s+(?:to|character)|change\s+character\s+to|select\s+character)\s+(ada|miku|mira|tony\s+stark|stark|jarvis|atlas)\b/i.test(cleanMsg) ||
