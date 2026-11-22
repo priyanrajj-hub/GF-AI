@@ -94,7 +94,7 @@ const allPatterns = [...genericPiiPatterns, ...customPatterns];
 let violationCount = 0;
 const violations = [];
 
-const binaryExtensions = ['.vrm', '.glb', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.ico', '.woff', '.woff2', '.ttf', '.mp3', '.wav', '.ogg'];
+const binaryExtensions = ['.vrm', '.glb', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.ico', '.woff', '.woff2', '.ttf', '.mp3', '.wav', '.ogg', '.hdr', '.bin'];
 
 for (const file of trackedFiles) {
   // Exclude binary assets

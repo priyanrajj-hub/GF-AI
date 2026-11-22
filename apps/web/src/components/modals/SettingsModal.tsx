@@ -144,19 +144,19 @@ export const SettingsModal: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => updateSettings({ avatarModelUrl: '/models/ada_fullbody_tripo.glb' })}
+                  onClick={() => updateSettings({ avatarModelUrl: '/models/ada_re4.glb' })}
                   className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    settings.avatarModelUrl === '/models/ada_fullbody_tripo.glb'
+                    settings.avatarModelUrl === '/models/ada_re4.glb'
                       ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200'
                       : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700'
                   }`}
                 >
                   <div className="text-xs font-mono font-semibold flex items-center gap-1.5">
                     <Box className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Tripo 3D Crossbow</span>
+                    <span>Ada Wong (RE4 Remake)</span>
                   </div>
                   <div className="text-[10px] text-slate-400 mt-0.5">
-                    Tactical Full-Body PBR Figurine (.glb)
+                    Authentic RE Engine Model (2K PBR Photoreal)
                   </div>
                 </button>
 

@@ -725,17 +725,17 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
             <>
               <button
                 onClick={() => {
-                  updateSettings({ avatarModelUrl: '/models/ada_fullbody_tripo.glb', renderMode: 'solid' })
-                  VoiceEngine.speak("Resident Evil 4 Remake Adriana Dxim 3D scan loaded. 360-degree orbit enabled.", { rate: 1.02, pitch: 1.04 })
+                  updateSettings({ avatarModelUrl: '/models/ada_re4.glb', renderMode: 'solid' })
+                  VoiceEngine.speak("Resident Evil 4 Remake Ada Wong character model loaded. 360-degree orbit enabled.", { rate: 1.02, pitch: 1.04 })
                 }}
                 className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
-                  settings.avatarModelUrl === '/models/ada_fullbody_tripo.glb'
+                  settings.avatarModelUrl === '/models/ada_re4.glb' || (!settings.avatarModelUrl && activeCharacter === 'ada')
                     ? 'bg-rose-500/25 text-rose-200 border border-rose-400/60 shadow-sm'
                     : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
                 }`}
-                title="Resident Evil 4 Remake 3D Photoreal Model (Adriana Dxim Face Scan & Tactical Harness)"
+                title="Resident Evil 4 Remake 3D Photoreal Model (Authentic Capcom Face & Red Knit Dress)"
               >
-                <span>🍷</span> RE4 3D Scan (Adriana Dxim)
+                <span>🍷</span> RE4 Remake (Photoreal)
               </button>
               <button
                 onClick={() => {
@@ -743,7 +743,7 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                   VoiceEngine.speak("Switching to interactive animated VTuber model.", { rate: 1.02, pitch: 1.04 })
                 }}
                 className={`px-2 py-0.8 rounded-lg transition-all cursor-pointer font-bold shrink-0 flex items-center gap-1 ${
-                  settings.avatarModelUrl !== '/models/ada_fullbody_tripo.glb'
+                  settings.avatarModelUrl === '/models/ada.vrm'
                     ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 shadow-sm'
                     : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
                 }`}

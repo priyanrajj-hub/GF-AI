@@ -316,10 +316,10 @@ export const HoloScene: React.FC = () => {
                   ? '/models/ironman.glb'
                   : activeCharacter === 'mira'
                   ? '/models/miku.vrm'
-                  : settings.avatarModelUrl || '/models/ada_fullbody_tripo.glb'
+                  : settings.avatarModelUrl || '/models/ada_re4.glb'
               }
               hologramColor={activeCharacter === 'mira' ? '#39c5bb' : activeColor}
-              renderMode={activeCharacter === 'atlas' || activeCharacter === 'mira' || (settings.avatarModelUrl || '').includes('tripo') || (!settings.avatarModelUrl && activeCharacter === 'ada') ? 'solid' : (settings.renderMode || 'solid')}
+              renderMode={activeCharacter === 'atlas' || activeCharacter === 'mira' || (settings.avatarModelUrl || '').includes('ada_re4') || (settings.avatarModelUrl || '').includes('tripo') || (!settings.avatarModelUrl && activeCharacter === 'ada') ? 'solid' : (settings.renderMode || 'solid')}
             />
           </group>
 

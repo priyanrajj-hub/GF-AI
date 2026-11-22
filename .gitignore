@@ -100,6 +100,11 @@ local_profile.json
 apps/web/public/models/*.glb
 apps/web/public/models/*.vrm
 !apps/web/public/models/.gitkeep
+!apps/web/public/models/ada_re4.glb
+!apps/web/public/models/ada_fullbody_tripo.glb
+!apps/web/public/models/ironman.glb
+!apps/web/public/models/miku.vrm
+!apps/web/public/models/ada.vrm
 
 # Software Bill of Materials (generated in CI / local build)
 sbom.spdx.json

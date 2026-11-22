@@ -85,9 +85,10 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     // Character boundaries: Tony Stark loads ironman.glb, Ada loads photoreal RE4 scan, Miku loads Tda VRM
     const isAtlas = activeCharacter === 'atlas' || (modelUrl || '').includes('ironman')
     const isMiku = activeCharacter === 'mira' || (modelUrl || '').includes('miku')
-    const isExplicitTripo = (modelUrl || '').includes('tripo') || ((activeCharacter === 'ada' || !activeCharacter) && !(modelUrl || '').includes('ada.vrm'))
+    const isExplicitTripo = (modelUrl || '').includes('tripo')
+    const isAdaRe4 = (modelUrl || '').includes('ada_re4') || ((activeCharacter === 'ada' || !activeCharacter) && !isAtlas && !isMiku && !(modelUrl || '').includes('ada.vrm') && !isExplicitTripo)
 
-    if (isAtlas || isExplicitTripo) {
+    if (isAtlas || isExplicitTripo || isAdaRe4) {
       setVrm(null)
     } else {
       setGlbScene(null)
@@ -95,11 +96,11 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
     const defaultUrl = isAtlas
       ? '/models/ironman.glb'
-      : isExplicitTripo
-      ? '/models/ada_fullbody_tripo.glb'
       : isMiku
       ? '/models/miku.vrm'
-      : '/models/ada_fullbody_tripo.glb'
+      : isExplicitTripo
+      ? '/models/ada_fullbody_tripo.glb'
+      : '/models/ada_re4.glb'
 
     const activeUrl = modelUrl || defaultUrl
 
@@ -228,14 +229,17 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           ;(window as any).__ADA_VRM__ = loadedVrm
           setGlbScene(null)
         } else if (gltf.scene) {
-          // Standard GLB Model (e.g. Iron Man Mark Armor / Tripo3D Ada / Michelle)
+          // Standard GLB Model (e.g. Iron Man Mark Armor / RE4 Remake Ada / Tripo3D Ada)
           const container = new THREE.Group()
           const scene = gltf.scene
           const isIronman = activeUrl.includes('ironman')
           const isTripo = activeUrl.includes('tripo')
+          const isAdaRe4 = activeUrl.includes('ada_re4') || (!isIronman && !isTripo && (activeCharacter === 'ada' || !activeCharacter))
 
           // Rotate to face camera front
           if (isIronman) {
+            scene.rotation.y = 0
+          } else if (isAdaRe4) {
             scene.rotation.y = 0
           }
 
@@ -244,8 +248,8 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           const center = box.getCenter(new THREE.Vector3())
 
           if (size.y > 0) {
-            // Heroic superhero height for Iron Man Mark armor (1.82m)
-            const targetHeight = isIronman ? 1.82 : (isTripo ? 1.72 : 1.62)
+            // Authentic canonical heights: Iron Man Mark armor (1.82m), Ada Wong RE4 Remake (1.73m)
+            const targetHeight = isIronman ? 1.82 : (isAdaRe4 ? 1.73 : (isTripo ? 1.72 : 1.62))
             const scale = targetHeight / size.y
             scene.scale.set(scale, scale, scale)
             // Center horizontally and align model feet with container base (container is at y = -0.72)
@@ -271,26 +275,117 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                     if (m.roughness !== undefined) m.roughness = Math.min(0.35, m.roughness || 0.3)
                   }
                 })
+              } else if (isAdaRe4 && mesh.material) {
+                // High-End PBR Material Tuning for Resident Evil 4 Remake Ada Wong
+                const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+                const upgradedMats = mats.map((m: any) => {
+                  if (!m) return m
+                  const matName = (m.name || '').toLowerCase()
+
+                  // 1. Hair & Eyelashes: Fix transparency depth sorting with crisp alpha testing
+                  if (matName.includes('hair') || matName.includes('eyelash')) {
+                    m.transparent = true
+                    m.alphaTest = 0.35
+                    m.depthWrite = true
+                    m.roughness = 0.60
+                    m.metalness = 0.05
+                    return m
+                  }
+
+                  // 2. Eyes: High gloss wet reflection
+                  if (matName.includes('eye')) {
+                    return new THREE.MeshPhysicalMaterial({
+                      map: m.map || null,
+                      roughness: 0.08,
+                      metalness: 0.0,
+                      clearcoat: 1.0,
+                      clearcoatRoughness: 0.1,
+                      envMapIntensity: 1.6,
+                      transparent: false,
+                      depthWrite: true,
+                    })
+                  }
+
+                  // 3. Knit Turtleneck Dress: Cashmere microfiber fabric sheen
+                  if (matName.includes('knit')) {
+                    return new THREE.MeshPhysicalMaterial({
+                      map: m.map || null,
+                      normalMap: m.normalMap || null,
+                      roughness: 0.85,
+                      metalness: 0.02,
+                      sheen: 0.95,
+                      sheenColor: new THREE.Color('#e0284f'),
+                      sheenRoughness: 0.65,
+                      envMapIntensity: 1.25,
+                      normalScale: new THREE.Vector2(1.2, 1.2),
+                      transparent: false,
+                      depthWrite: true,
+                    })
+                  }
+
+                  // 4. Tactical Leather (Boots, Holster, Harness, Straps): Real leather sheen & clearcoat
+                  if (matName.includes('boot') || matName.includes('holster') || matName.includes('belt') || matName.includes('leather')) {
+                    const isMetal = matName.includes('metal')
+                    if (isMetal) {
+                      return new THREE.MeshStandardMaterial({
+                        map: m.map || null,
+                        normalMap: m.normalMap || null,
+                        roughness: 0.25,
+                        metalness: 0.85,
+                        envMapIntensity: 1.5,
+                      })
+                    }
+                    return new THREE.MeshPhysicalMaterial({
+                      map: m.map || null,
+                      normalMap: m.normalMap || null,
+                      roughness: 0.38,
+                      metalness: 0.12,
+                      clearcoat: 0.42,
+                      clearcoatRoughness: 0.28,
+                      envMapIntensity: 1.4,
+                      transparent: false,
+                      depthWrite: true,
+                    })
+                  }
+
+                  // 5. Photoreal Skin (Face, Neck, Legs, Mouth): Soft subsurface scattering look
+                  if (matName.includes('face') || matName.includes('leg') || matName.includes('skin') || matName.includes('mouth')) {
+                    return new THREE.MeshPhysicalMaterial({
+                      map: m.map || null,
+                      normalMap: m.normalMap || null,
+                      roughness: 0.55,
+                      metalness: 0.0,
+                      clearcoat: 0.15,
+                      clearcoatRoughness: 0.5,
+                      envMapIntensity: 1.25,
+                      normalScale: new THREE.Vector2(0.9, 0.9),
+                      transparent: false,
+                      depthWrite: true,
+                    })
+                  }
+
+                  // Fallback: standard PBR with env reflection
+                  m.transparent = false
+                  m.depthWrite = true
+                  if (m.envMapIntensity !== undefined) m.envMapIntensity = 1.25
+                  return m
+                })
+                mesh.material = Array.isArray(mesh.material) ? upgradedMats : upgradedMats[0]
               } else if (isTripo && mesh.material) {
                 const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
                 const upgradedMats = mats.map((m: any) => {
                   if (!m) return m
-                  // Upgrade to high-end MeshPhysicalMaterial for photoreal AAA game-grade visuals
-                  // Utilizing RTX GPU PBR capabilities with fabric sheen and leather clearcoat
                   const physicalMat = new THREE.MeshPhysicalMaterial({
                     map: m.map || null,
                     normalMap: m.normalMap || null,
                     roughnessMap: m.roughnessMap || null,
                     metalnessMap: m.metalnessMap || null,
                     aoMap: m.aoMap || null,
-                    // Preserve full dynamic range of the model's baked ORM map
                     roughness: 1.0,
                     metalness: 1.0,
-                    // Cashmere / wool knit microfiber fabric sheen for Ada's signature red turtleneck sweater
                     sheen: 0.92,
                     sheenColor: new THREE.Color('#ff2a55'),
                     sheenRoughness: 0.65,
-                    // Realistic clearcoat for tactical leather harness, holster, and boots
                     clearcoat: 0.28,
                     clearcoatRoughness: 0.25,
                     envMapIntensity: 1.5,
