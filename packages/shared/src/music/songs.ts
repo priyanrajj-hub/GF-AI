@@ -538,6 +538,24 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
     ],
   },
   {
+    id: 'song-ada-espionage-briefing',
+    audioUrl: '/audio/ada_tactical_briefing.mp3',
+    title: 'Ada Wong: Espionage Briefing & RE2 Dialogue',
+    artist: 'Ada Wong (Resident Evil 2 / 4 Remake)',
+    genre: 'Espionage Soundtrack / RE2 Voice Dialogue',
+    mood: 'Cool, Calculated & Mysterious',
+    bpm: 100,
+    duration: 12,
+    danceAction: 'dance_pop_groove',
+    lyrics: [
+      { time: 0.0, text: 'Ada Wong.' },
+      { time: 1.5, text: "All right, we'll do this your way for now." },
+      { time: 4.8, text: "Alright, I'm going." },
+      { time: 7.2, text: 'Keep your eyes open and your mind sharp.' },
+      { time: 10.0, text: 'See you around.' },
+    ],
+  },
+  {
     id: 'song-cyber-sunrise',
     audioUrl: 'https://aac.saavncdn.com/987/0c846bfe931e0f136d364c5ef5885372_160.mp4',
     title: 'Cyber Sunrise',
@@ -565,8 +583,13 @@ export function resolveSong(query: string, character?: string): SongSpec {
   const lowerQuery = query.toLowerCase()
   const isMikuActive = character === 'mira' || character === 'miku'
   const isStarkActive = character === 'atlas' || character === 'stark' || character === 'ironman'
+  const isAdaActive = character === 'ada' || character === 'wong'
 
   // 1. Direct Regex Match for Iconic Character Anthems & Voice Tracks
+  if (/ada|wong|espionage|briefing|tactical\s*briefing|resident\s*evil|re2|re4|all\s*right.*your\s*way/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-ada-espionage-briefing')
+    if (s) return { ...s }
+  }
   if (/jarvis|wake\s*up|alarm|morning\s*protocol|iron\s*man|tony\s*stark|acdc|back\s*in\s*black|stark\s*anthem/i.test(lowerQuery)) {
     const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-jarvis-wakeup-alarm')
     if (s) return { ...s }
@@ -609,25 +632,33 @@ export function resolveSong(query: string, character?: string): SongSpec {
   }
 
   const clean = lowerQuery
-    .replace(/^(hey\s+ada|ada|hey\s+miku|miku|hatsune\s+miku|can\s+you|please|sing\s+me|sing\s+a\s+song|sing|play\s+song|play\s+dancing\s+song|play|perform)\s*/gi, '')
+    .replace(/^(hey\s+ada|ada|hey\s+miku|miku|hatsune\s+miku|hey\s+stark|jarvis|can\s+you|please|sing\s+me|sing\s+a\s+song|sing|play\s+a\s+song|play\s+song|play\s+dancing\s+song|play|perform)\s*/gi, '')
     .replace(/[?!.,]/g, '')
     .trim()
 
-  // 2. Exact or partial match in popular catalog
-  if (clean) {
+  const isGenericSongQuery = !clean || /^(a\s+)?(song|music|track|dance)$/i.test(clean)
+
+  // 2. Exact or partial match in popular catalog (for specific titles)
+  if (!isGenericSongQuery) {
     const found = POPULAR_SONG_CATALOG.find((s) => {
       const cleanTitle = s.title.toLowerCase().replace(/\(.*?\)/g, '').trim()
       const titleMatch = s.title.toLowerCase().includes(clean) || clean.includes(cleanTitle) || clean.includes(s.title.toLowerCase())
       const idMatch = s.id.toLowerCase().includes(clean)
       const artistMatch = s.artist && (s.artist.toLowerCase().includes(clean) || clean.includes(s.artist.toLowerCase()))
-      return titleMatch || idMatch || artistMatch
+      const lyricsMatch = s.lyrics && s.lyrics.some(l => l.text.toLowerCase().includes(clean) || clean.includes(l.text.toLowerCase().replace(/[^a-z0-9 ]/g, '')))
+      return titleMatch || idMatch || artistMatch || lyricsMatch
     })
     if (found) {
       return { ...found }
     }
   }
 
-  // 3. High-energy dance, Vocaloid, or Iron Man/Jarvis request without specific title
+  // 3. High-energy dance, Vocaloid, Iron Man/Jarvis, or Ada Wong request without specific title
+  if (isAdaActive || clean.includes('ada') || clean.includes('resident evil') || clean.includes('espionage')) {
+    const adaSong = POPULAR_SONG_CATALOG.find((s) => s.id === 'song-ada-espionage-briefing')
+    if (adaSong) return { ...adaSong }
+  }
+
   if (isMikuActive || clean.includes('miku') || clean.includes('vocaloid') || clean.includes('leek')) {
     const mikuSong = POPULAR_SONG_CATALOG.find((s) => s.id === 'song-miku-world-is-mine')
     if (mikuSong) return { ...mikuSong }

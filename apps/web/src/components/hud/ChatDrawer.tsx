@@ -635,7 +635,7 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
             onClick={() => {
               setActiveCharacter('ada')
               performAction('ada_tactical_poise', { duration: 3.8 })
-              VoiceEngine.speak("Ada Wong here. Tactical intelligence and market disciplines active.", { rate: 1.02, pitch: 1.04 })
+              VoiceEngine.speak("Ada Wong here. Tactical intelligence and market disciplines active.", { rate: 0.98, pitch: 0.95 })
               setActiveFX(['sparkles'])
             }}
             className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 min-w-0 ${

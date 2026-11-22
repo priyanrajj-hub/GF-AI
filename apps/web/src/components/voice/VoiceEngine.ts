@@ -206,7 +206,9 @@ class VoiceEngineManager {
       voiceSetting = isTanglish ? 'en-IN-PrabhatNeural' : 'en-US-ChristopherNeural'
       isElevenLabs = false
     } else if (activeChar === 'ada') {
-      voiceSetting = isTanglish ? 'en-IN-NeerjaExpressiveNeural' : 'en-US-JennyNeural'
+      voiceSetting = isTanglish ? 'en-IN-NeerjaExpressiveNeural' : 'en-US-AriaNeural'
+      if (options.pitch === undefined) options.pitch = 0.95
+      if (options.rate === undefined) options.rate = 0.98
       isElevenLabs = false
     } else {
       const isJapanese = options.language === 'ja' || /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(cleanSpeech)
@@ -435,11 +437,11 @@ class VoiceEngineManager {
 
     // Character-Specific Pitch & Cadence:
     // Atlas (Tony Stark): 0.94 masculine deep resonant pitch
-    // Ada (Ada Wong): 1.04 poised, articulate tutor pitch
+    // Ada (Ada Wong): 0.95 cool, calm, articulate espionage pitch
     // Mira (Hatsune Miku): 1.35 sweet, energetic, high-pitch Vocaloid cyber idol pitch
     const isMiku = activeChar === 'mira'
-    const defaultPitch = isAtlas ? 0.94 : isMiku ? 1.35 : 1.04
-    const defaultRate = isAtlas ? 1.05 : isMiku ? 1.10 : 1.02
+    const defaultPitch = isAtlas ? 0.94 : isMiku ? 1.35 : 0.95
+    const defaultRate = isAtlas ? 1.05 : isMiku ? 1.10 : 0.98
     utterance.pitch = options.pitch ?? defaultPitch
     utterance.rate = options.rate ?? defaultRate
     utterance.volume = store.audioVolume ?? 0.95

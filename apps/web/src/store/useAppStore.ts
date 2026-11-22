@@ -280,7 +280,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         },
       }))
       import('../components/voice/VoiceEngine.js').then(({ VoiceEngine }) => {
-        VoiceEngine.speak("Ada Wong. Keep your eyes open and your mind sharp. Let's see what moves we can make today.", { pitch: 1.0, rate: 1.0 })
+        VoiceEngine.speak("Ada Wong. Keep your eyes open and your mind sharp. Let's see what moves we can make today.", { pitch: 0.95, rate: 0.98 })
       }).catch(() => {})
     }
   },

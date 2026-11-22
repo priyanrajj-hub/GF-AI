@@ -182,22 +182,32 @@ voiceRouter.post(
       // Default high-fidelity human neural voice
       const isAdaVoice =
         (character || '') === 'ada' ||
-        (voice && (voice.toLowerCase().includes('jenny') || voice.toLowerCase().includes('coach')))
+        (voice && (voice.toLowerCase().includes('jenny') || voice.toLowerCase().includes('coach') || voice.toLowerCase().includes('ada') || voice.toLowerCase().includes('aria')))
       const isMikuVoice =
         (character || '') === 'mira' || (character || '') === 'miku' || (voice && voice.toLowerCase().includes('miku'))
 
       let neuralVoice: string
+      let neuralPitch: number | undefined = pitch
+      let neuralRate: number | undefined = rate
+
       if (isTanglish) {
         neuralVoice = 'en-IN-NeerjaExpressiveNeural'
       } else if (isMikuVoice) {
         neuralVoice = language === 'ja' ? 'ja-JP-NanamiNeural' : 'en-US-AnaNeural'
       } else if (isAdaVoice) {
-        neuralVoice = 'en-US-JennyNeural'
+        neuralVoice = 'en-US-AriaNeural'
+        if (neuralPitch === undefined) neuralPitch = 0.95
+        if (neuralRate === undefined) neuralRate = 0.98
       } else {
         neuralVoice = 'en-US-AnaNeural'
       }
 
-      const neuralResult = await NeuralTTSProvider.getInstance().synthesize(text, { voice: neuralVoice, language })
+      const neuralResult = await NeuralTTSProvider.getInstance().synthesize(text, {
+        voice: neuralVoice,
+        language,
+        pitch: neuralPitch,
+        rate: neuralRate,
+      })
       return res.json({
         ...neuralResult,
         provider: 'neural',
