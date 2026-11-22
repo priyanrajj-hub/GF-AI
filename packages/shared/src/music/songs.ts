@@ -633,10 +633,11 @@ export function resolveSong(query: string, character?: string): SongSpec {
 
   const clean = lowerQuery
     .replace(/^(hey\s+ada|ada|hey\s+miku|miku|hatsune\s+miku|hey\s+stark|jarvis|can\s+you|please|sing\s+me|sing\s+a\s+song|sing|play\s+a\s+song|play\s+song|play\s+dancing\s+song|play|perform)\s*/gi, '')
+    .replace(/\b(for|to)\s+(me|us)\b/gi, '')
     .replace(/[?!.,]/g, '')
     .trim()
 
-  const isGenericSongQuery = !clean || /^(a\s+)?(song|music|track|dance)$/i.test(clean)
+  const isGenericSongQuery = !clean || /^(a\s+)?(song|music|track|dance|something|anything|tune)$/i.test(clean)
 
   // 2. Exact or partial match in popular catalog (for specific titles)
   if (!isGenericSongQuery) {
