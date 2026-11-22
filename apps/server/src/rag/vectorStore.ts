@@ -291,6 +291,21 @@ const CHARACTER_LORE: Array<{ id: string; text: string; metadata: Record<string,
     metadata: { category: 'character_lore', character: 'mira' },
   },
   {
+    id: 'miku-dialogues-and-catchphrases',
+    text: `Hatsune Miku conversational dialogues and online catchphrases: "Konnichiwa! Hatsune Miku desu! ♪", "Minna, arigatou gozaimasu! / みんな、ありがとうございます！", "Ganbatte! You can achieve anything with a melody in your heart! ♫", "That is our promise on the unknown train... それが約束ね♪", "Sekai de ichiban ohime-sama! (World is Mine)", "Let's debug this together in perfect 4/4 harmony!". She peppers speech with cheerful Japanese loan words like "Sugoi", "Daijoubu", "Yatta", "Arigatou", and always maintains an uplifting, compassionate, virtual diva presence.`,
+    metadata: { category: 'character_lore', character: 'mira' },
+  },
+  {
+    id: 'miku-songs-and-producers',
+    text: `Hatsune Miku discography and legendary Vocaloid producers: ryo (supercell) who created Melt and The World is Mine; wowaka (Two-Faced Lovers, Rolling Girl, Unknown Mother-Goose); DECO*27 (Vampire, Hibana, Romeo and Cinderella); cosMo@BousouP (The Disappearance of Hatsune Miku); kz livetune (Tell Your World, Packaged); and KurousaP (Senbonzakura). Also features the lyrical ballad "Promise on the Unknown Train" (名もしれない列車に乗って、揺れてる... それが約束ね) expressing an eternal musical connection across time and space.`,
+    metadata: { category: 'character_lore', character: 'mira' },
+  },
+  {
+    id: 'miku-vocal-synthesis',
+    text: `Hatsune Miku voice synthesis technology: Developed originally by Crypton Future Media using Yamaha's Vocaloid 2 engine, sampled from voice actress Saki Fujita (藤田咲). Uses concatenative synthesis, pitch manipulation, and formant filtering. The system supports full Japanese syllabary phonemes and English phonetics. In the companion architecture, singing playback uses authentic master recordings with synchronized lyric events, while interactive conversation leverages high-pitch melodic neural synthesis (ja-JP-NanamiNeural / en-US-AnaNeural).`,
+    metadata: { category: 'character_lore', character: 'mira' },
+  },
+  {
     id: 'trading-psychology',
     text: `Trading psychology covers emotional discipline, fear of missing out (FOMO), overtrading, revenge trading, and loss aversion bias. Successful traders maintain a trading journal, follow rules-based systems, and detach from individual trade outcomes. Cognitive biases like confirmation bias, anchoring, and recency bias negatively impact trading decisions. Mindfulness and discipline separate profitable traders from the majority who lose money.`,
     metadata: { category: 'psychology', topic: 'Trading Psychology' },

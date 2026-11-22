@@ -478,6 +478,46 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
     ],
   },
   {
+    id: 'song-miku-promise-train',
+    audioUrl: '/audio/miku_promise_train.mp3',
+    title: 'Promise on the Unknown Train (名もしれない列車に乗って / それが約束ね)',
+    artist: 'Hatsune Miku (初音ミク) - Official Vocaloid Reference',
+    genre: 'Vocaloid Ballad / Melodic Cyber Idol Pop',
+    mood: 'Melodic, Nostalgic & Heartfelt',
+    bpm: 128,
+    duration: 80,
+    danceAction: 'dance_cute_idol',
+    lyrics: [
+      { time: 0.5, text: '名もしれない列車に乗って揺れてる... 君の街に運ばれていく' },
+      { time: 7.5, text: '昼間、ただ流れる毎日、また繰り返してく' },
+      { time: 14.5, text: 'いつの間にか着いてる、君の街、君の街...' },
+      { time: 19.5, text: '吐き出した息の色が透明になって、春風に飛ばされ、君に笑ってた' },
+      { time: 30.0, text: '僕らの運命と運命が交差して、ここで切れたらずっと戻れない' },
+      { time: 48.0, text: 'ごめんね、ずっと自分勝手で... それでもね、君の笑顔を見ていた' },
+      { time: 59.0, text: '会えるよね、また会えるよね！ また会えたらあの街で遊ぼうね' },
+      { time: 66.5, text: 'いつまでも、私と来てくれる？ あの日は変わらず、一緒にね' },
+      { time: 76.0, text: 'それが約束ね... ✨' },
+    ],
+  },
+  {
+    id: 'song-miku-melt',
+    audioUrl: 'https://archive.org/download/supercell-melt/supercell%20-%20Melt.mp3',
+    title: 'Melt (メルト)',
+    artist: 'Hatsune Miku (初音ミク) feat. ryo (supercell)',
+    genre: 'Legendary Vocaloid Pop / J-Pop Classic',
+    mood: 'Sweet, Romantic and Energetic',
+    bpm: 170,
+    duration: 257,
+    danceAction: 'dance_cute_idol',
+    lyrics: [
+      { time: 0.5, text: 'Asa me ga samete, massaki ni omoiukabu kimi no koto...' },
+      { time: 5.0, text: 'Omoikitte maegami o kitta, doushita no tte kikaretakute!' },
+      { time: 10.0, text: 'Pinku no sukaato, aoi kaadigan... kawaii tte iwaretai no!' },
+      { time: 15.0, text: 'Meruto! Tokechaisou da yo, sukida nante zettai ienai...' },
+      { time: 20.0, text: 'Dakedo meruto! Me mo awaserarenai, koi ni koi nante shinai wa, watashi!' },
+    ],
+  },
+  {
     id: 'song-cyber-sunrise',
     audioUrl: 'https://aac.saavncdn.com/987/0c846bfe931e0f136d364c5ef5885372_160.mp4',
     title: 'Cyber Sunrise',
@@ -532,6 +572,14 @@ export function resolveSong(query: string, character?: string): SongSpec {
   }
   if (/disappearance|vanishing|shoushitsu/i.test(lowerQuery)) {
     const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-disappearance')
+    if (s) return { ...s }
+  }
+  if (/promise|train|namoshirenai|ressha|yakusoku|列車|約束|demo\s+song|reference\s+song/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-promise-train')
+    if (s) return { ...s }
+  }
+  if (/melt|meruto|メルト/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-melt')
     if (s) return { ...s }
   }
 

@@ -52,7 +52,7 @@ export async function searchRealSongTrack(query: string, language?: string): Pro
       /\b(?:tamil|paatu|paattu|podu|paadu)\b/i.test(query)
 
     // Master Match: If query targets Hatsune Miku or legendary Vocaloid anthems, return authentic master directly
-    if (/world\s+is\s+mine|sekai\s+de|miku|vocaloid|ievan|polkka|popipo|senbonzakura|tell\s+your\s+world|disappearance|shoushitsu/i.test(clean)) {
+    if (/world\s+is\s+mine|sekai\s+de|miku|vocaloid|ievan|polkka|popipo|senbonzakura|tell\s+your\s+world|disappearance|shoushitsu|promise|train|namoshirenai|yakusoku|melt|meruto/i.test(clean)) {
       const mikuSong = resolveSong(clean, 'mira')
       if (mikuSong && mikuSong.audioUrl && !mikuSong.id.startsWith('custom-song-')) {
         return {
