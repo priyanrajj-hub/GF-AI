@@ -12,6 +12,7 @@ import { RoamNavigator } from '../../avatar/roam/navigator.js'
 import { AnimeFXLayer } from '../../avatar/engine/fx.js'
 import { VoiceEngine } from '../voice/VoiceEngine.js'
 import { ProceduralAvatarFallback } from './ProceduralAvatarFallback.js'
+import { AdaKinematicsEngine } from '../../avatar/engine/adaKinematicsEngine.js'
 
 interface VrmAvatarProps {
   modelUrl: string
@@ -71,6 +72,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
   // Engines
   const animatorRef = useRef<ProceduralAnimator | null>(null)
   const expressionEngineRef = useRef<ExpressionEngine | null>(null)
+  const adaKinematicsRef = useRef<AdaKinematicsEngine | null>(null)
   const navigatorRef = useMemo(() => new RoamNavigator(new THREE.Vector3(0, 0, 0)), [])
   const [avatarWorldPos, setAvatarWorldPos] = useState<[number, number, number]>([0, -0.72, 0])
   const [clickMarker, setClickMarker] = useState<[number, number, number] | null>(null)
@@ -430,6 +432,14 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
           container.add(scene)
           currentModelRef.current.glb = container
+
+          if (isAdaRe4) {
+            adaKinematicsRef.current = new AdaKinematicsEngine(scene)
+            ;(window as any).__ADA_KINEMATICS__ = adaKinematicsRef.current
+          } else {
+            adaKinematicsRef.current = null
+          }
+
           setGlbScene(container)
           setVrm(null)
           ;(window as any).__GLB_MODEL__ = container
@@ -477,6 +487,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
           })
         } catch { /* ignore */ }
         currentModelRef.current.glb = null
+        adaKinematicsRef.current = null
       }
     }
   }, [activeCharacter, modelUrl, renderMode, hologramColor])
@@ -599,6 +610,9 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       if (animatorRef.current) {
         animatorRef.current.setOverlayAction(poke.action)
       }
+      if (adaKinematicsRef.current) {
+        adaKinematicsRef.current.triggerPoke()
+      }
       useAppStore.getState().setEmotionAndGesture(isStark ? 'motivated' : 'happy', 1.0, poke.action as any)
       useAppStore.getState().addMessage({
         id: `msg-poke-${Date.now()}`,
@@ -682,9 +696,8 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
 
     // Standard GLB positioning & lifelike organic idle movement
     if (glbScene) {
-      const isTripo = (modelUrl || '').includes('tripo') || activeCharacter === 'ada'
       const isIronman = (modelUrl || '').includes('ironman') || activeCharacter === 'atlas'
-      const baseRotation = isTripo || isIronman ? 0 : Math.PI
+      const baseRotation = 0
 
       if (isIronman) {
         glbScene.position.set(currentPos.x, -0.72 + currentPos.y + Math.sin(time * 2.5) * 0.005, currentPos.z)
@@ -693,16 +706,16 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
         if (arcLight) {
           arcLight.intensity = 2.4 + Math.sin(time * 4.0) * 0.4
         }
-      } else if (isTripo) {
-        // Organic lifelike idle breathing, subtle posture shift & micro-sway for Ada Wong
-        const breath = Math.sin(time * 1.8) * 0.005
-        glbScene.position.set(currentPos.x, -0.72 + currentPos.y + breath, currentPos.z)
-        glbScene.rotation.x = Math.sin(time * 1.8) * 0.005
-        glbScene.rotation.y = baseRotation + navigatorRef.currentRotationY + Math.sin(time * 0.6) * 0.012
-        glbScene.rotation.z = Math.cos(time * 0.9) * 0.003
       } else {
-        glbScene.position.set(currentPos.x, -0.72 + currentPos.y + Math.sin(time * 2.0) * 0.003, currentPos.z)
+        // Ada Wong RE4 / GLB: Position updated from RoamNavigator
+        glbScene.position.set(currentPos.x, -0.72 + currentPos.y, currentPos.z)
         glbScene.rotation.y = baseRotation + navigatorRef.currentRotationY
+
+        // Full skeletal kinematics: Natural arms down at sides (no A-pose), contrapposto hip sway, breathing chest, gaze tracking & silky hair physics!
+        if (adaKinematicsRef.current) {
+          adaKinematicsRef.current.setAction(activeAction)
+          adaKinematicsRef.current.update(delta, time, pointer, systemState, roamResult.isMoving)
+        }
       }
 
       setAvatarWorldPos([currentPos.x, -0.72 + currentPos.y, currentPos.z])
@@ -717,6 +730,9 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
     const poke = navigatorRef.handlePoke(activeCharacter || 'ada')
     if (animatorRef.current) {
       animatorRef.current.setOverlayAction(poke.action)
+    }
+    if (adaKinematicsRef.current) {
+      adaKinematicsRef.current.triggerPoke()
     }
     useAppStore.getState().setEmotionAndGesture(isStark ? 'motivated' : 'happy', 1.0, poke.action as any)
     useAppStore.getState().addMessage({
