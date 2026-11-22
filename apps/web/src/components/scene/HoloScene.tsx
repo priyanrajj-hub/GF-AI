@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, Environment } from '@react-three/drei'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { useAppStore, computeTimeOfDay } from '../../store/useAppStore.js'
@@ -12,15 +12,18 @@ import { AmbientSoundEngine } from './AmbientSoundEngine.js'
 import { Cinematic3DEnvironment } from './Cinematic3DEnvironment.js'
 
 function CameraController() {
-  const { settings, avatarPosition } = useAppStore()
+  const { settings, avatarPosition, activeCharacter } = useAppStore()
   const controlsRef = useRef<any>(null)
 
   const isCloseUp = !!settings.closeUpView
+  const isAda = activeCharacter === 'ada' || (!activeCharacter && !settings.avatarModelUrl)
   const adaX = (avatarPosition && avatarPosition[0]) || 0
   const adaY = (avatarPosition && avatarPosition[1] !== undefined) ? avatarPosition[1] : -0.72
   const adaZ = (avatarPosition && avatarPosition[2]) || 0
 
-  const targetY = isCloseUp ? adaY + 1.25 : 0.38
+  // For Ada Wong, frame cinematic portrait view at upper torso / eye height
+  const defaultTargetY = isAda ? 0.42 : 0.38
+  const targetY = isCloseUp ? adaY + 1.25 : defaultTargetY
   const targetX = adaX * 0.5
   const targetZ = adaZ * 0.5
 
@@ -51,15 +54,19 @@ import { SolarTimeService } from '../../services/solarTimeService.js'
 
 /**
  * Dynamically blends 3D Key, Fill, Rim, and Ambient lights to match
- * the continuous Solar Time calculation (Real Sun & Twilight) plus the girl's active Emotion.
+ * the continuous Solar Time calculation (Real Sun & Twilight) plus character signature studio lighting.
  */
 function DynamicLightingRig() {
-  const { solarHour, currentEmotion, activeCharacter } = useAppStore()
+  const { solarHour, currentEmotion, activeCharacter, settings } = useAppStore()
 
   const ambRef = useRef<THREE.AmbientLight>(null)
   const keyRef = useRef<THREE.DirectionalLight>(null)
   const rimRef = useRef<THREE.DirectionalLight>(null)
   const fillRef = useRef<THREE.DirectionalLight>(null)
+
+  const isAda = activeCharacter === 'ada' || (!activeCharacter && !(settings.avatarModelUrl || '').includes('ironman') && !(settings.avatarModelUrl || '').includes('miku'))
+  const isAtlas = activeCharacter === 'atlas'
+  const isMira = activeCharacter === 'mira'
 
   // Real astronomical solar calculation
   const solar = useMemo(() => {
@@ -67,7 +74,65 @@ function DynamicLightingRig() {
   }, [solarHour])
 
   const lightingPreset = useMemo(() => {
-    // High-definition studio baseline: ensures characters are radiant and visible at all times
+    if (isAda) {
+      // Dedicated AAA Character Portrait Studio Lighting for Ada Wong
+      // Natural skin-tones, flattering eye-level key light, soft peach fill, rose-gold rim, zero dark eye-sockets
+      return {
+        ambColor: new THREE.Color('#fdf2f8').lerp(new THREE.Color(solar.ambientColor), 0.25),
+        ambIntensity: 0.95,
+        keyColor: new THREE.Color('#fff7ed'), // Warm pearl-white
+        keyIntensity: 1.85,
+        keyPos: [0.4, 1.55, 2.2] as [number, number, number], // Eye-level key light avoids harsh brow shadows
+        rimColor: new THREE.Color('#fb7185'), // Soft rose-gold rim light
+        rimIntensity: 1.35,
+        rimPos: [-1.6, 1.8, -1.8] as [number, number, number],
+        fillColor: new THREE.Color('#fed7aa'), // Soft warm peach fill light
+        fillIntensity: 0.90,
+        fillPos: [-1.4, 1.1, 1.8] as [number, number, number],
+        floorGlowColor: '#e11d48', // Crimson floor emitter
+        floorGlowIntensity: 1.25,
+        eyeSpotIntensity: 0.80,
+      }
+    }
+    if (isAtlas) {
+      // Stark Tech High-Contrast Metallic Arc Lighting
+      return {
+        ambColor: new THREE.Color('#0f172a'),
+        ambIntensity: 0.70,
+        keyColor: new THREE.Color('#ffffff'),
+        keyIntensity: 1.65,
+        keyPos: [0.8, 2.2, 2.8] as [number, number, number],
+        rimColor: new THREE.Color('#00f3ff'),
+        rimIntensity: 1.40,
+        rimPos: [-2.0, 2.2, -2.0] as [number, number, number],
+        fillColor: new THREE.Color('#38bdf8'),
+        fillIntensity: 0.75,
+        fillPos: [-1.8, 1.2, 2.0] as [number, number, number],
+        floorGlowColor: '#00f3ff',
+        floorGlowIntensity: 1.40,
+        eyeSpotIntensity: 0.95,
+      }
+    }
+    if (isMira) {
+      // Vibrant Pop Idol Stage Lighting for Hatsune Miku
+      return {
+        ambColor: new THREE.Color('#e0f2fe'),
+        ambIntensity: 0.85,
+        keyColor: new THREE.Color('#ffffff'),
+        keyIntensity: 1.50,
+        keyPos: [0.5, 2.0, 3.0] as [number, number, number],
+        rimColor: new THREE.Color('#39c5bb'),
+        rimIntensity: 1.30,
+        rimPos: [-1.8, 2.0, -2.0] as [number, number, number],
+        fillColor: new THREE.Color('#fbcfe8'),
+        fillIntensity: 0.80,
+        fillPos: [-1.8, 1.2, 2.2] as [number, number, number],
+        floorGlowColor: '#39c5bb',
+        floorGlowIntensity: 1.30,
+        eyeSpotIntensity: 0.95,
+      }
+    }
+    // High-definition studio baseline for generic / custom models
     const baseAmbIntensity = Math.max(0.75, solar.ambientIntensity * 1.8)
     const baseKeyIntensity = Math.max(1.35, solar.sunIntensity * 1.25)
     return {
@@ -78,40 +143,18 @@ function DynamicLightingRig() {
       keyPos: [0.6, 2.4, 3.2] as [number, number, number],
       rimColor: new THREE.Color(solar.rimColor).lerp(new THREE.Color('#ffffff'), 0.35),
       rimIntensity: Math.max(1.15, solar.rimIntensity),
+      rimPos: [-1.8, 2.2, -2.2] as [number, number, number],
       fillColor: new THREE.Color(solar.skyMid).lerp(new THREE.Color('#f0f9ff'), 0.55),
       fillIntensity: Math.max(0.70, solar.ambientIntensity * 1.6),
+      fillPos: [-2.0, 1.2, 2.2] as [number, number, number],
+      floorGlowColor: '#00f3ff',
+      floorGlowIntensity: 1.20,
+      eyeSpotIntensity: 0.95,
     }
-  }, [solar])
-
-  // Character-specific signature studio lighting
-  const emotionColor = useMemo(() => {
-    if (activeCharacter === 'atlas') {
-      return new THREE.Color('#00f3ff') // Electric Arc Cyan
-    }
-    if (activeCharacter === 'mira') {
-      return new THREE.Color('#fb7185') // Vibrant Rose
-    }
-    switch (currentEmotion) {
-      case 'happy':
-        return new THREE.Color('#ffb703')
-      case 'playful':
-        return new THREE.Color('#ff007f')
-      case 'thinking':
-        return new THREE.Color('#00f3ff')
-      case 'concerned':
-        return new THREE.Color('#c084fc')
-      case 'motivated':
-        return new THREE.Color('#c81e2f')
-      case 'sad':
-        return new THREE.Color('#38bdf8')
-      case 'calm':
-      default:
-        return new THREE.Color('#00f3ff')
-    }
-  }, [currentEmotion, activeCharacter])
+  }, [solar, isAda, isAtlas, isMira])
 
   useFrame((_, delta) => {
-    const lerpSpeed = delta * 3.0
+    const lerpSpeed = delta * 3.5
 
     if (ambRef.current) {
       ambRef.current.color.lerp(lightingPreset.ambColor, lerpSpeed)
@@ -127,33 +170,38 @@ function DynamicLightingRig() {
     }
 
     if (rimRef.current) {
-      const targetRim = lightingPreset.rimColor.clone().lerp(emotionColor, 0.40)
-      rimRef.current.color.lerp(targetRim, lerpSpeed)
+      rimRef.current.color.lerp(lightingPreset.rimColor, lerpSpeed)
       rimRef.current.intensity = THREE.MathUtils.lerp(rimRef.current.intensity, lightingPreset.rimIntensity, lerpSpeed)
+      rimRef.current.position.x = THREE.MathUtils.lerp(rimRef.current.position.x, lightingPreset.rimPos[0], lerpSpeed)
+      rimRef.current.position.y = THREE.MathUtils.lerp(rimRef.current.position.y, lightingPreset.rimPos[1], lerpSpeed)
+      rimRef.current.position.z = THREE.MathUtils.lerp(rimRef.current.position.z, lightingPreset.rimPos[2], lerpSpeed)
     }
 
     if (fillRef.current) {
       fillRef.current.color.lerp(lightingPreset.fillColor, lerpSpeed)
       fillRef.current.intensity = THREE.MathUtils.lerp(fillRef.current.intensity, lightingPreset.fillIntensity, lerpSpeed)
+      fillRef.current.position.x = THREE.MathUtils.lerp(fillRef.current.position.x, lightingPreset.fillPos[0], lerpSpeed)
+      fillRef.current.position.y = THREE.MathUtils.lerp(fillRef.current.position.y, lightingPreset.fillPos[1], lerpSpeed)
+      fillRef.current.position.z = THREE.MathUtils.lerp(fillRef.current.position.z, lightingPreset.fillPos[2], lerpSpeed)
     }
   })
 
   return (
     <>
-      <ambientLight ref={ambRef} intensity={0.75} color="#cbd5e1" />
+      <ambientLight ref={ambRef} intensity={0.95} color="#cbd5e1" />
       {/* Front Studio Key Light: perfectly illuminates face, chest, and costume */}
-      <directionalLight ref={keyRef} position={[0.6, 2.4, 3.2]} intensity={1.35} color="#ffffff" castShadow />
+      <directionalLight ref={keyRef} position={[0.4, 1.55, 2.2]} intensity={1.85} color="#ffffff" castShadow />
       {/* Back Hair & Shoulder Rim Light: creates separation from dark space */}
-      <directionalLight ref={rimRef} position={[-1.8, 2.2, -2.2]} intensity={1.15} color="#00f3ff" />
+      <directionalLight ref={rimRef} position={[-1.6, 1.8, -1.8]} intensity={1.35} color="#fb7185" />
       {/* Soft Fill Light: clears shadows on side and waist */}
-      <directionalLight ref={fillRef} position={[-2.0, 1.2, 2.2]} intensity={0.70} color="#f0f9ff" />
-      {/* Dedicated Face Portrait Spotlight for razor-sharp anime eye & facial feature clarity */}
-      <spotLight position={[0, 1.5, 2.6]} intensity={0.95} color="#ffffff" angle={0.55} penumbra={0.7} />
+      <directionalLight ref={fillRef} position={[-1.4, 1.1, 1.8]} intensity={0.90} color="#fed7aa" />
+      {/* Dedicated Face Portrait Spotlight for razor-sharp eye & facial feature clarity */}
+      <spotLight position={isAda ? [0, 1.58, 1.4] : [0, 1.5, 2.6]} intensity={lightingPreset.eyeSpotIntensity} color="#ffffff" angle={0.35} penumbra={0.8} />
       {/* Holographic Emitter Floor Glow */}
       <pointLight
         position={[0, -0.65, 0.35]}
-        intensity={1.2}
-        color={activeCharacter === 'atlas' ? '#00f3ff' : activeCharacter === 'mira' ? '#fb7185' : '#00f3ff'}
+        intensity={lightingPreset.floorGlowIntensity}
+        color={lightingPreset.floorGlowColor}
         distance={3.2}
       />
     </>
@@ -184,7 +232,13 @@ export const HoloScene: React.FC = () => {
     sad: '#3b82f6', // Melancholy blue
   }
 
-  const activeColor = settings.hologramColor || emotionColorMap[currentEmotion] || '#00f3ff'
+  const activeColor = activeCharacter === 'mira'
+    ? '#39c5bb'
+    : activeCharacter === 'atlas'
+    ? '#00f3ff'
+    : activeCharacter === 'ada'
+    ? '#ff2a55'
+    : (settings.hologramColor || emotionColorMap[currentEmotion] || '#00f3ff')
 
   // Time-of-day periodic checker (ticks every 30s when in auto mode)
   useEffect(() => {
@@ -227,7 +281,10 @@ export const HoloScene: React.FC = () => {
         {/* Dynamic Multi-Stop Sky & Atmosphere Backdrop */}
         <ScenicEnvironmentBackdrop phase={timeOfDayPhase} emotionColor={activeColor} />
 
-        {/* Time-of-Day & Emotion Blended Lighting Rig */}
+        {/* Photoreal Image-Based Lighting (IBL) with Pre-filtered Environment Reflections */}
+        <Environment files="/environments/city.hdr" environmentIntensity={0.85} />
+
+        {/* Time-of-Day & Character Studio Blended Lighting Rig */}
         <DynamicLightingRig />
 
         <Suspense fallback={null}>
@@ -235,7 +292,7 @@ export const HoloScene: React.FC = () => {
           <Cinematic3DEnvironment />
 
           <group position={[0, 0, 0]}>
-            {/* 3D Holo Home Pad Base with Emotion Reaction */}
+            {/* 3D Holo Home Pad Base with Character Theme Glow */}
             <ProjectorBase color={activeColor} />
 
             {/* Floating Atmosphere & Emotion Particles */}

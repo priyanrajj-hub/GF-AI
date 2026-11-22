@@ -273,15 +273,35 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                 })
               } else if (isTripo && mesh.material) {
                 const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-                mats.forEach((m: any) => {
-                  if (m) {
-                    m.transparent = false
-                    m.opacity = 1.0
-                    m.depthWrite = true
-                    if (m.roughness !== undefined) m.roughness = 0.42
-                    if (m.metalness !== undefined) m.metalness = 0.08
-                  }
+                const upgradedMats = mats.map((m: any) => {
+                  if (!m) return m
+                  // Upgrade to high-end MeshPhysicalMaterial for photoreal AAA game-grade visuals
+                  // Utilizing RTX GPU PBR capabilities with fabric sheen and leather clearcoat
+                  const physicalMat = new THREE.MeshPhysicalMaterial({
+                    map: m.map || null,
+                    normalMap: m.normalMap || null,
+                    roughnessMap: m.roughnessMap || null,
+                    metalnessMap: m.metalnessMap || null,
+                    aoMap: m.aoMap || null,
+                    // Preserve full dynamic range of the model's baked ORM map
+                    roughness: 1.0,
+                    metalness: 1.0,
+                    // Cashmere / wool knit microfiber fabric sheen for Ada's signature red turtleneck sweater
+                    sheen: 0.92,
+                    sheenColor: new THREE.Color('#ff2a55'),
+                    sheenRoughness: 0.65,
+                    // Realistic clearcoat for tactical leather harness, holster, and boots
+                    clearcoat: 0.28,
+                    clearcoatRoughness: 0.25,
+                    envMapIntensity: 1.5,
+                    normalScale: new THREE.Vector2(1.5, 1.5),
+                    transparent: false,
+                    opacity: 1.0,
+                    depthWrite: true,
+                  })
+                  return physicalMat
                 })
+                mesh.material = Array.isArray(mesh.material) ? upgradedMats : upgradedMats[0]
               }
             }
           })
@@ -546,23 +566,29 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       vrm.update(delta)
     }
 
-    // Standard GLB fallback positioning & idle breathing
+    // Standard GLB positioning & lifelike organic idle movement
     if (glbScene) {
-      glbScene.position.set(currentPos.x, -0.72 + currentPos.y, currentPos.z)
       const isTripo = (modelUrl || '').includes('tripo') || activeCharacter === 'ada'
       const isIronman = (modelUrl || '').includes('ironman') || activeCharacter === 'atlas'
       const baseRotation = isTripo || isIronman ? 0 : Math.PI
-      glbScene.rotation.y = baseRotation + navigatorRef.currentRotationY
 
-      // Repulsor hover pulse for Iron Man
       if (isIronman) {
-        glbScene.position.y += Math.sin(time * 2.5) * 0.005
+        glbScene.position.set(currentPos.x, -0.72 + currentPos.y + Math.sin(time * 2.5) * 0.005, currentPos.z)
+        glbScene.rotation.y = baseRotation + navigatorRef.currentRotationY
         const arcLight = glbScene.getObjectByName('__IRONMAN_ARC_LIGHT__') as THREE.PointLight | undefined
         if (arcLight) {
           arcLight.intensity = 2.4 + Math.sin(time * 4.0) * 0.4
         }
+      } else if (isTripo) {
+        // Organic lifelike idle breathing, subtle posture shift & micro-sway for Ada Wong
+        const breath = Math.sin(time * 1.8) * 0.005
+        glbScene.position.set(currentPos.x, -0.72 + currentPos.y + breath, currentPos.z)
+        glbScene.rotation.x = Math.sin(time * 1.8) * 0.005
+        glbScene.rotation.y = baseRotation + navigatorRef.currentRotationY + Math.sin(time * 0.6) * 0.012
+        glbScene.rotation.z = Math.cos(time * 0.9) * 0.003
       } else {
-        glbScene.position.y += Math.sin(time * 2.0) * 0.003
+        glbScene.position.set(currentPos.x, -0.72 + currentPos.y + Math.sin(time * 2.0) * 0.003, currentPos.z)
+        glbScene.rotation.y = baseRotation + navigatorRef.currentRotationY
       }
 
       setAvatarWorldPos([currentPos.x, -0.72 + currentPos.y, currentPos.z])
