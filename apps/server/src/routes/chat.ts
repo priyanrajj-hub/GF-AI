@@ -21,6 +21,7 @@ import { buildRagContext } from '../rag/ragService.js'
 import { handleDirectActions } from '../services/chatDirectActions.js'
 import { resolveMarketContext } from '../services/chatMarketContext.js'
 import { resolveGeneralContext } from '../services/chatGeneralContext.js'
+import { TaskExecutionService } from '../services/taskExecutionService.js'
 
 export const chatRouter = Router()
 const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } })
@@ -258,26 +259,33 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
       const ytTextMatch = (reply.display_text || '').match(/Action:\s*Opening\s*YouTube\s*(?:Target:)?\s*([^\n\r*]+)/i)
       const ytQueryMatch = ytTextMatch ? ytTextMatch[1].replace(/[*_#]/g, '').trim() : null
 
-      if (ytQueryMatch || /\b(?:open\s+youtube|youtube\.com|play\s+.*on\s+youtube)\b/i.test(message)) {
-        const query = ytQueryMatch || message.replace(/\b(?:open\s+youtube|on\s+youtube|play|watch)\b/gi, '').trim() || (normalizedChar === 'mira' ? 'Hatsune Miku' : normalizedChar === 'atlas' ? 'Tony Stark Iron Man' : 'Resident Evil Ada Wong')
+      if (ytQueryMatch || /\b(?:open\s+youtube|youtube(?:\.com)?|play\s+.*on\s+youtube|play\s+.*(?:video|vedio))\b/i.test(message)) {
+        const query = ytQueryMatch || message.replace(/\b(?:open\s+youtube|on\s+youtube|play|watch|vedio)\b/gi, '').trim() || (normalizedChar === 'mira' ? 'Hatsune Miku' : normalizedChar === 'atlas' ? 'Tony Stark Iron Man' : 'Resident Evil Ada Wong')
+        const resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(query)
         const encoded = encodeURIComponent(query)
-        const url = `https://www.youtube.com/results?search_query=${encoded}`
-        const embedUrl = `https://www.youtube-nocookie.com/embed?listType=search&list=${encoded}&autoplay=1`
+        const url = resolvedVideo ? resolvedVideo.videoUrl : `https://www.youtube.com/results?search_query=${encoded}`
+        const embedUrl = resolvedVideo ? resolvedVideo.embedUrl : `https://www.youtube-nocookie.com/embed?listType=search&list=${encoded}&autoplay=1`
+        const displayTitle = resolvedVideo ? resolvedVideo.title : `YouTube: ${query}`
+
         reply.taskAction = {
           type: 'youtube',
-          title: `YouTube: ${query}`,
-          subtitle: `Video Stream`,
+          title: displayTitle,
+          subtitle: resolvedVideo ? `Now Streaming: ${displayTitle}` : `Video Stream`,
           url,
           embedUrl,
           query,
           buttonText: 'Open & Play on YouTube',
           status: 'ready',
           icon: 'youtube',
+          data: {
+            videoId: resolvedVideo?.videoId,
+            directPlay: !!resolvedVideo,
+          },
         }
         if (!reply.actions) reply.actions = []
         reply.actions.push({
           name: 'open_youtube',
-          arguments: { query, url, embedUrl },
+          arguments: { query, title: displayTitle, videoId: resolvedVideo?.videoId, url, embedUrl },
         })
       } else {
         const searchMatch = (reply.display_text || '').match(/Action:\s*(?:Web\s*Search|Search|Google)\s*(?:Target:)?\s*([^\n\r*]+)/i)

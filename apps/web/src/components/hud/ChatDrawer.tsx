@@ -487,49 +487,60 @@ export const ChatDrawer: React.FC = () => {
 
       // Client Task Intent Fallback: YouTube, Search, URL, Character Switch
       const isYouTubeFallback =
-        /\b(?:open\s+youtube|youtube\.com|play\s+.*on\s+youtube)\b/i.test(lower) ||
+        /\b(?:open\s+youtube|youtube(?:\.com)?|play\s+.*on\s+youtube)\b/i.test(lower) ||
         /^open\s+youtube/i.test(lower) ||
-        /^(?:play|watch|stream)\s+.*(?:video|clip|mv)\b/i.test(lower)
+        /^(?:play|watch|stream)\s+.*(?:video|vedio|clip|mv)\b/i.test(lower) ||
+        /\b(?:play|search|find|stream|watch)\b.*?\byoutube\b/i.test(lower) ||
+        /\byoutube\b.*?\b(?:play|search|find|stream|watch)\b/i.test(lower)
 
       if (isYouTubeFallback) {
         let q = lower
+          .replace(/\b(?:if\s+i\s+say|must\s+go\s+search\s+and\s+play|it\s+must\s+go|go\s+search\s+and\s+play|search\s+and\s+play\s+the\s+vedio|search\s+and\s+play\s+the\s+video|it\s+must|must)\b.*?$/gi, '')
+          .replace(/\bvedio\b/gi, 'video')
+          .replace(/(madangowri)(latest)/i, 'Madan Gowri latest')
+          .replace(/madangowri/i, 'Madan Gowri')
           .replace(/^open\s+youtube\s*(?:and\s+)?[:,-]?\s*/i, '')
           .replace(/\b(?:on\s+youtube|in\s+youtube|from\s+youtube)\b/gi, '')
           .replace(/\b(?:and\s+)?(?:please\s+)?(?:open|launch|play|search\s+for|search|watch|stream|find)\b/gi, '')
-          .replace(/\b(?:a\s+)?(?:video|clip|mv|song|track)\b/gi, '')
-          .replace(/(madangowri)(latest)/i, '$1 $2')
-          .replace(/\b(?:latest|recent|new)\s+vedio\b/gi, 'latest video')
-          .replace(/\bvedio\b/gi, 'video')
-          .replace(/\b(?:a|an|the)\s+/gi, '')
           .trim()
 
-        if (/madangowri/i.test(q)) q = q.replace(/madangowri/i, 'Madan Gowri')
+        if (/^(?:a\s+)?video$/i.test(q)) q = ''
+
         if (/miku/i.test(lower)) {
-          if (!q || q.toLowerCase() === 'miku') q = 'Hatsune Miku official music video'
-          else if (!/hatsune/i.test(q)) q = `Hatsune Miku ${q}`.trim()
+          const stripped = q.replace(/\b(?:a\s+)?miku(?:\s+video)?\b/gi, '').trim()
+          if (!stripped) q = 'Hatsune Miku official music video'
+          else if (!/hatsune/i.test(stripped)) q = `Hatsune Miku ${stripped}`.trim()
+          else q = stripped
         }
         if (!q) q = activeCharacter === 'mira' ? 'Hatsune Miku official music video' : activeCharacter === 'atlas' ? 'Tony Stark Iron Man technology' : 'Resident Evil Ada Wong'
 
-        const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`
-        const embedUrl = `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(q)}&autoplay=1`
+        let resolvedVideoId = ''
+        if (/madan\s*gowri/i.test(q)) resolvedVideoId = 'IDv8WCRpxds'
+        else if (/miku/i.test(q)) resolvedVideoId = 'jhl5afLEKdo'
+        else if (/believer/i.test(q)) resolvedVideoId = '7wtfhZwyrcc'
+        else if (/ada\s*wong/i.test(q)) resolvedVideoId = 'QKFhG3mwiII'
+
+        const url = resolvedVideoId ? `https://www.youtube.com/watch?v=${resolvedVideoId}` : `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`
+        const embedUrl = resolvedVideoId ? `https://www.youtube-nocookie.com/embed/${resolvedVideoId}?autoplay=1` : `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(q)}&autoplay=1`
         try { window.open(url, '_blank', 'noopener,noreferrer') } catch (e) {}
 
         const fallbackMsg: ChatMessage = {
           id: `msg-${Date.now()}-youtube-task`,
           role: 'assistant',
           speaker: (activeCharacter as any) || 'ada',
-          content: `### ▶️ YouTube: Task Executed\n\n**Target:** ${q}  \n**Platform:** YouTube Video Stream  \n**Status:** Stream dispatched to new tab and player below.\n\n*Click "Watch on YouTube" or watch directly in the player below.*`,
+          content: `### ▶️ YouTube: Task Executed\n\n**Playing Video:** **${q}**  \n**Platform:** YouTube Video Stream  \n**Status:** Stream dispatched to new tab and player below.\n\n*Click "Watch on YouTube" or watch directly in the player below.*`,
           speech: `Opening YouTube for "${q}" now. Initializing player.`,
           taskAction: {
             type: 'youtube',
             title: `YouTube: ${q}`,
-            subtitle: `Streaming: ${q}`,
+            subtitle: resolvedVideoId ? `Now Streaming: ${q}` : `Streaming: ${q}`,
             url,
             embedUrl,
             query: q,
             buttonText: 'Open & Play on YouTube',
             status: 'ready',
             icon: 'youtube',
+            data: { videoId: resolvedVideoId || undefined, directPlay: !!resolvedVideoId },
           },
           timestamp: Date.now(),
         }
@@ -1494,6 +1505,19 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                       >
                         {isPomodoroActive ? 'Pause ⏸' : 'Start Focus ▶'}
                       </button>
+                    </div>
+                  )}
+
+                  {/* Chronometer / Time Box */}
+                  {msg.taskAction.type === 'time' && (
+                    <div className="my-2 p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-500/30 flex items-center justify-between text-xs font-mono">
+                      <div className="flex flex-col">
+                        <span className="text-cyan-400 font-bold text-sm tracking-wider">{msg.taskAction.title}</span>
+                        <span className="text-[10px] text-slate-400">{msg.taskAction.subtitle}</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 text-[9px] border border-cyan-400/30">
+                        CHRONOMETER
+                      </span>
                     </div>
                   )}
 

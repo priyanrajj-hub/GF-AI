@@ -47,6 +47,7 @@ export const TaskActionCardSchema = z.object({
     'calculator',
     'weather',
     'maps',
+    'time',
     'deliverable',
   ]),
   title: z.string(),

@@ -22,7 +22,7 @@ export async function handleDirectActions(
   character: string = 'ada'
 ): Promise<DirectActionResult | null> {
   // 0. Explicit Task Execution (YouTube, Search, Open URL, Switch Character, Web Tasks)
-  const taskResult = TaskExecutionService.handleTaskIntent(userId, message, language, cleanMsg, character)
+  const taskResult = await TaskExecutionService.handleTaskIntent(userId, message, language, cleanMsg, character)
   if (taskResult) {
     return taskResult
   }

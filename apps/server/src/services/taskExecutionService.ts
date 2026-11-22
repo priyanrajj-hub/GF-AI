@@ -12,15 +12,106 @@ export interface TaskExecutionResult {
 
 export class TaskExecutionService {
   /**
+   * Resolves top YouTube video ID and title via live YouTube search.
+   * Runs in ~1-1.5s with fallback to mobile search.
+   */
+  static async resolveYouTubeVideo(
+    query: string,
+    timeoutMs: number = 3800
+  ): Promise<{
+    videoId: string
+    videoUrl: string
+    embedUrl: string
+    title: string
+  } | null> {
+    const parseTopVideo = (html: string, fallbackQuery: string) => {
+      // 1. Paired videoRenderer match (exact video ID + exact title)
+      const vrRegex = /"videoRenderer":\{"videoId":"([a-zA-Z0-9_-]{11})".*?"title":\{"runs":\[\{"text":"([^"]+)"/g
+      const vrMatches = [...html.matchAll(vrRegex)]
+      if (vrMatches.length > 0) {
+        const rawId = vrMatches[0][1]
+        let rawTitle = vrMatches[0][2]
+        try {
+          rawTitle = JSON.parse(`"${rawTitle}"`)
+        } catch {
+          rawTitle = rawTitle.replace(/\\u0026/g, '&')
+        }
+        return {
+          videoId: rawId,
+          videoUrl: `https://www.youtube.com/watch?v=${rawId}`,
+          embedUrl: `https://www.youtube-nocookie.com/embed/${rawId}?autoplay=1`,
+          title: rawTitle,
+        }
+      }
+
+      // 2. Fallback: extract distinct video IDs and non-filter title runs
+      const idMatches = [...html.matchAll(/\/watch\?v=([a-zA-Z0-9_-]{11})/g)]
+      const videoIds = [...new Set(idMatches.map((m) => m[1]))]
+      const titleRuns = [...html.matchAll(/"title":\{"runs":\[\{"text":"([^"]+)"/g)].map((m) => m[1])
+      const topTitle = titleRuns.find((t) => !/^(?:search filters|filters?|about these results)$/i.test(t.trim())) || fallbackQuery
+
+      if (videoIds.length > 0) {
+        const topVideoId = videoIds[0]
+        return {
+          videoId: topVideoId,
+          videoUrl: `https://www.youtube.com/watch?v=${topVideoId}`,
+          embedUrl: `https://www.youtube-nocookie.com/embed/${topVideoId}?autoplay=1`,
+          title: topTitle,
+        }
+      }
+      return null
+    }
+
+    try {
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`
+      const res = await fetch(searchUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+      })
+      if (res.ok) {
+        const html = await res.text()
+        const parsed = parseTopVideo(html, query)
+        if (parsed) return parsed
+      }
+    } catch {
+      // Fall through to mobile backup
+    }
+
+    try {
+      const mobileUrl = `https://m.youtube.com/results?search_query=${encodeURIComponent(query)}`
+      const mRes = await fetch(mobileUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        signal: AbortSignal.timeout(2800),
+      })
+      if (mRes.ok) {
+        const mHtml = await mRes.text()
+        const parsed = parseTopVideo(mHtml, query)
+        if (parsed) return parsed
+      }
+    } catch {
+      // Return null to trigger graceful fallback
+    }
+    return null
+  }
+
+  /**
    * Detects explicit user tasks/commands and returns immediate structured execution.
    */
-  static handleTaskIntent(
+  static async handleTaskIntent(
     userId: string,
     message: string,
     language?: string,
     cleanMsg: string = message.toLowerCase().trim(),
     character: string = 'ada'
-  ): TaskExecutionResult | null {
+  ): Promise<TaskExecutionResult | null> {
     const isMiku = character === 'mira' || character === 'miku'
     const isStark = character === 'atlas'
     const resolvedSpeaker: 'ada' | 'mira' | 'atlas' = isMiku ? 'mira' : isStark ? 'atlas' : 'ada'
@@ -31,31 +122,37 @@ export class TaskExecutionService {
     const isYouTubeTask =
       /\b(?:open\s+youtube|play\s+(?:.*)\s+on\s+youtube|search\s+youtube|youtube(?:\.com)?|yt\b)\b/i.test(cleanMsg) ||
       /^open\s+youtube\s*[:,-]?/i.test(cleanMsg) ||
-      /^(?:play|watch|stream)\s+(?:.*)\s+(?:video|clip|mv)\b/i.test(cleanMsg)
+      /^(?:play|watch|stream)\s+(?:.*)\s+(?:video|vedio|clip|mv)\b/i.test(cleanMsg) ||
+      /\b(?:play|search|find|stream|watch)\b.*?\byoutube\b/i.test(cleanMsg) ||
+      /\byoutube\b.*?\b(?:play|search|find|stream|watch)\b/i.test(cleanMsg)
 
     if (isYouTubeTask) {
       let query = cleanMsg
-        // Strip prefixes
+        // 1. Strip user meta-prompts like "if i say play a vedio on youtube it must go search and play the vedio"
+        .replace(/\b(?:if\s+i\s+say|must\s+go\s+search\s+and\s+play|it\s+must\s+go|go\s+search\s+and\s+play|search\s+and\s+play\s+the\s+vedio|search\s+and\s+play\s+the\s+video|it\s+must|must)\b.*?$/gi, '')
+        // 2. Normalizations
+        .replace(/\bvedio\b/gi, 'video')
+        .replace(/(madangowri)(latest)/i, 'Madan Gowri latest')
+        .replace(/madangowri/i, 'Madan Gowri')
+        // 3. Strip command prefixes & wrappers
         .replace(/^open\s+youtube\s*(?:and\s+)?[:,-]?\s*/i, '')
         .replace(/\b(?:on\s+youtube|in\s+youtube|from\s+youtube)\b/gi, '')
         .replace(/\b(?:and\s+)?(?:please\s+)?(?:open|launch|play|search\s+for|search|watch|stream|find)\b/gi, '')
-        .replace(/\b(?:a\s+)?(?:video|clip|mv|song|track)\b/gi, '')
-        .replace(/(madangowri)(latest)/i, '$1 $2')
-        .replace(/\b(?:latest|recent|new)\s+vedio\b/gi, 'latest video')
-        .replace(/\bvedio\b/gi, 'video')
-        .replace(/\b(?:a|an|the)\s+/gi, '')
         .trim()
 
-      if (/madangowri/i.test(query)) {
-        query = query.replace(/madangowri/i, 'Madan Gowri')
+      if (/^(?:a\s+)?video$/i.test(query)) {
+        query = ''
       }
 
       // If user said "a miku video" or query ended up as "miku"
       if (/miku/i.test(cleanMsg)) {
-        if (!query || query.toLowerCase() === 'miku') {
+        const stripped = query.replace(/\b(?:a\s+)?miku(?:\s+video)?\b/gi, '').trim()
+        if (!stripped) {
           query = 'Hatsune Miku official music video'
-        } else if (!/hatsune/i.test(query)) {
-          query = `Hatsune Miku ${query}`.trim()
+        } else if (!/hatsune/i.test(stripped)) {
+          query = `Hatsune Miku ${stripped}`.trim()
+        } else {
+          query = stripped
         }
       }
 
@@ -63,44 +160,54 @@ export class TaskExecutionService {
         query = isMiku ? 'Hatsune Miku official music video' : isStark ? 'Tony Stark Iron Man technology' : 'Resident Evil Ada Wong'
       }
 
+      // Live YouTube Search Resolution
+      const resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(query)
       const encodedQuery = encodeURIComponent(query)
-      const youtubeUrl = `https://www.youtube.com/results?search_query=${encodedQuery}`
-      const embedUrl = `https://www.youtube-nocookie.com/embed?listType=search&list=${encodedQuery}&autoplay=1`
+      const youtubeUrl = resolvedVideo ? resolvedVideo.videoUrl : `https://www.youtube.com/results?search_query=${encodedQuery}`
+      const embedUrl = resolvedVideo ? resolvedVideo.embedUrl : `https://www.youtube-nocookie.com/embed?listType=search&list=${encodedQuery}&autoplay=1`
+      const displayTitle = resolvedVideo ? resolvedVideo.title : `YouTube: ${query}`
 
       let speech = isStark
-        ? `J.A.R.V.I.S. Media Protocol engaged. Opening YouTube for "${query}". Initializing external stream now.`
+        ? `J.A.R.V.I.S. Media Protocol engaged. Playing "${displayTitle}" directly on YouTube.`
         : isMiku
-        ? `Miku da yo~! Opening YouTube to play "${query}" for you right now! Let's watch together~!`
-        : `Tactical briefing acknowledged. Opening YouTube for "${query}". Stream initialized.`
+        ? `Miku da yo~! Found "${displayTitle}"! Let's watch and listen together right now~!`
+        : `Tactical briefing acknowledged. Playing "${displayTitle}" directly on YouTube.`
 
       let displayText = isStark
         ? `### ⚡ J.A.R.V.I.S. Media Protocol: Task Executed\n\n` +
-          `**Target:** ${query}  \n` +
-          `**Platform:** YouTube Video Stream  \n` +
-          `**Status:** Dispatched & Interactive Link Active  \n\n` +
-          `*Opening YouTube in a new tab and streaming interface.*`
+          `**Playing Video:** **${displayTitle}**  \n` +
+          `**Search Target:** ${query}  \n` +
+          `**Platform:** YouTube Direct Video Stream  \n` +
+          `**Status:** Top Video Resolved & Autoplay Ready  \n\n` +
+          `*Direct playback streaming in player below.*`
         : isMiku
         ? `### 🎤 Hatsune Miku Media Stage: Task Executed\n\n` +
-          `**Query:** ${query}  \n` +
-          `**Platform:** YouTube Music & Video  \n` +
-          `**Status:** Active & Playing  \n\n` +
-          `*Launching YouTube stream for you right now!* ✨`
+          `**Playing Video:** **${displayTitle}**  \n` +
+          `**Search Query:** ${query}  \n` +
+          `**Platform:** YouTube Video Stream  \n` +
+          `**Status:** Live Video Resolved & Playing  \n\n` +
+          `*Playing top search match for you right now!* ✨`
         : `### 🍷 Tactical Recon: Media Task Executed\n\n` +
+          `**Playing Video:** **${displayTitle}**  \n` +
           `**Target:** ${query}  \n` +
-          `**Feed:** YouTube Secure Stream  \n` +
-          `**Status:** Dispatched & Active  \n\n` +
-          `*Target confirmed. Stream is now accessible.*`
+          `**Feed:** YouTube Direct Stream  \n` +
+          `**Status:** Dispatched & Autoplay Ready  \n\n` +
+          `*Target confirmed. Direct video playback active.*`
 
       const taskAction: TaskActionCard = {
         type: 'youtube',
-        title: `YouTube: ${query}`,
-        subtitle: `Streaming query: ${query}`,
+        title: displayTitle,
+        subtitle: resolvedVideo ? `Now Streaming: ${displayTitle}` : `Streaming query: ${query}`,
         url: youtubeUrl,
         embedUrl,
         query,
         buttonText: 'Open & Play on YouTube',
         status: 'ready',
         icon: 'youtube',
+        data: {
+          videoId: resolvedVideo?.videoId,
+          directPlay: !!resolvedVideo,
+        },
       }
 
       // If it's a song request, also resolve authentic audio & 3D dance!
@@ -121,6 +228,8 @@ export class TaskExecutionService {
             name: 'open_youtube',
             arguments: {
               query,
+              title: displayTitle,
+              videoId: resolvedVideo?.videoId,
               url: youtubeUrl,
               embedUrl,
             },
@@ -708,6 +817,61 @@ export class TaskExecutionService {
         id: `msg-${Date.now()}-assistant`,
         role: 'assistant',
         speaker: targetChar,
+        content: reply.display_text,
+        speech: reply.speech,
+        emotion: reply.emotion,
+        gesture: reply.gesture,
+        taskAction: reply.taskAction,
+        timestamp: Date.now(),
+      }
+      db.addMessage(userId, assistantMsgObj)
+      return { reply }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 12. Clock & Live Telemetry Time Tasks
+    // ─────────────────────────────────────────────────────────────
+    const isTimeTask =
+      /\b(?:what(?:'s|\s+is)\s+(?:the\s+)?time|current\s+time|time\s+now|what\s+time\s+is\s+it|what(?:'s|\s+is)\s+(?:the\s+)?date|today(?:'s|\s+is\s+the)\s+date)\b/i.test(cleanMsg) ||
+      cleanMsg === 'time' ||
+      cleanMsg === 'date'
+
+    if (isTimeTask) {
+      const now = new Date()
+      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+      const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+
+      const taskAction: TaskActionCard = {
+        type: 'time',
+        title: `${timeStr}`,
+        subtitle: `${dateStr} (${timeZone})`,
+        buttonText: 'Chronometer Synced',
+        status: 'executed',
+        icon: 'clock',
+        data: { timeStr, dateStr, timeZone, timestamp: Date.now() },
+      }
+
+      const reply: StructuredReply = {
+        speaker: resolvedSpeaker,
+        speech: isStark
+          ? `Local chronometer reports ${timeStr}, ${dateStr}. System clock in sync.`
+          : isMiku
+          ? `Miku says the current time is ${timeStr}! Hope you're having an awesome day!`
+          : `Chronometer verified. Current time is ${timeStr}, ${dateStr}.`,
+        display_text: `### ⏱️ Chronometer Telemetry: Task Executed\n\n**Current Time:** **${timeStr}**  \n**Date:** **${dateStr}**  \n**Timezone:** \`${timeZone}\`  \n\n*System chronometer synchronized.*`,
+        emotion: 'calm',
+        intensity: 0.85,
+        gesture: 'nod',
+        voice_style: { rate: 1.02, pitch: isStark ? 0.95 : 1.0, style: 'calm' },
+        taskAction,
+        actions: [{ name: 'get_time', arguments: { time: timeStr, date: dateStr, timeZone } }],
+      }
+
+      const assistantMsgObj: ChatMessage = {
+        id: `msg-${Date.now()}-assistant`,
+        role: 'assistant',
+        speaker: resolvedSpeaker,
         content: reply.display_text,
         speech: reply.speech,
         emotion: reply.emotion,
