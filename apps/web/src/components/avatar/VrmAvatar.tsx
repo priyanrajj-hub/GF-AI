@@ -282,14 +282,23 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                   if (!m) return m
                   const matName = (m.name || '').toLowerCase()
 
-                  // 1. Hair & Eyelashes: Render full double-sided cards with soft alpha edge
-                  if (matName.includes('hair') || matName.includes('eyelash')) {
-                    m.transparent = true
-                    m.alphaTest = 0.05
+                  // 1. Hair: Alpha Cutout (Full double-sided solid strands, zero depth-sorting erasure)
+                  if (matName.includes('hair')) {
+                    m.transparent = false
+                    m.alphaTest = 0.02
                     m.depthWrite = true
                     m.side = THREE.DoubleSide
-                    m.roughness = 0.45
+                    m.roughness = 0.35
                     m.metalness = 0.05
+                    return m
+                  }
+
+                  // 1b. Eyelashes: Soft transparent edge
+                  if (matName.includes('eyelash')) {
+                    m.transparent = true
+                    m.alphaTest = 0.05
+                    m.depthWrite = false
+                    m.side = THREE.DoubleSide
                     return m
                   }
 
@@ -307,25 +316,25 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                     })
                   }
 
-                  // 3. Knit Turtleneck Dress: Cashmere microfiber fabric sheen
+                  // 3. Knit Turtleneck Dress: RE4 Remake ribbed deep crimson cashmere
                   if (matName.includes('knit')) {
                     return new THREE.MeshPhysicalMaterial({
-                      map: m.map || null,
+                      color: new THREE.Color('#941629'),
                       normalMap: m.normalMap || null,
-                      roughness: 0.85,
+                      roughness: 0.65,
                       metalness: 0.02,
-                      sheen: 0.95,
-                      sheenColor: new THREE.Color('#e0284f'),
-                      sheenRoughness: 0.65,
-                      envMapIntensity: 1.25,
-                      normalScale: new THREE.Vector2(1.2, 1.2),
+                      sheen: 0.85,
+                      sheenColor: new THREE.Color('#bd1e3a'),
+                      sheenRoughness: 0.55,
+                      envMapIntensity: 1.1,
+                      normalScale: new THREE.Vector2(1.5, 1.5),
                       transparent: false,
                       depthWrite: true,
                       side: THREE.DoubleSide,
                     })
                   }
 
-                  // 4. Tactical Leather (Boots, Holster, Harness, Straps): Real leather sheen & clearcoat
+                  // 4. Tactical Leather (Boots, Holster, Harness, Straps): Real dark tactical leather
                   if (matName.includes('boot') || matName.includes('holster') || matName.includes('belt') || matName.includes('leather')) {
                     const isMetal = matName.includes('metal')
                     if (isMetal) {
@@ -340,12 +349,13 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                     }
                     return new THREE.MeshPhysicalMaterial({
                       map: m.map || null,
+                      color: new THREE.Color('#16161a'),
                       normalMap: m.normalMap || null,
-                      roughness: 0.38,
-                      metalness: 0.12,
-                      clearcoat: 0.42,
-                      clearcoatRoughness: 0.28,
-                      envMapIntensity: 1.4,
+                      roughness: 0.42,
+                      metalness: 0.08,
+                      clearcoat: 0.2,
+                      clearcoatRoughness: 0.35,
+                      envMapIntensity: 0.9,
                       transparent: false,
                       depthWrite: true,
                       side: THREE.DoubleSide,
