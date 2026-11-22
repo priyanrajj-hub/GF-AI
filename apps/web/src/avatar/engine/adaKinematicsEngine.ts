@@ -23,6 +23,22 @@ interface BoneMap {
   rFoot?: THREE.Bone
 }
 
+interface FingerBoneGroup {
+  // Left Hand Fingers
+  lThumb: THREE.Bone[]
+  lIndex: THREE.Bone[]
+  lMid: THREE.Bone[]
+  lRing: THREE.Bone[]
+  lPinky: THREE.Bone[]
+
+  // Right Hand Fingers
+  rThumb: THREE.Bone[]
+  rIndex: THREE.Bone[]
+  rMid: THREE.Bone[]
+  rRing: THREE.Bone[]
+  rPinky: THREE.Bone[]
+}
+
 interface HairChainBone {
   bone: THREE.Bone
   restRot: THREE.Euler
@@ -32,6 +48,18 @@ interface HairChainBone {
 
 export class AdaKinematicsEngine {
   private bones: BoneMap = {}
+  private fingers: FingerBoneGroup = {
+    lThumb: [],
+    lIndex: [],
+    lMid: [],
+    lRing: [],
+    lPinky: [],
+    rThumb: [],
+    rIndex: [],
+    rMid: [],
+    rRing: [],
+    rPinky: [],
+  }
   private hairBones: HairChainBone[] = []
   private restRotations = new Map<string, THREE.Euler>()
   private restPositions = new Map<string, THREE.Vector3>()
@@ -86,6 +114,20 @@ export class AdaKinematicsEngine {
       else if (n.includes('L_Foot')) this.bones.lFoot = bone
       else if (n.includes('R_Foot')) this.bones.rFoot = bone
 
+      // ─────────────────────────────────────────────────────────────
+      // Finger bones matching (Left and Right hands, 3 joints each)
+      // ─────────────────────────────────────────────────────────────
+      if (n.includes('L_Finger0')) this.fingers.lThumb.push(bone)
+      else if (n.includes('L_Finger1')) this.fingers.lIndex.push(bone)
+      else if (n.includes('L_Finger2')) this.fingers.lMid.push(bone)
+      else if (n.includes('L_Finger3')) this.fingers.lRing.push(bone)
+      else if (n.includes('L_Finger4')) this.fingers.lPinky.push(bone)
+      else if (n.includes('R_Finger0')) this.fingers.rThumb.push(bone)
+      else if (n.includes('R_Finger1')) this.fingers.rIndex.push(bone)
+      else if (n.includes('R_Finger2')) this.fingers.rMid.push(bone)
+      else if (n.includes('R_Finger3')) this.fingers.rRing.push(bone)
+      else if (n.includes('R_Finger4')) this.fingers.rPinky.push(bone)
+
       // Hair chain matching
       if (n.startsWith('hair') && n.includes('chain')) {
         this.hairBones.push({
@@ -121,17 +163,17 @@ export class AdaKinematicsEngine {
     this.actionElapsed += dt
 
     // ─────────────────────────────────────────────────────────────
-    // 1. ORGANIC BREATHING WAVE & IDLE WEIGHT DRIFT
+    // 1. ORGANIC RESPIRATION & POSTURAL WEIGHT DRIFT
     // ─────────────────────────────────────────────────────────────
     const breathRate = systemState === 'speaking' ? 2.2 : 1.65
     const breath = Math.sin(time * breathRate)
-    const deepBreath = Math.sin(time * (breathRate * 0.5)) * 0.5 + 0.5 // secondary respiratory wave
+    const deepBreath = Math.sin(time * (breathRate * 0.5)) * 0.5 + 0.5 // secondary respiratory rhythm
     const weightShift = Math.sin(time * 0.35) // slow contrapposto weight drift
+    const fingerPulse = Math.sin(time * (breathRate * 0.9)) * 0.015 // micro-circulation finger twitch
 
     // ─────────────────────────────────────────────────────────────
-    // 2. INTERACTIVE HEAD & GAZE TRACKING (Attentive + Life-like)
+    // 2. ATTENTIVE GAZE & HEAD TRACKING
     // ─────────────────────────────────────────────────────────────
-    // Micro-glance logic: occasionally Ada casts a subtle sideways spy glance or head cock
     this.microGlanceTimer -= dt
     if (this.microGlanceTimer <= 0) {
       this.microGlanceTimer = 2.5 + Math.random() * 3.5
@@ -146,12 +188,10 @@ export class AdaKinematicsEngine {
       }
     }
 
-    // Pointer target angles
     const targetYaw = THREE.MathUtils.clamp(pointer.x * 0.38 + this.glanceOffset.yaw, -0.65, 0.65)
     const targetPitch = THREE.MathUtils.clamp(-pointer.y * 0.22 + this.glanceOffset.pitch, -0.32, 0.28)
     const targetRoll = THREE.MathUtils.clamp(pointer.x * 0.08 + this.glanceOffset.roll, -0.15, 0.15)
 
-    // Speech cadence nodding
     let speechNod = 0
     let speechTilt = 0
     if (systemState === 'speaking') {
@@ -159,20 +199,17 @@ export class AdaKinematicsEngine {
       speechTilt = Math.cos(time * 3.1) * 0.02
     }
 
-    // Poke reaction
     let pokeHeadPitch = 0
     let pokeSpinePitch = 0
     let pokeArmShift = 0
     if (this.isPokeReaction) {
       this.pokeElapsed += dt
       if (this.pokeElapsed < 0.25) {
-        // Recoil back in surprise
         const prog = this.pokeElapsed / 0.25
         pokeHeadPitch = Math.sin(prog * Math.PI) * -0.18
         pokeSpinePitch = Math.sin(prog * Math.PI) * -0.09
         pokeArmShift = Math.sin(prog * Math.PI) * 0.25
       } else if (this.pokeElapsed < 2.0) {
-        // Sassy recovery with hand-on-hip demeanor
         const fade = (2.0 - this.pokeElapsed) / 1.75
         pokeHeadPitch = Math.sin(this.pokeElapsed * 4.0) * 0.04 * fade
         pokeArmShift = 0.18 * fade
@@ -181,7 +218,6 @@ export class AdaKinematicsEngine {
       }
     }
 
-    // Smooth head interpolation
     const lerpSpeed = dt * 5.5
     this.currentHeadYaw = THREE.MathUtils.lerp(this.currentHeadYaw, targetYaw, lerpSpeed)
     this.currentHeadPitch = THREE.MathUtils.lerp(this.currentHeadPitch, targetPitch + speechNod + pokeHeadPitch, lerpSpeed)
@@ -191,20 +227,17 @@ export class AdaKinematicsEngine {
     this.prevHeadYaw = this.currentHeadYaw
 
     // ─────────────────────────────────────────────────────────────
-    // 3. APPLY SKELETAL ROTATIONS (Layered onto Rest Pose)
+    // 3. CORE SKELETAL ROTATIONS (Pelvis, Spine, Chest, Head)
     // ─────────────────────────────────────────────────────────────
-
-    // A. Pelvis & Hips: Confident Spy Contrapposto
     if (this.bones.pelvis) {
       const rest = this.restRotations.get(this.bones.pelvis.name) || new THREE.Euler()
       this.bones.pelvis.rotation.set(
         rest.x + breath * 0.008 + pokeSpinePitch * 0.5,
         rest.y + weightShift * 0.028,
-        rest.z + weightShift * 0.022 // subtle natural hip tilt
+        rest.z + weightShift * 0.022
       )
     }
 
-    // B. Spine & Lower Torso
     if (this.bones.spine) {
       const rest = this.restRotations.get(this.bones.spine.name) || new THREE.Euler()
       this.bones.spine.rotation.set(
@@ -214,35 +247,24 @@ export class AdaKinematicsEngine {
       )
     }
 
-    // C. Chest (Spine2_05): Full Respiratory Inhale/Exhale & Posture Presence
     if (this.bones.chest) {
       const rest = this.restRotations.get(this.bones.chest.name) || new THREE.Euler()
       this.bones.chest.rotation.set(
         rest.x + breath * 0.028 + deepBreath * 0.012 + (systemState === 'speaking' ? 0.02 : 0),
-        rest.y + this.currentHeadYaw * 0.15, // chest leads head turn slightly
+        rest.y + this.currentHeadYaw * 0.15,
         rest.z - weightShift * 0.015
       )
     }
 
-    // D. Clavicles (Shoulders): Relaxed Downwards Natural Slope
     if (this.bones.lClavicle) {
       const rest = this.restRotations.get(this.bones.lClavicle.name) || new THREE.Euler()
-      this.bones.lClavicle.rotation.set(
-        rest.x,
-        rest.y,
-        rest.z - 0.045 + breath * 0.012 // breath shoulder lift
-      )
+      this.bones.lClavicle.rotation.set(rest.x, rest.y, rest.z - 0.045 + breath * 0.012)
     }
     if (this.bones.rClavicle) {
       const rest = this.restRotations.get(this.bones.rClavicle.name) || new THREE.Euler()
-      this.bones.rClavicle.rotation.set(
-        rest.x,
-        rest.y,
-        rest.z + 0.045 - breath * 0.012
-      )
+      this.bones.rClavicle.rotation.set(rest.x, rest.y, rest.z + 0.045 - breath * 0.012)
     }
 
-    // E. Neck: 35% of Gaze Curvature
     if (this.bones.neck) {
       const rest = this.restRotations.get(this.bones.neck.name) || new THREE.Euler()
       this.bones.neck.rotation.set(
@@ -252,7 +274,6 @@ export class AdaKinematicsEngine {
       )
     }
 
-    // F. Head: 65% of Gaze Curvature + Expressive Micro-Motion
     if (this.bones.head) {
       const rest = this.restRotations.get(this.bones.head.name) || new THREE.Euler()
       this.bones.head.rotation.set(
@@ -262,125 +283,159 @@ export class AdaKinematicsEngine {
       )
     }
 
-    // G. ARMS & HANDS: Natural Rest Down at Sides (Zero A-Pose!)
-    // In Valve Biped rest pose, Z is abduction (+/- 0.561 rad).
-    // Left arm down: decrease Z by ~0.65 to 0.72 rad.
-    // Right arm down: increase Z by ~0.65 to 0.72 rad.
+    // ─────────────────────────────────────────────────────────────
+    // 4. NATURAL HUMAN ARM & HAND POSTURE (At Outer Hips, NO Flat Front Belly)
+    // ─────────────────────────────────────────────────────────────
     const isSassy = this.activeAction === 'hip_pop' || this.activeAction === 'sassy' || this.isPokeReaction
 
-    // Left Arm
+    // Left Arm: Hangs naturally along left outer hip/thigh (x ≈ +0.19 to +0.22)
     if (this.bones.lUpperArm) {
-      const rest = this.restRotations.get(this.bones.lUpperArm.name) || new THREE.Euler()
       if (isSassy) {
-        // Hand-on-hip: Left upper arm angled out, elbow flexed
-        this.bones.lUpperArm.rotation.set(
-          rest.x + 0.15,
-          rest.y - 0.22,
-          rest.z - 0.38 + breath * 0.008
-        )
+        // Hand-on-hip pose: Upper arm angled out, elbow bent
+        this.bones.lUpperArm.rotation.set(0.12, -0.25, -0.45)
       } else {
-        // Relaxed natural resting arm along torso
+        // Natural relaxed side hang: drops straight down along ribcage and side of hip
         this.bones.lUpperArm.rotation.set(
-          rest.x + 0.08 + Math.sin(time * 1.6) * 0.015,
-          rest.y - 0.05,
-          rest.z - 0.68 + breath * 0.012
+          0.16 + Math.sin(time * 1.6) * 0.012,
+          -0.04,
+          -1.04 + breath * 0.012
         )
       }
     }
 
     if (this.bones.lForearm) {
-      const rest = this.restRotations.get(this.bones.lForearm.name) || new THREE.Euler()
       if (isSassy) {
-        this.bones.lForearm.rotation.set(rest.x, rest.y - 0.45, rest.z + 0.25)
+        this.bones.lForearm.rotation.set(0, -0.42, 0.22)
       } else {
-        // Slight natural 18° forearm bend so arm hangs gracefully without stiff hyperextension
+        // Natural gentle elbow flex: keeps hand aligned with lateral hip seam
         this.bones.lForearm.rotation.set(
-          rest.x,
-          rest.y + 0.12,
-          rest.z
+          0,
+          -0.74,
+          0.02
         )
       }
     }
 
     if (this.bones.lHand) {
-      const rest = this.restRotations.get(this.bones.lHand.name) || new THREE.Euler()
-      this.bones.lHand.rotation.set(
-        rest.x,
-        rest.y + (isSassy ? -0.2 : 0.05),
-        rest.z + (isSassy ? -0.15 : 0.08)
-      )
+      if (isSassy) {
+        // Hand resting firmly on waist
+        this.bones.lHand.rotation.set(-0.15, 0.25, -0.35)
+      } else {
+        // Natural human wrist draping: palm faces medially toward outer hip, fingers point softly down
+        this.bones.lHand.rotation.set(
+          0.04,
+          0.12,
+          -0.24
+        )
+      }
     }
 
-    // Right Arm: Relaxed at Side Near Holster
+    // Right Arm: Hangs naturally alongside right tactical holster (x ≈ -0.19 to -0.22)
     if (this.bones.rUpperArm) {
-      const rest = this.restRotations.get(this.bones.rUpperArm.name) || new THREE.Euler()
       this.bones.rUpperArm.rotation.set(
-        rest.x + 0.08 - Math.sin(time * 1.6) * 0.015,
-        rest.y + 0.05,
-        rest.z + 0.68 - breath * 0.012 + pokeArmShift
+        0.16 - Math.sin(time * 1.6) * 0.012,
+        0.04,
+        1.04 - breath * 0.012 + pokeArmShift
       )
     }
 
     if (this.bones.rForearm) {
-      const rest = this.restRotations.get(this.bones.rForearm.name) || new THREE.Euler()
       this.bones.rForearm.rotation.set(
-        rest.x,
-        rest.y - 0.12,
-        rest.z
+        0,
+        0.74,
+        -0.02
       )
     }
 
     if (this.bones.rHand) {
-      const rest = this.restRotations.get(this.bones.rHand.name) || new THREE.Euler()
       this.bones.rHand.rotation.set(
-        rest.x,
-        rest.y - 0.05,
-        rest.z - 0.08
+        0.04,
+        -0.12,
+        0.24
       )
     }
 
-    // H. Legs & Calves: Natural Stance Stability
+    // Legs
     if (this.bones.lThigh) {
       const rest = this.restRotations.get(this.bones.lThigh.name) || new THREE.Euler()
-      this.bones.lThigh.rotation.set(
-        rest.x + weightShift * 0.012,
-        rest.y,
-        rest.z - 0.015
-      )
+      this.bones.lThigh.rotation.set(rest.x + weightShift * 0.012, rest.y, rest.z - 0.015)
     }
     if (this.bones.rThigh) {
       const rest = this.restRotations.get(this.bones.rThigh.name) || new THREE.Euler()
-      this.bones.rThigh.rotation.set(
-        rest.x - weightShift * 0.012,
-        rest.y,
-        rest.z + 0.015
-      )
+      this.bones.rThigh.rotation.set(rest.x - weightShift * 0.012, rest.y, rest.z + 0.015)
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 4. SECONDARY DYNAMICS: SILKY HAIR PHYSICS & STRAND INERTIA
+    // 5. ANATOMICAL RELAXED HUMAN FINGER CURL (Passive Muscle Tone)
     // ─────────────────────────────────────────────────────────────
-    const hairSpring = 42.0 // spring tension
-    const hairDamping = 6.5 // damping coefficient
+    // At rest, human fingers are NEVER straight/flat paddles.
+    // They curve gently in an inward cascade from index to pinky, with thumb in opposition.
+
+    // LEFT HAND FINGERS (curl direction: negative Z on Valve Biped)
+    this.curlFingers(this.fingers.lThumb, -1, [0.24, 0.28, 0.18], fingerPulse, 0.18) // Thumb: opposition
+    this.curlFingers(this.fingers.lIndex, -1, [0.28, 0.38, 0.22], fingerPulse)       // Index: gentle curve
+    this.curlFingers(this.fingers.lMid,   -1, [0.32, 0.44, 0.25], fingerPulse)       // Middle: moderate curve
+    this.curlFingers(this.fingers.lRing,  -1, [0.36, 0.48, 0.28], fingerPulse)       // Ring: deeper curve
+    this.curlFingers(this.fingers.lPinky, -1, [0.42, 0.54, 0.32], fingerPulse)       // Pinky: deepest natural curl
+
+    // RIGHT HAND FINGERS (curl direction: positive Z on Valve Biped)
+    this.curlFingers(this.fingers.rThumb, 1, [0.24, 0.28, 0.18], fingerPulse, -0.18) // Thumb: opposition
+    this.curlFingers(this.fingers.rIndex, 1, [0.28, 0.38, 0.22], fingerPulse)
+    this.curlFingers(this.fingers.rMid,   1, [0.32, 0.44, 0.25], fingerPulse)
+    this.curlFingers(this.fingers.rRing,  1, [0.36, 0.48, 0.28], fingerPulse)
+    this.curlFingers(this.fingers.rPinky, 1, [0.42, 0.54, 0.32], fingerPulse)
+
+    // ─────────────────────────────────────────────────────────────
+    // 6. SECONDARY DYNAMICS: SILKY HAIR PHYSICS & STRAND INERTIA
+    // ─────────────────────────────────────────────────────────────
+    const hairSpring = 42.0
+    const hairDamping = 6.5
 
     for (let i = 0; i < this.hairBones.length; i++) {
       const hb = this.hairBones[i]
-      // External force from head turning inertia + ambient soft air turbulence
       const inertiaForce = -headAngularVelocity * 0.18
       const ambientBreeze = Math.sin(time * 2.8 + i * 0.7) * 0.025 + Math.cos(time * 4.2 + i * 1.1) * 0.012
       const totalForce = inertiaForce + ambientBreeze
 
-      // Spring-damper integration
       const accel = -hairSpring * hb.angle - hairDamping * hb.velocity + totalForce
       hb.velocity += accel * dt
       hb.angle += hb.velocity * dt
       hb.angle = THREE.MathUtils.clamp(hb.angle, -0.35, 0.35)
 
-      // Apply to bone relative to rest rotation
       hb.bone.rotation.set(
         hb.restRot.x + ambientBreeze * 0.5,
         hb.restRot.y + hb.angle,
         hb.restRot.z + hb.angle * 0.6
+      )
+    }
+  }
+
+  /**
+   * Applies realistic anatomical curvature across the joints of a finger.
+   * @param joints The 3 bones of the finger [proximal, middle, distal]
+   * @param sign -1 for Left hand, +1 for Right hand
+   * @param angles Array of base flex angles [proximal, middle, distal] in radians
+   * @param pulse Subtle micro-twitch to simulate blood circulation and muscle life
+   * @param yawOffset Optional thumb opposition yaw in radians
+   */
+  private curlFingers(
+    joints: THREE.Bone[],
+    sign: number,
+    angles: [number, number, number],
+    pulse: number,
+    yawOffset: number = 0
+  ) {
+    if (!joints || joints.length === 0) return
+
+    for (let i = 0; i < joints.length; i++) {
+      const joint = joints[i]
+      const rest = this.restRotations.get(joint.name) || new THREE.Euler()
+      const flexAngle = (angles[i] !== undefined ? angles[i] : 0.3) + pulse
+
+      joint.rotation.set(
+        rest.x,
+        rest.y + (i === 0 ? yawOffset : 0),
+        rest.z + sign * flexAngle
       )
     }
   }

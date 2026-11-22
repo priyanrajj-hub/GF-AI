@@ -322,6 +322,39 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                     })
                   }
 
+                  // 2b. Tactical Gloves (Ada Wong RE4 Remake Tactical Black Leather & Natural Skin)
+                  if (meshName.includes('glove')) {
+                    const isSkin = meshName.includes('skin') || matName.includes('skin') || matName.includes('leg')
+                    if (isSkin) {
+                      return new THREE.MeshPhysicalMaterial({
+                        map: m.map || null,
+                        color: new THREE.Color('#f5d5c6'),
+                        normalMap: m.normalMap || null,
+                        roughness: 0.52,
+                        metalness: 0.0,
+                        clearcoat: 0.15,
+                        clearcoatRoughness: 0.45,
+                        envMapIntensity: 1.25,
+                        transparent: false,
+                        depthWrite: true,
+                        side: THREE.DoubleSide,
+                      })
+                    }
+                    return new THREE.MeshPhysicalMaterial({
+                      map: m.map || null,
+                      color: new THREE.Color('#141518'), // Authentic RE4 Tactical Black Leather
+                      normalMap: m.normalMap || null,
+                      roughness: 0.38,
+                      metalness: 0.12,
+                      clearcoat: 0.25,
+                      clearcoatRoughness: 0.3,
+                      envMapIntensity: 1.1,
+                      transparent: false,
+                      depthWrite: true,
+                      side: THREE.DoubleSide,
+                    })
+                  }
+
                   // 3. Knit Turtleneck Dress: RE4 Remake ribbed deep crimson cashmere
                   if (matName.includes('knit')) {
                     return new THREE.MeshPhysicalMaterial({
@@ -368,15 +401,16 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                     })
                   }
 
-                  // 5. Photoreal Skin (Face, Neck, Legs, Mouth): Soft subsurface scattering look
-                  if (matName.includes('face') || matName.includes('leg') || matName.includes('skin') || matName.includes('mouth')) {
+                  // 5. Photoreal Skin (Face, Neck, Legs, Hands/Fingers, Mouth): Soft subsurface scattering look
+                  if (matName.includes('face') || matName.includes('leg') || matName.includes('skin') || matName.includes('mouth') || meshName.includes('skin')) {
                     return new THREE.MeshPhysicalMaterial({
                       map: m.map || null,
+                      color: new THREE.Color('#f5d5c6'),
                       normalMap: m.normalMap || null,
-                      roughness: 0.55,
+                      roughness: 0.52,
                       metalness: 0.0,
                       clearcoat: 0.15,
-                      clearcoatRoughness: 0.5,
+                      clearcoatRoughness: 0.45,
                       envMapIntensity: 1.25,
                       normalScale: new THREE.Vector2(0.9, 0.9),
                       transparent: false,
