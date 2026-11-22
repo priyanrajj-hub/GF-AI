@@ -4,14 +4,6 @@
   "outputDirectory": "apps/web/dist",
   "installCommand": "npm install",
   "framework": null,
-  "functions": {
-    "api/**": {
-      "includeFiles": "packages/shared/**"
-    },
-    "api/index.ts": {
-      "includeFiles": "packages/shared/**"
-    }
-  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     {
