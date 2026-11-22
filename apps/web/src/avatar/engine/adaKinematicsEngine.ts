@@ -288,7 +288,7 @@ export class AdaKinematicsEngine {
     // ─────────────────────────────────────────────────────────────
     const isSassy = this.activeAction === 'hip_pop' || this.activeAction === 'sassy' || this.isPokeReaction
 
-    // Left Arm: Hangs naturally along left outer hip/thigh (x ≈ +0.19 to +0.22)
+    // Left Arm: Hangs naturally along left outer hip/thigh (x ≈ +0.183, y ≈ 0.698, z ≈ 0.027)
     if (this.bones.lUpperArm) {
       if (isSassy) {
         // Hand-on-hip pose: Upper arm angled out, elbow bent
@@ -296,9 +296,9 @@ export class AdaKinematicsEngine {
       } else {
         // Natural relaxed side hang: drops straight down along ribcage and side of hip
         this.bones.lUpperArm.rotation.set(
-          0.16 + Math.sin(time * 1.6) * 0.012,
-          -0.04,
-          -1.04 + breath * 0.012
+          0.25 + Math.sin(time * 1.6) * 0.008,
+          0.20,
+          -1.20 + breath * 0.012
         )
       }
     }
@@ -308,11 +308,7 @@ export class AdaKinematicsEngine {
         this.bones.lForearm.rotation.set(0, -0.42, 0.22)
       } else {
         // Natural gentle elbow flex: keeps hand aligned with lateral hip seam
-        this.bones.lForearm.rotation.set(
-          0,
-          -0.74,
-          0.02
-        )
+        this.bones.lForearm.rotation.set(0, -0.60, 0)
       }
     }
 
@@ -321,37 +317,35 @@ export class AdaKinematicsEngine {
         // Hand resting firmly on waist
         this.bones.lHand.rotation.set(-0.15, 0.25, -0.35)
       } else {
-        // Natural human wrist draping: palm faces medially toward outer hip, fingers point softly down
+        // Natural human wrist draping: rest bind orientation with subtle sway
+        const rest = this.restRotations.get(this.bones.lHand.name) || new THREE.Euler(0.670, -0.094, 0.107)
         this.bones.lHand.rotation.set(
-          0.04,
-          0.12,
-          -0.24
+          rest.x,
+          rest.y,
+          rest.z + Math.sin(time * 1.2) * 0.005
         )
       }
     }
 
-    // Right Arm: Hangs naturally alongside right tactical holster (x ≈ -0.19 to -0.22)
+    // Right Arm: Hangs naturally alongside right tactical holster (x ≈ -0.183, y ≈ 0.698, z ≈ 0.027)
     if (this.bones.rUpperArm) {
       this.bones.rUpperArm.rotation.set(
-        0.16 - Math.sin(time * 1.6) * 0.012,
-        0.04,
-        1.04 - breath * 0.012 + pokeArmShift
+        0.25 - Math.sin(time * 1.6) * 0.008,
+        -0.20,
+        1.20 - breath * 0.012 + pokeArmShift
       )
     }
 
     if (this.bones.rForearm) {
-      this.bones.rForearm.rotation.set(
-        0,
-        0.74,
-        -0.02
-      )
+      this.bones.rForearm.rotation.set(0, 0.60, 0)
     }
 
     if (this.bones.rHand) {
+      const rest = this.restRotations.get(this.bones.rHand.name) || new THREE.Euler(0.670, 0.094, -0.107)
       this.bones.rHand.rotation.set(
-        0.04,
-        -0.12,
-        0.24
+        rest.x,
+        rest.y,
+        rest.z - Math.sin(time * 1.2) * 0.005
       )
     }
 
@@ -368,22 +362,22 @@ export class AdaKinematicsEngine {
     // ─────────────────────────────────────────────────────────────
     // 5. ANATOMICAL RELAXED HUMAN FINGER CURL (Passive Muscle Tone)
     // ─────────────────────────────────────────────────────────────
-    // At rest, human fingers are NEVER straight/flat paddles.
-    // They curve gently in an inward cascade from index to pinky, with thumb in opposition.
+    // The GLB bind pose already provides Capcom RE4 Remake's natural finger sculpting.
+    // We add a subtle passive tone offset and micro-circulation respiration pulse.
 
     // LEFT HAND FINGERS (curl direction: negative Z on Valve Biped)
-    this.curlFingers(this.fingers.lThumb, -1, [0.24, 0.28, 0.18], fingerPulse, 0.18) // Thumb: opposition
-    this.curlFingers(this.fingers.lIndex, -1, [0.28, 0.38, 0.22], fingerPulse)       // Index: gentle curve
-    this.curlFingers(this.fingers.lMid,   -1, [0.32, 0.44, 0.25], fingerPulse)       // Middle: moderate curve
-    this.curlFingers(this.fingers.lRing,  -1, [0.36, 0.48, 0.28], fingerPulse)       // Ring: deeper curve
-    this.curlFingers(this.fingers.lPinky, -1, [0.42, 0.54, 0.32], fingerPulse)       // Pinky: deepest natural curl
+    this.curlFingers(this.fingers.lThumb, -1, [0.02, 0.03, 0.02], fingerPulse)
+    this.curlFingers(this.fingers.lIndex, -1, [0.03, 0.04, 0.02], fingerPulse)
+    this.curlFingers(this.fingers.lMid,   -1, [0.03, 0.05, 0.03], fingerPulse)
+    this.curlFingers(this.fingers.lRing,  -1, [0.04, 0.05, 0.03], fingerPulse)
+    this.curlFingers(this.fingers.lPinky, -1, [0.05, 0.06, 0.04], fingerPulse)
 
     // RIGHT HAND FINGERS (curl direction: positive Z on Valve Biped)
-    this.curlFingers(this.fingers.rThumb, 1, [0.24, 0.28, 0.18], fingerPulse, -0.18) // Thumb: opposition
-    this.curlFingers(this.fingers.rIndex, 1, [0.28, 0.38, 0.22], fingerPulse)
-    this.curlFingers(this.fingers.rMid,   1, [0.32, 0.44, 0.25], fingerPulse)
-    this.curlFingers(this.fingers.rRing,  1, [0.36, 0.48, 0.28], fingerPulse)
-    this.curlFingers(this.fingers.rPinky, 1, [0.42, 0.54, 0.32], fingerPulse)
+    this.curlFingers(this.fingers.rThumb, 1, [0.02, 0.03, 0.02], fingerPulse)
+    this.curlFingers(this.fingers.rIndex, 1, [0.03, 0.04, 0.02], fingerPulse)
+    this.curlFingers(this.fingers.rMid,   1, [0.03, 0.05, 0.03], fingerPulse)
+    this.curlFingers(this.fingers.rRing,  1, [0.04, 0.05, 0.03], fingerPulse)
+    this.curlFingers(this.fingers.rPinky, 1, [0.05, 0.06, 0.04], fingerPulse)
 
     // ─────────────────────────────────────────────────────────────
     // 6. SECONDARY DYNAMICS: SILKY HAIR PHYSICS & STRAND INERTIA
