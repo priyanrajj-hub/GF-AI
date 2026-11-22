@@ -17,17 +17,55 @@ export class TaskExecutionService {
    */
   static async resolveYouTubeVideo(
     query: string,
-    timeoutMs: number = 3800
+    timeoutMs: number = 3800,
+    options?: { sortByLatest?: boolean }
   ): Promise<{
     videoId: string
     videoUrl: string
     embedUrl: string
     title: string
+    publishedTime?: string
+    length?: string
   } | null> {
+    const isLatest = !!options?.sortByLatest || /\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/i.test(query)
+
     const parseTopVideo = (html: string, fallbackQuery: string) => {
       // 1. Paired videoRenderer match (exact video ID + exact title)
       const vrRegex = /"videoRenderer":\{"videoId":"([a-zA-Z0-9_-]{11})".*?"title":\{"runs":\[\{"text":"([^"]+)"/g
       const vrMatches = [...html.matchAll(vrRegex)]
+
+      for (const m of vrMatches) {
+        const rawId = m[1]
+        let rawTitle = m[2]
+        try {
+          rawTitle = JSON.parse(`"${rawTitle}"`)
+        } catch {
+          rawTitle = rawTitle.replace(/\\u0026/g, '&')
+        }
+
+        // Context snippet around this videoRenderer to get publishedTime and length, and filter out shorts
+        const pos = m.index ?? 0
+        const snippet = html.substring(pos, pos + 2500)
+
+        // Ignore Shorts / reels when a full video is available
+        if (snippet.includes('"reelWatchEndpoint"') || snippet.includes('/shorts/')) {
+          continue
+        }
+
+        const timeMatch = snippet.match(/"publishedTimeText":\{"simpleText":"([^"]+)"\}/)
+        const lengthMatch = snippet.match(/"lengthText":\{.*?"simpleText":"([^"]+)"/)
+
+        return {
+          videoId: rawId,
+          videoUrl: `https://www.youtube.com/watch?v=${rawId}`,
+          embedUrl: `https://www.youtube-nocookie.com/embed/${rawId}?autoplay=1`,
+          title: rawTitle,
+          publishedTime: timeMatch ? timeMatch[1] : undefined,
+          length: lengthMatch ? lengthMatch[1] : undefined,
+        }
+      }
+
+      // If all matches were shorts, fall back to first videoRenderer
       if (vrMatches.length > 0) {
         const rawId = vrMatches[0][1]
         let rawTitle = vrMatches[0][2]
@@ -62,8 +100,10 @@ export class TaskExecutionService {
       return null
     }
 
+    const spParam = isLatest ? '&sp=CAI%253D' : ''
+
     try {
-      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}${spParam}`
       const res = await fetch(searchUrl, {
         headers: {
           'User-Agent':
@@ -82,7 +122,7 @@ export class TaskExecutionService {
     }
 
     try {
-      const mobileUrl = `https://m.youtube.com/results?search_query=${encodeURIComponent(query)}`
+      const mobileUrl = `https://m.youtube.com/results?search_query=${encodeURIComponent(query)}${spParam}`
       const mRes = await fetch(mobileUrl, {
         headers: {
           'User-Agent':
@@ -97,8 +137,30 @@ export class TaskExecutionService {
         if (parsed) return parsed
       }
     } catch {
-      // Return null to trigger graceful fallback
+      // Fall through to regular search if latest filter failed
     }
+
+    if (isLatest) {
+      try {
+        const fallbackUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`
+        const res = await fetch(fallbackUrl, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+          signal: AbortSignal.timeout(2800),
+        })
+        if (res.ok) {
+          const html = await res.text()
+          const parsed = parseTopVideo(html, query)
+          if (parsed) return parsed
+        }
+      } catch {
+        // Return null to trigger graceful fallback
+      }
+    }
+
     return null
   }
 
@@ -122,74 +184,96 @@ export class TaskExecutionService {
     const isYouTubeTask =
       /\b(?:open\s+youtube|play\s+(?:.*)\s+on\s+youtube|search\s+youtube|youtube(?:\.com)?|yt\b)\b/i.test(cleanMsg) ||
       /^open\s+youtube\s*[:,-]?/i.test(cleanMsg) ||
-      /^(?:play|watch|stream)\s+(?:.*)\s+(?:video|vedio|clip|mv)\b/i.test(cleanMsg) ||
-      /\b(?:play|search|find|stream|watch)\b.*?\byoutube\b/i.test(cleanMsg) ||
-      /\byoutube\b.*?\b(?:play|search|find|stream|watch)\b/i.test(cleanMsg)
+      /^(?:play|watch|stream|listen)\s+(?:.*)\s+(?:video|vedio|clip|mv|song)\b/i.test(cleanMsg) ||
+      /\b(?:play|search|find|stream|watch|show|get)\b.*?\byoutube\b/i.test(cleanMsg) ||
+      /\byoutube\b.*?\b(?:play|search|find|stream|watch)\b/i.test(cleanMsg) ||
+      /\b(?:recent|resent|latest|newest|today'?s?)\s+(?:video|vedio|clip|song)\b/i.test(cleanMsg) ||
+      /\b(?:i\s+need|i\s+want|give\s+me|show\s+me|play\s+me|find\s+me)\b.*?\b(?:video|vedio|clip|song)\b/i.test(cleanMsg) ||
+      /\b(?:video|vedio|clip)\b.*?\b(?:of|from|by|about)\b/i.test(cleanMsg)
 
     if (isYouTubeTask) {
-      let query = cleanMsg
-        // 1. Strip user meta-prompts like "if i say play a vedio on youtube it must go search and play the vedio"
-        .replace(/\b(?:if\s+i\s+say|must\s+go\s+search\s+and\s+play|it\s+must\s+go|go\s+search\s+and\s+play|search\s+and\s+play\s+the\s+vedio|search\s+and\s+play\s+the\s+video|it\s+must|must)\b.*?$/gi, '')
-        // 2. Normalizations
-        .replace(/\bvedio\b/gi, 'video')
+      // 1. Normalize typos and spelling variants early
+      const normalizedMsg = cleanMsg
         .replace(/(madangowri)(latest)/i, 'Madan Gowri latest')
-        .replace(/madangowri/i, 'Madan Gowri')
-        // 3. Strip command prefixes & wrappers
-        .replace(/^open\s+youtube\s*(?:and\s+)?[:,-]?\s*/i, '')
-        .replace(/\b(?:on\s+youtube|in\s+youtube|from\s+youtube)\b/gi, '')
+        .replace(/\bresent\b/gi, 'recent')
+        .replace(/\bvedio\b/gi, 'video')
+        .replace(/\bmadhan\s*gowri\b/gi, 'Madan Gowri')
+        .replace(/\bmadangowri\b/gi, 'Madan Gowri')
+
+      const isLatestRequest = /\b(?:recent|latest|newest|today'?s?|fresh)\b/i.test(normalizedMsg)
+
+      let query = normalizedMsg
+        // 2. Strip user meta-prompts like "if i say play a vedio on youtube it must go search and play the vedio"
+        .replace(/\b(?:if\s+i\s+say|must\s+go\s+search\s+and\s+play|it\s+must\s+go|go\s+search\s+and\s+play|search\s+and\s+play\s+the\s+vedio|search\s+and\s+play\s+the\s+video|it\s+must|must)\b.*?$/gi, '')
+        // 3. Strip conversational wrapper prefixes
+        .replace(/^(?:i\s+(?:need|want)\s+(?:to\s+)?(?:the\s+)?(?:watch|see|play|find)?|please\s+|can\s+you\s+(?:please\s+)?(?:play|show|open|find|watch)\s+|can\s+you\s+|give\s+me\s+(?:the\s+)?|show\s+me\s+(?:the\s+)?|play\s+|watch\s+|find\s+|open\s+|search\s+(?:for\s+)?)/gi, '')
+        // 4. Strip command prefixes & platform mentions
+        .replace(/^open\s+youtube\s*[:,-]?\s*/i, '')
+        .replace(/\b(?:on\s+youtube|in\s+youtube|from\s+youtube|via\s+youtube|open\s+youtube|youtube)\b/gi, '')
         .replace(/\b(?:and\s+)?(?:please\s+)?(?:open|launch|play|search\s+for|search|watch|stream|find)\b/gi, '')
+        .replace(/^[ :,-]+/, '')
         .trim()
 
-      if (/^(?:a\s+)?video$/i.test(query)) {
-        query = ''
-      }
+      // If user asked for latest/recent, extract the clean core subject
+      let coreSubject = query
+        .replace(/\b(?:the\s+)?(?:recent|latest|newest|today'?s?)\s+video(?:\s+of)?\b/gi, '')
+        .replace(/\b(?:latest|recent|newest)\s+video\b/gi, '')
+        .replace(/\bvideo(?:\s+of)?\b/gi, '')
+        .replace(/\b(?:the\s+)?(?:recent|latest|newest)\b/gi, '')
+        .replace(/^(?:of\s+)/gi, '')
+        .trim()
 
-      // If user said "a miku video" or query ended up as "miku"
       if (/miku/i.test(cleanMsg)) {
-        const stripped = query.replace(/\b(?:a\s+)?miku(?:\s+video)?\b/gi, '').trim()
+        const stripped = (coreSubject || query).replace(/\b(?:a\s+)?miku(?:\s+video)?\b/gi, '').trim()
         if (!stripped) {
-          query = 'Hatsune Miku official music video'
+          coreSubject = 'Hatsune Miku official music video'
         } else if (!/hatsune/i.test(stripped)) {
-          query = `Hatsune Miku ${stripped}`.trim()
+          coreSubject = `Hatsune Miku ${stripped}`.trim()
         } else {
-          query = stripped
+          coreSubject = stripped
         }
       }
 
-      if (!query || query === 'youtube' || query === 'open') {
-        query = isMiku ? 'Hatsune Miku official music video' : isStark ? 'Tony Stark Iron Man technology' : 'Resident Evil Ada Wong'
+      if (!coreSubject || coreSubject.toLowerCase() === 'a' || /^(?:a\s+)?video$/i.test(coreSubject) || /^(?:open\s+)?youtube$/i.test(coreSubject)) {
+        coreSubject = isMiku ? 'Hatsune Miku official music video' : isStark ? 'Tony Stark Iron Man technology' : 'Resident Evil Ada Wong'
       }
 
-      // Live YouTube Search Resolution
-      const resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(query)
-      const encodedQuery = encodeURIComponent(query)
-      const youtubeUrl = resolvedVideo ? resolvedVideo.videoUrl : `https://www.youtube.com/results?search_query=${encodedQuery}`
+      // Live YouTube Search Resolution with upload date sorting for latest requests
+      const resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(coreSubject, 3800, { sortByLatest: isLatestRequest })
+      const encodedQuery = encodeURIComponent(coreSubject)
+      const spParam = isLatestRequest ? '&sp=CAI%253D' : ''
+      const youtubeUrl = resolvedVideo ? resolvedVideo.videoUrl : `https://www.youtube.com/results?search_query=${encodedQuery}${spParam}`
       const embedUrl = resolvedVideo ? resolvedVideo.embedUrl : `https://www.youtube-nocookie.com/embed?listType=search&list=${encodedQuery}&autoplay=1`
-      const displayTitle = resolvedVideo ? resolvedVideo.title : `YouTube: ${query}`
+      const displayTitle = resolvedVideo ? resolvedVideo.title : `YouTube: ${coreSubject}`
+
+      const timingInfo = resolvedVideo?.publishedTime ? ` (Published ${resolvedVideo.publishedTime}${resolvedVideo.length ? ` • ${resolvedVideo.length}` : ''})` : ''
 
       let speech = isStark
-        ? `J.A.R.V.I.S. Media Protocol engaged. Playing "${displayTitle}" directly on YouTube.`
+        ? `J.A.R.V.I.S. Media Protocol engaged. Streaming ${isLatestRequest ? 'latest video ' : ''}"${displayTitle}"${timingInfo} directly on YouTube.`
         : isMiku
-        ? `Miku da yo~! Found "${displayTitle}"! Let's watch and listen together right now~!`
-        : `Tactical briefing acknowledged. Playing "${displayTitle}" directly on YouTube.`
+        ? `Miku da yo~! Found ${isLatestRequest ? 'the latest video ' : ''}"${displayTitle}"${timingInfo}! Let's watch together right now~!`
+        : `Tactical briefing acknowledged. Playing ${isLatestRequest ? 'latest video ' : ''}"${displayTitle}"${timingInfo} directly on YouTube.`
 
       let displayText = isStark
         ? `### ⚡ J.A.R.V.I.S. Media Protocol: Task Executed\n\n` +
           `**Playing Video:** **${displayTitle}**  \n` +
-          `**Search Target:** ${query}  \n` +
+          (resolvedVideo?.publishedTime ? `**Published:** ${resolvedVideo.publishedTime} • **Duration:** ${resolvedVideo.length || 'Full Video'}  \n` : '') +
+          `**Search Target:** ${coreSubject} ${isLatestRequest ? '*(Sorted by Latest Upload)*' : ''}  \n` +
           `**Platform:** YouTube Direct Video Stream  \n` +
           `**Status:** Top Video Resolved & Autoplay Ready  \n\n` +
           `*Direct playback streaming in player below.*`
         : isMiku
         ? `### 🎤 Hatsune Miku Media Stage: Task Executed\n\n` +
           `**Playing Video:** **${displayTitle}**  \n` +
-          `**Search Query:** ${query}  \n` +
+          (resolvedVideo?.publishedTime ? `**Published:** ${resolvedVideo.publishedTime} • **Duration:** ${resolvedVideo.length || 'Full Video'}  \n` : '') +
+          `**Search Query:** ${coreSubject} ${isLatestRequest ? '*(Latest Uploads)*' : ''}  \n` +
           `**Platform:** YouTube Video Stream  \n` +
           `**Status:** Live Video Resolved & Playing  \n\n` +
           `*Playing top search match for you right now!* ✨`
         : `### 🍷 Tactical Recon: Media Task Executed\n\n` +
           `**Playing Video:** **${displayTitle}**  \n` +
-          `**Target:** ${query}  \n` +
+          (resolvedVideo?.publishedTime ? `**Published:** ${resolvedVideo.publishedTime} • **Duration:** ${resolvedVideo.length || 'Full Video'}  \n` : '') +
+          `**Target:** ${coreSubject} ${isLatestRequest ? '*(Sorted by Latest Upload)*' : ''}  \n` +
           `**Feed:** YouTube Direct Stream  \n` +
           `**Status:** Dispatched & Autoplay Ready  \n\n` +
           `*Target confirmed. Direct video playback active.*`
@@ -197,16 +281,19 @@ export class TaskExecutionService {
       const taskAction: TaskActionCard = {
         type: 'youtube',
         title: displayTitle,
-        subtitle: resolvedVideo ? `Now Streaming: ${displayTitle}` : `Streaming query: ${query}`,
+        subtitle: resolvedVideo ? (isLatestRequest ? `Latest Upload (${resolvedVideo.publishedTime || 'New'}): ${displayTitle}` : `Now Streaming: ${displayTitle}`) : `Streaming query: ${coreSubject}`,
         url: youtubeUrl,
         embedUrl,
-        query,
+        query: coreSubject,
         buttonText: 'Open & Play on YouTube',
         status: 'ready',
         icon: 'youtube',
         data: {
           videoId: resolvedVideo?.videoId,
           directPlay: !!resolvedVideo,
+          publishedTime: resolvedVideo?.publishedTime,
+          length: resolvedVideo?.length,
+          isLatest: isLatestRequest,
         },
       }
 

@@ -259,18 +259,20 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
       const ytTextMatch = (reply.display_text || '').match(/Action:\s*Opening\s*YouTube\s*(?:Target:)?\s*([^\n\r*]+)/i)
       const ytQueryMatch = ytTextMatch ? ytTextMatch[1].replace(/[*_#]/g, '').trim() : null
 
-      if (ytQueryMatch || /\b(?:open\s+youtube|youtube(?:\.com)?|play\s+.*on\s+youtube|play\s+.*(?:video|vedio))\b/i.test(message)) {
+      if (ytQueryMatch || /\b(?:open\s+youtube|youtube(?:\.com)?|play\s+.*on\s+youtube|play\s+.*(?:video|vedio))\b/i.test(message) || /\b(?:recent|resent|latest|newest)\s+(?:video|vedio)\b/i.test(message)) {
         const query = ytQueryMatch || message.replace(/\b(?:open\s+youtube|on\s+youtube|play|watch|vedio)\b/gi, '').trim() || (normalizedChar === 'mira' ? 'Hatsune Miku' : normalizedChar === 'atlas' ? 'Tony Stark Iron Man' : 'Resident Evil Ada Wong')
-        const resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(query)
+        const isLatest = /\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/i.test(message)
+        const resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(query, 3800, { sortByLatest: isLatest })
         const encoded = encodeURIComponent(query)
-        const url = resolvedVideo ? resolvedVideo.videoUrl : `https://www.youtube.com/results?search_query=${encoded}`
+        const spParam = isLatest ? '&sp=CAI%253D' : ''
+        const url = resolvedVideo ? resolvedVideo.videoUrl : `https://www.youtube.com/results?search_query=${encoded}${spParam}`
         const embedUrl = resolvedVideo ? resolvedVideo.embedUrl : `https://www.youtube-nocookie.com/embed?listType=search&list=${encoded}&autoplay=1`
         const displayTitle = resolvedVideo ? resolvedVideo.title : `YouTube: ${query}`
 
         reply.taskAction = {
           type: 'youtube',
           title: displayTitle,
-          subtitle: resolvedVideo ? `Now Streaming: ${displayTitle}` : `Video Stream`,
+          subtitle: resolvedVideo ? (isLatest ? `Latest Upload (${resolvedVideo.publishedTime || 'New'}): ${displayTitle}` : `Now Streaming: ${displayTitle}`) : `Video Stream`,
           url,
           embedUrl,
           query,
@@ -280,6 +282,9 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
           data: {
             videoId: resolvedVideo?.videoId,
             directPlay: !!resolvedVideo,
+            publishedTime: resolvedVideo?.publishedTime,
+            length: resolvedVideo?.length,
+            isLatest,
           },
         }
         if (!reply.actions) reply.actions = []
