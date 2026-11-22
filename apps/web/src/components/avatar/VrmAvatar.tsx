@@ -100,7 +100,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
       ? '/models/miku.vrm'
       : isExplicitTripo
       ? '/models/ada_fullbody_tripo.glb'
-      : '/models/ada_re4.glb'
+      : '/models/ada_re4.glb?v=re4_hair_v3'
 
     const activeUrl = modelUrl || defaultUrl
 
@@ -278,18 +278,22 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
               } else if (isAdaRe4 && mesh.material) {
                 // High-End PBR Material Tuning for Resident Evil 4 Remake Ada Wong
                 const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+                const meshName = (mesh.name || '').toLowerCase()
+                const isHairMesh = meshName.includes('hair')
+
                 const upgradedMats = mats.map((m: any) => {
                   if (!m) return m
                   const matName = (m.name || '').toLowerCase()
 
                   // 1. Hair: Alpha Cutout (Full double-sided solid strands, zero depth-sorting erasure)
-                  if (matName.includes('hair')) {
+                  if (matName.includes('hair') || isHairMesh) {
                     m.transparent = false
                     m.alphaTest = 0.02
                     m.depthWrite = true
                     m.side = THREE.DoubleSide
                     m.roughness = 0.35
                     m.metalness = 0.05
+                    m.needsUpdate = true
                     return m
                   }
 
