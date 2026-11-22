@@ -340,15 +340,14 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                         side: THREE.DoubleSide,
                       })
                     }
+                    // Pure smooth tactical leather: DO NOT inherit the red knitted sweater texture/normal map!
                     return new THREE.MeshPhysicalMaterial({
-                      map: m.map || null,
-                      color: new THREE.Color('#141518'), // Authentic RE4 Tactical Black Leather
-                      normalMap: m.normalMap || null,
-                      roughness: 0.38,
-                      metalness: 0.12,
-                      clearcoat: 0.25,
-                      clearcoatRoughness: 0.3,
-                      envMapIntensity: 1.1,
+                      color: new THREE.Color('#121316'), // Authentic RE4 Remake Tactical Black Leather
+                      roughness: 0.40,
+                      metalness: 0.08,
+                      clearcoat: 0.35,
+                      clearcoatRoughness: 0.25,
+                      envMapIntensity: 1.25,
                       transparent: false,
                       depthWrite: true,
                       side: THREE.DoubleSide,
