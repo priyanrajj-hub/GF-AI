@@ -253,6 +253,79 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
       }
     }
 
+    // Dual-Guarantee Post-LLM Task Execution Engine
+    if (!reply.taskAction) {
+      const ytTextMatch = (reply.display_text || '').match(/Action:\s*Opening\s*YouTube\s*(?:Target:)?\s*([^\n\r*]+)/i)
+      const ytQueryMatch = ytTextMatch ? ytTextMatch[1].replace(/[*_#]/g, '').trim() : null
+
+      if (ytQueryMatch || /\b(?:open\s+youtube|youtube\.com|play\s+.*on\s+youtube)\b/i.test(message)) {
+        const query = ytQueryMatch || message.replace(/\b(?:open\s+youtube|on\s+youtube|play|watch)\b/gi, '').trim() || (normalizedChar === 'mira' ? 'Hatsune Miku' : normalizedChar === 'atlas' ? 'Tony Stark Iron Man' : 'Resident Evil Ada Wong')
+        const encoded = encodeURIComponent(query)
+        const url = `https://www.youtube.com/results?search_query=${encoded}`
+        const embedUrl = `https://www.youtube-nocookie.com/embed?listType=search&list=${encoded}&autoplay=1`
+        reply.taskAction = {
+          type: 'youtube',
+          title: `YouTube: ${query}`,
+          subtitle: `Video Stream`,
+          url,
+          embedUrl,
+          query,
+          buttonText: 'Open & Play on YouTube',
+          status: 'ready',
+          icon: 'youtube',
+        }
+        if (!reply.actions) reply.actions = []
+        reply.actions.push({
+          name: 'open_youtube',
+          arguments: { query, url, embedUrl },
+        })
+      } else {
+        const searchMatch = (reply.display_text || '').match(/Action:\s*(?:Web\s*Search|Search|Google)\s*(?:Target:)?\s*([^\n\r*]+)/i)
+        if (searchMatch && searchMatch[1]) {
+          const query = searchMatch[1].replace(/[*_#]/g, '').trim()
+          const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`
+          reply.taskAction = {
+            type: 'web_search',
+            title: `Google Search: ${query}`,
+            subtitle: 'Web Search Query',
+            url,
+            query,
+            buttonText: 'Open Search Results',
+            status: 'ready',
+            icon: 'search',
+          }
+          if (!reply.actions) reply.actions = []
+          reply.actions.push({
+            name: 'web_search',
+            arguments: { query, url },
+          })
+        } else if (reply.actions && Array.isArray(reply.actions)) {
+          const ytAct = reply.actions.find(a => a.name === 'open_youtube')
+          if (ytAct && (ytAct.arguments as any)?.url) {
+            reply.taskAction = {
+              type: 'youtube',
+              title: `YouTube: ${(ytAct.arguments as any).query || 'Video Stream'}`,
+              url: (ytAct.arguments as any).url,
+              embedUrl: (ytAct.arguments as any).embedUrl,
+              query: (ytAct.arguments as any).query,
+              buttonText: 'Open & Play on YouTube',
+              status: 'ready',
+            }
+          }
+          const openUrlAct = reply.actions.find(a => a.name === 'open_url')
+          if (openUrlAct && (openUrlAct.arguments as any)?.url) {
+            reply.taskAction = {
+              type: 'open_url',
+              title: `Launch ${(openUrlAct.arguments as any).name || 'Link'}`,
+              url: (openUrlAct.arguments as any).url,
+              buttonText: 'Open Link',
+              status: 'ready',
+            }
+          }
+        }
+      }
+    }
+
     // Apply Anti-Hallucination & Fact-Grounding Guardrails
     reply.display_text = GuardrailsService.verifyFactGrounding(reply.display_text, resolvedTradingCard)
     if (reply.speech) {
@@ -276,6 +349,8 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
       tradingCard: reply.tradingCard,
       marketHoursCard: reply.marketHoursCard,
       musicTrack: reply.musicTrack,
+      taskAction: reply.taskAction,
+      actions: reply.actions,
       timestamp: Date.now(),
     }
     db.addMessage(userId, assistantMsgObj)

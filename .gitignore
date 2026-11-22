@@ -109,3 +109,5 @@ apps/web/public/models/*.vrm
 # Software Bill of Materials (generated in CI / local build)
 sbom.spdx.json
 
+.vercel
+.env*

@@ -405,6 +405,7 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
       studyFocus?: any
       todoCard?: any
       tradingCard?: any
+      taskAction?: any
     }
   ): ParsedReply => {
     let finalDisplay = sanitizeBubbleText(displayText, { userName })
@@ -474,6 +475,7 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
       studyFocus: extra?.studyFocus,
       todoCard: extra?.todoCard,
       tradingCard: extra?.tradingCard,
+      taskAction: extra?.taskAction,
     }
   }
 
@@ -525,6 +527,7 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
             todoCard: (d as any).todoCard || directObj.todoCard,
             studyFocus: (d as any).studyFocus || directObj.studyFocus,
             musicTrack: (d as any).musicTrack || directObj.musicTrack,
+            taskAction: (d as any).taskAction || directObj.taskAction,
           }
         )
       } else if (directObj.display_text || directObj.speech) {
@@ -547,6 +550,7 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
             todoCard: directObj.todoCard,
             studyFocus: directObj.studyFocus,
             musicTrack: directObj.musicTrack,
+            taskAction: directObj.taskAction,
           }
         )
       }
@@ -581,6 +585,7 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
             todoCard: (d as any).todoCard || parsed.todoCard,
             studyFocus: (d as any).studyFocus || parsed.studyFocus,
             musicTrack: (d as any).musicTrack || parsed.musicTrack,
+            taskAction: (d as any).taskAction || parsed.taskAction,
           }
         )
       }
@@ -609,6 +614,7 @@ export function parseStructuredReply(rawText: string, options?: ParseOptions): P
               todoCard: (d as any).todoCard || parsedRepaired.todoCard,
               studyFocus: (d as any).studyFocus || parsedRepaired.studyFocus,
               musicTrack: (d as any).musicTrack || parsedRepaired.musicTrack,
+              taskAction: (d as any).taskAction || parsedRepaired.taskAction,
             }
           )
         }

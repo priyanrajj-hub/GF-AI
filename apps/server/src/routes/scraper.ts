@@ -25,12 +25,15 @@ scraperRouter.post(
   }
 )
 
-// Live News Gatherer across AI, Technology, Education, and Finance
-scraperRouter.get('/api/news', requireAuth, async (req: Request, res: Response) => {
+// Live News Gatherer across AI, Technology, Education, and Finance (Supports both /api/news and /api/market/news)
+const handleNewsRequest = async (req: Request, res: Response) => {
   const category = (req.query.category as any) || 'all'
   const news = await NewsGathererService.getNews(category)
   return res.json({ category, count: news.length, news })
-})
+}
+
+scraperRouter.get('/api/news', handleNewsRequest)
+scraperRouter.get('/api/market/news', handleNewsRequest)
 
 // Real-Time Web Search Endpoint
 scraperRouter.get('/api/search', requireAuth, async (req: Request, res: Response) => {

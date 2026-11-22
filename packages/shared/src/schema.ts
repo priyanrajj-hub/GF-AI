@@ -34,6 +34,19 @@ export const ActionCallSchema = z.object({
   arguments: z.record(z.string(), z.any()).default({}),
 })
 
+export const TaskActionCardSchema = z.object({
+  type: z.enum(['youtube', 'web_search', 'open_url', 'timer', 'todo', 'character_switch', 'wardrobe', 'market']),
+  title: z.string(),
+  subtitle: z.string().optional(),
+  url: z.string().optional(),
+  embedUrl: z.string().optional(),
+  query: z.string().optional(),
+  buttonText: z.string().optional(),
+  status: z.enum(['ready', 'executed', 'running']).optional(),
+  icon: z.string().optional(),
+  data: z.record(z.string(), z.any()).optional(),
+})
+
 export const StructuredReplySchema = z.object({
   speech: z.string().describe('1-3 short spoken sentences for TTS'),
   display_text: z.string().describe('Formatted display text for the chat UI'),
@@ -48,6 +61,7 @@ export const StructuredReplySchema = z.object({
     })
     .default({}),
   actions: z.array(ActionCallSchema).optional(),
+  taskAction: TaskActionCardSchema.optional(),
   sticker: z.string().optional(),
   meme: z
     .object({

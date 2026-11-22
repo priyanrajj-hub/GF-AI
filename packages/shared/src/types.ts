@@ -65,6 +65,19 @@ export interface VoiceStyle {
   style?: string // 'cheerful' | 'empathetic' | 'authoritative' | 'calm'
 }
 
+export interface TaskActionCard {
+  type: 'youtube' | 'web_search' | 'open_url' | 'timer' | 'todo' | 'character_switch' | 'wardrobe' | 'market'
+  title: string
+  subtitle?: string
+  url?: string
+  embedUrl?: string
+  query?: string
+  buttonText?: string
+  status?: 'ready' | 'executed' | 'running'
+  icon?: string
+  data?: Record<string, any>
+}
+
 export interface ActionCall {
   name: string
   arguments: Record<string, unknown>
@@ -78,6 +91,7 @@ export interface StructuredReply {
   gesture: GestureType
   voice_style: VoiceStyle
   actions?: ActionCall[]
+  taskAction?: TaskActionCard
   sticker?: string
   meme?: {
     template: string
@@ -276,6 +290,8 @@ export interface ChatMessage {
   tradingCard?: TradingCardData
   marketHoursCard?: GlobalMarketHoursRadar
   speaker?: 'ada' | 'mira' | 'atlas'
+  taskAction?: TaskActionCard
+  actions?: ActionCall[]
   metadata?: {
     model?: string
     tokensPrompt?: number

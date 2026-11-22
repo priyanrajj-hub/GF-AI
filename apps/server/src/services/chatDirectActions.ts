@@ -8,6 +8,7 @@ import {
 import { db } from '../db/index.js'
 import { searchRealSongTrack } from './musicSearchService.js'
 import { TutorStudyService } from './tutorStudyService.js'
+import { TaskExecutionService } from './taskExecutionService.js'
 
 export interface DirectActionResult {
   reply: StructuredReply
@@ -20,6 +21,11 @@ export async function handleDirectActions(
   cleanMsg: string = message.toLowerCase().trim(),
   character: string = 'ada'
 ): Promise<DirectActionResult | null> {
+  // 0. Explicit Task Execution (YouTube, Search, Open URL, Switch Character, Web Tasks)
+  const taskResult = TaskExecutionService.handleTaskIntent(userId, message, language, cleanMsg, character)
+  if (taskResult) {
+    return taskResult
+  }
   // 1. Meme Engine Intent
   const isMemeQuery =
     /meme|funny dev|joke image|send meme|give me a meme|share a meme|meme me|show me a funny|make a meme/i.test(cleanMsg)

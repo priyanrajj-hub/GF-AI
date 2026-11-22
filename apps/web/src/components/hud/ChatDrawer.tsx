@@ -316,9 +316,48 @@ export const ChatDrawer: React.FC = () => {
           bpm: (singAction.arguments as any)?.bpm || 120,
           duration: (singAction.arguments as any)?.duration || 210,
         } : undefined),
+        taskAction: parsedReply.taskAction,
+        actions: parsedReply.actions,
         timestamp: Date.now(),
       }
       addMessage(assistantMsg)
+
+      // Execute direct task actions or automation calls (YouTube, Web Search, External URLs, Character Switch)
+      if (parsedReply.actions && Array.isArray(parsedReply.actions)) {
+        for (const act of parsedReply.actions) {
+          if (act.name === 'open_youtube' || act.name === 'open_url' || act.name === 'web_search') {
+            const url = (act.arguments as any)?.url
+            if (url) {
+              try {
+                window.open(url, '_blank', 'noopener,noreferrer')
+              } catch (e) {
+                console.warn('[Action] Auto-open blocked by browser:', e)
+              }
+            }
+          } else if (act.name === 'switch_character') {
+            const char = (act.arguments as any)?.character || (act.arguments as any)?.target
+            if (char === 'ada' || char === 'mira' || char === 'atlas') {
+              setActiveCharacter(char)
+            }
+          }
+        }
+      }
+
+      if (parsedReply.taskAction) {
+        if (parsedReply.taskAction.url && (parsedReply.taskAction.type === 'youtube' || parsedReply.taskAction.type === 'open_url' || parsedReply.taskAction.type === 'web_search')) {
+          try {
+            window.open(parsedReply.taskAction.url, '_blank', 'noopener,noreferrer')
+          } catch (e) {
+            console.warn('[TaskAction] Auto-open blocked by browser:', e)
+          }
+        } else if (parsedReply.taskAction.type === 'character_switch') {
+          const char = parsedReply.taskAction.data?.character
+          if (char === 'ada' || char === 'mira' || char === 'atlas') {
+            setActiveCharacter(char)
+          }
+        }
+      }
+
       if (singAction) {
         const songObj = (singAction.arguments as any)?.song
         const songId = (singAction.arguments as any)?.songId || 'song-idol-spark'
@@ -388,6 +427,89 @@ export const ChatDrawer: React.FC = () => {
       console.warn('[Chat Send Network Fallback]', err)
 
       const lower = text.toLowerCase()
+
+      // Client Task Intent Fallback: YouTube, Search, URL, Character Switch
+      const isYouTubeFallback =
+        /\b(?:open\s+youtube|youtube\.com|play\s+.*on\s+youtube)\b/i.test(lower) ||
+        /^open\s+youtube/i.test(lower) ||
+        /^(?:play|watch|stream)\s+.*(?:video|clip|mv)\b/i.test(lower)
+
+      if (isYouTubeFallback) {
+        let q = lower
+          .replace(/^open\s+youtube\s*(?:and\s+)?[:,-]?\s*/i, '')
+          .replace(/\b(?:on\s+youtube|in\s+youtube|from\s+youtube)\b/gi, '')
+          .replace(/\b(?:and\s+)?(?:please\s+)?(?:open|launch|play|search\s+for|search|watch|stream|find)\b/gi, '')
+          .replace(/\b(?:a\s+)?(?:video|clip|mv|song|track)\b/gi, '')
+          .replace(/(madangowri)(latest)/i, '$1 $2')
+          .replace(/\b(?:latest|recent|new)\s+vedio\b/gi, 'latest video')
+          .replace(/\bvedio\b/gi, 'video')
+          .replace(/\b(?:a|an|the)\s+/gi, '')
+          .trim()
+
+        if (/madangowri/i.test(q)) q = q.replace(/madangowri/i, 'Madan Gowri')
+        if (/miku/i.test(lower)) {
+          if (!q || q.toLowerCase() === 'miku') q = 'Hatsune Miku official music video'
+          else if (!/hatsune/i.test(q)) q = `Hatsune Miku ${q}`.trim()
+        }
+        if (!q) q = activeCharacter === 'mira' ? 'Hatsune Miku official music video' : activeCharacter === 'atlas' ? 'Tony Stark Iron Man technology' : 'Resident Evil Ada Wong'
+
+        const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`
+        const embedUrl = `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(q)}&autoplay=1`
+        try { window.open(url, '_blank', 'noopener,noreferrer') } catch (e) {}
+
+        const fallbackMsg: ChatMessage = {
+          id: `msg-${Date.now()}-youtube-task`,
+          role: 'assistant',
+          speaker: (activeCharacter as any) || 'ada',
+          content: `### ▶️ YouTube: Task Executed\n\n**Target:** ${q}  \n**Platform:** YouTube Video Stream  \n**Status:** Stream dispatched to new tab and player below.\n\n*Click "Watch on YouTube" or watch directly in the player below.*`,
+          speech: `Opening YouTube for "${q}" now. Initializing player.`,
+          taskAction: {
+            type: 'youtube',
+            title: `YouTube: ${q}`,
+            subtitle: `Streaming: ${q}`,
+            url,
+            embedUrl,
+            query: q,
+            buttonText: 'Open & Play on YouTube',
+            status: 'ready',
+            icon: 'youtube',
+          },
+          timestamp: Date.now(),
+        }
+        addMessage(fallbackMsg)
+        VoiceEngine.speak(fallbackMsg.speech || '', { rate: 1.05 })
+        setSystemState('idle')
+        return
+      }
+
+      const isSearchFallback = /^(?:search\s+for|search\s+google\s+for|google\s+search\s+for|search|google)\b/i.test(lower)
+      if (isSearchFallback) {
+        let q = lower.replace(/^(?:search\s+for|search\s+google\s+for|google\s+search\s+for|search|google)\s*/i, '').trim()
+        if (!q) q = 'Artificial Intelligence Latest News'
+        const url = `https://www.google.com/search?q=${encodeURIComponent(q)}`
+        try { window.open(url, '_blank', 'noopener,noreferrer') } catch (e) {}
+        const fallbackMsg: ChatMessage = {
+          id: `msg-${Date.now()}-search-task`,
+          role: 'assistant',
+          speaker: (activeCharacter as any) || 'ada',
+          content: `### 🌐 Web Search: Task Executed\n\n**Query:** ${q}  \n**Engine:** Google Live Search  \n**Status:** Search results query dispatched.`,
+          speech: `Searching Google for "${q}" now.`,
+          taskAction: {
+            type: 'web_search',
+            title: `Google Search: ${q}`,
+            url,
+            query: q,
+            buttonText: 'Open Search Results',
+            status: 'ready',
+          },
+          timestamp: Date.now(),
+        }
+        addMessage(fallbackMsg)
+        VoiceEngine.speak(fallbackMsg.speech || '', { rate: 1.02 })
+        setSystemState('idle')
+        return
+      }
+
       const isStockOrTrade =
         activeCharacter === 'atlas' ||
         /stock|trade|trading|buy|target|stop loss|entry|recommendation|muhurat|nifty|market|quote/i.test(lower)
@@ -953,12 +1075,12 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
           <div
             key={msg.id}
             className={`group relative flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} ${
-              msg.tradingCard ? 'w-full' : ''
+              msg.tradingCard || msg.taskAction ? 'w-full' : ''
             }`}
           >
             <div
               className={`rounded-2xl px-3.5 py-2.5 text-xs sm:text-[13px] leading-relaxed relative ${
-                msg.tradingCard
+                msg.tradingCard || msg.taskAction
                   ? 'w-full max-w-full bg-slate-900/90 border border-cyan-500/35 text-slate-100 rounded-bl-none shadow-2xl'
                   : msg.role === 'user'
                   ? 'max-w-[85%] bg-cyan-600/30 border border-cyan-400/40 text-cyan-50 rounded-br-none'
@@ -1235,6 +1357,84 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                   card={msg.tradingCard}
                   onActionClick={(prompt) => handleSendMessage(prompt)}
                 />
+              )}
+
+              {/* Holographic Interactive Task Execution Card */}
+              {msg.taskAction && (
+                <div className="my-2.5 p-3 rounded-2xl border border-cyan-400/40 bg-gradient-to-br from-slate-950 via-cyan-950/20 to-slate-900 shadow-xl backdrop-blur-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 text-sm">
+                        {msg.taskAction.type === 'youtube'
+                          ? '▶️'
+                          : msg.taskAction.type === 'web_search'
+                          ? '🌐'
+                          : msg.taskAction.type === 'open_url'
+                          ? '🔗'
+                          : msg.taskAction.type === 'character_switch'
+                          ? '🎭'
+                          : '⚡'}
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white">{msg.taskAction.title}</h4>
+                        {msg.taskAction.subtitle && (
+                          <p className="text-[10px] text-cyan-300/80 font-mono">{msg.taskAction.subtitle}</p>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                      {msg.taskAction.status === 'executed' ? 'EXECUTED' : 'READY'}
+                    </span>
+                  </div>
+
+                  {/* YouTube Interactive Player / Embed */}
+                  {msg.taskAction.type === 'youtube' && msg.taskAction.embedUrl && (
+                    <div className="my-2 rounded-xl overflow-hidden border border-red-500/30 bg-black aspect-video relative group">
+                      <iframe
+                        src={msg.taskAction.embedUrl}
+                        title={msg.taskAction.title}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  )}
+
+                  {/* External Launch & Interaction Button */}
+                  {msg.taskAction.url && (
+                    <div className="mt-2 pt-2 border-t border-cyan-500/20 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-mono truncate max-w-[180px]">
+                        {msg.taskAction.url.replace(/^https?:\/\//, '')}
+                      </span>
+                      <a
+                        href={msg.taskAction.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-200 text-[11px] font-semibold transition-all shadow-md hover:scale-[1.02]"
+                      >
+                        {msg.taskAction.type === 'youtube'
+                          ? '▶️ Watch on YouTube'
+                          : msg.taskAction.type === 'web_search'
+                          ? '🔍 Open Google Results'
+                          : '🚀 Launch Destination'}
+                        <span className="text-xs">↗</span>
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Character switch feedback */}
+                  {msg.taskAction.type === 'character_switch' && msg.taskAction.data?.character && (
+                    <div className="mt-2 pt-2 border-t border-cyan-500/20 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-300">Synchronized with 3D Holographic Stage</span>
+                      <button
+                        onClick={() => setActiveCharacter(msg.taskAction?.data?.character)}
+                        className="px-2.5 py-1 rounded-lg bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400/40 text-pink-200 text-[10px] font-mono cursor-pointer"
+                      >
+                        Re-sync Stage ↺
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Display text / Markdown */}
