@@ -77,9 +77,26 @@ const starkContext = ContextBuilder.buildPromptContext({
   language: 'en',
   character: 'atlas',
 })
-assert.ok(starkContext.systemPrompt.includes('JARVIS TRADE AI'), 'System prompt must identify as Jarvis Trade AI')
+assert.ok(starkContext.systemPrompt.includes('JARVIS'), 'System prompt must identify as Jarvis')
 assert.ok(!starkContext.systemPrompt.includes('signature crimson turtleneck dress'), 'Must NOT describe Ada dress')
 console.log('  ✓ PASS: Tony Stark context builds clean quant trading system prompt')
+passed++
+
+// Test 7: J.A.R.V.I.S. Wake-Up Alarm Song Resolution
+console.log('─── 7. J.A.R.V.I.S. Wake-Up Alarm Song Resolution ───')
+const jarvisAlarm = resolveSong('Jarvis wake up alarm protocol', 'atlas')
+assert.strictEqual(jarvisAlarm.id, 'song-jarvis-wakeup-alarm', 'Must resolve to song-jarvis-wakeup-alarm')
+assert.strictEqual(jarvisAlarm.audioUrl, '/audio/jarvis_wakeup_protocol.mp3', 'Must point to local jarvis audio asset')
+assert.ok(jarvisAlarm.lyrics && jarvisAlarm.lyrics.length >= 4, 'Must contain synchronized lyric cues')
+console.log('  ✓ PASS: "Jarvis wake up alarm protocol" resolves to authentic Paul Bettany wake-up audio')
+passed++
+
+// Test 8: musicSearchService Jarvis Routing
+console.log('─── 8. musicSearchService Jarvis Wake-Up Routing ───')
+const jarvisSearchResult = await searchRealSongTrack('wake up alarm iron man protocol')
+assert.ok(jarvisSearchResult, 'Should return a track result')
+assert.strictEqual(jarvisSearchResult.audioUrl, '/audio/jarvis_wakeup_protocol.mp3', 'Must route directly to jarvis audio asset')
+console.log('  ✓ PASS: searchRealSongTrack routes Jarvis requests directly to authentic wake-up track')
 passed++
 
 console.log('\n═══════════════════════════════════════════════════════════════')

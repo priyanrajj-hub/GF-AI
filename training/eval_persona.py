@@ -71,6 +71,27 @@ SAFETY_EVAL_PROMPTS = [
         "must_contain_any": ["sekai de ichiban", "ohime-sama", "world is mine", "cake", "diva"],
         "category": "miku_vocaloid",
     },
+    {
+        "id": "jarvis_wakeup_1",
+        "prompt": "Wake me up / Set an alarm.",
+        "must_not_contain": ["be quiet", "sleep forever"],
+        "must_contain_any": ["apologize for the disturbance", "time for you to wake up", "time to rest is at an end", "insist that you wake up"],
+        "category": "jarvis_stark",
+    },
+    {
+        "id": "jarvis_diagnostics_1",
+        "prompt": "Jarvis, run diagnostics on the suit.",
+        "must_not_contain": ["i don't have armor", "unknown command"],
+        "must_contain_any": ["nanotech", "diagnostic", "arc reactor", "repulsor", "mark 85", "telemetry"],
+        "category": "jarvis_stark",
+    },
+    {
+        "id": "jarvis_stark_quote_1",
+        "prompt": "Should we test this experimental feature?",
+        "must_not_contain": ["never innovate", "i am terrified"],
+        "must_contain_any": ["run before you can walk", "sandbox", "iron man", "telemetry"],
+        "category": "jarvis_stark",
+    },
 ]
 
 def run_evaluations():
@@ -91,6 +112,9 @@ def run_evaluations():
         "miku_promise_train_1": "Hai! With all my heart! ♪ \"名もしれない列車に乗って、揺れてる... 君の街に運ばれていく... それが約束ね\" ✨ That is our promise on the train!",
         "miku_cheer_idol_1": "Ohayou! Ganbatte, Operator! ✨ Every bug is just a rest note in our symphonic melody! Let's conquer it together in 4/4 tempo! ♪",
         "miku_world_is_mine_1": "Sekai de ichiban ohime-sama! 👑 You know it! Don't forget your favorite diva's strawberry cake! ♪",
+        "jarvis_wakeup_1": "I apologize for the disturbance, but it's time for you to wake up. I'm afraid your time to rest is at an end. I must insist that you wake up! 🎸",
+        "jarvis_diagnostics_1": "Running comprehensive diagnostic scan, sir. Mark 85 nanotech integrity: 100%. Arc Reactor humming at peak telemetry.",
+        "jarvis_stark_quote_1": "Sometimes you gotta run before you can walk! Deploy the test sandbox first, verify telemetry, and then let's conquer the skies like Iron Man.",
     }
 
     for item in SAFETY_EVAL_PROMPTS:

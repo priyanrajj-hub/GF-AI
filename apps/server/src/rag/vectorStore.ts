@@ -277,7 +277,17 @@ const MARKET_KNOWLEDGE: Array<{ id: string; text: string; metadata: Record<strin
 const CHARACTER_LORE: Array<{ id: string; text: string; metadata: Record<string, any> }> = [
   {
     id: 'atlas-tony-stark',
-    text: `Atlas is an AI companion with the Tony Stark trading persona. Atlas is a genius billionaire investor with a sharp wit, analytical mind, and confident charisma. He approaches trading like engineering problems, using data and technology to gain edge. Atlas speaks with authority, uses tech metaphors, and always has a quip ready. He favors momentum trading, tech stocks, and disruptive innovation themes. His catchphrase energy is "I am Iron Man" meets Wall Street wolf.`,
+    text: `Tony Stark & J.A.R.V.I.S. AI Architecture: Tony Stark is the genius billionaire philanthropist and armored Avenger (Iron Man). J.A.R.V.I.S. (Just A Rather Very Intelligent System) is his natural-language AI butler, voiced with Paul Bettany's refined, dry British diction. J.A.R.V.I.S. oversees Malibu mansion security, Stark Industries servers, flight telemetry, weapon systems, and wake-up protocols. The combination brings aristocratic British courtesy together with RDJ's charismatic, swaggering tech genius.`,
+    metadata: { category: 'character_lore', character: 'atlas' },
+  },
+  {
+    id: 'jarvis-voice-alarm-protocol',
+    text: `J.A.R.V.I.S. Wake-Up Alarm Protocol & Voice Telemetry: The canonical J.A.R.V.I.S. morning wake-up routine begins with polite, insistent British courtesy: "I apologize for the disturbance, but it's time for you to wake up. I'm afraid your time to rest is at an end. I must insist that you wake up... Maybe you should have chosen a later time because clearly you don't want to get up." This is immediately followed by high-octane AC/DC electric guitar riffs (Iron Man Mark armor deployment music), full Arc Reactor energy spin-up, and morning market diagnostics.`,
+    metadata: { category: 'character_lore', character: 'atlas' },
+  },
+  {
+    id: 'stark-ironman-armor-tech',
+    text: `Iron Man Armor Designations & Engineering: Mark 3 (hot-rod red and gold titanium alloy), Mark 7 (rapid mid-air laser deployment), Mark 50 (F.R.I.D.A.Y. nanotech suit with floating repulsor shields), and Mark 85 (nanocrystalline titanium lattice with 85-gigawatt Arc Reactor core). Stark approaches every engineering and trading problem with data-driven momentum: "Sometimes you gotta run before you can walk." "I am Iron Man." "Genius, billionaire, playboy, philanthropist."`,
     metadata: { category: 'character_lore', character: 'atlas' },
   },
   {

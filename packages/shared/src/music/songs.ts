@@ -518,6 +518,26 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
     ],
   },
   {
+    id: 'song-jarvis-wakeup-alarm',
+    audioUrl: '/audio/jarvis_wakeup_protocol.mp3',
+    title: 'J.A.R.V.I.S. Wake-Up Protocol & Iron Man Heavy Rock',
+    artist: 'J.A.R.V.I.S. (Paul Bettany) & Tony Stark',
+    genre: 'AI Butler Wake-Up Protocol / Heavy Rock',
+    mood: 'Commanding, Elegant & Electrifying',
+    bpm: 110,
+    duration: 30,
+    danceAction: 'dance_pop_groove',
+    lyrics: [
+      { time: 0.0, text: "I apologize for the disturbance, but it's time for you to wake up." },
+      { time: 4.0, text: "I'm afraid your time to rest is at an end." },
+      { time: 8.0, text: "I must insist that you wake up." },
+      { time: 11.5, text: "Maybe you should have chosen a later time because clearly you don't want to get up." },
+      { time: 16.0, text: "🎸 [AC/DC Heavy Rock - Iron Man Mark 85 Protocol Active!]" },
+      { time: 22.0, text: "⚡ Systems online: Repulsors primed, Arc Reactor 100%!" },
+      { time: 27.0, text: "Good morning, sir. Let's conquer today." },
+    ],
+  },
+  {
     id: 'song-cyber-sunrise',
     audioUrl: 'https://aac.saavncdn.com/987/0c846bfe931e0f136d364c5ef5885372_160.mp4',
     title: 'Cyber Sunrise',
@@ -544,8 +564,13 @@ export const POPULAR_SONG_CATALOG: SongSpec[] = [
 export function resolveSong(query: string, character?: string): SongSpec {
   const lowerQuery = query.toLowerCase()
   const isMikuActive = character === 'mira' || character === 'miku'
+  const isStarkActive = character === 'atlas' || character === 'stark' || character === 'ironman'
 
-  // 1. Direct Regex Match for Iconic Hatsune Miku Master Anthems
+  // 1. Direct Regex Match for Iconic Character Anthems & Voice Tracks
+  if (/jarvis|wake\s*up|alarm|morning\s*protocol|iron\s*man|tony\s*stark|acdc|back\s*in\s*black|stark\s*anthem/i.test(lowerQuery)) {
+    const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-jarvis-wakeup-alarm')
+    if (s) return { ...s }
+  }
   if (/world\s+is\s+mine|sekai\s+de/i.test(lowerQuery)) {
     const s = POPULAR_SONG_CATALOG.find((song) => song.id === 'song-miku-world-is-mine')
     if (s) return { ...s }
@@ -602,10 +627,15 @@ export function resolveSong(query: string, character?: string): SongSpec {
     }
   }
 
-  // 3. High-energy dance or Vocaloid request without specific title
+  // 3. High-energy dance, Vocaloid, or Iron Man/Jarvis request without specific title
   if (isMikuActive || clean.includes('miku') || clean.includes('vocaloid') || clean.includes('leek')) {
     const mikuSong = POPULAR_SONG_CATALOG.find((s) => s.id === 'song-miku-world-is-mine')
     if (mikuSong) return { ...mikuSong }
+  }
+
+  if (isStarkActive || clean.includes('stark') || clean.includes('jarvis') || clean.includes('iron man') || clean.includes('ironman')) {
+    const starkSong = POPULAR_SONG_CATALOG.find((s) => s.id === 'song-jarvis-wakeup-alarm')
+    if (starkSong) return { ...starkSong }
   }
 
   if (!clean || clean.includes('dancing') || clean.includes('dance')) {

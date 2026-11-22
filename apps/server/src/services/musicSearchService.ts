@@ -65,6 +65,20 @@ export async function searchRealSongTrack(query: string, language?: string): Pro
       }
     }
 
+    // Master Match: If query targets Iron Man / J.A.R.V.I.S. wake-up alarm & rock anthems, return authentic audio directly
+    if (/jarvis|wake\s*up|alarm|morning\s*protocol|iron\s*man|tony\s*stark|acdc|back\s*in\s*black|stark\s*anthem/i.test(clean)) {
+      const starkSong = resolveSong(clean, 'atlas')
+      if (starkSong && starkSong.audioUrl && !starkSong.id.startsWith('custom-song-')) {
+        return {
+          title: starkSong.title,
+          artist: starkSong.artist || 'J.A.R.V.I.S. & Tony Stark',
+          audioUrl: starkSong.audioUrl,
+          artworkUrl: starkSong.artworkUrl,
+          duration: starkSong.duration || 30,
+        }
+      }
+    }
+
     if (
       !clean ||
       clean.length < 2 ||
