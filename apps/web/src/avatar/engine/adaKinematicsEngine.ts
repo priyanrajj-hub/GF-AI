@@ -284,46 +284,30 @@ export class AdaKinematicsEngine {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 4. NATURAL HUMAN ARM & HAND POSTURE (At Outer Hips, NO Flat Front Belly)
+    // 4. NATURAL HUMAN ARM & HAND POSTURE (At Outer Hips, Verified Draping)
     // ─────────────────────────────────────────────────────────────
-    const isSassy = this.activeAction === 'hip_pop' || this.activeAction === 'sassy' || this.isPokeReaction
+    const pokeFlinch = this.isPokeReaction ? pokeArmShift * 0.12 : 0
 
     // Left Arm: Hangs naturally along left outer hip/thigh (x ≈ +0.183, y ≈ 0.698, z ≈ 0.027)
     if (this.bones.lUpperArm) {
-      if (isSassy) {
-        // Hand-on-hip pose: Upper arm angled out, elbow bent
-        this.bones.lUpperArm.rotation.set(0.12, -0.25, -0.45)
-      } else {
-        // Natural relaxed side hang: drops straight down along ribcage and side of hip
-        this.bones.lUpperArm.rotation.set(
-          0.25 + Math.sin(time * 1.6) * 0.008,
-          0.20,
-          -1.20 + breath * 0.012
-        )
-      }
+      this.bones.lUpperArm.rotation.set(
+        0.25 + Math.sin(time * 1.6) * 0.008,
+        0.20,
+        -1.20 + breath * 0.012 - pokeFlinch
+      )
     }
 
     if (this.bones.lForearm) {
-      if (isSassy) {
-        this.bones.lForearm.rotation.set(0, -0.42, 0.22)
-      } else {
-        // Natural gentle elbow flex: keeps hand aligned with lateral hip seam
-        this.bones.lForearm.rotation.set(0, -0.60, 0)
-      }
+      this.bones.lForearm.rotation.set(0, -0.60, 0)
     }
 
     if (this.bones.lHand) {
-      if (isSassy) {
-        // Hand resting firmly on waist
-        this.bones.lHand.rotation.set(-0.15, 0.25, -0.35)
-      } else {
-        // Anatomically verified: fingers point straight down (-Y: -0.998), palm faces medially (+X: 0.995)
-        this.bones.lHand.rotation.set(
-          0.05,
-          0.35 + Math.sin(time * 1.2) * 0.005,
-          -0.25
-        )
-      }
+      // Anatomically verified: fingers point straight down (-Y: -0.998), palm faces medially (+X: 0.995)
+      this.bones.lHand.rotation.set(
+        0.05,
+        0.35 + Math.sin(time * 1.2) * 0.005,
+        -0.25
+      )
     }
 
     // Right Arm: Hangs naturally alongside right tactical holster (x ≈ -0.183, y ≈ 0.698, z ≈ 0.027)
@@ -331,7 +315,7 @@ export class AdaKinematicsEngine {
       this.bones.rUpperArm.rotation.set(
         0.25 - Math.sin(time * 1.6) * 0.008,
         -0.20,
-        1.20 - breath * 0.012 + pokeArmShift
+        1.20 - breath * 0.012 + pokeFlinch
       )
     }
 
