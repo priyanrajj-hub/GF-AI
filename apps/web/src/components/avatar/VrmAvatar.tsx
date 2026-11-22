@@ -282,12 +282,13 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                   if (!m) return m
                   const matName = (m.name || '').toLowerCase()
 
-                  // 1. Hair & Eyelashes: Fix transparency depth sorting with crisp alpha testing
+                  // 1. Hair & Eyelashes: Render full double-sided cards with soft alpha edge
                   if (matName.includes('hair') || matName.includes('eyelash')) {
                     m.transparent = true
-                    m.alphaTest = 0.35
+                    m.alphaTest = 0.05
                     m.depthWrite = true
-                    m.roughness = 0.60
+                    m.side = THREE.DoubleSide
+                    m.roughness = 0.45
                     m.metalness = 0.05
                     return m
                   }
@@ -320,6 +321,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                       normalScale: new THREE.Vector2(1.2, 1.2),
                       transparent: false,
                       depthWrite: true,
+                      side: THREE.DoubleSide,
                     })
                   }
 
@@ -333,6 +335,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                         roughness: 0.25,
                         metalness: 0.85,
                         envMapIntensity: 1.5,
+                        side: THREE.DoubleSide,
                       })
                     }
                     return new THREE.MeshPhysicalMaterial({
@@ -345,6 +348,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                       envMapIntensity: 1.4,
                       transparent: false,
                       depthWrite: true,
+                      side: THREE.DoubleSide,
                     })
                   }
 
@@ -361,6 +365,7 @@ export const VrmAvatar: React.FC<VrmAvatarProps> = ({
                       normalScale: new THREE.Vector2(0.9, 0.9),
                       transparent: false,
                       depthWrite: true,
+                      side: THREE.DoubleSide,
                     })
                   }
 
