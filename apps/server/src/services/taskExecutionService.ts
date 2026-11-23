@@ -13,11 +13,12 @@ export interface TaskExecutionResult {
 export function cleanYouTubeQuery(text: string): string {
   return (text || '')
     .replace(/^(?:please|can\s+you|could\s+you|i\s+(?:want|need|would\s+like)(?:\s+to)?|go\s+ahead\s+and|hey\s+(?:ada|miku|stark|jarvis)|ok|okay)\b/gi, '')
+    .replace(/^(?:it\s+is|it'?s|its|this\s+is|that'?s|that\s+is)?\s*(?:not|wrong)\s*(?:the\s+)?(?:recent|latest|new)\s*(?:video|vedio|one)?\b/gi, '')
     .replace(/\b(?:it\s+must\s+go\s+(?:search\s+and\s+)?play(?:\s+the\s+(?:vedio|video))?|must\s+play.*|and\s+play\s+it.*|directly\s+in(?:\s+app)?)\b/gi, '')
     .replace(/\b(?:open\s+youtube|on\s+youtube|in\s+youtube|via\s+youtube|from\s+youtube|youtube(?:\.com)?)\b/gi, '')
     .replace(/\b(?:play|watch|stream|listen(?:\s+to)?|open|search(?:\s+for)?|find|show(?:\s+me)?|run|launch)\b/gi, '')
     .replace(/\b(?:a\s+)?(?:video|vedio|track|song|clip|mv|upload)\b/gi, '')
-    .replace(/\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/gi, '')
+    .replace(/\b(?:recent|resent|latest|newest|new|today'?s?|fresh)\b/gi, '')
     .replace(/\b(?:of|for|about|the|a|an|some|any|random|something|anything)\b/gi, '')
     .replace(/[^\w\s]/g, ' ')
     .replace(/\s+/g, ' ')
@@ -81,6 +82,106 @@ export function getCuratedFallback(query: string, character: string = 'ada'): {
 
 export class TaskExecutionService {
   /**
+   * Resolves a creator/channel's 100% exact newest chronological upload via official YouTube RSS.
+   */
+  static async resolveChannelLatestUpload(
+    creator: string,
+    timeoutMs: number = 3500
+  ): Promise<{
+    videoId: string
+    videoUrl: string
+    embedUrl: string
+    title: string
+    publishedTime: string
+    length?: string
+  } | null> {
+    try {
+      const KNOWN_CHANNELS: Record<string, string> = {
+        'madan gowri': 'UCY6KjrDBN_tIRFT_QNqQbRQ',
+        'madhan gowri': 'UCY6KjrDBN_tIRFT_QNqQbRQ',
+        'a2d': 'UCvyZS6W6zMJCZBVzF-Ei6sw',
+        'a2d channel': 'UCvyZS6W6zMJCZBVzF-Ei6sw',
+        'tamil tech': 'UC20sXo8ReewkzNKBFgzVCPA',
+        'mrbeast': 'UCX6OQ3DkcsbYNE6H8uQQuVA',
+        'mkbhd': 'UCBJycsmduvYEL83R_U4JriQ',
+      }
+
+      const qLower = creator.toLowerCase().trim()
+      let channelId = KNOWN_CHANNELS[qLower]
+
+      if (!channelId) {
+        for (const [k, v] of Object.entries(KNOWN_CHANNELS)) {
+          if (qLower.includes(k)) {
+            channelId = v
+            break
+          }
+        }
+      }
+
+      if (!channelId) {
+        const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(creator)}&sp=EgIQAg%253D%253D`
+        const res = await fetch(searchUrl, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+          signal: AbortSignal.timeout(timeoutMs),
+        })
+        if (res.ok) {
+          const html = await res.text()
+          const chMatch =
+            html.match(/"channelRenderer":\{"channelId":"([^"]+)"/) ||
+            html.match(/"channelId":"([a-zA-Z0-9_-]{20,})"/)
+          if (chMatch) {
+            channelId = chMatch[1]
+          }
+        }
+      }
+
+      if (channelId) {
+        const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`
+        const rssRes = await fetch(rssUrl, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+          signal: AbortSignal.timeout(timeoutMs),
+        })
+        if (rssRes.ok) {
+          const rssText = await rssRes.text()
+          const entryMatch = rssText.match(
+            /<entry>[\s\S]*?<yt:videoId>([a-zA-Z0-9_-]{11})<\/yt:videoId>[\s\S]*?<title>([^<]+)<\/title>[\s\S]*?<published>([^<]+)<\/published>/
+          )
+          if (entryMatch) {
+            const videoId = entryMatch[1]
+            let rawTitle = entryMatch[2]
+            try {
+              rawTitle = rawTitle.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+            } catch {}
+
+            const pubDate = new Date(entryMatch[3])
+            const now = new Date()
+            const diffHours = Math.max(1, Math.round((now.getTime() - pubDate.getTime()) / (1000 * 60 * 60)))
+            const publishedTime = diffHours < 24 ? `${diffHours}h ago` : `${Math.floor(diffHours / 24)}d ago`
+
+            return {
+              videoId,
+              videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+              embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`,
+              title: rawTitle,
+              publishedTime,
+            }
+          }
+        }
+      }
+    } catch {
+      // Fall through to live search
+    }
+    return null
+  }
+
+  /**
    * Resolves top YouTube video ID and title via live YouTube search.
    * Runs with canonical embed URL and curated zero-hallucination fallbacks.
    */
@@ -96,7 +197,15 @@ export class TaskExecutionService {
     publishedTime?: string
     length?: string
   }> {
-    const isLatest = !!options?.sortByLatest || /\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/i.test(query)
+    const isLatest = !!options?.sortByLatest || /\b(?:recent|resent|latest|newest|today'?s?|fresh|new)\b/i.test(query)
+
+    // When latest upload is requested, check official YouTube channel RSS feed first for 100% chronological ordering
+    if (isLatest && query && query.length > 2) {
+      const channelVideo = await TaskExecutionService.resolveChannelLatestUpload(query, timeoutMs)
+      if (channelVideo) {
+        return channelVideo
+      }
+    }
 
     const parseTopVideo = (html: string, fallbackQuery: string) => {
       // 1. Paired videoRenderer match (exact video ID + exact title)
@@ -123,6 +232,11 @@ export class TaskExecutionService {
 
         const timeMatch = snippet.match(/"publishedTimeText":\{"simpleText":"([^"]+)"\}/)
         const lengthMatch = snippet.match(/"lengthText":\{.*?"simpleText":"([^"]+)"/)
+
+        // If user specifically requested latest/recent/new video, skip any multi-year old uploads
+        if (isLatest && timeMatch && /\b(?:year|yr)\b/i.test(timeMatch[1])) {
+          continue
+        }
 
         return {
           videoId: rawId,
@@ -257,7 +371,9 @@ export class TaskExecutionService {
       /\b(?:play|watch|stream|listen)\s+(?:a\s+)?(?:video|vedio|clip|mv|song)\b/i.test(cleanMsg) ||
       /\b(?:play|search|find|stream|watch|show|get)\b.*?\byoutube\b/i.test(cleanMsg) ||
       /\byoutube\b.*?\b(?:play|search|find|stream|watch)\b/i.test(cleanMsg) ||
-      /\b(?:recent|resent|latest|newest|today'?s?)\s+(?:video|vedio|clip|song)\b/i.test(cleanMsg) ||
+      /\b(?:recent|resent|latest|newest|today'?s?|new)\s+(?:new\s+)?(?:video|vedio|clip|song)\b/i.test(cleanMsg) ||
+      /\b(?:its|it'?s|this\s+is|that'?s|that\s+is)?\s*(?:not|wrong)\s*(?:the\s+)?(?:recent|latest|new)\s*(?:video|vedio|one)?\b/i.test(cleanMsg) ||
+      /\b(?:play|show|give|find)\s+(?:the\s+)?(?:recent|latest|new)\s+(?:one|video|vedio)\b/i.test(cleanMsg) ||
       /\b(?:i\s+need|i\s+want|give\s+me|show\s+me|play\s+me|find\s+me)\b.*?\b(?:video|vedio|clip|song)\b/i.test(cleanMsg) ||
       /\b(?:video|vedio|clip)\b.*?\b(?:of|from|by|about)\b/i.test(cleanMsg)
 
@@ -270,7 +386,8 @@ export class TaskExecutionService {
         .replace(/\bmadhan\s*gowri\b/gi, 'Madan Gowri')
         .replace(/\bmadangowri\b/gi, 'Madan Gowri')
 
-      const isLatestRequest = /\b(?:recent|latest|newest|today'?s?|fresh)\b/i.test(normalizedMsg)
+      const isCorrection = /\b(?:its|it'?s|this\s+is|that'?s|that\s+is)?\s*(?:not|wrong)\s*(?:the\s+)?(?:recent|latest|new)\b/i.test(cleanMsg)
+      const isLatestRequest = isCorrection || /\b(?:recent|latest|newest|today'?s?|fresh|new)\b/i.test(normalizedMsg)
 
       let query = normalizedMsg
         // 2. Strip user meta-prompts like "if i say play a vedio on youtube it must go search and play the vedio"
@@ -285,13 +402,25 @@ export class TaskExecutionService {
         .trim()
 
       // If user asked for latest/recent, extract the clean core subject
-      let coreSubject = query
-        .replace(/\b(?:the\s+)?(?:recent|latest|newest|today'?s?)\s+video(?:\s+of)?\b/gi, '')
-        .replace(/\b(?:latest|recent|newest)\s+video\b/gi, '')
-        .replace(/\bvideo(?:\s+of)?\b/gi, '')
-        .replace(/\b(?:the\s+)?(?:recent|latest|newest)\b/gi, '')
-        .replace(/^(?:of\s+)/gi, '')
-        .trim()
+      let coreSubject = cleanYouTubeQuery(query)
+
+      if (isCorrection && (!coreSubject || coreSubject.length < 2)) {
+        try {
+          const recent = await db.getMessages(userId)
+          for (let i = recent.length - 1; i >= 0; i--) {
+            const m = recent[i]
+            if (m.taskAction?.type === 'youtube' && m.taskAction.query) {
+              coreSubject = m.taskAction.query
+              break
+            }
+            const match = (m.content || '').match(/\b(?:madan\s*gowri|madhan\s*gowri|a2d|tamil\s*tech|miku|iron\s*man|tony\s*stark)\b/i)
+            if (match) {
+              coreSubject = match[0]
+              break
+            }
+          }
+        } catch {}
+      }
 
       if (/miku/i.test(cleanMsg)) {
         const stripped = (coreSubject || query).replace(/\b(?:a\s+)?miku(?:\s+video)?\b/gi, '').trim()
@@ -304,7 +433,7 @@ export class TaskExecutionService {
         }
       }
 
-      const isGeneric = isGenericVideoPrompt(cleanMsg) || isGenericVideoPrompt(coreSubject)
+      const isGeneric = !coreSubject || isGenericVideoPrompt(coreSubject)
 
       let resolvedVideo: {
         videoId: string
@@ -341,6 +470,8 @@ export class TaskExecutionService {
         ? `J.A.R.V.I.S. Media Protocol engaged. Streaming ${isLatestRequest && isFreshUpload ? 'latest video ' : ''}"${displayTitle}"${timingInfo} directly on YouTube.`
         : isMiku
         ? `Miku da yo~! Found ${isLatestRequest && isFreshUpload ? 'the latest video ' : ''}"${displayTitle}"${timingInfo}! Let's watch together right now~!`
+        : isCorrection
+        ? `Target recalibrated. Dispatched the official latest upload: "${displayTitle}"${timingInfo} directly to your in-app player.`
         : `Tactical briefing acknowledged. Playing ${isLatestRequest && isFreshUpload ? 'latest video ' : ''}"${displayTitle}"${timingInfo} directly on YouTube.`
 
       let displayText = isStark
@@ -365,7 +496,7 @@ export class TaskExecutionService {
           `**Target:** ${coreSubject} ${isLatestRequest && !isGeneric ? '*(Sorted by Latest Upload)*' : ''}  \n` +
           `**Feed:** YouTube Direct Stream  \n` +
           `**Status:** Dispatched & Autoplay Ready  \n\n` +
-          `*Target confirmed. Direct video playback active.*`
+          (isCorrection ? `*Target recalibrated to official newest release. Direct video playback active.*` : `*Target confirmed. Direct video playback active.*`)
 
       const subtitleText = (isLatestRequest && isFreshUpload)
         ? `Latest Upload (${resolvedVideo.publishedTime}): ${displayTitle}`

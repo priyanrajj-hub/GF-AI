@@ -258,11 +258,34 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
     if (!reply.taskAction) {
       const ytTextMatch = (reply.display_text || '').match(/Action:\s*Opening\s*YouTube\s*(?:Target:)?\s*([^\n\r*]+)/i)
       const ytQueryMatch = ytTextMatch ? ytTextMatch[1].replace(/[*_#]/g, '').trim() : null
+      const isCorrection = /\b(?:its|it'?s|this\s+is|that'?s|that\s+is)?\s*(?:not|wrong)\s*(?:the\s+)?(?:recent|latest|new)\b/i.test(message)
+      const isLatest = isCorrection || /\b(?:recent|resent|latest|newest|today'?s?|fresh|new)\b/i.test(message) || /\b(?:recent|resent|latest|newest|today'?s?|fresh|new)\b/i.test(ytQueryMatch || '')
 
-      if (ytQueryMatch || /\b(?:open\s+youtube|youtube(?:\.com)?|play\s+.*on\s+youtube|play\s+.*(?:video|vedio))\b/i.test(message) || /\b(?:recent|resent|latest|newest)\s+(?:video|vedio)\b/i.test(message)) {
-        const cleanedQuery = cleanYouTubeQuery(ytQueryMatch || message)
-        const isGeneric = isGenericVideoPrompt(cleanedQuery)
-        const isLatest = /\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/i.test(message) || /\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/i.test(ytQueryMatch || '')
+      if (ytQueryMatch || isCorrection || /\b(?:open\s+youtube|youtube(?:\.com)?|play\s+.*on\s+youtube|play\s+.*(?:video|vedio))\b/i.test(message) || /\b(?:recent|resent|latest|newest|new)\s+(?:new\s+)?(?:video|vedio)\b/i.test(message)) {
+        let query = cleanYouTubeQuery(message)
+        if (!query && ytQueryMatch && !isCorrection) {
+          query = cleanYouTubeQuery(ytQueryMatch)
+        }
+
+        if (isCorrection && (!query || query.length < 2)) {
+          try {
+            const recent = await db.getMessages(userId)
+            for (let i = recent.length - 1; i >= 0; i--) {
+              const m = recent[i]
+              if (m.taskAction?.type === 'youtube' && m.taskAction.query) {
+                query = m.taskAction.query
+                break
+              }
+              const match = (m.content || '').match(/\b(?:madan\s*gowri|madhan\s*gowri|a2d|tamil\s*tech|miku|iron\s*man|tony\s*stark)\b/i)
+              if (match) {
+                query = match[0]
+                break
+              }
+            }
+          } catch {}
+        }
+
+        const isGeneric = isGenericVideoPrompt(query)
 
         let resolvedVideo: {
           videoId: string
@@ -272,8 +295,6 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
           publishedTime?: string
           length?: string
         }
-
-        let query = cleanedQuery
         if (isGeneric) {
           resolvedVideo = getCuratedFallback('', normalizedChar)
           query = normalizedChar === 'mira' ? 'Hatsune Miku official music video' : normalizedChar === 'atlas' ? 'Marvel Studios Iron Man (Tony Stark)' : 'Resident Evil Ada Wong'

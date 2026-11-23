@@ -104,6 +104,38 @@ async function runAll() {
     assert.ok(!result.reply.taskAction.subtitle?.includes('18y ago'), 'Must not hallucinate 18y ago')
   })
 
+  await test('"its not the recent new vedio" recalibrates with chat history and resolves official newest video', async () => {
+    // Seed chat history for test-user
+    const { db } = await import('../apps/server/src/db/index.js')
+    await db.addMessage('test-user-correction', {
+      id: 'msg-prev',
+      role: 'assistant',
+      speaker: 'ada',
+      content: 'Playing video',
+      taskAction: {
+        type: 'youtube',
+        title: 'Older Video',
+        query: 'Madan Gowri',
+        url: 'https://youtube.com',
+      },
+      timestamp: Date.now() - 5000,
+    })
+
+    const result = await TaskExecutionService.handleTaskIntent(
+      'test-user-correction',
+      'its not the recent new vedio',
+      'en',
+      'its not the recent new vedio',
+      'ada'
+    )
+    assert.ok(result, 'Result must not be null')
+    assert.equal(result.reply.taskAction?.type, 'youtube')
+    assert.ok(result.reply.taskAction.url.includes('youtube.com'))
+    assert.ok(result.reply.taskAction.embedUrl.includes('youtube.com/embed'))
+    assert.ok(!result.reply.taskAction.subtitle?.includes('3 yr ago'), 'Must not return 3-year-old video')
+    assert.ok(result.reply.speech.includes('recalibrated') || result.reply.speech.includes('latest'), 'Speech must confirm recalibration to latest upload')
+  })
+
   // ─── 2. Web Search Task Execution ───
   console.log('\n─── 2. Web Search Task Execution ───')
 
