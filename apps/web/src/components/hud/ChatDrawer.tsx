@@ -171,6 +171,161 @@ const YouTubePlayerCard: React.FC<{ taskAction: TaskActionCard }> = ({ taskActio
   )
 }
 
+const LiveChronometerCard: React.FC<{ taskAction: TaskActionCard; onStartTimer?: () => void }> = ({
+  taskAction,
+  onStartTimer,
+}) => {
+  const [now, setNow] = useState(Date.now())
+  const [selectedTz, setSelectedTz] = useState<'LOCAL' | 'IST' | 'EST' | 'UTC' | 'JST'>('LOCAL')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const targetTzMap = {
+    LOCAL: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata',
+    IST: 'Asia/Kolkata',
+    EST: 'America/New_York',
+    UTC: 'UTC',
+    JST: 'Asia/Tokyo',
+  }
+
+  const tz = targetTzMap[selectedTz]
+  const d = new Date(now)
+
+  let timeString = ''
+  let dateString = ''
+  try {
+    timeString = d.toLocaleTimeString('en-US', {
+      timeZone: tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    })
+    dateString = d.toLocaleDateString('en-US', {
+      timeZone: tz,
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  } catch {
+    timeString = d.toLocaleTimeString()
+    dateString = d.toLocaleDateString()
+  }
+
+  // Calculate live market session states
+  // NSE: Monday-Friday 09:15 - 15:30 IST
+  const istDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
+  const istDay = istDate.getDay() // 0 = Sun, 6 = Sat
+  const istHour = istDate.getHours()
+  const istMin = istDate.getMinutes()
+  const istTotalMin = istHour * 60 + istMin
+  const isNseOpen = istDay >= 1 && istDay <= 5 && istTotalMin >= 9 * 60 + 15 && istTotalMin < 15 * 60 + 30
+
+  // NYSE: Monday-Friday 09:30 - 16:00 EST
+  const estDate = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const estDay = estDate.getDay()
+  const estHour = estDate.getHours()
+  const estMin = estDate.getMinutes()
+  const estTotalMin = estHour * 60 + estMin
+  const isNyseOpen = estDay >= 1 && estDay <= 5 && estTotalMin >= 9 * 60 + 30 && estTotalMin < 16 * 60
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(`${timeString} (${selectedTz}) — ${dateString}`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="my-2.5 rounded-xl border border-cyan-500/40 bg-slate-950/95 overflow-hidden shadow-2xl backdrop-blur-md">
+      {/* Header bar with live beacon */}
+      <div className="px-3 py-1.5 bg-slate-900/90 border-b border-cyan-500/20 flex items-center justify-between text-[11px] font-mono">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <span className="w-2 h-2 rounded-full bg-emerald-500 absolute" />
+          <span className="text-cyan-300 font-semibold uppercase tracking-wider ml-2">ATOMIC CHRONOMETER • LIVE</span>
+        </div>
+        <span className="text-[10px] text-emerald-400 font-mono">ZERO-HALLUCINATION</span>
+      </div>
+
+      {/* Main clock display */}
+      <div className="p-3.5 flex flex-col items-center justify-center bg-gradient-to-b from-cyan-950/20 via-slate-950/40 to-slate-950/80">
+        <div className="text-3xl sm:text-4xl font-mono font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-200 to-emerald-300 tracking-wider shadow-cyan-500/50">
+          {timeString}
+        </div>
+        <div className="text-xs sm:text-sm font-medium text-slate-300 mt-1 flex items-center gap-2">
+          <span>{dateString}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono border border-cyan-400/30">
+            {selectedTz}
+          </span>
+        </div>
+
+        {/* Timezone Switcher Pill Bar */}
+        <div className="mt-3 flex items-center gap-1 p-0.5 rounded-lg bg-slate-900/90 border border-slate-800">
+          {(['LOCAL', 'IST', 'EST', 'UTC', 'JST'] as const).map((tzOption) => (
+            <button
+              key={tzOption}
+              onClick={() => setSelectedTz(tzOption)}
+              className={`px-2 py-0.5 rounded text-[10px] font-mono transition-all cursor-pointer ${
+                selectedTz === tzOption
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-md'
+                  : 'text-slate-400 hover:text-cyan-200'
+              }`}
+            >
+              {tzOption}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Global Market Sessions Telemetry */}
+      <div className="px-3 py-2 bg-slate-900/70 border-t border-slate-800 grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+        <div className="p-1 rounded bg-slate-950/60 border border-slate-800">
+          <div className="text-slate-400">🇮🇳 NSE/BSE</div>
+          <div className={`font-bold mt-0.5 ${isNseOpen ? 'text-emerald-400' : 'text-slate-500'}`}>
+            {isNseOpen ? '🟢 OPEN' : '🔴 CLOSED'}
+          </div>
+        </div>
+        <div className="p-1 rounded bg-slate-950/60 border border-slate-800">
+          <div className="text-slate-400">🇺🇸 NYSE/NASDAQ</div>
+          <div className={`font-bold mt-0.5 ${isNyseOpen ? 'text-emerald-400' : 'text-slate-500'}`}>
+            {isNyseOpen ? '🟢 OPEN' : '🔴 CLOSED'}
+          </div>
+        </div>
+        <div className="p-1 rounded bg-slate-950/60 border border-slate-800">
+          <div className="text-slate-400">⚡ CRYPTO</div>
+          <div className="font-bold text-emerald-400 mt-0.5">🟢 24/7 LIVE</div>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="px-3 py-2 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs">
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-[11px] font-mono cursor-pointer border border-slate-700"
+        >
+          {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+          <span>{copied ? 'Copied!' : 'Copy Timestamp'}</span>
+        </button>
+        {onStartTimer && (
+          <button
+            onClick={onStartTimer}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 transition-all text-[11px] font-mono cursor-pointer border border-cyan-500/40"
+          >
+            <span>⏱️ 25m Focus Timer</span>
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export const ChatDrawer: React.FC = () => {
   const {
     showChatDrawer,
@@ -407,6 +562,8 @@ export const ChatDrawer: React.FC = () => {
           lastTaskQuery,
           lastVideoId,
           recentHistory,
+          clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata',
+          clientTimestamp: Date.now(),
         }),
       })
 
@@ -1630,17 +1787,12 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                     </div>
                   )}
 
-                  {/* Chronometer / Time Box */}
+                  {/* Live Zero-Hallucination Chronometer Card */}
                   {msg.taskAction.type === 'time' && (
-                    <div className="my-2 p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-500/30 flex items-center justify-between text-xs font-mono">
-                      <div className="flex flex-col">
-                        <span className="text-cyan-400 font-bold text-sm tracking-wider">{msg.taskAction.title}</span>
-                        <span className="text-[10px] text-slate-400">{msg.taskAction.subtitle}</span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 text-[9px] border border-cyan-400/30">
-                        CHRONOMETER
-                      </span>
-                    </div>
+                    <LiveChronometerCard
+                      taskAction={msg.taskAction}
+                      onStartTimer={() => startPomodoro(25)}
+                    />
                   )}
 
                   {/* External Launch & Interaction Button (for non-YouTube tasks or when no embedded player) */}

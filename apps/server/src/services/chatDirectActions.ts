@@ -24,6 +24,8 @@ export async function handleDirectActions(
     lastTaskQuery?: string
     lastVideoId?: string
     recentHistory?: any[]
+    clientTimeZone?: string
+    clientTimestamp?: number
   }
 ): Promise<DirectActionResult | null> {
   // 0. Explicit Task Execution (YouTube, Search, Open URL, Switch Character, Web Tasks)

@@ -431,6 +431,8 @@ export class TaskExecutionService {
       lastTaskQuery?: string
       lastVideoId?: string
       recentHistory?: any[]
+      clientTimeZone?: string
+      clientTimestamp?: number
     }
   ): Promise<TaskExecutionResult | null> {
     const isMiku = character === 'mira' || character === 'miku'
@@ -1228,43 +1230,113 @@ export class TaskExecutionService {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 12. Clock & Live Telemetry Time Tasks
+    // 12. Clock & Live Telemetry Time Tasks (Zero-Hallucination Chronometer)
     // ─────────────────────────────────────────────────────────────
     const isTimeTask =
-      /\b(?:what(?:'s|\s+is)\s+(?:the\s+)?time|current\s+time|time\s+now|what\s+time\s+is\s+it|what(?:'s|\s+is)\s+(?:the\s+)?date|today(?:'s|\s+is\s+the)\s+date)\b/i.test(cleanMsg) ||
+      /\b(?:what(?:'s|\s+is)\s+(?:the\s+)?(?:current\s+)?(?:time|date|day)|current\s+(?:time|date)|time\s+now|date\s+now|what\s+time\s+is\s+it|today(?:'s|\s+is\s+the)\s+date|what\s+day\s+is\s+it|date\s+and\s+time|time\s+updater|date\s+updater|clock|chronometer|market\s+time|trading\s+time|time\s+in\s+[a-z]+)\b/i.test(cleanMsg) ||
       cleanMsg === 'time' ||
-      cleanMsg === 'date'
+      cleanMsg === 'date' ||
+      cleanMsg === 'clock' ||
+      cleanMsg.includes('date and time') ||
+      cleanMsg.includes('time now') ||
+      cleanMsg.includes('time updater')
 
     if (isTimeTask) {
       const now = new Date()
-      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
-      const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
-      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+      let targetTz = context?.clientTimeZone || 'Asia/Kolkata'
+
+      if (/\b(?:new\s*york|ny|est|wall\s*street)\b/i.test(cleanMsg)) {
+        targetTz = 'America/New_York'
+      } else if (/\b(?:london|uk|gmt|bst)\b/i.test(cleanMsg)) {
+        targetTz = 'Europe/London'
+      } else if (/\b(?:tokyo|japan|jst)\b/i.test(cleanMsg)) {
+        targetTz = 'Asia/Tokyo'
+      } else if (/\b(?:india|chennai|delhi|mumbai|ist)\b/i.test(cleanMsg)) {
+        targetTz = 'Asia/Kolkata'
+      } else if (/\b(?:utc|gmt)\b/i.test(cleanMsg)) {
+        targetTz = 'UTC'
+      }
+
+      let timeStr = ''
+      let dateStr = ''
+      try {
+        timeStr = now.toLocaleTimeString('en-US', { timeZone: targetTz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+        dateStr = now.toLocaleDateString('en-US', { timeZone: targetTz, weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
+      } catch {
+        targetTz = 'Asia/Kolkata'
+        timeStr = now.toLocaleTimeString('en-US', { timeZone: targetTz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+        dateStr = now.toLocaleDateString('en-US', { timeZone: targetTz, weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
+      }
+
+      const istTimeStr = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+      const utcTimeStr = now.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+      const estTimeStr = now.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+
+      // Calculate real-world financial market sessions
+      const istDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
+      const istDay = istDate.getDay() // 0 = Sun, 6 = Sat
+      const istTotalMin = istDate.getHours() * 60 + istDate.getMinutes()
+      const isNseOpen = istDay >= 1 && istDay <= 5 && istTotalMin >= 9 * 60 + 15 && istTotalMin < 15 * 60 + 30
+
+      const estDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+      const estDay = estDate.getDay()
+      const estTotalMin = estDate.getHours() * 60 + estDate.getMinutes()
+      const isNyseOpen = estDay >= 1 && estDay <= 5 && estTotalMin >= 9 * 60 + 30 && estTotalMin < 16 * 60
 
       const taskAction: TaskActionCard = {
         type: 'time',
         title: `${timeStr}`,
-        subtitle: `${dateStr} (${timeZone})`,
-        buttonText: 'Chronometer Synced',
+        subtitle: `${dateStr} (${targetTz})`,
+        buttonText: 'Sync Chronometer',
         status: 'executed',
         icon: 'clock',
-        data: { timeStr, dateStr, timeZone, timestamp: Date.now() },
+        data: {
+          timeStr,
+          dateStr,
+          timeZone: targetTz,
+          timestamp: Date.now(),
+          istTime: istTimeStr,
+          utcTime: utcTimeStr,
+          estTime: estTimeStr,
+          isLiveUpdater: true,
+          marketSessions: [
+            { name: 'NSE / BSE (India)', hours: '09:15 - 15:30 IST', status: isNseOpen ? 'OPEN' : 'CLOSED', isOpen: isNseOpen },
+            { name: 'NYSE / NASDAQ (US)', hours: '09:30 - 16:00 EST', status: isNyseOpen ? 'OPEN' : 'CLOSED', isOpen: isNyseOpen },
+            { name: 'Crypto Markets', hours: '24/7/365 Real-Time', status: 'OPEN', isOpen: true },
+          ],
+        },
       }
+
+      const speech = isStark
+        ? `J.A.R.V.I.S. atomic chronometer reporting. Current time is ${timeStr}, ${dateStr}. Global markets synchronized.`
+        : isMiku
+        ? `Miku says the current time is ${timeStr}! Today is ${dateStr}! Let's make every second count~!`
+        : `Chronometer synchronized. Current time is ${timeStr}, ${dateStr} (${targetTz}).`
+
+      const displayText =
+        `### ⏱️ Atomic Chronometer: Real-Time Telemetry\n\n` +
+        `**Current Time:** **${timeStr}**  \n` +
+        `**Date:** **${dateStr}**  \n` +
+        `**Timezone:** \`${targetTz}\`  \n\n` +
+        `| Market / Zone | Real-Time Clock | Operational Status |\n` +
+        `| :--- | :--- | :--- |\n` +
+        `| **Local (${targetTz})** | \`${timeStr}\` | Active Client Clock |\n` +
+        `| **🇮🇳 India (IST)** | \`${istTimeStr} IST\` | ${isNseOpen ? '🟢 NSE/BSE OPEN' : '🔴 NSE/BSE CLOSED'} |\n` +
+        `| **🇺🇸 New York (EST)** | \`${estTimeStr} EST\` | ${isNyseOpen ? '🟢 NYSE/NASDAQ OPEN' : '🔴 NYSE/NASDAQ CLOSED'} |\n` +
+        `| **🌐 UTC Standard** | \`${utcTimeStr} UTC\` | Universal Baseline |\n` +
+        `| **⚡ Crypto 24/7** | Active Continuous | 🟢 24/7/365 LIVE |\n\n` +
+        `*Live 1-second ticking chronometer updater active in card below.*`
 
       const reply: StructuredReply = {
         speaker: resolvedSpeaker,
-        speech: isStark
-          ? `Local chronometer reports ${timeStr}, ${dateStr}. System clock in sync.`
-          : isMiku
-          ? `Miku says the current time is ${timeStr}! Hope you're having an awesome day!`
-          : `Chronometer verified. Current time is ${timeStr}, ${dateStr}.`,
-        display_text: `### ⏱️ Chronometer Telemetry: Task Executed\n\n**Current Time:** **${timeStr}**  \n**Date:** **${dateStr}**  \n**Timezone:** \`${timeZone}\`  \n\n*System chronometer synchronized.*`,
+        speech,
+        display_text: displayText,
         emotion: 'calm',
         intensity: 0.85,
         gesture: 'nod',
         voice_style: { rate: 1.02, pitch: isStark ? 0.95 : 1.0, style: 'calm' },
         taskAction,
-        actions: [{ name: 'get_time', arguments: { time: timeStr, date: dateStr, timeZone } }],
+        actions: [{ name: 'get_time', arguments: { time: timeStr, date: dateStr, timeZone: targetTz, istTime: istTimeStr, estTime: estTimeStr } }],
       }
 
       const assistantMsgObj: ChatMessage = {

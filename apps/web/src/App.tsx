@@ -253,6 +253,8 @@ export const App: React.FC = () => {
           lastTaskQuery,
           lastVideoId,
           recentHistory,
+          clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata',
+          clientTimestamp: Date.now(),
         }),
       })
 

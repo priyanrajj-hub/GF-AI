@@ -30,7 +30,19 @@ const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } })
 chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), async (req, res: Response) => {
   const authReq = req as AuthenticatedRequest
   const userId = authReq.userId
-  const { message, mode, character, sliders, language, stream, lastTaskQuery, lastVideoId, recentHistory } = req.body
+  const {
+    message,
+    mode,
+    character,
+    sliders,
+    language,
+    stream,
+    lastTaskQuery,
+    lastVideoId,
+    recentHistory,
+    clientTimeZone,
+    clientTimestamp,
+  } = req.body
   const normalizedChar: 'ada' | 'mira' | 'atlas' =
     character === 'miku' || character === 'mira' ? 'mira' : character === 'atlas' ? 'atlas' : 'ada'
 
@@ -62,11 +74,13 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
 
   const cleanMsg = message.toLowerCase().trim()
 
-  // Check direct immediate actions (meme, song/dance, pomodoro, todo, youtube tasks)
+  // Check direct immediate actions (meme, song/dance, pomodoro, todo, youtube tasks, real-time clock tasks)
   const directAction = await handleDirectActions(userId, message, language, cleanMsg, normalizedChar, {
     lastTaskQuery,
     lastVideoId,
     recentHistory,
+    clientTimeZone,
+    clientTimestamp,
   })
   if (directAction) {
     if (stream) {
@@ -117,6 +131,32 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
       systemMandate += `\n[QUANTITATIVE TRADING BRAIN MANDATE: Institutional financial market telemetry active! Wire into Jarvis Trade AI. Break down the quantitative setup with hedge-fund precision, clean monospace numbers, copyable ticker symbols, and structured markdown tables. Quote numbers strictly from provided telemetry. Append mandatory disclaimer: "Disclaimer: Educational purposes only. Not SEBI registered investment advice."]`
     }
   }
+
+  // Atomic Real-World Clock & Date Telemetry (Zero-Hallucination Mandate)
+  const clockNow = new Date()
+  const userTz = clientTimeZone || 'Asia/Kolkata'
+  let localTimeStr = ''
+  let localDateStr = ''
+  try {
+    localTimeStr = clockNow.toLocaleTimeString('en-US', { timeZone: userTz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+    localDateStr = clockNow.toLocaleDateString('en-US', { timeZone: userTz, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  } catch {
+    localTimeStr = clockNow.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+    localDateStr = clockNow.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  }
+  const istTimeStr = clockNow.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+  const utcTimeStr = clockNow.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+  const estTimeStr = clockNow.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+
+  systemMandate += `\n[REAL-WORLD ATOMIC CLOCK TELEMETRY - ZERO-HALLUCINATION ENFORCED:
+- Current Year: ${clockNow.getFullYear()}
+- Today's Date: ${localDateStr}
+- Local Client Time: ${localTimeStr} (${userTz})
+- India Standard Time (IST): ${istTimeStr} IST
+- UTC Time: ${utcTimeStr} UTC
+- Wall Street EST: ${estTimeStr} EST
+- ISO Timestamp: ${clockNow.toISOString()}
+CRITICAL: All date and time responses must reflect this verified real-world atomic clock. Never hallucinate outdated years or dates.]`
 
   // Query RAG Vector Database
   let ragContext = ''

@@ -60,6 +60,202 @@ export interface MarketDataProvider {
 }
 
 /**
+ * 0. Yahoo Finance Real-Time Global Market Adapter
+ * Covers Stocks, Indices, Commodities, and Forex with zero required API keys.
+ */
+export class YahooLiveMarketProvider implements MarketDataProvider {
+  readonly name = 'Yahoo Finance Real-Time Feed'
+
+  isConfigured(): boolean {
+    return true
+  }
+
+  async getQuote(ticker: string, symbol: string, name: string, currency: string): Promise<LiveMarketQuote | null> {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1mo`
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json',
+        },
+        signal: AbortSignal.timeout(5000),
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      const meta = data?.chart?.result?.[0]?.meta
+      const quote = data?.chart?.result?.[0]?.indicators?.quote?.[0]
+      if (!meta || typeof meta.regularMarketPrice !== 'number') return null
+
+      const price = meta.regularMarketPrice
+      const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? price
+      const change = Number((price - prevClose).toFixed(2))
+      const percentChange = Number((prevClose !== 0 ? (change / prevClose) * 100 : 0).toFixed(2))
+      const dayHigh = Number((meta.regularMarketDayHigh || price).toFixed(2))
+      const dayLow = Number((meta.regularMarketDayLow || price).toFixed(2))
+      const volume = meta.regularMarketVolume || 0
+      const fiftyTwoWeekHigh = meta.fiftyTwoWeekHigh || dayHigh
+      const fiftyTwoWeekLow = meta.fiftyTwoWeekLow || dayLow
+
+      const timestamps = data?.chart?.result?.[0]?.timestamp || [Date.now()]
+      const opens = quote?.open || [price]
+      const highs = quote?.high || [dayHigh]
+      const lows = quote?.low || [dayLow]
+      const closes = quote?.close || [price]
+      const volumes = quote?.volume || [volume]
+      const asOf = meta.regularMarketTime ? meta.regularMarketTime * 1000 : Date.now()
+
+      return {
+        symbol,
+        ticker,
+        name: meta.shortName || meta.symbol || name,
+        currency: meta.currency || currency,
+        price,
+        change,
+        percentChange,
+        dayHigh,
+        dayLow,
+        previousClose: prevClose,
+        volume,
+        fiftyTwoWeekHigh,
+        fiftyTwoWeekLow,
+        candles: {
+          timestamp: timestamps.slice(-30),
+          open: opens.slice(-30).map((v: any) => v ?? price),
+          high: highs.slice(-30).map((v: any) => v ?? dayHigh),
+          low: lows.slice(-30).map((v: any) => v ?? dayLow),
+          close: closes.slice(-30).map((v: any) => v ?? price),
+          volume: volumes.slice(-30).map((v: any) => v ?? volume),
+        },
+        source: this.name,
+        asOf,
+        isLive: true,
+        isStale: false,
+        status: 'live',
+      }
+    } catch {
+      return null
+    }
+  }
+
+  async getHistorical(ticker: string, interval: string = '1d'): Promise<HistoricalCandles | null> {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${encodeURIComponent(interval)}&range=1mo`
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+        signal: AbortSignal.timeout(5000),
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      const result = data?.chart?.result?.[0]
+      if (!result) return null
+      const quote = result.indicators?.quote?.[0]
+      const timestamps = result.timestamp || []
+      const closes = (quote?.close || []).filter((c: any) => typeof c === 'number')
+
+      if (closes.length < 5) return null
+
+      return {
+        ticker,
+        source: this.name,
+        asOf: Date.now(),
+        timestamps,
+        opens: quote?.open || closes,
+        highs: quote?.high || closes,
+        lows: quote?.low || closes,
+        closes,
+        volumes: quote?.volume || closes.map(() => 0),
+      }
+    } catch {
+      return null
+    }
+  }
+}
+
+/**
+ * 0.1 Binance Public Real-Time Crypto Market Adapter
+ * Real-time 24h ticker quotes for crypto pairs with 0ms authorization.
+ */
+export class BinanceLiveMarketProvider implements MarketDataProvider {
+  readonly name = 'Binance Official Public Feed'
+
+  private static CRYPTO_MAP: Record<string, string> = {
+    'BTC-USD': 'BTCUSDT',
+    'ETH-USD': 'ETHUSDT',
+    'SOL-USD': 'SOLUSDT',
+    'BNB-USD': 'BNBUSDT',
+    'XRP-USD': 'XRPUSDT',
+    'DOGE-USD': 'DOGEUSDT',
+    'ADA-USD': 'ADAUSDT',
+    'AVAX-USD': 'AVAXUSDT',
+    'BTC': 'BTCUSDT',
+    'ETH': 'ETHUSDT',
+    'SOL': 'SOLUSDT',
+    'BNB': 'BNBUSDT',
+    'XRP': 'XRPUSDT',
+  }
+
+  isConfigured(): boolean {
+    return true
+  }
+
+  async getQuote(ticker: string, symbol: string, name: string, currency: string): Promise<LiveMarketQuote | null> {
+    const pair = BinanceLiveMarketProvider.CRYPTO_MAP[ticker.toUpperCase()] ||
+      BinanceLiveMarketProvider.CRYPTO_MAP[symbol.toUpperCase()]
+    if (!pair) return null
+
+    try {
+      const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${pair}`
+      const res = await fetch(url, { signal: AbortSignal.timeout(4000) })
+      if (!res.ok) return null
+      const data = await res.json()
+      if (!data || !data.lastPrice) return null
+
+      const price = parseFloat(data.lastPrice) || 0
+      const prevClose = parseFloat(data.prevClosePrice) || price
+      const change = parseFloat(data.priceChange) || 0
+      const percentChange = parseFloat(data.priceChangePercent) || 0
+      const dayHigh = parseFloat(data.highPrice) || price
+      const dayLow = parseFloat(data.lowPrice) || price
+      const volume = parseFloat(data.volume) || 0
+      const asOf = data.closeTime || Date.now()
+
+      return {
+        symbol,
+        ticker,
+        name,
+        currency: 'USD',
+        price,
+        change,
+        percentChange,
+        dayHigh,
+        dayLow,
+        previousClose: prevClose,
+        volume,
+        fiftyTwoWeekHigh: dayHigh,
+        fiftyTwoWeekLow: dayLow,
+        candles: {
+          timestamp: [asOf],
+          open: [parseFloat(data.openPrice) || price],
+          high: [dayHigh],
+          low: [dayLow],
+          close: [price],
+          volume: [volume],
+        },
+        source: this.name,
+        asOf,
+        isLive: true,
+        isStale: false,
+        status: 'live',
+      }
+    } catch {
+      return null
+    }
+  }
+}
+
+/**
  * 1. Twelve Data Official API Adapter
  */
 export class TwelveDataProvider implements MarketDataProvider {

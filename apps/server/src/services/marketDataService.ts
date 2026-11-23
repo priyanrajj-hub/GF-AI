@@ -10,6 +10,8 @@
 import {
   LiveMarketQuote,
   MarketDataProvider,
+  YahooLiveMarketProvider,
+  BinanceLiveMarketProvider,
   TwelveDataProvider,
   FinnhubProvider,
   AlphaVantageProvider,
@@ -77,11 +79,13 @@ export interface MacroDashboardData {
 
 export class MarketDataService {
   private static providers: MarketDataProvider[] = [
-    new MockMarketDataProvider(),
+    new BinanceLiveMarketProvider(),
+    new YahooLiveMarketProvider(),
     new TwelveDataProvider(),
     new FinnhubProvider(),
     new AlphaVantageProvider(),
     new NseBhavcopyProvider(),
+    new MockMarketDataProvider(),
   ]
 
   /**

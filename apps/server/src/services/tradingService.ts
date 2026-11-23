@@ -530,6 +530,71 @@ export class TradingService {
         timestamp: Date.now(),
       }
     } catch (err: any) {
+      // Crypto fallback: Binance Real-Time Kline Feed
+      if (assetClass === 'crypto') {
+        try {
+          const binancePair = ticker.replace('-USD', 'USDT').replace('-', '')
+          const bRes = await fetch(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(binancePair)}&interval=1d&limit=30`, {
+            signal: AbortSignal.timeout(4000),
+          })
+          if (bRes.ok) {
+            const klines = await bRes.json()
+            if (Array.isArray(klines) && klines.length >= 5) {
+              const safeCloses = klines.map((k: any) => parseFloat(k[4]))
+              const safeHighs = klines.map((k: any) => parseFloat(k[2]))
+              const safeLows = klines.map((k: any) => parseFloat(k[3]))
+              const latestKline = klines[klines.length - 1]
+              const price = parseFloat(latestKline[4])
+              const prevPrice = parseFloat(klines[klines.length - 2][4])
+              const change = Number((price - prevPrice).toFixed(2))
+              const percentChange = Number((prevPrice > 0 ? (change / prevPrice) * 100 : 0).toFixed(2))
+              const dayHigh = parseFloat(latestKline[2])
+              const dayLow = parseFloat(latestKline[3])
+              const volume = parseFloat(latestKline[5])
+
+              const { indicators, setup, pivots } = TechnicalAnalyzer.analyze(price, safeHighs, safeLows, safeCloses)
+              let trend: StockQuote['trend'] = 'Mild Bullish'
+              if (indicators.confluenceScore >= 75) trend = 'Strong Bullish'
+              else if (indicators.confluenceScore >= 55) trend = 'Mild Bullish'
+              else if (indicators.confluenceScore >= 40) trend = 'Consolidation'
+              else trend = 'Bearish'
+
+              const sentiment = await this.fetchMarketSentiment()
+
+              return {
+                symbol: ticker,
+                name,
+                currency,
+                assetClass,
+                price,
+                change,
+                percentChange,
+                dayHigh,
+                dayLow,
+                previousClose: prevPrice,
+                volume,
+                fiftyTwoWeekHigh: Math.max(...safeHighs),
+                fiftyTwoWeekLow: Math.min(...safeLows),
+                sparkline: safeCloses.slice(-15),
+                indicators,
+                setup,
+                pivots,
+                trend,
+                support1: pivots.s1,
+                support2: pivots.s2,
+                resistance1: pivots.r1,
+                resistance2: pivots.r2,
+                sentiment,
+                status: 'live',
+                isLive: true,
+                source: 'Binance Real-Time',
+                timestamp: Date.now(),
+              }
+            }
+          }
+        } catch {}
+      }
+
       console.warn(`[TradingService] Live feed unavailable for ${ticker}:`, err.message)
       return this.generateUnavailableQuote(ticker, name, currency, assetClass, err.message)
     }

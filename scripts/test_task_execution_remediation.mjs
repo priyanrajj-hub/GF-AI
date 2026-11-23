@@ -327,7 +327,63 @@ async function runAll() {
     assert.equal(result.reply.taskAction?.type, 'time')
     assert.ok(result.reply.taskAction.title)
     assert.ok(result.reply.taskAction.data?.timeStr)
+    assert.ok(result.reply.taskAction.data?.dateStr)
     assert.equal(result.reply.taskAction.status, 'executed')
+    assert.ok(result.reply.taskAction.data?.isLiveUpdater, 'Must enable live updater')
+    assert.ok(Array.isArray(result.reply.taskAction.data?.marketSessions), 'Must include market sessions')
+  })
+
+  await test('"date and time now updater" generates real-time chronometer with zero-hallucination year 2026', async () => {
+    const result = await TaskExecutionService.handleTaskIntent(
+      'test-user',
+      'date and time now updater',
+      'en',
+      'date and time now updater',
+      'atlas',
+      { clientTimeZone: 'Asia/Kolkata' }
+    )
+    assert.ok(result)
+    assert.equal(result.reply.taskAction?.type, 'time')
+    assert.ok(result.reply.taskAction.data?.dateStr.includes('2026'), 'Date must strictly reflect 2026')
+    assert.ok(result.reply.taskAction.data?.istTime, 'Must include IST time')
+    assert.ok(result.reply.taskAction.data?.estTime, 'Must include EST time')
+    assert.ok(result.reply.taskAction.data?.utcTime, 'Must include UTC time')
+  })
+
+  await test('"time in new york" resolves America/New_York timezone accurately', async () => {
+    const result = await TaskExecutionService.handleTaskIntent(
+      'test-user',
+      'what is the time in new york',
+      'en',
+      'what is the time in new york',
+      'ada'
+    )
+    assert.ok(result)
+    assert.equal(result.reply.taskAction?.type, 'time')
+    assert.equal(result.reply.taskAction.data?.timeZone, 'America/New_York')
+  })
+
+  // ─── 7. Live Market Data Providers ───
+  console.log('\n─── 7. Live Market Data Providers ───')
+
+  await test('YahooLiveMarketProvider fetches live real-time index quote for ^NSEI', async () => {
+    const { YahooLiveMarketProvider } = await import('../apps/server/src/market/MarketDataProvider.js')
+    const provider = new YahooLiveMarketProvider()
+    const quote = await provider.getQuote('^NSEI', '^NSEI', 'Nifty 50', 'INR')
+    assert.ok(quote, 'Quote must not be null')
+    assert.ok(quote.price > 10000, `Price must be realistic (got ${quote.price})`)
+    assert.equal(quote.isLive, true)
+    assert.equal(quote.status, 'live')
+  })
+
+  await test('BinanceLiveMarketProvider fetches live real-time crypto quote for BTC-USD', async () => {
+    const { BinanceLiveMarketProvider } = await import('../apps/server/src/market/MarketDataProvider.js')
+    const provider = new BinanceLiveMarketProvider()
+    const quote = await provider.getQuote('BTC-USD', 'BTC', 'Bitcoin', 'USD')
+    assert.ok(quote, 'Quote must not be null')
+    assert.ok(quote.price > 10000, `BTC price must be realistic (got ${quote.price})`)
+    assert.equal(quote.isLive, true)
+    assert.equal(quote.status, 'live')
   })
 
   console.log('\n═══════════════════════════════════════════════════════════════')
