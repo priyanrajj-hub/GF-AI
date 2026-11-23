@@ -258,8 +258,16 @@ CRITICAL: All date and time responses must reflect this verified real-world atom
       reply.marketHoursCard = resolvedMarketHoursCard
     }
 
-    // Dual-Guarantee Post-LLM Music Engine
+    // Mutual Exclusion: YouTube video tasks strictly own playback in the YouTube iframe.
+    // Never trigger the background song engine or attach musicTrack to YouTube playback.
+    const isYouTubeIntent =
+      reply.taskAction?.type === 'youtube' ||
+      /\b(?:open\s+youtube|youtube(?:\.com)?|play\s+.*on\s+youtube|play\s+.*(?:video|vedio)|search\s+youtube)\b/i.test(message) ||
+      /\b(?:recent|resent|latest|newest|new)\s+(?:new\s+)?(?:video|vedio)\b/i.test(message)
+
+    // Dual-Guarantee Post-LLM Music Engine (Only for non-YouTube singing/dance requests)
     if (
+      !isYouTubeIntent &&
       !reply.musicTrack &&
       (/now (?:playing|singing)/i.test(reply.display_text || '') ||
         /\b(?:bleach|naruto|one piece|jujutsu|demon slayer|anime|song|ost|theme|soundtrack)\b/i.test(message))
@@ -390,7 +398,13 @@ CRITICAL: All date and time responses must reflect this verified real-world atom
             isLatest: isLatest && !!isFreshUpload,
           },
         }
-        if (!reply.actions) reply.actions = []
+        // Strict Mutual Exclusion: YouTube video tasks never run background audio/music
+        reply.musicTrack = undefined
+        if (!reply.actions) {
+          reply.actions = []
+        } else {
+          reply.actions = reply.actions.filter((a) => a.name !== 'sing')
+        }
         reply.actions.push({
           name: 'open_youtube',
           arguments: { query, title: displayTitle, videoId: resolvedVideo.videoId, url, embedUrl },

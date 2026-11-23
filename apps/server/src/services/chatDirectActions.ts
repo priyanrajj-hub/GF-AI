@@ -93,8 +93,9 @@ export async function handleDirectActions(
     return { reply }
   }
 
-  // 2. Music, Singing & Dancing Song Intent
+  // 2. Music, Singing & Dancing Song Intent (Strictly excludes YouTube playback requests)
   const isSongDanceQuery =
+    !/\b(?:youtube(?:\.com)?|yt\b)\b/i.test(cleanMsg) &&
     !/rock[- ]paper[- ]scissors|play (?:a )?game|play riddle|play trivia/i.test(cleanMsg) &&
     (
       /^(?:ada,?\s*)?(?:mira,?\s*)?(?:atlas,?\s*)?(?:please\s*)?(?:play|sing|dance|music|song|paatu|paadu|podu)$/i.test(cleanMsg) ||

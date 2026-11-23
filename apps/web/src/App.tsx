@@ -306,8 +306,18 @@ export const App: React.FC = () => {
         }
       }
 
+      const isYouTubeActive =
+        parsedReply.taskAction?.type === 'youtube' ||
+        parsedReply.actions?.some((a) => a.name === 'open_youtube')
+
       const singAction = parsedReply.actions?.find((a) => a.name === 'sing')
-      if (singAction) {
+
+      if (isYouTubeActive) {
+        // Strict Mutual Exclusion: YouTube video has exclusive media priority.
+        // Halt any background audio engine, Vocaloid singing, and voice speech clash!
+        globalSongEngine.stop()
+        VoiceEngine.interruptSpeaking()
+      } else if (singAction) {
         const songObj = (singAction.arguments as any)?.song
         const songId = (singAction.arguments as any)?.songId || 'song-idol-spark'
         const audioUrl = (singAction.arguments as any)?.audioUrl || songObj?.audioUrl
@@ -325,9 +335,9 @@ export const App: React.FC = () => {
 
         performAction(dance as any, { emotion: 'excited', duration: (songObj?.duration || 240) + 4 })
         globalSongEngine.playSong(finalSong)
-      } else if (/now playing|now singing/i.test(parsedReply.display_text || '')) {
-        const match = (parsedReply.display_text || '').match(/now (?:playing|singing)(?:\s*&[^\n:]*)?:\s*([^\n*(]+)/i)
-        const detectedTitle = match ? match[1].trim() : 'Shape of You'
+      } else if (/now (?:performing|singing|dancing)(?:\s*&[^\n:]*)?:\s*([^\n*(]+)/i.test(parsedReply.display_text || '')) {
+        const match = (parsedReply.display_text || '').match(/now (?:performing|singing)(?:\s*&[^\n:]*)?:\s*([^\n*(]+)/i)
+        const detectedTitle = match ? match[1].trim() : 'Starlight Sparkle'
         performAction('dance_pop_groove', { emotion: 'excited', duration: 240 })
         globalSongEngine.playSong(detectedTitle)
       } else if (parsedReply.speech) {

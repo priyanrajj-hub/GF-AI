@@ -78,6 +78,14 @@ const YouTubePlayerCard: React.FC<{ taskAction: TaskActionCard }> = ({ taskActio
   const [isPlaying, setIsPlaying] = useState(true)
   const [isTheater, setIsTheater] = useState(false)
 
+  // Strict Media Isolation: Stop any background song engine or vocal speech when YouTube video is mounted/playing
+  useEffect(() => {
+    if (isPlaying) {
+      globalSongEngine.stop()
+      VoiceEngine.interruptSpeaking()
+    }
+  }, [isPlaying])
+
   const embedUrl = `https://www.youtube.com/embed/${rawId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`
   const thumbnailUrl = `https://i.ytimg.com/vi/${rawId}/hqdefault.jpg`
   const watchUrl = taskAction.url || `https://www.youtube.com/watch?v=${rawId}`
@@ -103,6 +111,8 @@ const YouTubePlayerCard: React.FC<{ taskAction: TaskActionCard }> = ({ taskActio
               if (hasError) {
                 window.open(watchUrl, '_blank', 'noopener,noreferrer')
               } else {
+                globalSongEngine.stop()
+                VoiceEngine.interruptSpeaking()
                 setIsPlaying(true)
               }
             }}
@@ -699,7 +709,15 @@ export const ChatDrawer: React.FC = () => {
         }
       }
 
-      if (singAction) {
+      const isYouTubeActive =
+        parsedReply.taskAction?.type === 'youtube' ||
+        parsedReply.actions?.some((a) => a.name === 'open_youtube')
+
+      if (isYouTubeActive) {
+        // Strict Isolation: YouTube playback must strictly halt background music and karaoke
+        globalSongEngine.stop()
+        VoiceEngine.interruptSpeaking()
+      } else if (singAction) {
         const songObj = (singAction.arguments as any)?.song
         const songId = (singAction.arguments as any)?.songId || 'song-idol-spark'
         const audioUrl = (singAction.arguments as any)?.audioUrl || songObj?.audioUrl
@@ -721,8 +739,8 @@ export const ChatDrawer: React.FC = () => {
         globalSongEngine.playSong(finalSong)
 
         // Real online track takes center stage - no TTS vocal clash!
-      } else if (parsedReply.musicTrack || /now playing|now singing/i.test(parsedReply.display_text || '')) {
-        // Fallback: If musicTrack is returned or LLM output text mentions "Now Playing", immediately trigger music & dance!
+      } else if (parsedReply.musicTrack || /now (?:performing|singing|dancing)(?:\s*&[^\n:]*)?:\s*([^\n\r*]+)/i.test(parsedReply.display_text || '')) {
+        // Fallback: If musicTrack is returned or LLM output text mentions "Now Performing/Singing", trigger music & dance
         const songObj = parsedReply.musicTrack
         const dance = songObj?.danceAction || 'dance_pop_groove'
 
@@ -730,7 +748,7 @@ export const ChatDrawer: React.FC = () => {
           performAction(dance as any, { emotion: 'excited', duration: (songObj.duration || 240) + 4 })
           globalSongEngine.playSong(songObj as any)
         } else {
-          const match = (parsedReply.display_text || '').match(/now (?:playing|singing)(?:\s*&[^\n:]*)?:\s*([^\n\r*]+)/i)
+          const match = (parsedReply.display_text || '').match(/now (?:performing|singing)(?:\s*&[^\n:]*)?:\s*([^\n\r*]+)/i)
           const detectedTitle = match ? match[1].replace(/[*_#]/g, '').trim() : 'Starlight Sparkle'
           performAction('dance_pop_groove', { emotion: 'excited', duration: 240 })
           globalSongEngine.playSong(detectedTitle)
@@ -1534,8 +1552,8 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                 </div>
               )}
 
-              {/* Holographic Studio Music Player Card */}
-              {msg.musicTrack && (
+              {/* Holographic Studio Music Player Card (Excluded during YouTube video playback) */}
+              {msg.musicTrack && msg.taskAction?.type !== 'youtube' && (
                 <div className="my-2.5 p-3 rounded-2xl border border-cyan-400/40 bg-gradient-to-br from-slate-950/95 via-cyan-950/30 to-slate-900/90 shadow-2xl backdrop-blur-xl">
                   <div className="flex items-center gap-3">
                     {/* Album Artwork with Vinyl Record Spin */}

@@ -41,9 +41,11 @@ async function runAll() {
     assert.ok(result.reply.taskAction.query.toLowerCase().includes('miku'))
     assert.equal(result.reply.taskAction.status, 'ready')
     assert.ok(result.reply.actions.some(a => a.name === 'open_youtube'))
+    assert.equal(result.reply.musicTrack, undefined, 'Must not attach musicTrack to YouTube playback')
+    assert.ok(!result.reply.actions.some(a => a.name === 'sing'), 'Must not include sing action')
   })
 
-  await test('"open youtube and play madangowrilatest vedio" resolves direct video playback', async () => {
+  await test('"open youtube and play madangowrilatest vedio" resolves direct video playback without background song', async () => {
     const result = await TaskExecutionService.handleTaskIntent(
       'test-user',
       'open youtube and play madangowrilatest vedio',
@@ -56,9 +58,10 @@ async function runAll() {
     assert.ok(result.reply.taskAction.query.includes('Madan Gowri'))
     assert.ok(result.reply.taskAction.url.includes('youtube.com'))
     assert.ok(result.reply.taskAction.embedUrl.includes('youtube.com/embed'))
+    assert.equal(result.reply.musicTrack, undefined, 'Must not attach musicTrack to YouTube playback')
   })
 
-  await test('"play a vedio on youtube it must go search and play the vedio" generates direct video playback', async () => {
+  await test('"play a vedio on youtube it must go search and play the vedio" generates direct video playback without background song', async () => {
     const result = await TaskExecutionService.handleTaskIntent(
       'test-user',
       'play a vedio on youtube it must go search and play the vedio',
@@ -71,6 +74,7 @@ async function runAll() {
     assert.ok(result.reply.taskAction.url.includes('youtube.com'))
     assert.ok(result.reply.taskAction.embedUrl.includes('youtube.com/embed'))
     assert.equal(result.reply.taskAction.status, 'ready')
+    assert.equal(result.reply.musicTrack, undefined, 'Must not attach musicTrack to YouTube playback')
   })
 
   await test('"i need the resent video of madhan gowri latest video" resolves the fresh latest video with upload date sorting', async () => {
@@ -258,6 +262,34 @@ async function runAll() {
     )
     assert.ok(directResult, 'Must return direct action result')
     assert.equal(directResult.reply.taskAction?.type, 'youtube')
+    assert.equal(directResult.reply.musicTrack, undefined, 'Must not attach musicTrack to direct YouTube action')
+  })
+
+  await test('handleDirectActions singing intent attaches musicTrack without youtube taskAction', async () => {
+    const directResult = await handleDirectActions(
+      'test-user',
+      'sing world is mine',
+      'en',
+      'sing world is mine',
+      'mira'
+    )
+    assert.ok(directResult, 'Must return direct action result')
+    assert.ok(directResult.reply.musicTrack, 'Must attach musicTrack for singing request')
+    assert.ok(directResult.reply.actions.some(a => a.name === 'sing'), 'Must include sing action')
+    assert.equal(directResult.reply.taskAction, undefined, 'Must not attach youtube taskAction for singing request')
+  })
+
+  await test('handleDirectActions with "play a song on youtube" routes to YouTube task without musicTrack', async () => {
+    const directResult = await handleDirectActions(
+      'test-user',
+      'play a song on youtube',
+      'en',
+      'play a song on youtube',
+      'ada'
+    )
+    assert.ok(directResult, 'Must return direct action result')
+    assert.equal(directResult.reply.taskAction?.type, 'youtube', 'Must route to YouTube task')
+    assert.equal(directResult.reply.musicTrack, undefined, 'Must strictly exclude musicTrack')
   })
 
   // ─── 6. Omnitask Extended Engine: Maps, Weather, Timer, Todo, Math, Wardrobe, Time ───

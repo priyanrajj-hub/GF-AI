@@ -2,7 +2,6 @@ import {
   type StructuredReply,
   type ChatMessage,
   type TaskActionCard,
-  resolveSong,
 } from '@ada/shared'
 import { db } from '../db/index.js'
 
@@ -611,9 +610,6 @@ export class TaskExecutionService {
         },
       }
 
-      // If it's a song request, also resolve authentic audio & 3D dance!
-      const song = resolveSong(cleanMsg, isMiku ? 'mira' : character)
-
       const reply: StructuredReply = {
         speaker: resolvedSpeaker,
         speech,
@@ -623,7 +619,8 @@ export class TaskExecutionService {
         gesture: isMiku ? 'celebrate' : isStark ? 'nod' : 'wave',
         voice_style: { rate: isMiku ? 1.1 : 1.05, pitch: isMiku ? 1.34 : (isStark ? 0.95 : 0.98), style: 'cheerful' },
         taskAction,
-        musicTrack: song || undefined,
+        // YouTube video tasks strictly manage their own audio/video in the YouTube player.
+        // Never attach background musicTrack or karaoke to prevent conflicting dual-playback audio.
         actions: [
           {
             name: 'open_youtube',
@@ -647,7 +644,6 @@ export class TaskExecutionService {
         emotion: reply.emotion,
         gesture: reply.gesture,
         taskAction: reply.taskAction,
-        musicTrack: reply.musicTrack,
         timestamp: Date.now(),
       }
       db.addMessage(userId, assistantMsgObj)
