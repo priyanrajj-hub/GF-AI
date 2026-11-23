@@ -25,6 +25,7 @@ import {
   MemeService,
   type ChatMessage,
   type StructuredReply,
+  type TaskActionCard,
   type AdaSticker,
   type DeveloperMeme,
   parseStructuredReply,
@@ -62,6 +63,102 @@ const CodeBlock: React.FC<{ language: string; value: string }> = ({ language, va
       <pre className="p-3 text-[11px] font-mono text-slate-100 overflow-x-auto leading-relaxed scrollbar-thin">
         <code>{value}</code>
       </pre>
+    </div>
+  )
+}
+
+const YouTubePlayerCard: React.FC<{ taskAction: TaskActionCard }> = ({ taskAction }) => {
+  const rawId =
+    taskAction.data?.videoId ||
+    (taskAction.url || '').match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/)?.[1] ||
+    (taskAction.embedUrl || '').match(/embed\/([a-zA-Z0-9_-]{11})/)?.[1] ||
+    '3op3Y2cpRAg'
+
+  const [hasError, setHasError] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(true)
+
+  const embedUrl = `https://www.youtube.com/embed/${rawId}?autoplay=1&enablejsapi=1&rel=0`
+  const thumbnailUrl = `https://i.ytimg.com/vi/${rawId}/hqdefault.jpg`
+  const watchUrl = taskAction.url || `https://www.youtube.com/watch?v=${rawId}`
+
+  return (
+    <div className="my-2.5 rounded-xl overflow-hidden border border-red-500/30 bg-slate-950/90 shadow-xl relative group">
+      {/* 16:9 Video Box */}
+      <div className="relative aspect-video w-full bg-black overflow-hidden flex items-center justify-center">
+        {!hasError && isPlaying ? (
+          <iframe
+            src={embedUrl}
+            title={taskAction.title || 'YouTube Player'}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+            onError={() => setHasError(true)}
+          />
+        ) : (
+          <div
+            onClick={() => {
+              if (hasError) {
+                window.open(watchUrl, '_blank', 'noopener,noreferrer')
+              } else {
+                setIsPlaying(true)
+              }
+            }}
+            className="w-full h-full relative cursor-pointer group/thumb bg-black flex items-center justify-center overflow-hidden"
+          >
+            <img
+              src={thumbnailUrl}
+              alt={taskAction.title}
+              onError={(e) => {
+                ;(e.currentTarget as HTMLImageElement).src = `https://i.ytimg.com/vi/${rawId}/mqdefault.jpg`
+              }}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover/thumb:scale-105 opacity-80"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
+
+            <div className="absolute flex flex-col items-center gap-2">
+              <div className="w-14 h-14 rounded-full bg-red-600/90 hover:bg-red-500 text-white flex items-center justify-center shadow-lg shadow-red-600/50 group-hover/thumb:scale-110 transition-all border border-red-400">
+                <svg className="w-7 h-7 fill-current translate-x-0.5" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+              {hasError ? (
+                <span className="text-[11px] font-mono text-amber-300 bg-black/80 px-2 py-0.5 rounded border border-amber-500/40">
+                  Click to Watch on YouTube ↗
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono text-white/90 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                  Click to Play
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Video Info Header Strip */}
+      <div className="px-3 py-2 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+          <span className="text-slate-200 font-medium truncate text-[11px]">{taskAction.title}</span>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {taskAction.data?.length && (
+            <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
+              {taskAction.data.length}
+            </span>
+          )}
+          <a
+            href={watchUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] font-mono text-red-400 hover:text-red-300 flex items-center gap-0.5 px-2 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-all"
+          >
+            YouTube ↗
+          </a>
+        </div>
+      </div>
     </div>
   )
 }
@@ -512,16 +609,20 @@ export const ChatDrawer: React.FC = () => {
           else if (!/hatsune/i.test(stripped)) q = `Hatsune Miku ${stripped}`.trim()
           else q = stripped
         }
-        if (!q) q = activeCharacter === 'mira' ? 'Hatsune Miku official music video' : activeCharacter === 'atlas' ? 'Tony Stark Iron Man technology' : 'Resident Evil Ada Wong'
+        if (!q || /^(?:a\s+)?video$/i.test(q)) {
+          q = activeCharacter === 'mira' ? 'Hatsune Miku official music video' : activeCharacter === 'atlas' ? "Marvel Studios' Iron Man" : 'Resident Evil Ada Wong'
+        }
 
-        let resolvedVideoId = ''
-        if (/madan\s*gowri/i.test(q)) resolvedVideoId = 'IDv8WCRpxds'
-        else if (/miku/i.test(q)) resolvedVideoId = 'jhl5afLEKdo'
+        let resolvedVideoId = '3op3Y2cpRAg'
+        if (/madan\s*gowri/i.test(q)) resolvedVideoId = 'OGyHQ7roUk4'
+        else if (/miku/i.test(q) || activeCharacter === 'mira') resolvedVideoId = 'MGt25mv4-2Q'
         else if (/believer/i.test(q)) resolvedVideoId = '7wtfhZwyrcc'
-        else if (/ada\s*wong/i.test(q)) resolvedVideoId = 'QKFhG3mwiII'
+        else if (/ada\s*wong/i.test(q) || activeCharacter === 'ada') resolvedVideoId = 'vWLKaj940mc'
+        else if (/stark|iron\s*man/i.test(q) || activeCharacter === 'atlas') resolvedVideoId = '3op3Y2cpRAg'
+        else resolvedVideoId = activeCharacter === 'atlas' ? '3op3Y2cpRAg' : activeCharacter === 'mira' ? 'MGt25mv4-2Q' : 'vWLKaj940mc'
 
-        const url = resolvedVideoId ? `https://www.youtube.com/watch?v=${resolvedVideoId}` : `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`
-        const embedUrl = resolvedVideoId ? `https://www.youtube-nocookie.com/embed/${resolvedVideoId}?autoplay=1` : `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(q)}&autoplay=1`
+        const url = `https://www.youtube.com/watch?v=${resolvedVideoId}`
+        const embedUrl = `https://www.youtube.com/embed/${resolvedVideoId}?autoplay=1&enablejsapi=1&rel=0`
         try { window.open(url, '_blank', 'noopener,noreferrer') } catch (e) {}
 
         const fallbackMsg: ChatMessage = {
@@ -1468,16 +1569,8 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                   </div>
 
                   {/* YouTube Interactive Player / Embed */}
-                  {msg.taskAction.type === 'youtube' && msg.taskAction.embedUrl && (
-                    <div className="my-2 rounded-xl overflow-hidden border border-red-500/30 bg-black aspect-video relative group">
-                      <iframe
-                        src={msg.taskAction.embedUrl}
-                        title={msg.taskAction.title}
-                        className="w-full h-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
+                  {msg.taskAction.type === 'youtube' && (
+                    <YouTubePlayerCard taskAction={msg.taskAction} />
                   )}
 
                   {/* Calculator Result Box */}

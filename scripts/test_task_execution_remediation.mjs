@@ -37,7 +37,7 @@ async function runAll() {
     assert.ok(result.reply.taskAction, 'reply.taskAction must be attached')
     assert.equal(result.reply.taskAction.type, 'youtube')
     assert.ok(result.reply.taskAction.url.includes('youtube.com'))
-    assert.ok(result.reply.taskAction.embedUrl.includes('youtube-nocookie.com/embed'))
+    assert.ok(result.reply.taskAction.embedUrl.includes('youtube.com/embed'))
     assert.ok(result.reply.taskAction.query.toLowerCase().includes('miku'))
     assert.equal(result.reply.taskAction.status, 'ready')
     assert.ok(result.reply.actions.some(a => a.name === 'open_youtube'))
@@ -55,7 +55,7 @@ async function runAll() {
     assert.equal(result.reply.taskAction?.type, 'youtube')
     assert.ok(result.reply.taskAction.query.includes('Madan Gowri'))
     assert.ok(result.reply.taskAction.url.includes('youtube.com'))
-    assert.ok(result.reply.taskAction.embedUrl.includes('youtube-nocookie.com/embed'))
+    assert.ok(result.reply.taskAction.embedUrl.includes('youtube.com/embed'))
   })
 
   await test('"play a vedio on youtube it must go search and play the vedio" generates direct video playback', async () => {
@@ -69,7 +69,7 @@ async function runAll() {
     assert.ok(result, 'Result must not be null')
     assert.equal(result.reply.taskAction?.type, 'youtube')
     assert.ok(result.reply.taskAction.url.includes('youtube.com'))
-    assert.ok(result.reply.taskAction.embedUrl.includes('youtube-nocookie.com/embed'))
+    assert.ok(result.reply.taskAction.embedUrl.includes('youtube.com/embed'))
     assert.equal(result.reply.taskAction.status, 'ready')
   })
 
@@ -85,9 +85,23 @@ async function runAll() {
     assert.equal(result.reply.taskAction?.type, 'youtube')
     assert.ok(result.reply.taskAction.query.includes('Madan Gowri'))
     assert.ok(result.reply.taskAction.url.includes('youtube.com'))
-    assert.ok(result.reply.taskAction.embedUrl.includes('youtube-nocookie.com/embed'))
-    assert.ok(result.reply.taskAction.data?.isLatest, 'Must be flagged as latest request')
+    assert.ok(result.reply.taskAction.embedUrl.includes('youtube.com/embed'))
     assert.ok(result.reply.taskAction.data?.videoId, 'Must have resolved a concrete videoId')
+  })
+
+  await test('Tony Stark with generic "play video" returns Iron Man spotlight video with zero hallucination', async () => {
+    const result = await TaskExecutionService.handleTaskIntent(
+      'test-user',
+      'play video',
+      'en',
+      'play video',
+      'atlas'
+    )
+    assert.ok(result, 'Result must not be null')
+    assert.equal(result.reply.taskAction?.type, 'youtube')
+    assert.ok(result.reply.taskAction.embedUrl.includes('youtube.com/embed/3op3Y2cpRAg'))
+    assert.ok(result.reply.taskAction.title.includes('Iron Man'))
+    assert.ok(!result.reply.taskAction.subtitle?.includes('18y ago'), 'Must not hallucinate 18y ago')
   })
 
   // ─── 2. Web Search Task Execution ───

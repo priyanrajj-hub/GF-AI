@@ -21,7 +21,7 @@ import { buildRagContext } from '../rag/ragService.js'
 import { handleDirectActions } from '../services/chatDirectActions.js'
 import { resolveMarketContext } from '../services/chatMarketContext.js'
 import { resolveGeneralContext } from '../services/chatGeneralContext.js'
-import { TaskExecutionService } from '../services/taskExecutionService.js'
+import { TaskExecutionService, isGenericVideoPrompt, getCuratedFallback } from '../services/taskExecutionService.js'
 
 export const chatRouter = Router()
 const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } })
@@ -260,19 +260,44 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
       const ytQueryMatch = ytTextMatch ? ytTextMatch[1].replace(/[*_#]/g, '').trim() : null
 
       if (ytQueryMatch || /\b(?:open\s+youtube|youtube(?:\.com)?|play\s+.*on\s+youtube|play\s+.*(?:video|vedio))\b/i.test(message) || /\b(?:recent|resent|latest|newest)\s+(?:video|vedio)\b/i.test(message)) {
-        const query = ytQueryMatch || message.replace(/\b(?:open\s+youtube|on\s+youtube|play|watch|vedio)\b/gi, '').trim() || (normalizedChar === 'mira' ? 'Hatsune Miku' : normalizedChar === 'atlas' ? 'Tony Stark Iron Man' : 'Resident Evil Ada Wong')
+        let rawQuery = ytQueryMatch || message.replace(/\b(?:open\s+youtube|on\s+youtube|play|watch|vedio)\b/gi, '').trim()
+        const isGeneric = isGenericVideoPrompt(message) || isGenericVideoPrompt(rawQuery)
         const isLatest = /\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/i.test(message)
-        const resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(query, 3800, { sortByLatest: isLatest })
-        const encoded = encodeURIComponent(query)
-        const spParam = isLatest ? '&sp=CAI%253D' : ''
-        const url = resolvedVideo ? resolvedVideo.videoUrl : `https://www.youtube.com/results?search_query=${encoded}${spParam}`
-        const embedUrl = resolvedVideo ? resolvedVideo.embedUrl : `https://www.youtube-nocookie.com/embed?listType=search&list=${encoded}&autoplay=1`
-        const displayTitle = resolvedVideo ? resolvedVideo.title : `YouTube: ${query}`
+
+        let resolvedVideo: {
+          videoId: string
+          videoUrl: string
+          embedUrl: string
+          title: string
+          publishedTime?: string
+          length?: string
+        }
+
+        let query = rawQuery
+        if (isGeneric) {
+          resolvedVideo = getCuratedFallback('', normalizedChar)
+          query = normalizedChar === 'mira' ? 'Hatsune Miku official music video' : normalizedChar === 'atlas' ? 'Marvel Studios Iron Man (Tony Stark)' : 'Resident Evil Ada Wong'
+        } else {
+          if (!query || /^(?:a\s+)?video$/i.test(query)) {
+            query = normalizedChar === 'mira' ? 'Hatsune Miku' : normalizedChar === 'atlas' ? 'Marvel Studios Iron Man' : 'Resident Evil Ada Wong'
+          }
+          resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(query, 4500, { sortByLatest: isLatest, character: normalizedChar })
+        }
+
+        const url = resolvedVideo.videoUrl
+        const embedUrl = resolvedVideo.embedUrl
+        const displayTitle = resolvedVideo.title
+        const isFreshUpload = resolvedVideo.publishedTime && /\b(?:hour|min|sec|day|week|today|yesterday)\b/i.test(resolvedVideo.publishedTime)
+        const subtitle = (isLatest && isFreshUpload)
+          ? `Latest Upload (${resolvedVideo.publishedTime}): ${displayTitle}`
+          : resolvedVideo.publishedTime
+          ? `Featured Video (${resolvedVideo.publishedTime}): ${displayTitle}`
+          : `Now Streaming: ${displayTitle}`
 
         reply.taskAction = {
           type: 'youtube',
           title: displayTitle,
-          subtitle: resolvedVideo ? (isLatest ? `Latest Upload (${resolvedVideo.publishedTime || 'New'}): ${displayTitle}` : `Now Streaming: ${displayTitle}`) : `Video Stream`,
+          subtitle,
           url,
           embedUrl,
           query,
@@ -280,17 +305,17 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
           status: 'ready',
           icon: 'youtube',
           data: {
-            videoId: resolvedVideo?.videoId,
-            directPlay: !!resolvedVideo,
-            publishedTime: resolvedVideo?.publishedTime,
-            length: resolvedVideo?.length,
-            isLatest,
+            videoId: resolvedVideo.videoId,
+            directPlay: true,
+            publishedTime: resolvedVideo.publishedTime,
+            length: resolvedVideo.length,
+            isLatest: isLatest && !!isFreshUpload,
           },
         }
         if (!reply.actions) reply.actions = []
         reply.actions.push({
           name: 'open_youtube',
-          arguments: { query, title: displayTitle, videoId: resolvedVideo?.videoId, url, embedUrl },
+          arguments: { query, title: displayTitle, videoId: resolvedVideo.videoId, url, embedUrl },
         })
       } else {
         const searchMatch = (reply.display_text || '').match(/Action:\s*(?:Web\s*Search|Search|Google)\s*(?:Target:)?\s*([^\n\r*]+)/i)
