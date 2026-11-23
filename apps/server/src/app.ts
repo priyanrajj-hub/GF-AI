@@ -35,6 +35,7 @@ export function createApp(): Application {
           imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
           mediaSrc: ["'self'", 'data:', 'blob:', 'https:'],
           connectSrc: ["'self'", 'blob:', 'data:', 'https:', 'wss:', 'ws:'],
+          frameSrc: ["'self'", 'https://www.youtube.com', 'https://www.youtube-nocookie.com'],
           workerSrc: ["'self'", 'blob:'],
           objectSrc: ["'none'"],
         },

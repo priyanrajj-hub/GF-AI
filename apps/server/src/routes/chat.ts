@@ -21,7 +21,7 @@ import { buildRagContext } from '../rag/ragService.js'
 import { handleDirectActions } from '../services/chatDirectActions.js'
 import { resolveMarketContext } from '../services/chatMarketContext.js'
 import { resolveGeneralContext } from '../services/chatGeneralContext.js'
-import { TaskExecutionService, isGenericVideoPrompt, getCuratedFallback } from '../services/taskExecutionService.js'
+import { TaskExecutionService, isGenericVideoPrompt, getCuratedFallback, cleanYouTubeQuery } from '../services/taskExecutionService.js'
 
 export const chatRouter = Router()
 const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } })
@@ -260,9 +260,9 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
       const ytQueryMatch = ytTextMatch ? ytTextMatch[1].replace(/[*_#]/g, '').trim() : null
 
       if (ytQueryMatch || /\b(?:open\s+youtube|youtube(?:\.com)?|play\s+.*on\s+youtube|play\s+.*(?:video|vedio))\b/i.test(message) || /\b(?:recent|resent|latest|newest)\s+(?:video|vedio)\b/i.test(message)) {
-        let rawQuery = ytQueryMatch || message.replace(/\b(?:open\s+youtube|on\s+youtube|play|watch|vedio)\b/gi, '').trim()
-        const isGeneric = isGenericVideoPrompt(message) || isGenericVideoPrompt(rawQuery)
-        const isLatest = /\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/i.test(message)
+        const cleanedQuery = cleanYouTubeQuery(ytQueryMatch || message)
+        const isGeneric = isGenericVideoPrompt(cleanedQuery)
+        const isLatest = /\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/i.test(message) || /\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/i.test(ytQueryMatch || '')
 
         let resolvedVideo: {
           videoId: string
@@ -273,14 +273,11 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
           length?: string
         }
 
-        let query = rawQuery
+        let query = cleanedQuery
         if (isGeneric) {
           resolvedVideo = getCuratedFallback('', normalizedChar)
           query = normalizedChar === 'mira' ? 'Hatsune Miku official music video' : normalizedChar === 'atlas' ? 'Marvel Studios Iron Man (Tony Stark)' : 'Resident Evil Ada Wong'
         } else {
-          if (!query || /^(?:a\s+)?video$/i.test(query)) {
-            query = normalizedChar === 'mira' ? 'Hatsune Miku' : normalizedChar === 'atlas' ? 'Marvel Studios Iron Man' : 'Resident Evil Ada Wong'
-          }
           resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(query, 4500, { sortByLatest: isLatest, character: normalizedChar })
         }
 

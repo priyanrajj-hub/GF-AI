@@ -76,15 +76,16 @@ const YouTubePlayerCard: React.FC<{ taskAction: TaskActionCard }> = ({ taskActio
 
   const [hasError, setHasError] = useState(false)
   const [isPlaying, setIsPlaying] = useState(true)
+  const [isTheater, setIsTheater] = useState(false)
 
-  const embedUrl = `https://www.youtube.com/embed/${rawId}?autoplay=1&enablejsapi=1&rel=0`
+  const embedUrl = `https://www.youtube.com/embed/${rawId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`
   const thumbnailUrl = `https://i.ytimg.com/vi/${rawId}/hqdefault.jpg`
   const watchUrl = taskAction.url || `https://www.youtube.com/watch?v=${rawId}`
 
   return (
-    <div className="my-2.5 rounded-xl overflow-hidden border border-red-500/30 bg-slate-950/90 shadow-xl relative group">
-      {/* 16:9 Video Box */}
-      <div className="relative aspect-video w-full bg-black overflow-hidden flex items-center justify-center">
+    <div className={`my-2.5 rounded-xl overflow-hidden border border-red-500/30 bg-slate-950/95 shadow-2xl relative group transition-all duration-300 ${isTheater ? 'scale-[1.02]' : ''}`}>
+      {/* 16:9 or Theater Video Box */}
+      <div className={`relative w-full bg-black overflow-hidden flex items-center justify-center transition-all duration-300 ${isTheater ? 'aspect-[16/10] max-h-[360px]' : 'aspect-video'}`}>
         {!hasError && isPlaying ? (
           <iframe
             src={embedUrl}
@@ -92,7 +93,7 @@ const YouTubePlayerCard: React.FC<{ taskAction: TaskActionCard }> = ({ taskActio
             className="w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
-            loading="lazy"
+            loading="eager"
             referrerPolicy="strict-origin-when-cross-origin"
             onError={() => setHasError(true)}
           />
@@ -128,8 +129,8 @@ const YouTubePlayerCard: React.FC<{ taskAction: TaskActionCard }> = ({ taskActio
                   Click to Watch on YouTube ↗
                 </span>
               ) : (
-                <span className="text-[10px] font-mono text-white/90 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
-                  Click to Play
+                <span className="text-[10px] font-mono text-white/90 bg-black/60 px-2.5 py-1 rounded-full border border-white/20 backdrop-blur-sm">
+                  ▶ Play Directly In-App
                 </span>
               )}
             </div>
@@ -144,6 +145,13 @@ const YouTubePlayerCard: React.FC<{ taskAction: TaskActionCard }> = ({ taskActio
           <span className="text-slate-200 font-medium truncate text-[11px]">{taskAction.title}</span>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button
+            onClick={() => setIsTheater(!isTheater)}
+            className="text-[10px] font-mono text-slate-300 hover:text-white px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all cursor-pointer"
+            title={isTheater ? 'Standard View' : 'Theater View'}
+          >
+            {isTheater ? 'Standard ⊟' : 'Theater ⛶'}
+          </button>
           {taskAction.data?.length && (
             <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
               {taskAction.data.length}
@@ -429,7 +437,7 @@ export const ChatDrawer: React.FC = () => {
       // Execute direct task actions or automation calls (YouTube, Web Search, External URLs, Character Switch, Timer, Wardrobe, Todo)
       if (parsedReply.actions && Array.isArray(parsedReply.actions)) {
         for (const act of parsedReply.actions) {
-          if (act.name === 'open_youtube' || act.name === 'open_url' || act.name === 'web_search') {
+          if (act.name === 'open_url' || act.name === 'web_search') {
             const url = (act.arguments as any)?.url
             if (url) {
               try {
@@ -438,6 +446,9 @@ export const ChatDrawer: React.FC = () => {
                 console.warn('[Action] Auto-open blocked by browser:', e)
               }
             }
+          } else if (act.name === 'open_youtube') {
+            // Direct in-app stream: Played inside the chat drawer without navigating away
+            console.log('[Action] Playing YouTube directly in-app:', (act.arguments as any)?.title)
           } else if (act.name === 'switch_character') {
             const char = (act.arguments as any)?.character || (act.arguments as any)?.target
             if (char === 'ada' || char === 'mira' || char === 'atlas') {
@@ -474,8 +485,7 @@ export const ChatDrawer: React.FC = () => {
       if (parsedReply.taskAction) {
         if (
           parsedReply.taskAction.url &&
-          (parsedReply.taskAction.type === 'youtube' ||
-            parsedReply.taskAction.type === 'open_url' ||
+          (parsedReply.taskAction.type === 'open_url' ||
             parsedReply.taskAction.type === 'web_search' ||
             parsedReply.taskAction.type === 'maps' ||
             parsedReply.taskAction.type === 'weather')
@@ -623,14 +633,13 @@ export const ChatDrawer: React.FC = () => {
 
         const url = `https://www.youtube.com/watch?v=${resolvedVideoId}`
         const embedUrl = `https://www.youtube.com/embed/${resolvedVideoId}?autoplay=1&enablejsapi=1&rel=0`
-        try { window.open(url, '_blank', 'noopener,noreferrer') } catch (e) {}
 
         const fallbackMsg: ChatMessage = {
           id: `msg-${Date.now()}-youtube-task`,
           role: 'assistant',
           speaker: (activeCharacter as any) || 'ada',
-          content: `### ▶️ YouTube: Task Executed\n\n**Playing Video:** **${q}**  \n**Platform:** YouTube Video Stream  \n**Status:** Stream dispatched to new tab and player below.\n\n*Click "Watch on YouTube" or watch directly in the player below.*`,
-          speech: `Opening YouTube for "${q}" now. Initializing player.`,
+          content: `### ▶️ YouTube: Task Executed\n\n**Playing Video:** **${q}**  \n**Platform:** YouTube In-App Video Stream  \n**Status:** Stream mounted in interactive player below.\n\n*Watch directly in the player below.*`,
+          speech: `Opening YouTube video for "${q}" now in player.`,
           taskAction: {
             type: 'youtube',
             title: `YouTube: ${q}`,
@@ -1614,8 +1623,8 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                     </div>
                   )}
 
-                  {/* External Launch & Interaction Button */}
-                  {msg.taskAction.url && (
+                  {/* External Launch & Interaction Button (for non-YouTube tasks or when no embedded player) */}
+                  {msg.taskAction.url && msg.taskAction.type !== 'youtube' && (
                     <div className="mt-2 pt-2 border-t border-cyan-500/20 flex items-center justify-between">
                       <span className="text-[10px] text-slate-400 font-mono truncate max-w-[180px]">
                         {msg.taskAction.url.replace(/^https?:\/\//, '')}
@@ -1627,9 +1636,7 @@ Jarvis pulled the technical confluences. If you're trading the special 1-hour se
                         className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-200 text-[11px] font-semibold transition-all shadow-md hover:scale-[1.02]"
                       >
                         {msg.taskAction.buttonText ||
-                          (msg.taskAction.type === 'youtube'
-                            ? '▶️ Watch on YouTube'
-                            : msg.taskAction.type === 'web_search'
+                          (msg.taskAction.type === 'web_search'
                             ? '🔍 Open Google Results'
                             : msg.taskAction.type === 'maps'
                             ? '🗺️ View in Google Maps'

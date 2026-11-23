@@ -582,10 +582,14 @@ class VoiceEngineManager {
 
       this.recognition.onresult = (event: any) => {
         let transcript = ''
+        let isFinal = false
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           transcript += event.results[i][0].transcript
+          if (event.results[i].isFinal) {
+            isFinal = true
+          }
         }
-        if (event.results[0].isFinal) {
+        if (isFinal || event.results[event.results.length - 1]?.isFinal) {
           onTranscript(transcript.trim())
           this.stopListening()
         }

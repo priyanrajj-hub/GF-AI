@@ -10,13 +10,23 @@ export interface TaskExecutionResult {
   reply: StructuredReply
 }
 
-export function isGenericVideoPrompt(text: string): boolean {
-  const t = text
-    .toLowerCase()
+export function cleanYouTubeQuery(text: string): string {
+  return (text || '')
+    .replace(/^(?:please|can\s+you|could\s+you|i\s+(?:want|need|would\s+like)(?:\s+to)?|go\s+ahead\s+and|hey\s+(?:ada|miku|stark|jarvis)|ok|okay)\b/gi, '')
+    .replace(/\b(?:it\s+must\s+go\s+(?:search\s+and\s+)?play(?:\s+the\s+(?:vedio|video))?|must\s+play.*|and\s+play\s+it.*|directly\s+in(?:\s+app)?)\b/gi, '')
+    .replace(/\b(?:open\s+youtube|on\s+youtube|in\s+youtube|via\s+youtube|from\s+youtube|youtube(?:\.com)?)\b/gi, '')
+    .replace(/\b(?:play|watch|stream|listen(?:\s+to)?|open|search(?:\s+for)?|find|show(?:\s+me)?|run|launch)\b/gi, '')
+    .replace(/\b(?:a\s+)?(?:video|vedio|track|song|clip|mv|upload)\b/gi, '')
+    .replace(/\b(?:recent|resent|latest|newest|today'?s?|fresh)\b/gi, '')
+    .replace(/\b(?:of|for|about|the|a|an|some|any|random|something|anything)\b/gi, '')
     .replace(/[^\w\s]/g, ' ')
-    .replace(/\b(?:open|play|search|watch|stream|listen|find|show|give|me|the|a|an|on|in|from|via|youtube|yt|video|vedio|clip|song|mv|latest|recent|resent|newest|today'?s?|fresh)\b/gi, '')
+    .replace(/\s+/g, ' ')
     .trim()
-  return !t || t.length < 2
+}
+
+export function isGenericVideoPrompt(text: string): boolean {
+  const cleaned = cleanYouTubeQuery(text)
+  return !cleaned || cleaned.length < 2
 }
 
 export function getCuratedFallback(query: string, character: string = 'ada'): {
@@ -29,7 +39,7 @@ export function getCuratedFallback(query: string, character: string = 'ada'): {
 } {
   const q = (query || '').toLowerCase()
   const char = (character || '').toLowerCase()
-  if (q.includes('madan') || q.includes('gowri')) {
+  if (q.includes('madan') || q.includes('madhan') || q.includes('gowri')) {
     return {
       videoId: 'OGyHQ7roUk4',
       videoUrl: 'https://www.youtube.com/watch?v=OGyHQ7roUk4',

@@ -38,6 +38,11 @@ export const App: React.FC = () => {
     settings,
     activeMode,
     activeCharacter,
+    setActiveCharacter,
+    setSkinId,
+    startPomodoro,
+    showChatDrawer,
+    toggleChatDrawer,
     addMessage,
     setSystemState,
     setEmotionAndGesture,
@@ -254,9 +259,30 @@ export const App: React.FC = () => {
         emotion: parsedReply.emotion,
         gesture: parsedReply.gesture,
         tradingCard: parsedReply.tradingCard,
+        taskAction: parsedReply.taskAction,
+        actions: parsedReply.actions,
         timestamp: Date.now(),
       }
       addMessage(assistantMsg)
+
+      if (parsedReply.taskAction) {
+        const store = useAppStore.getState()
+        if (!store.showChatDrawer) {
+          store.toggleChatDrawer()
+        }
+        if (parsedReply.taskAction.type === 'character_switch') {
+          const char = parsedReply.taskAction.data?.character
+          if (char === 'ada' || char === 'mira' || char === 'atlas') {
+            setActiveCharacter(char)
+          }
+        } else if (parsedReply.taskAction.type === 'wardrobe') {
+          const skin = parsedReply.taskAction.data?.skinId
+          if (skin) setSkinId(skin)
+        } else if (parsedReply.taskAction.type === 'timer') {
+          const duration = parsedReply.taskAction.data?.durationMinutes || 25
+          startPomodoro(duration)
+        }
+      }
 
       const singAction = parsedReply.actions?.find((a) => a.name === 'sing')
       if (singAction) {
