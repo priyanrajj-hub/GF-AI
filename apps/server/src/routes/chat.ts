@@ -30,7 +30,7 @@ const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } })
 chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), async (req, res: Response) => {
   const authReq = req as AuthenticatedRequest
   const userId = authReq.userId
-  const { message, mode, character, sliders, language, stream } = req.body
+  const { message, mode, character, sliders, language, stream, lastTaskQuery, lastVideoId, recentHistory } = req.body
   const normalizedChar: 'ada' | 'mira' | 'atlas' =
     character === 'miku' || character === 'mira' ? 'mira' : character === 'atlas' ? 'atlas' : 'ada'
 
@@ -42,7 +42,10 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
   const activeMode: PersonalityMode = mode || settings.mode || 'companion'
   const activeSliders: PersonalitySliders = sliders || settings.sliders
 
-  const history = db.getMessages(userId, 20)
+  let history = db.getMessages(userId, 20)
+  if ((!history || history.length === 0) && Array.isArray(recentHistory) && recentHistory.length > 0) {
+    history = recentHistory
+  }
 
   // Save User message
   const userMsgObj: ChatMessage = {
@@ -59,8 +62,12 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
 
   const cleanMsg = message.toLowerCase().trim()
 
-  // Check direct immediate actions (meme, song/dance, pomodoro, todo)
-  const directAction = await handleDirectActions(userId, message, language, cleanMsg, normalizedChar)
+  // Check direct immediate actions (meme, song/dance, pomodoro, todo, youtube tasks)
+  const directAction = await handleDirectActions(userId, message, language, cleanMsg, normalizedChar, {
+    lastTaskQuery,
+    lastVideoId,
+    recentHistory,
+  })
   if (directAction) {
     if (stream) {
       res.setHeader('Content-Type', 'text/event-stream')
@@ -268,21 +275,28 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
         }
 
         if (isCorrection && (!query || query.length < 2)) {
-          try {
-            const recent = await db.getMessages(userId)
-            for (let i = recent.length - 1; i >= 0; i--) {
-              const m = recent[i]
-              if (m.taskAction?.type === 'youtube' && m.taskAction.query) {
-                query = m.taskAction.query
-                break
+          if (lastTaskQuery) {
+            query = cleanYouTubeQuery(lastTaskQuery) || lastTaskQuery
+          }
+          if (!query || query.length < 2) {
+            try {
+              const historyToSearch = (Array.isArray(recentHistory) && recentHistory.length > 0)
+                ? recentHistory
+                : await db.getMessages(userId)
+              for (let i = historyToSearch.length - 1; i >= 0; i--) {
+                const m = historyToSearch[i]
+                if (m.taskAction?.type === 'youtube' && m.taskAction.query) {
+                  query = m.taskAction.query
+                  break
+                }
+                const match = (m.content || '').match(/\b(?:madan\s*gowri|madhan\s*gowri|a2d|tamil\s*tech|miku|iron\s*man|tony\s*stark)\b/i)
+                if (match) {
+                  query = match[0]
+                  break
+                }
               }
-              const match = (m.content || '').match(/\b(?:madan\s*gowri|madhan\s*gowri|a2d|tamil\s*tech|miku|iron\s*man|tony\s*stark)\b/i)
-              if (match) {
-                query = match[0]
-                break
-              }
-            }
-          } catch {}
+            } catch {}
+          }
         }
 
         const isGeneric = isGenericVideoPrompt(query)
@@ -299,7 +313,13 @@ chatRouter.post('/chat', rateLimitChat, requireAuth, checkUserQuota('chat'), asy
           resolvedVideo = getCuratedFallback('', normalizedChar)
           query = normalizedChar === 'mira' ? 'Hatsune Miku official music video' : normalizedChar === 'atlas' ? 'Marvel Studios Iron Man (Tony Stark)' : 'Resident Evil Ada Wong'
         } else {
-          resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(query, 4500, { sortByLatest: isLatest, character: normalizedChar })
+          const preferFullVideo = !message.toLowerCase().includes('short')
+          resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(query, 4500, {
+            sortByLatest: isLatest,
+            character: normalizedChar,
+            lastVideoId,
+            preferFullVideo,
+          })
         }
 
         const url = resolvedVideo.videoUrl

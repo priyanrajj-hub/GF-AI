@@ -359,6 +359,23 @@ export const ChatDrawer: React.FC = () => {
       setToolStatus('🧠 Retrieving semantic memories & context...')
     }
 
+    // Extract conversational context for serverless persistence
+    let lastTaskQuery: string | undefined
+    let lastVideoId: string | undefined
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i]
+      if (m.taskAction?.type === 'youtube') {
+        lastTaskQuery = m.taskAction.query || m.taskAction.title
+        lastVideoId = m.taskAction.data?.videoId
+        break
+      }
+    }
+    const recentHistory = messages.slice(-6).map((m) => ({
+      role: m.role,
+      content: m.content,
+      taskAction: m.taskAction,
+    }))
+
     // Add user message to UI
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}-user`,
@@ -387,6 +404,9 @@ export const ChatDrawer: React.FC = () => {
           llmProvider: settings.llmProvider,
           huggingfaceApiKey: settings.huggingfaceApiKey,
           stream: false,
+          lastTaskQuery,
+          lastVideoId,
+          recentHistory,
         }),
       })
 

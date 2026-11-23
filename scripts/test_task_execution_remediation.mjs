@@ -136,6 +136,35 @@ async function runAll() {
     assert.ok(result.reply.speech.includes('recalibrated') || result.reply.speech.includes('latest'), 'Speech must confirm recalibration to latest upload')
   })
 
+  await test('Serverless stateless correction with explicit context payload recalibrates and skips previous video', async () => {
+    const result = await TaskExecutionService.handleTaskIntent(
+      'stateless-user',
+      'its not the recent new vedio',
+      'en',
+      'its not the recent new vedio',
+      'ada',
+      {
+        lastTaskQuery: 'A2D Channel',
+        lastVideoId: 'dv_FLZQEgFY',
+      }
+    )
+    assert.ok(result, 'Result must not be null')
+    assert.equal(result.reply.taskAction?.type, 'youtube')
+    assert.ok(result.reply.taskAction.data?.videoId, 'Must have resolved videoId')
+    assert.notEqual(result.reply.taskAction.data?.videoId, 'dv_FLZQEgFY', 'Must skip previously played video')
+    assert.ok(!result.reply.taskAction.subtitle?.includes('18y ago'), 'Must not return 18-year-old video')
+    assert.ok(!result.reply.taskAction.subtitle?.includes('3 yr ago'), 'Must not return 3-year-old video')
+  })
+
+  await test('A2D Channel latest video resolution returns chronological recent upload', async () => {
+    const result = await TaskExecutionService.resolveChannelLatestUpload('a2d', 4500, { preferFullVideo: true })
+    assert.ok(result, 'Must resolve A2D upload')
+    assert.ok(result.videoId, 'Must have videoId')
+    assert.ok(result.title, 'Must have video title')
+    assert.ok(result.publishedTime, 'Must have published time')
+    assert.ok(!result.publishedTime.includes('year') && !result.publishedTime.includes('yr'), 'Must be fresh upload, not years old')
+  })
+
   // ─── 2. Web Search Task Execution ───
   console.log('\n─── 2. Web Search Task Execution ───')
 

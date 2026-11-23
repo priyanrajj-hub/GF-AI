@@ -86,7 +86,11 @@ export class TaskExecutionService {
    */
   static async resolveChannelLatestUpload(
     creator: string,
-    timeoutMs: number = 3500
+    timeoutMs: number = 3500,
+    options?: {
+      lastVideoId?: string
+      preferFullVideo?: boolean
+    }
   ): Promise<{
     videoId: string
     videoUrl: string
@@ -99,11 +103,20 @@ export class TaskExecutionService {
       const KNOWN_CHANNELS: Record<string, string> = {
         'madan gowri': 'UCY6KjrDBN_tIRFT_QNqQbRQ',
         'madhan gowri': 'UCY6KjrDBN_tIRFT_QNqQbRQ',
+        'mg squad': 'UCY6KjrDBN_tIRFT_QNqQbRQ',
         'a2d': 'UCvyZS6W6zMJCZBVzF-Ei6sw',
         'a2d channel': 'UCvyZS6W6zMJCZBVzF-Ei6sw',
+        'a2d pc factory': 'UCvyZS6W6zMJCZBVzF-Ei6sw',
+        'nandhu a2d': 'UCvyZS6W6zMJCZBVzF-Ei6sw',
         'tamil tech': 'UC20sXo8ReewkzNKBFgzVCPA',
+        'mr tamil tech': 'UC20sXo8ReewkzNKBFgzVCPA',
         'mrbeast': 'UCX6OQ3DkcsbYNE6H8uQQuVA',
         'mkbhd': 'UCBJycsmduvYEL83R_U4JriQ',
+        'marques brownlee': 'UCBJycsmduvYEL83R_U4JriQ',
+        'linus tech tips': 'UCXuqSBlHAE6Xw-yeJA0Tunw',
+        'ltt': 'UCXuqSBlHAE6Xw-yeJA0Tunw',
+        'veritasium': 'UCHnyfMqiRRG1u-2MsSQLbXA',
+        'pewdiepie': 'UC-lHJZR3Gqxm24_Vd_AJ5Yw',
       }
 
       const qLower = creator.toLowerCase().trim()
@@ -150,26 +163,63 @@ export class TaskExecutionService {
         })
         if (rssRes.ok) {
           const rssText = await rssRes.text()
-          const entryMatch = rssText.match(
-            /<entry>[\s\S]*?<yt:videoId>([a-zA-Z0-9_-]{11})<\/yt:videoId>[\s\S]*?<title>([^<]+)<\/title>[\s\S]*?<published>([^<]+)<\/published>/
-          )
-          if (entryMatch) {
-            const videoId = entryMatch[1]
-            let rawTitle = entryMatch[2]
-            try {
-              rawTitle = rawTitle.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
-            } catch {}
+          const entryRegex = /<entry>([\s\S]*?)<\/entry>/g
+          const entries: Array<{
+            id: string
+            url: string
+            isShort: boolean
+            title: string
+            published: string
+          }> = []
+          let match: RegExpExecArray | null
+          while ((match = entryRegex.exec(rssText)) !== null) {
+            const block = match[1]
+            const idMatch = block.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)
+            const linkMatch = block.match(/<link[^>]+href="([^"]+)"/)
+            const titleMatch = block.match(/<title>([^<]+)<\/title>/)
+            const pubMatch = block.match(/<published>([^<]+)<\/published>/)
+            if (idMatch && linkMatch && titleMatch && pubMatch) {
+              let rawTitle = titleMatch[1]
+              try {
+                rawTitle = rawTitle.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+              } catch {}
+              entries.push({
+                id: idMatch[1],
+                url: linkMatch[1],
+                isShort: linkMatch[1].includes('/shorts/'),
+                title: rawTitle,
+                published: pubMatch[1],
+              })
+            }
+          }
 
-            const pubDate = new Date(entryMatch[3])
+          if (entries.length > 0) {
+            // Filter out previously played video if lastVideoId was provided
+            const candidatePool = options?.lastVideoId
+              ? entries.filter((e) => e.id !== options.lastVideoId)
+              : entries
+
+            const candidates = candidatePool.length > 0 ? candidatePool : entries
+
+            // If user preferred full video, look for non-short entries first
+            let selected = candidates[0]
+            if (options?.preferFullVideo) {
+              const fullVideo = candidates.find((e) => !e.isShort)
+              if (fullVideo) {
+                selected = fullVideo
+              }
+            }
+
+            const pubDate = new Date(selected.published)
             const now = new Date()
             const diffHours = Math.max(1, Math.round((now.getTime() - pubDate.getTime()) / (1000 * 60 * 60)))
             const publishedTime = diffHours < 24 ? `${diffHours}h ago` : `${Math.floor(diffHours / 24)}d ago`
 
             return {
-              videoId,
-              videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
-              embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`,
-              title: rawTitle,
+              videoId: selected.id,
+              videoUrl: `https://www.youtube.com/watch?v=${selected.id}`,
+              embedUrl: `https://www.youtube.com/embed/${selected.id}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`,
+              title: selected.title,
               publishedTime,
             }
           }
@@ -188,7 +238,12 @@ export class TaskExecutionService {
   static async resolveYouTubeVideo(
     query: string,
     timeoutMs: number = 4500,
-    options?: { sortByLatest?: boolean; character?: string }
+    options?: {
+      sortByLatest?: boolean
+      character?: string
+      lastVideoId?: string
+      preferFullVideo?: boolean
+    }
   ): Promise<{
     videoId: string
     videoUrl: string
@@ -201,7 +256,10 @@ export class TaskExecutionService {
 
     // When latest upload is requested, check official YouTube channel RSS feed first for 100% chronological ordering
     if (isLatest && query && query.length > 2) {
-      const channelVideo = await TaskExecutionService.resolveChannelLatestUpload(query, timeoutMs)
+      const channelVideo = await TaskExecutionService.resolveChannelLatestUpload(query, timeoutMs, {
+        lastVideoId: options?.lastVideoId,
+        preferFullVideo: options?.preferFullVideo,
+      })
       if (channelVideo) {
         return channelVideo
       }
@@ -224,6 +282,11 @@ export class TaskExecutionService {
         // Context snippet around this videoRenderer to get publishedTime and length, and filter out shorts
         const pos = m.index ?? 0
         const snippet = html.substring(pos, pos + 2500)
+
+        // Skip previously played video if requested
+        if (options?.lastVideoId && rawId === options.lastVideoId) {
+          continue
+        }
 
         // Ignore Shorts / reels when a full video is available
         if (snippet.includes('"reelWatchEndpoint"') || snippet.includes('/shorts/')) {
@@ -248,7 +311,7 @@ export class TaskExecutionService {
         }
       }
 
-      // If all matches were shorts, fall back to first videoRenderer
+      // If all matches were shorts, fall back to first videoRenderer ONLY if not multi-year old
       if (vrMatches.length > 0) {
         const rawId = vrMatches[0][1]
         let rawTitle = vrMatches[0][2]
@@ -257,27 +320,35 @@ export class TaskExecutionService {
         } catch {
           rawTitle = rawTitle.replace(/\\u0026/g, '&')
         }
-        return {
-          videoId: rawId,
-          videoUrl: `https://www.youtube.com/watch?v=${rawId}`,
-          embedUrl: `https://www.youtube.com/embed/${rawId}?autoplay=1&enablejsapi=1&rel=0`,
-          title: rawTitle,
+        const snippet = html.substring(vrMatches[0].index ?? 0, (vrMatches[0].index ?? 0) + 2500)
+        const timeMatch = snippet.match(/"publishedTimeText":\{"simpleText":"([^"]+)"\}/)
+
+        if ((!isLatest || !timeMatch || !/\b(?:year|yr)\b/i.test(timeMatch[1])) && (!options?.lastVideoId || rawId !== options.lastVideoId)) {
+          return {
+            videoId: rawId,
+            videoUrl: `https://www.youtube.com/watch?v=${rawId}`,
+            embedUrl: `https://www.youtube.com/embed/${rawId}?autoplay=1&enablejsapi=1&rel=0`,
+            title: rawTitle,
+            publishedTime: timeMatch ? timeMatch[1] : undefined,
+          }
         }
       }
 
-      // 2. Fallback: extract distinct video IDs and non-filter title runs
-      const idMatches = [...html.matchAll(/\/watch\?v=([a-zA-Z0-9_-]{11})/g)]
-      const videoIds = [...new Set(idMatches.map((m) => m[1]))]
-      const titleRuns = [...html.matchAll(/"title":\{"runs":\[\{"text":"([^"]+)"/g)].map((m) => m[1])
-      const topTitle = titleRuns.find((t) => !/^(?:search filters|filters?|about these results)$/i.test(t.trim())) || fallbackQuery
+      // 2. Fallback: extract distinct video IDs and non-filter title runs (for non-latest queries only)
+      if (!isLatest) {
+        const idMatches = [...html.matchAll(/\/watch\?v=([a-zA-Z0-9_-]{11})/g)]
+        const videoIds = [...new Set(idMatches.map((m) => m[1]))]
+        const titleRuns = [...html.matchAll(/"title":\{"runs":\[\{"text":"([^"]+)"/g)].map((m) => m[1])
+        const topTitle = titleRuns.find((t) => !/^(?:search filters|filters?|about these results)$/i.test(t.trim())) || fallbackQuery
 
-      if (videoIds.length > 0) {
-        const topVideoId = videoIds[0]
-        return {
-          videoId: topVideoId,
-          videoUrl: `https://www.youtube.com/watch?v=${topVideoId}`,
-          embedUrl: `https://www.youtube.com/embed/${topVideoId}?autoplay=1&enablejsapi=1&rel=0`,
-          title: topTitle,
+        if (videoIds.length > 0) {
+          const topVideoId = videoIds[0]
+          return {
+            videoId: topVideoId,
+            videoUrl: `https://www.youtube.com/watch?v=${topVideoId}`,
+            embedUrl: `https://www.youtube.com/embed/${topVideoId}?autoplay=1&enablejsapi=1&rel=0`,
+            title: topTitle,
+          }
         }
       }
       return null
@@ -355,7 +426,12 @@ export class TaskExecutionService {
     message: string,
     language?: string,
     cleanMsg: string = message.toLowerCase().trim(),
-    character: string = 'ada'
+    character: string = 'ada',
+    context?: {
+      lastTaskQuery?: string
+      lastVideoId?: string
+      recentHistory?: any[]
+    }
   ): Promise<TaskExecutionResult | null> {
     const isMiku = character === 'mira' || character === 'miku'
     const isStark = character === 'atlas'
@@ -405,21 +481,28 @@ export class TaskExecutionService {
       let coreSubject = cleanYouTubeQuery(query)
 
       if (isCorrection && (!coreSubject || coreSubject.length < 2)) {
-        try {
-          const recent = await db.getMessages(userId)
-          for (let i = recent.length - 1; i >= 0; i--) {
-            const m = recent[i]
-            if (m.taskAction?.type === 'youtube' && m.taskAction.query) {
-              coreSubject = m.taskAction.query
-              break
+        if (context?.lastTaskQuery) {
+          coreSubject = cleanYouTubeQuery(context.lastTaskQuery) || context.lastTaskQuery
+        }
+        if (!coreSubject || coreSubject.length < 2) {
+          try {
+            const historyToSearch = (Array.isArray(context?.recentHistory) && context.recentHistory.length > 0)
+              ? context.recentHistory
+              : await db.getMessages(userId)
+            for (let i = historyToSearch.length - 1; i >= 0; i--) {
+              const m = historyToSearch[i]
+              if (m.taskAction?.type === 'youtube' && m.taskAction.query) {
+                coreSubject = m.taskAction.query
+                break
+              }
+              const match = (m.content || '').match(/\b(?:madan\s*gowri|madhan\s*gowri|a2d|tamil\s*tech|miku|iron\s*man|tony\s*stark)\b/i)
+              if (match) {
+                coreSubject = match[0]
+                break
+              }
             }
-            const match = (m.content || '').match(/\b(?:madan\s*gowri|madhan\s*gowri|a2d|tamil\s*tech|miku|iron\s*man|tony\s*stark)\b/i)
-            if (match) {
-              coreSubject = match[0]
-              break
-            }
-          }
-        } catch {}
+          } catch {}
+        }
       }
 
       if (/miku/i.test(cleanMsg)) {
@@ -453,9 +536,12 @@ export class TaskExecutionService {
           coreSubject = isMiku ? 'Hatsune Miku official music video' : isStark ? 'Marvel Studios Iron Man' : 'Resident Evil Ada Wong'
         }
         // Specific subject requested: resolve live on YouTube (sort by latest only if user asked for recent/latest creator content)
+        const preferFullVideo = !cleanMsg.includes('short')
         resolvedVideo = await TaskExecutionService.resolveYouTubeVideo(coreSubject, 4500, {
           sortByLatest: isLatestRequest,
           character,
+          lastVideoId: context?.lastVideoId,
+          preferFullVideo,
         })
       }
 

@@ -19,10 +19,15 @@ export async function handleDirectActions(
   message: string,
   language?: string,
   cleanMsg: string = message.toLowerCase().trim(),
-  character: string = 'ada'
+  character: string = 'ada',
+  context?: {
+    lastTaskQuery?: string
+    lastVideoId?: string
+    recentHistory?: any[]
+  }
 ): Promise<DirectActionResult | null> {
   // 0. Explicit Task Execution (YouTube, Search, Open URL, Switch Character, Web Tasks)
-  const taskResult = await TaskExecutionService.handleTaskIntent(userId, message, language, cleanMsg, character)
+  const taskResult = await TaskExecutionService.handleTaskIntent(userId, message, language, cleanMsg, character, context)
   if (taskResult) {
     return taskResult
   }

@@ -207,6 +207,23 @@ export const App: React.FC = () => {
 
     setSystemState('thinking')
 
+    const currentMessages = useAppStore.getState().messages
+    let lastTaskQuery: string | undefined
+    let lastVideoId: string | undefined
+    for (let i = currentMessages.length - 1; i >= 0; i--) {
+      const m = currentMessages[i]
+      if (m.taskAction?.type === 'youtube') {
+        lastTaskQuery = m.taskAction.query || m.taskAction.title
+        lastVideoId = m.taskAction.data?.videoId
+        break
+      }
+    }
+    const recentHistory = currentMessages.slice(-6).map((m) => ({
+      role: m.role,
+      content: m.content,
+      taskAction: m.taskAction,
+    }))
+
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}-user`,
       role: 'user',
@@ -233,6 +250,9 @@ export const App: React.FC = () => {
           llmProvider: settings.llmProvider,
           huggingfaceApiKey: settings.huggingfaceApiKey,
           stream: false,
+          lastTaskQuery,
+          lastVideoId,
+          recentHistory,
         }),
       })
 
